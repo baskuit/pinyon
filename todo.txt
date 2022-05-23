@@ -1,0 +1,4 @@
+** destructors **
+
+namespaces?
+

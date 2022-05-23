@@ -1,43 +1,38 @@
 #pragma once
 
+#include "state.hh"
 #include <cstdlib>
 
-struct State {
-    char id;
+class ToyState : public State {
+public: 
     bool terminal;
-    float payoff;
-
+    char id;
     int pp = 0;
     int length = 0;
 
-    int m = 2;
-    int n = 2;
+    float payoff;
+    float* NE_strategy0, NE_strategy1;
 
-    State (char id, bool terminal, float payoff, int pp, int length) :
+    int rows = 2;
+    int cols = 2;
+
+    ToyState ();
+    ToyState (char id, bool terminal, float payoff, int pp, int length) :
         id(id), terminal(terminal), payoff(payoff), pp(pp), length(length) {}
 
-    State* copy() {
-        return new State(id, terminal, payoff, pp, length);
-    }
-
-    
-    // I couldn't figure out how to use one super class 'State'
-    // and then subclass it with the types of games: "Sucker Punch", "Choose 0 to win", etc
-    // Instead I use a string id and change the transition rules thusly
-
-    int transition(int i, int j) {
+    StateTransitionData transition(int row_idx, int col_idx) {
         if (id == 'u') { //sUcker punch
             if (pp == 0) {
                 terminal = true;
                 payoff = 0;
             } else {
-                if (i == 0 && j == 0) {
+                if (row_idx == 0 && col_idx == 0) {
                     pp -= 1;
                     payoff = pp/(float)(pp+1);
-                } else if (i == 0 && j == 1) {
+                } else if (row_idx == 0 && col_idx == 1) {
                     terminal = true;
                     payoff = 1;
-                } else if (i == 1 && j == 0) {
+                } else if (row_idx == 1 && col_idx == 0) {
                     terminal = true;
                     payoff = 1;
                 } else {
@@ -45,8 +40,10 @@ struct State {
                     payoff = 0;
                 }
             }
+
+
         } else if (id == 's') { // play0 chooSes 0 to win
-            if (i == 0) {
+            if (row_idx == 0) {
                 if (length == 0) {
                     terminal = true;
                     payoff = 1;
@@ -59,20 +56,19 @@ struct State {
                 payoff = 0;
             }
 
-        // Combo of stochastic and sucker. If player0 is to collect his win- "Knock on Stealthrock"
-        // He must also play the winning stochastic game 
+
         } else if (id == 'c') { //Combo game
             if (pp == 0) {
                 terminal = true;
                 payoff = 0;
             } else {
-                if (i == 0 && j == 0) {
+                if (row_idx == 0 && col_idx == 0) {
                     pp -= 1;
                     payoff = pp/(pp+1);
-                } else if (i == 0 && j == 1) {
+                } else if (row_idx == 0 && col_idx == 1) {
                     id = 's';
                     payoff = 1;
-                } else if (i == 1 && j == 0) {
+                } else if (row_idx == 1 && col_idx == 0) {
                     id = 's';;
                     payoff = 1;
                 } else {
@@ -81,15 +77,15 @@ struct State {
                 }
             }
         } 
-
-        return 0; //transition key. These games are deterministic, hence always return 0
+        StateTransitionData result = {0, Rational(1, 1)};
+        return result;
     }
 
     float rollout () {
         while (terminal == false) {
-            int i = rand() % 2;
-            int j = rand() % 2;
-            transition(i, j);
+            int row_idx = rand() % 2;
+            int col_idx = rand() % 2;
+            transition(row_idx, col_idx);
         }
         return payoff;
     }

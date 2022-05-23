@@ -1,5 +1,3 @@
-//
-
 #pragma once
 
 struct Rational {
@@ -10,6 +8,7 @@ struct Rational {
     }
 
     void reduce () {
+        // eulcid's algorithm
         int a = p;
         int b = q;
         int c;
@@ -23,6 +22,7 @@ struct Rational {
         q /= a;
     }
 
+    // 1 > 0
     Rational () :
         p(1), q(1) {}
 
@@ -45,12 +45,24 @@ struct Rational {
         return p*y.q < y.p*q;
     }
 
+    bool operator<= (Rational y) {
+        return p*y.q <= y.p*q;
+    }
+
+    bool operator> (Rational y) {
+        return p*y.q > y.p*q;
+    }
+
+    bool operator>= (Rational y) {
+        return p*y.q >= y.p*q;
+    }
+
     operator float() {
-        return p/q;
+        return p/(float)q;
     }
 
     operator double() {
-        return p/q;
+        return p/(double)q;
     }
     
 };
