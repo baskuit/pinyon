@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "../tree/tree_linked_list.hh"
 #include "../state/state.hh"
 #include "../model/model.hh"
@@ -14,17 +13,22 @@ public:
     int playouts;
     int* visits0;
     int* visits1;
-    float cumulativeScore0;
-    float cumulativeScore1;
+    float cumulative_score0;
+    float cumulative_score1;
 
-    SearchSession();
+    float* nash_solution0;
+    float* nash_solution1;
+
+    SearchSession() {};
     SearchSession (MatrixNode* root, State* state, Model* model) :
     root(root), state(state), model(model) {};
 
-    void search (int playouts);
-    MatrixNode* search (MatrixNode* matrix_node_current, State* state);
+    virtual void search (int playouts) {};
+    virtual MatrixNode* search (MatrixNode* matrix_node_current, State* state){
+        return nullptr;
+    };
 
-/*
+/* 
     SearchSession operator+ (SearchSession session) {
         if (root != session.root) {
             

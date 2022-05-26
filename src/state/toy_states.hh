@@ -5,20 +5,28 @@
 
 class ToyState : public State {
 public: 
-    bool terminal;
     char id;
     int pp = 0;
     int length = 0;
 
-    float payoff;
+    float payoff = .5f;
     float* NE_strategy0, NE_strategy1;
 
-    int rows = 2;
-    int cols = 2;
-
-    ToyState ();
+    ToyState () {
+        rows = 2;
+        cols = 2;
+    };
     ToyState (char id, bool terminal, float payoff, int pp, int length) :
-        id(id), terminal(terminal), payoff(payoff), pp(pp), length(length) {}
+        id(id), payoff(payoff), pp(pp), length(length) {
+            rows = 2;
+            cols = 2;
+            terminal = terminal;
+            payoff = payoff;
+    };
+
+    ToyState* copy() {
+        return new ToyState(id, terminal, payoff, pp, length);
+    }
 
     StateTransitionData transition(int row_idx, int col_idx) {
         if (id == 'u') { //sUcker punch
@@ -82,12 +90,13 @@ public:
     }
 
     float rollout () {
+        std::cout << "derived rollout" << std::endl;
         while (terminal == false) {
             int row_idx = rand() % 2;
             int col_idx = rand() % 2;
-            transition(row_idx, col_idx);
+            this->transition(row_idx, col_idx);
         }
-        return payoff;
+        return this->payoff;
     }
 
 };

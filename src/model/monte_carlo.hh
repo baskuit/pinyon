@@ -4,7 +4,7 @@
 
 class MonteCarlo : public Model {
 public:
-    MonteCarlo();
+    MonteCarlo() {};
     InferenceData inference (State* state){
         
         float value_estimate0 = state->rollout();
