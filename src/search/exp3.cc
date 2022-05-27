@@ -53,44 +53,61 @@ MatrixNode* Exp3SearchSession::search (MatrixNode* matrix_node_current, State* s
 }
 
 void Exp3SearchSession::search (int playouts) {
-    
     for (int playout = 0; playout < playouts; ++playout) {
         State* state_ = this->state->copy();
-        Exp3SearchSession::search(this->root, state_);
+        MatrixNode* matrix_node = Exp3SearchSession::search(this->root, state_);
         delete state_;
-
+        while (matrix_node->parent && matrix_node->parent->parent != this->root) {
+            matrix_node = matrix_node->parent->parent;
+        }
+        if (matrix_node != this->root) {
+            // not the one expansion term, and not terminal
+            Action action0 = matrix_node->parent->action0;
+            Action action1 = matrix_node->parent->action1;
+        }
     }
-    this->playouts += playouts;
-    visits0 = root->visits0;
-    visits1 = root->visits0;
-    cumulative_score0 = root->cumulative_score0;
-    cumulative_score1 = root->cumulative_score1;
 }
 
-// should return float strategies without the 'uniform noise'
-void Exp3SearchSession::denoise () {
+
+SearchSessionData Exp3SearchSession::answer () {
+    SearchSessionData data;
     int rows = this->root->rows;
     int cols = this->root->cols;
 
-    this->nash_solution0 = new float[rows]{0.f};
-    this->nash_solution1 = new float[cols]{0.f};
+    data.nash_solution0 = new float[rows]{0.f};
+    data.nash_solution1 = new float[cols]{0.f};
+    const float playouts_ = this->playouts - 1;
     for (int i = 0; i < rows; ++i) {
-        nash_solution0[i] = this->visits0[i]/ (float)this->playouts;
+        data.nash_solution0[i] = this->visits0[i]/ playouts_;
     }
     for (int j = 0; j < cols; ++j) {
-        nash_solution1[j] = this->visits1[j]/ (float)this->playouts;
+        data.nash_solution1[j] = this->visits1[j]/ playouts_;
     }
-    float eta_ = 1/(1 - this->eta);
+    const float eta_ = 1/(1 - this->eta);
+    float row_sum = 0;
     for (int i = 0; i < rows; ++i) {
-        nash_solution0[i] -= (this->eta/(float)rows);
-        nash_solution0[i] *= eta_;
-        std::cout << nash_solution0[i] << ", " << std::endl;
+        data.nash_solution0[i] -= (this->eta/(float)rows);
+        data.nash_solution0[i] *= data.nash_solution0[i] > 0 ? eta_ : 0;
+        row_sum += data.nash_solution0[i];
     }
+    float col_sum = 0;
     for (int j = 0; j < cols; ++j) {
-        nash_solution1[j] -= (this->eta/(float)cols);
-        nash_solution1[j] *= eta_;
-        std::cout << nash_solution1[j] << ", " << std::endl;
+        data.nash_solution1[j] -= (this->eta/(float)cols);
+        data.nash_solution1[j] *= data.nash_solution1[j] > 0 ? eta_ : 0;
+        col_sum += data.nash_solution1[j];
     }
+    // I hate this
+    for (int i = 0; i < rows; ++i) {
+        data.nash_solution0[i] /= row_sum;
+        std::cout << data.nash_solution0[i] << ", ";
+    }
+    std::cout << std::endl;
+    for (int j = 0; j < cols; ++j) {
+        data.nash_solution1[j] /= col_sum;
+        std::cout << data.nash_solution1[j] << ", ";
+    }
+    std::cout << std::endl;
+    return data;
 };
 
 void Exp3SearchSession::forecast(float* forecasts, float* gains, int k) {

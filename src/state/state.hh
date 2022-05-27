@@ -35,14 +35,16 @@ public:
     float payoff;
     float* nash0;
     float* nash1;
-
+    ~State(){
+        delete nash0;
+        delete nash1;
+    };
     State() {};
     State(State& s) :
     rows(s.rows), cols(s.cols), terminal(s.terminal), payoff(s.payoff), nash0(s.nash0), nash1(s.nash1) {};
 
     virtual State* copy () {
-        std::cout << "base copy" << std::endl;
-        return this;
+        return new State();
     };
     // this->terminal is instead achieved by first 
     // filling actions vectors and checking if still empty

@@ -3,14 +3,15 @@
 #include <iostream>
 
 int main () {
-    int pp = 1;
+    int pp = 3;
     int length = 1;
-    ToyState* state = new ToyState('u', false, 2, pp, length);
+    ToyState* state = new ToyState('u', false, -1, pp, length);
     Exp3SearchSession session = Exp3SearchSession(state, .01);
+    session.eta = .001;
     
-    session.search(1000);
+    session.search(1000000);
 
-    session.denoise();
+    session.answer();
 
     //root->expand(state, model);
     //State state_ = State(*state);

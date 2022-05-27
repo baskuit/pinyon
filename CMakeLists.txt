@@ -10,7 +10,8 @@ surskit
 src/tree/tree_linked_list.cc
 src/libsurskit/math.cc
 src/search/exp3.cc
-src/main.cc)
+src/main.cc
+)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

@@ -90,7 +90,6 @@ public:
     }
 
     float rollout () {
-        std::cout << "derived rollout" << std::endl;
         while (terminal == false) {
             int row_idx = rand() % 2;
             int col_idx = rand() % 2;
