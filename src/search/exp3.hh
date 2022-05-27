@@ -4,11 +4,12 @@
 #include "session.hh"
 #include "../model/monte_carlo.hh"
 
-class Exp3SearchSession : private SearchSession {
+class Exp3SearchSession : public SearchSession {
 public:
     float eta;
     Exp3SearchSession ();
-        Exp3SearchSession (State* state, float eta) {
+        Exp3SearchSession (State* state, float eta) :
+        state(state), eta(eta) {
         this->root = new MatrixNode();
         this->state = state;
         this->model = new MonteCarlo();
@@ -23,6 +24,9 @@ public:
         this->visits1 = x;
     };
     Exp3SearchSession (MatrixNode* root, State* state, Model* model, float eta) {
+        if (!root->expanded) {
+            root->expand(this->state, this->model);
+        }
         this->root = root;
         this->state = state;
         this->model = model;
@@ -33,6 +37,5 @@ public:
     void search (int playouts);
     SearchSessionData answer ();
 
-private:
     void forecast(float* forecasts, float* gains, int k);
 };

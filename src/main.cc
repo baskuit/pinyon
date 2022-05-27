@@ -3,21 +3,23 @@
 #include <iostream>
 
 int main () {
+    std::cout << '$' << std::endl;
     int pp = 3;
     int length = 1;
     ToyState* state = new ToyState('u', false, -1, pp, length);
     Exp3SearchSession session = Exp3SearchSession(state, .01);
     session.eta = .001;
-    
-    session.search(1000000);
-
+    std::cout << "&&&" << std::endl;
+    session.search(1000);
     session.answer();
+    
+    MatrixNode* leaf = session.search(session.root, session.state);
 
-    //root->expand(state, model);
-    //State state_ = State(*state);
-    //session.search(root, state);
-    //std::cout << root->expanded;
+    Node* x = leaf->parent->parent;
+    
+    x->test();
+
 }
 
 // change this morning: states not rolling out and showing payoff correctly. Likely has to do with giving duplicate name
-// states still probably not working since pp = 5 does nothing
+// states still probably not working since pp = 5 does nothingclear

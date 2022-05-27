@@ -89,11 +89,12 @@ public:
         return SearchSessionData();
     }
 
+    int playouts;
     int* visits0;
     int* visits1;
-    int playouts;
+    float cumulativeScore0;
+    float cumulativeScore1;
 
-private:
     virtual MatrixNode* search (MatrixNode* matrix_node_current, State* state){
         return nullptr;
     };

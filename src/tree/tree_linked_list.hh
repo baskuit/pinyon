@@ -3,22 +3,34 @@
 #include "../libsurskit/rational.hh"
 #include "../model/model.hh"
 
+#include <iostream>
+
 typedef int Action;
 
 struct State;
 
+struct Node {
+    Node* parent;
+    Node* child;
+    Node* next;
+
+    void test () {
+        std::cout << '!' << std::endl;
+    }
+};
+
 struct MatrixNode;
 
-struct ChanceNode {
+struct ChanceNode : Node {
 
 
-    MatrixNode* parent = nullptr;
-    ChanceNode* next = nullptr; // Next ChanceNode 'entry' in a matrix node's matrix
-    MatrixNode* child = nullptr; // Linked list of MatrixNodes consisting of the ChanceNode's branches
+// Linked list of MatrixNodes consisting of the ChanceNode's branches
 
     // row_idx changed to action0
     // works better for pruning
-
+    MatrixNode* parent;
+    MatrixNode* child;
+    ChanceNode* next;
     Action action0, action1;
 
     ChanceNode (MatrixNode* parent, Action action0, Action action1) :
@@ -29,9 +41,12 @@ struct ChanceNode {
     float cumulative_score1 = 0.f;
 
     MatrixNode* access (int transitionKey, Rational transitionProb);
+    void test () {
+        std::cout << '@' << std::endl;
+    }
 };
 
-struct MatrixNode {
+struct MatrixNode : Node{
 
     ChanceNode* parent = nullptr;
     MatrixNode* next = nullptr; // Next MatrixNode 'outcome' in the chance node above this
