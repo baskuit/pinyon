@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../model/model.hh"
+#include "model.hh"
 
 class MonteCarlo : public Model {
 public:
@@ -11,10 +11,10 @@ public:
         float value_estimate1 = 1-value_estimate0;
         float strategy_prior0[pair.rows] = {1.f/pair.rows};
         float strategy_prior1[pair.cols] = {1.f/pair.cols};
-        InferenceData data = {  value_estimate0, 
-                                value_estimate1, 
-                                strategy_prior0, 
-                                strategy_prior1};
+        InferenceData data =   {strategy_prior0, 
+                                strategy_prior1,
+                                value_estimate0, 
+                                value_estimate1};
         return data;
     };
 
@@ -23,10 +23,10 @@ public:
         float value_estimate1 = 1-value_estimate0;
         float strategy_prior0[pair.rows] = {1.f/pair.rows};
         float strategy_prior1[pair.cols] = {1.f/pair.cols};
-        InferenceData data = {  value_estimate0, 
-                                value_estimate1, 
-                                strategy_prior0, 
-                                strategy_prior1};
+        InferenceData data =   {strategy_prior0, 
+                                strategy_prior1,
+                                value_estimate0, 
+                                value_estimate1};
         return data;
     };
 };

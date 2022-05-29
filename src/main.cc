@@ -5,21 +5,20 @@
 
 int main () {
 
-    int pp = 2;
+    int pp = 3;
     int length = 0;
 
     float total = 0;
-    int n = 10000;
+    int n = 100000;
 
-    ToyStateInfo info('u', pp, length, pp / (float) (pp + 1));
-    ToyState state = ToyState(info);
 
     for (int i = 0; i < n; ++i) {
 
-        ToyState state_ = state;
-        state_.rollout();
-
-        total += state_.info.payoff;
+        ToyStateInfo info('u', pp, length, pp / (float) (pp + 1));
+        ToyState state = ToyState(info);
+        state.rollout();
+        total += state.info.payoff;
+        //std::cout << state.info.payoff << std::endl;
     }
     std::cout << total / n << std::endl;
 } 
