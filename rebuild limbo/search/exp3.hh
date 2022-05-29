@@ -7,6 +7,7 @@
 class Exp3SearchSession : public SearchSession {
 public:
     float eta;
+    State* state;
     Exp3SearchSession ();
         Exp3SearchSession (State* state, float eta) :
         state(state), eta(eta) {
@@ -15,7 +16,7 @@ public:
         this->model = new MonteCarlo();
 
         if (!root->expanded) {
-            root->expand(this->state, this->model);
+            root->expand(this->state->copy(), this->model);
         }
 
         int x[root->rows];
@@ -32,6 +33,8 @@ public:
         this->model = model;
         this->eta = eta;
     };
+
+    
 
     MatrixNode* search (MatrixNode* matrix_node_current, State* state);
     void search (int playouts);

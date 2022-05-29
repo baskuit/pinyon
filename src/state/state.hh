@@ -1,58 +1,86 @@
 #pragma once
 
 #include "../libsurskit/math.hh"
-#include "../libsurskit/rational.hh"
-#include <vector>
 
-#include <iostream>
+
+    // Data
+
 
 typedef int Action;
 
-struct StateTransitionData {
-    int transitionKey;
-    Rational transitionProb;
-};
+typedef int Hash;
 
-
-// is this correct? for deleting?
-struct Actions {
+struct PairActions {
+    int rows;
+    int cols;
     Action* actions0;
     Action* actions1;
-    Actions () {}
-    ~Actions() {
-        delete actions0;
-        delete actions1;
-    }
+
+    PairActions () :
+    rows(0), cols(0), actions0(nullptr), actions1(nullptr) {};
+    PairActions (int rows, int cols, Action* actions0, Action* actions1) :
+    rows(rows), cols(cols), actions0(actions0), actions1(actions1) {};
+    PairActions (const PairActions &pair) {
+        rows = pair.rows;
+        cols = pair.cols; 
+    }   
 };
+
+struct StateTransitionData {
+    Hash transitionKey;
+    Rational transitionProb;
+    StateTransitionData () : transitionKey(0) {}; //check if tP is properly initialized to 1/1
+    StateTransitionData (int transitionKey, Rational transitionProb) :
+    transitionKey(transitionKey), transitionProb(transitionProb) {};
+};
+
+
+    // StateInfo
+
+
+struct StateInfo {};
+
+struct SolvedStateInfo : StateInfo {
+
+    bool terminal;
+    int rows;
+    int cols;
+    float* strategy0;
+    float* strategy1;
+    float payoff;
+
+    SolvedStateInfo () :
+    terminal(true), rows(rows), cols(cols), strategy0(nullptr), strategy1(nullptr), payoff(.5) {};
+    SolvedStateInfo (bool terminal, int rows, int cols, float* strategy0, float* strategy1, float payoff) :
+    terminal(terminal), rows(rows), cols(cols), strategy0(strategy0), strategy1(strategy1), payoff(payoff) {
+        terminal = (rows * cols == 0);
+    };
+    SolvedStateInfo (int rows, int cols, float* strategy0, float* strategy1, float payoff) :
+    rows(rows), cols(cols), strategy0(strategy0), strategy1(strategy1), payoff(payoff) {
+        terminal = (rows * cols == 0);
+    };
+};
+
+
+    // State
+
 
 class State {
 public:
-    int rows;
-    int cols;
 
-    // analytically
-    bool terminal;
-    float payoff;
-    float* nash0;
-    float* nash1;
-    ~State(){
-        delete nash0;
-        delete nash1;
-    };
-    State() {};
-    State(State& s) :
-    rows(s.rows), cols(s.cols), terminal(s.terminal), payoff(s.payoff), nash0(s.nash0), nash1(s.nash1) {};
+    StateInfo info;
+    prng device;
 
-    virtual State* copy () {
-        return new State();
-    };
-    // this->terminal is instead achieved by first 
-    // filling actions vectors and checking if still empty
-    //virtual Actions actions(std::vector<Action>* row_actions, std::vector<Action>* col_actions) {return Actions()};
+    State () {};
+    State(StateInfo info, prng device) : info(info), device(device) {};
+    State(StateInfo info) : info(info) {}; // TODO does prng device; initilialize?
+    ~State () {};
+
+    virtual PairActions actions () {
+        return PairActions();
+    }
+    virtual void actions (PairActions actions) {}
     virtual StateTransitionData transition(Action action0, Action action1) {return StateTransitionData();};
-
-    // play random moves until terminal and return 'value0' payoff
-    virtual float rollout() {std::cout << "base rollout" << std::endl; return .5f;};
-    // this canonical function only returns value0 since value1 = 1 - value0
+    virtual float rollout() {return 0.5f;};
 
 };

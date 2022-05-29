@@ -1,14 +1,11 @@
 #pragma once
 #include <math.h>
-#include <cstdlib>
+
+#include "random.hh"
+#include "rational.hh"
 
 namespace math {
 
-    // replace with std:: equiv or something this is too jank
-    float randomProb ();
+    void power_norm(float* input, int k, float power, float* output);
 
-    //samples a probabilty distribution
-    int sample (float* input, int k);
-
-    void powerNorm(int* input, int k, float power, float* output);
 }

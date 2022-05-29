@@ -7,9 +7,8 @@ enable_testing()
 include_directories(src)
 add_executable(
 surskit 
-src/tree/tree_linked_list.cc
 src/libsurskit/math.cc
-src/search/exp3.cc
+src/state/toy_state.cc
 src/main.cc
 )
 

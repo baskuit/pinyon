@@ -1,25 +1,25 @@
-#include "state/toy_states.hh"
-#include "search/exp3.hh"
 #include <iostream>
 
+#include <libsurskit/math.hh>
+#include "state/toy_state.hh"
+
 int main () {
-    std::cout << '$' << std::endl;
-    int pp = 3;
-    int length = 1;
-    ToyState* state = new ToyState('u', false, -1, pp, length);
-    Exp3SearchSession session = Exp3SearchSession(state, .01);
-    session.eta = .001;
-    std::cout << "&&&" << std::endl;
-    session.search(1000);
-    session.answer();
-    
-    MatrixNode* leaf = session.search(session.root, session.state);
 
-    Node* x = leaf->parent->parent;
-    
-    x->test();
+    int pp = 2;
+    int length = 0;
 
-}
+    float total = 0;
+    int n = 10000;
 
-// change this morning: states not rolling out and showing payoff correctly. Likely has to do with giving duplicate name
-// states still probably not working since pp = 5 does nothingclear
+    ToyStateInfo info('u', pp, length, pp / (float) (pp + 1));
+    ToyState state = ToyState(info);
+
+    for (int i = 0; i < n; ++i) {
+
+        ToyState state_ = state;
+        state_.rollout();
+
+        total += state_.info.payoff;
+    }
+    std::cout << total / n << std::endl;
+} 

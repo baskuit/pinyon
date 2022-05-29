@@ -1,11 +1,9 @@
 #pragma once
 
-struct Rational {
-    int p, q;
+class Rational {
 
-    int sign () {
-        return p*q >= 0 ? 1 : -1;
-    }
+    int p;
+    int q;
 
     void reduce () {
         // eulcid's algorithm
@@ -22,24 +20,26 @@ struct Rational {
         q /= a;
     }
 
-    // 1 > 0
+public : 
+
     Rational () :
         p(1), q(1) {}
 
     Rational (int p, int q) :
         p(p), q(q) {}
+    ~Rational () {} // Literally what does this even do?
 
     Rational operator+ (Rational y) {
         Rational z = {p*y.q + y.p*q, p*q};
         z.reduce();
         return z;
-    };
+    }
 
     Rational operator* (Rational y) {
         Rational z = {p*y.p, q*y.q};
         z.reduce();
         return z;
-    };
+    }
 
     bool operator< (Rational y) {
         return p*y.q < y.p*q;

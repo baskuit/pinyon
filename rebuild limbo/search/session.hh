@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "../tree/tree_linked_list.hh"
 #include "../state/state.hh"
 #include "../model/model.hh"
@@ -8,43 +10,35 @@ struct SearchSessionData {
 
     int playouts;
     int rows;
-    int cols;
-    int* visits0;
-    int* visits1;
+int cols;
+    std::vector<int> visits0;
+    std::vector<int> visits1;
+    std::vector<float> strategy0;
+    std::vector<float> strategy1;
     float cumulative_score0;
     float cumulative_score1;
-    float* nash_solution0;
-    float* nash_solution1;
 
     SearchSessionData () {
         playouts = 0;
         rows = 0;
         cols = 0;
-        visits0 = nullptr;
-        visits1 = nullptr;
-        cumulative_score0 = 0;
         cumulative_score1 = 0;
-        nash_solution0 = nullptr;
-        nash_solution1 = nullptr;
     };
 
     SearchSessionData (State& state) {
+        PairActions pair = state.actions();
         playouts = 0;
-        rows = state.rows;
-        cols = state.cols;
-        visits0 = nullptr;
-        visits1 = nullptr;
+        rows = pair.rows;
+        cols = pair.cols;
         cumulative_score0 = 0;
         cumulative_score1 = 0;
-        nash_solution0 = nullptr;
-        nash_solution1 = nullptr;
     };
 
     ~SearchSessionData () {
-        delete visits0;
-        delete visits1;
-        delete nash_solution0;
-        delete nash_solution1;
+        delete &visits0;
+        delete &visits1;
+        delete &strategy0;
+        delete &strategy1;
     }
 
     // 'Add' the results of two searches. New solved strategies are the weighted sums.
@@ -58,16 +52,16 @@ struct SearchSessionData {
         int cols_min = cols < S.cols ? cols : S.cols;
         result.visits0 = new int[rows_min];
         result.visits1 = new int[cols_min];
-        result.nash_solution0 = new float[rows_min];
-        result.nash_solution1 = new float[cols_min];
+        result.strategy0 = new float[rows_min];
+        result.strategy1 = new float[cols_min];
         for (int row_idx = 0; row_idx < rows_min; ++row_idx) {
             result.visits0[row_idx] = visits0[row_idx] + S.visits0[row_idx];
-            result.nash_solution0[row_idx] = portionA * nash_solution0[row_idx] + portionB * S.nash_solution0[row_idx];
+            result.strategy0[row_idx] = portionA * strategy0[row_idx] + portionB * S.strategy0[row_idx];
 
         }
         for (int col_idx = 0; col_idx < cols_min; ++col_idx) {
             result.visits1[col_idx] = visits1[col_idx] + S.visits1[col_idx];
-            result.nash_solution1[col_idx] = portionA * nash_solution1[col_idx] + portionB * S.nash_solution1[col_idx];
+            result.strategy1[col_idx] = portionA * strategy1[col_idx] + portionB * S.strategy1[col_idx];
         }
         result.cumulative_score0 = cumulative_score0 + S.cumulative_score0;
         result.cumulative_score1 = cumulative_score1 + S.cumulative_score1;
