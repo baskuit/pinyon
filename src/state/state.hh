@@ -75,6 +75,7 @@ public:
     State(StateInfo info, prng device) : info(info), device(device) {};
     State(StateInfo info) : info(info) {}; // TODO does prng device; initilialize?
     ~State () {};
+    //State ( State const& T) {}; 
 
     virtual PairActions actions () {
         return PairActions();
