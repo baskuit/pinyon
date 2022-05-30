@@ -27,7 +27,6 @@ public :
 
     Rational (int p, int q) :
         p(p), q(q) {}
-    ~Rational () {} // Literally what does this even do?
 
     Rational operator+ (Rational y) {
         Rational z = {p*y.q + y.p*q, p*q};

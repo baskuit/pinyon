@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../model/model.hh"
 
 class Node {
@@ -57,6 +59,8 @@ class MatrixNode : public Node {
 public:
     MatrixNode () :
     Node(), transitionKey(0) {}
+    MatrixNode (StateTransitionData data) :
+    Node(), transitionKey(data.transitionKey), transitionProb(data.transitionProb) {}
 
     ChanceNode* access (Action action0, Action action1);
 

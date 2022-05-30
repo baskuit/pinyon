@@ -14,7 +14,11 @@ public:
     prng (std::mt19937::result_type seed) : seed(seed) {
         engine.seed(seed);
     }
-    ~prng () {}
+    prng (prng const& device) {
+        seed = device.seed;
+        engine = std::mt19937 {seed};
+    }
+    // TODO need assigment operator. see undesired behavior of prng_copy_test2
 
     std::mt19937::result_type get_seed () {
         return seed;
