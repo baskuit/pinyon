@@ -52,6 +52,7 @@ struct SolvedStateInfo : StateInfo {
     float* strategy1;
     float payoff;
     
+    // iirc, If I remove the empty constructor, I get errors?
     SolvedStateInfo () {};
     SolvedStateInfo (int rows, int cols, float payoff) :
     terminal(rows * cols == 0), rows(rows), cols(cols), strategy0(new float[rows]), strategy1(new float[cols]), payoff(payoff) {};

@@ -15,6 +15,7 @@ public:
         engine.seed(seed);
     }
 
+    // Same device and seed, but 'restarted'
     prng copy () {
         return prng(seed);
     }

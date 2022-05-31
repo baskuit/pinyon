@@ -9,12 +9,16 @@ struct ToyStateInfo : SolvedStateInfo {
     int pp;
     int length;
 
-    ToyStateInfo(char id, int pp, int length) :
-    SolvedStateInfo(2, 2, nullptr, nullptr, .5), id(id), pp(pp), length(length) {};
-
+    // Why have a contstructor that will just cause cryptic Seg Faults?
+    //ToyStateInfo(char id, int pp, int length) :
+    //SolvedStateInfo(2, 2, nullptr, nullptr, .5), id(id), pp(pp), length(length) {};
     ToyStateInfo (char id, int pp, int length, float payoff) :
-    SolvedStateInfo(2, 2, nullptr, nullptr, payoff), id(id), pp(pp), length(length) {};
-
+    SolvedStateInfo(2, 2, payoff), id(id), pp(pp), length(length) {};
+    
+    
+    /*
+    Might not need since base copy constr. behaves the same.
+    Might default to it.
     ToyStateInfo (ToyStateInfo const& info) {
         terminal = info.terminal;
         rows = info.rows;
@@ -25,6 +29,7 @@ struct ToyStateInfo : SolvedStateInfo {
         memcpy(strategy0, info.strategy0, rows*sizeof(float)); 
         memcpy(strategy1, info.strategy1, cols*sizeof(float));
     };
+    */
 };
 
 
@@ -38,7 +43,7 @@ public:
     ToyState (ToyStateInfo* info, prng device) : 
     State(info, device), info(info) {};
     ToyState (char id, int pp, int length, float payoff) :
-    info(*ToyStateInfo(id, pp, length, payoff)) {};
+    info(new ToyStateInfo(id, pp, length, payoff)) {};
 
     PairActions actions ();
 
