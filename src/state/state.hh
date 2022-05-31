@@ -51,16 +51,14 @@ struct SolvedStateInfo : StateInfo {
     float* strategy0;
     float* strategy1;
     float payoff;
-
-    SolvedStateInfo () :
-    terminal(true), rows(0), cols(0), strategy0(nullptr), strategy1(nullptr), payoff(.5) {};
-    SolvedStateInfo (bool terminal, int rows, int cols, float* strategy0, float* strategy1, float payoff) :
-    terminal(terminal), rows(rows), cols(cols), strategy0(strategy0), strategy1(strategy1), payoff(payoff) {
-        terminal = (rows * cols == 0);
-    };
+    
+    SolvedStateInfo () {};
+    SolvedStateInfo (int rows, int cols, float payoff) :
+    terminal(rows * cols == 0), rows(rows), cols(cols), strategy0(new float[rows]), strategy1(new float[cols]), payoff(payoff) {};
     SolvedStateInfo (int rows, int cols, float* strategy0, float* strategy1, float payoff) :
     terminal(rows * cols == 0), rows(rows), cols(cols), strategy0(strategy0), strategy1(strategy1), payoff(payoff) {};
 
+    // shallow copy will not work since we modify the strategies during transition
     SolvedStateInfo (SolvedStateInfo const& info) {
         terminal = info.terminal;
         rows = info.rows;
@@ -85,13 +83,18 @@ struct SolvedStateInfo : StateInfo {
 class State {
 public:
 
-    StateInfo info;
-    prng device;
+    StateInfo* info; // default is now deep copy
+    prng device; //default copy copies the progress
+    // thus state default copy is deep copy
 
     State () {};
-    State(StateInfo info, prng device) : info(info), device(device) {};
-    State(StateInfo info) : info(info) {}; // TODO does prng device; initilialize?
-    //State (State const& state) {}; 
+    State (StateInfo* info, prng device) : info(info), device(device) {};
+    State (StateInfo* info) : info(info) {}; // TODO does prng device; initilialize?
+
+    State* copy () {
+        State* x = new State(info, device.copy());
+        return x;
+    }
 
     virtual PairActions actions () {
         return PairActions();

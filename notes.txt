@@ -1,0 +1,1 @@
+Speed test using heap allocation of state info arrays vs template info types (maybe this keeps it all on stack)
