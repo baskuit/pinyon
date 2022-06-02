@@ -1,6 +1,30 @@
 #include "state.hh"
 #include "toy_state.hh"
 
+ToyStateInfo :: ToyStateInfo (char id, int pp, int length, float payoff) :
+    SolvedStateInfo(2, 2, payoff), id(id), pp(pp), length(length) {};
+
+ToyStateInfo* ToyStateInfo :: copy () {
+    info = ToyStateInfo();
+    this->terminal = info.terminal;
+    rows = info.rows;
+    cols = info.cols;
+    payoff = info.payoff;
+    strategy0 = new float[rows];
+    strategy1 = new float[cols];
+    memcpy(strategy0, info.strategy0, rows*sizeof(float)); 
+    memcpy(strategy1, info.strategy1, cols*sizeof(float));
+};
+
+ToyState :: ToyState (ToyStateInfo* info) : 
+    info(info) {}
+    
+ToyState :: ToyState (ToyStateInfo* info, prng device) : 
+    State(info, device), info(info) {};
+
+ToyState :: ToyState (char id, int pp, int length, float payoff) :
+    info(new ToyStateInfo(id, pp, length, payoff)) {};
+
 PairActions ToyState::actions () {
     Action two[2] = {0, 1};
     return PairActions(2, 2, two, two);
@@ -45,4 +69,10 @@ float ToyState::rollout () {
         this->transition(row_idx, col_idx);
     }
     return this->info->payoff;
+}
+
+ToyState* ToyState :: copy () {
+    ToyStateInfo* info_ = info;
+    ToyState* x = new ToyState(info, device.copy());
+    return x;
 }

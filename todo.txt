@@ -1,3 +1,4 @@
-** destructors **
+//** destructors **
 
 toy_state copy constructor. How do they work.
+check balance of header and source wih pasy
