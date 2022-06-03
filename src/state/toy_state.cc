@@ -5,15 +5,16 @@ ToyStateInfo :: ToyStateInfo (char id, int pp, int length, float payoff) :
     SolvedStateInfo(2, 2, payoff), id(id), pp(pp), length(length) {};
 
 ToyStateInfo* ToyStateInfo :: copy () {
-    info = ToyStateInfo();
-    this->terminal = info.terminal;
-    rows = info.rows;
-    cols = info.cols;
-    payoff = info.payoff;
+    ToyStateInfo* info = new ToyStateInfo();
+    this->terminal = info->terminal;
+    rows = info->rows;
+    cols = info->cols;
+    payoff = info->payoff;
     strategy0 = new float[rows];
     strategy1 = new float[cols];
-    memcpy(strategy0, info.strategy0, rows*sizeof(float)); 
-    memcpy(strategy1, info.strategy1, cols*sizeof(float));
+    memcpy(strategy0, info->strategy0, rows*sizeof(float)); 
+    memcpy(strategy1, info->strategy1, cols*sizeof(float));
+    return info;
 };
 
 ToyState :: ToyState (ToyStateInfo* info) : 
@@ -72,7 +73,7 @@ float ToyState::rollout () {
 }
 
 ToyState* ToyState :: copy () {
-    ToyStateInfo* info_ = info;
-    ToyState* x = new ToyState(info, device.copy());
+    ToyStateInfo* info_ = info->copy();
+    ToyState* x = new ToyState(info_);
     return x;
 }

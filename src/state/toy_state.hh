@@ -9,10 +9,8 @@ struct ToyStateInfo : SolvedStateInfo {
     int pp;
     int length;
 
-    // Why have a contstructor that will just cause cryptic Seg Faults?
-    //ToyStateInfo(char id, int pp, int length) :
-    //SolvedStateInfo(2, 2, nullptr, nullptr, .5), id(id), pp(pp), length(length) {};
     ToyStateInfo (char id, int pp, int length, float payoff);
+    ToyStateInfo () {};
 
     ToyStateInfo* copy ();
 };
@@ -20,8 +18,6 @@ struct ToyStateInfo : SolvedStateInfo {
 
 class ToyState : public State {
 public: 
-
-    ToyStateInfo* info; 
 
     ToyState (ToyStateInfo* info);
     ToyState (ToyStateInfo* info, prng device);

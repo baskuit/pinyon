@@ -68,11 +68,20 @@ void sucker_rollout_estimate (int pp, int n) {
     float total = 0;
     ToyState* S = new ToyState('u', pp, 0, .5f);
     for (int i = 0; i < n; ++i) {
+        // ToyState* S = new ToyState('u', pp, 0, .5f);
         ToyState* S_ = new ToyState(S->info);
-        std::cout << S_->info->terminal << std::endl;
         total += S_->rollout();
     }
     std::cout << "Sucker estimate - pp: " << pp << "   " << total/n << std::endl; 
+}
+
+void sucker_rollout_estimate2 (int pp, int n) {
+    float total = 0;
+    ToyState* S = new ToyState('u', pp, 0, .5f);
+    ToyState* states[n];
+    for (int i = 0; i < n; ++i) {
+        states[i] = S->copy();
+    }
 }
 
 int main () {
