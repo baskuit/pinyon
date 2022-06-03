@@ -46,7 +46,7 @@ public:
     State () {};
     State (prng device) : device(device) {};
 
-    virtual State* copy () {};
+    virtual State* copy () {return this;};
 
     virtual PairActions actions () {
         return PairActions();
@@ -57,7 +57,7 @@ public:
 
 };
 
-class SolvedState : State {
+class SolvedState : public State {
 public:
     bool terminal;
     int rows;
@@ -77,7 +77,7 @@ public:
 
     ~SolvedState ();
 
-    virtual SolvedState* copy () {
-        return this;
-    };
+    virtual SolvedState* copy () {return this;};
+
+    virtual float rollout () {return .5f;};
 };

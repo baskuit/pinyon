@@ -59,6 +59,9 @@ void sucker_rollout_estimate2 (int pp, int n) {
 
 int main () {
     
-    sucker_rollout_estimate(2, 100);
+    int n = 100000;
+    for (int pp = 1; pp < 4; ++pp) {
+        sucker_rollout_estimate(pp, n);
+    }
 
 }

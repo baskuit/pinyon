@@ -11,16 +11,6 @@ PairActions :: ~PairActions () {
     delete [] actions1;
 }
 
-float State :: rollout () {
-    PairActions pair = this->actions();
-    while (pair.rows * pair.cols != 0) {
-        int row_idx = this->device.random_int(pair.rows);
-        int col_idx = this->device.random_int(pair.cols);
-        this->transition(pair.actions0[], col_idx);
-    }
-    return this->info->payoff;
-}
-
     // shallow copy will not work since we modify the strategies during transition
 SolvedState :: SolvedState (SolvedState const& info) {
     terminal = info.terminal;
@@ -49,4 +39,14 @@ SolvedState* SolvedState :: copy () {
         x->strategy1[j] = strategy1[j];
     }
     return x;
+}
+
+float SolvedState :: rollout () {
+    PairActions pair = this->actions();
+    while (pair.rows * pair.cols != 0) {
+        int row_idx = this->device.random_int(pair.rows);
+        int col_idx = this->device.random_int(pair.cols);
+        this->transition(pair.actions0[row_idx], pair.actions1[col_idx]);
+    }
+    return this->payoff;
 }
