@@ -46,7 +46,7 @@ public:
     State () {};
     State (prng device) : device(device) {};
 
-    virtual State* copy ();
+    virtual State* copy () {};
 
     virtual PairActions actions () {
         return PairActions();
@@ -57,8 +57,8 @@ public:
 
 };
 
-struct SolvedState : State {
-
+class SolvedState : State {
+public:
     bool terminal;
     int rows;
     int cols;
@@ -67,11 +67,17 @@ struct SolvedState : State {
     float payoff;
     
     // iirc, If I remove the empty constructor, I get errors?
-    SolvedState ();
+    SolvedState () {
+
+    };
     SolvedState (int rows, int cols, float payoff) :
     terminal(rows * cols == 0), rows(rows), cols(cols), strategy0(new float[rows]), strategy1(new float[cols]), payoff(payoff) {};
     SolvedState (int rows, int cols, float* strategy0, float* strategy1, float payoff) :
     terminal(rows * cols == 0), rows(rows), cols(cols), strategy0(strategy0), strategy1(strategy1), payoff(payoff) {};
 
     ~SolvedState ();
+
+    virtual SolvedState* copy () {
+        return this;
+    };
 };
