@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string.h>
-#include <iostream>
 
 #include "../libsurskit/math.hh"
 #include "state.hh"
@@ -21,11 +20,6 @@ SolvedState :: SolvedState (SolvedState const& info) {
     strategy1 = new float[cols];
     memcpy(strategy0, info.strategy0, rows*sizeof(float)); 
     memcpy(strategy1, info.strategy1, cols*sizeof(float));
-};
-
-SolvedState :: ~SolvedState () {
-    delete [] strategy0;
-    delete [] strategy1;
 };
 
     // State

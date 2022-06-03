@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string.h>
-#include <iostream>
 
 #include "../libsurskit/math.hh"
 
@@ -48,10 +47,10 @@ public:
 
     virtual State* copy () {return this;};
 
-    virtual PairActions actions () {
-        return PairActions();
+    virtual PairActions* actions () {
+        return new PairActions();
     }
-    virtual void actions (PairActions actions) {}
+    virtual PairActions* actions (PairActions actions) {return new PairActions();}
     virtual StateTransitionData transition(Action action0, Action action1) {return StateTransitionData();};
     virtual float rollout() {return 0.5f;};
 
@@ -75,7 +74,10 @@ public:
     SolvedState (int rows, int cols, float* strategy0, float* strategy1, float payoff) :
     terminal(rows * cols == 0), rows(rows), cols(cols), strategy0(strategy0), strategy1(strategy1), payoff(payoff) {};
 
-    ~SolvedState ();
+    ~SolvedState () {
+        delete [] strategy0;
+        delete [] strategy1;
+    };
 
     virtual SolvedState* copy () {return this;};
 

@@ -12,7 +12,7 @@ public:
 
     ToyState* copy ();
 
-    PairActions actions ();
+    PairActions* actions ();
     StateTransitionData transition (Action actions0, Action actions1);
     float rollout ();
 };

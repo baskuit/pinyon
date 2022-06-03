@@ -19,7 +19,7 @@ A pseudo random generator class for use in all other classes, for reproducibilit
 ## State
 The game in question, in the language of a markov decision process
 
-* `PairActions Actions ()`
+* `PairActions* Actions ()`
 	* The action sets of both players returned as *PairActions* struct which is just two C style arrays of the *Action* type.
 	* If your game implementation needs expensive logic to compute the actions then this laziness may be best. This way the actions are only computed once, during the creation of a tree node.
 	* Currently *Action* is just an int. The storage benefits of this are appreciated since we store actions in the tree, as means of identifying nodes since their positions in the linked list may change after a node is pruned.

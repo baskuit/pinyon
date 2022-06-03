@@ -46,17 +46,17 @@ ChanceNode* MatrixNode :: access (Action action0, Action action1) {
 void MatrixNode :: expand (State* state, Model* model) {
 
     this->expanded = true;
-    PairActions pair = state->actions();
-    this->rows = pair.rows;
-    this->cols = pair.cols;
+    PairActions* pair = state->actions();
+    this->rows = pair->rows;
+    this->cols = pair->cols;
     
     this->actions0 = new Action[this->rows];
-    for (int row_idx = 0; row_idx < pair.rows; ++row_idx) {
-        this->actions0[row_idx] = pair.actions0[row_idx];
+    for (int row_idx = 0; row_idx < pair->rows; ++row_idx) {
+        this->actions0[row_idx] = pair->actions0[row_idx];
     }
     this->actions1 = new Action[this->cols];
-    for (int col_idx = 0; col_idx < pair.cols; ++col_idx) {
-        this->actions1[col_idx] = pair.actions1[col_idx];
+    for (int col_idx = 0; col_idx < pair->cols; ++col_idx) {
+        this->actions1[col_idx] = pair->actions1[col_idx];
     }
     this->terminal = (rows*cols == 0);
     if (this->terminal) {
@@ -67,8 +67,8 @@ void MatrixNode :: expand (State* state, Model* model) {
     this->value_estimate1 = data.value_estimate1;
     //this->strategy_prior0 not used in exp3 :/
 
-    this->actions0 = pair.actions0;
-    this->actions1 = pair.actions1;
+    this->actions0 = pair->actions0;
+    this->actions1 = pair->actions1;
     /*
     this->gains0 = new float[this->rows]{0.f};
     this->gains1 = new float[this->cols]{0.f};
@@ -95,25 +95,25 @@ ChanceNode :: ~ChanceNode () {
     }
 };
 
-void MatrixNode :: print (int n = 0) {
-    if (this == nullptr) {
-        return;
-    }
-    std::cout << n << ": " << this << std::endl;
-    if (n == 2){
-        return;
-    }
-    if (this->child != nullptr) {
-        this->child->print(n+1);
-    }
-}
+// void MatrixNode :: print (int n = 0) {
+//     if (this == nullptr) {
+//         return;
+//     }
+//     std::cout << n << ": " << this << std::endl;
+//     if (n == 2){
+//         return;
+//     }
+//     if (this->child != nullptr) {
+//         this->child->print(n+1);
+//     }
+// }
 
-void ChanceNode :: print (int n = 0) {
-    if (this == nullptr) {
-        return;
-    }
-    std::cout << n << ": " << this << std::endl;
-    if (this->child != nullptr) {
-        this->child->print(n+1);
-    }
-}
+// void ChanceNode :: print (int n = 0) {
+//     if (this == nullptr) {
+//         return;
+//     }
+//     std::cout << n << ": " << this << std::endl;
+//     if (this->child != nullptr) {
+//         this->child->print(n+1);
+//     }
+// }

@@ -12,11 +12,14 @@ ToyState* ToyState :: copy () {
     return x;
 }
 
-PairActions ToyState :: actions () {
+
+
+
+PairActions* ToyState :: actions () {
     Action* two = new Action[2];
     two[0] = 0;
     two[1] = 1;
-    return PairActions(2, 2, two, two);
+    return new PairActions(2, 2, two, two);
 }
 
 StateTransitionData ToyState::transition(Action action0, Action action1) {
@@ -52,12 +55,13 @@ StateTransitionData ToyState::transition(Action action0, Action action1) {
 }
 
 float ToyState :: rollout () {
-    PairActions pair = this->actions();
+    PairActions* pair = this->actions();
     while (!terminal) {
-        int row_idx = this->device.random_int(pair.rows);
-        int col_idx = this->device.random_int(pair.cols);
-        this->transition(pair.actions0[row_idx], pair.actions1[col_idx]);
+        int row_idx = this->device.random_int(pair->rows);
+        int col_idx = this->device.random_int(pair->cols);
+        this->transition(pair->actions0[row_idx], pair->actions1[col_idx]);
         //std::cout << row_idx << ' ' << col_idx << std::endl;
     }
+    //delete pair;
     return this->payoff;
 }
