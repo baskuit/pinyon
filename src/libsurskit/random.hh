@@ -7,15 +7,13 @@ class prng {
     
 public:
 
-    prng () {
-        seed = std::random_device{}();
-        engine = std::mt19937 {seed};
-    }
-    prng (std::mt19937::result_type seed) : seed(seed) {
-        engine.seed(seed);
-    }
+    prng () :
+    seed(std::random_device{}()), engine(std::mt19937 {seed}) {}
+    prng (std::mt19937::result_type seed) : 
+    seed(seed), engine(std::mt19937 {seed}) {}
 
     // Same device and seed, but 'restarted'
+    // Default copy keeps progress
     prng copy () {
         return prng(seed);
     }
@@ -32,7 +30,7 @@ public:
         return int (this->uniform() * n);
     }
 
-    // samples a probabilty distribution
+    // samples an index from a probability distribution
     int sample_pdf (float* input, int k) {
         float p = this->uniform();
         for (int i = 0; i < k; ++i) {

@@ -36,11 +36,11 @@ SolvedState* SolvedState :: copy () {
 }
 
 float SolvedState :: rollout () {
-    PairActions pair = this->actions();
-    while (pair.rows * pair.cols != 0) {
-        int row_idx = this->device.random_int(pair.rows);
-        int col_idx = this->device.random_int(pair.cols);
-        this->transition(pair.actions0[row_idx], pair.actions1[col_idx]);
+    PairActions* pair = this->actions();
+    while (pair->rows * pair->cols != 0) {
+        int row_idx = this->device.random_int(pair->rows);
+        int col_idx = this->device.random_int(pair->cols);
+        this->transition(pair->actions0[row_idx], pair->actions1[col_idx]);
     }
     return this->payoff;
 }

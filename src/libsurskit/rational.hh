@@ -2,8 +2,8 @@
 
 class Rational {
 
-    int p;
-    int q;
+    int p = 1;
+    int q = 1;
 
     void reduce () {
         // eulcid's algorithm
@@ -22,8 +22,7 @@ class Rational {
 
 public : 
 
-    Rational () :
-        p(1), q(1) {}
+    Rational () {}
 
     Rational (int p, int q) :
         p(p), q(q) {}

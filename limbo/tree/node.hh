@@ -10,12 +10,13 @@ class MatrixNode {
 public:
     ChanceNode* parent = nullptr;
     ChanceNode* child = nullptr;
+    MatrixNode* prev = nullptr;
     MatrixNode* next = nullptr;
 
     Hash transitionKey;
     Rational transitionProb;
 
-    SearchStats stats;
+    SearchStats* stats = nullptr;
 
     bool terminal = false;
     bool expanded = false;
@@ -29,12 +30,11 @@ public:
 
     MatrixNode () :
     transitionKey(0) {}
-    MatrixNode (ChanceNode* parent, StateTransitionData data) :
-    parent(parent), transitionKey(data.transitionKey), transitionProb(data.transitionProb) {}
+    MatrixNode (ChanceNode* parent, MatrixNode* prev, StateTransitionData data) :
+    parent(parent), prev(prev), transitionKey(data.transitionKey), transitionProb(data.transitionProb) {}
     ~MatrixNode ();
 
     ChanceNode* access (int action0, int action1);
-    void expand(State* state, Model* model);
     void print (int n);
 };
 
@@ -42,13 +42,14 @@ class ChanceNode {
 public:
     MatrixNode* parent = nullptr;
     MatrixNode* child = nullptr;
+    ChanceNode* prev = nullptr;
     ChanceNode* next = nullptr;
 
     Action action0;
     Action action1;
 
-    ChanceNode (MatrixNode* parent, Action action0, Action action1) :
-    parent(parent), action0(action0), action1(action1) {}
+    ChanceNode (MatrixNode* parent, ChanceNode* prev, Action action0, Action action1) :
+    parent(parent), prev(prev), action0(action0), action1(action1) {}
     ~ChanceNode ();
 
     MatrixNode* access (StateTransitionData data);

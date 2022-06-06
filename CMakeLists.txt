@@ -9,16 +9,16 @@ add_library(libsurskit STATIC src/main.cc test/unit_test.cc)
 add_executable(
 surskit 
 src/libsurskit/math.cc
-src/state/toy_state.cc
-src/tree/node.cc
+# src/state/toy_state.cc
+# src/tree/node.cc
 src/main.cc
 )
 
 add_executable(
 unit_test 
 src/libsurskit/math.cc
-src/state/toy_state.cc
-src/tree/node.cc
+# src/state_on_stack/toy_state.cc
+# src/tree/node.cc
 test/unit_test.cc
 )
 

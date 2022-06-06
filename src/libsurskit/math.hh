@@ -1,5 +1,6 @@
 #pragma once
 #include <math.h>
+#include <assert.h>
 
 #include "random.hh"
 #include "rational.hh"
