@@ -8,35 +8,48 @@ public:
     int pp = 1;
     int length = 0;
 
-    ToyState (prng* device) : SolvedState(device) {}
+    ToyState (prng* device) :
+        SolvedState(device, false, 2, 2, 0.5f) {}
     ToyState (prng* device, char id, int pp, int length, float payoff) :
-    SolvedState(device), id(id), pp(pp), length(length) {
-    };
+        SolvedState(device, false, 2, 2, payoff), id(id), pp(pp), length(length) {}
 
-    ToyState* copy (ToyState* state) {
+    void copy (ToyState* state) {
         assert(state->rows == rows && state->cols == cols);
         state->id = id;
         state->pp = pp;
         state->length = length;
-        for (int row_idx = 0; row_idx < rows; ++row_idx) {
-            state->strategy0[row_idx] = strategy0[row_idx];
 
-        }
-        for (int col_idx = 0; col_idx < cols; ++col_idx) {
-            state->strategy1[col_idx] = strategy1[col_idx];
+        state->terminal = terminal;
+        state->rows = rows;
+        state->cols = cols;
+        state->payoff = payoff;
+        // for (int row_idx = 0; row_idx < rows; ++row_idx) {
+        //     state->strategy0[row_idx] = strategy0[row_idx];
 
-        }
-        return this; // wip
+        // }
+        // for (int col_idx = 0; col_idx < cols; ++col_idx) {
+        //     state->strategy1[col_idx] = strategy1[col_idx];
+        // }
     };
+
     PairActions* actions () {return nullptr;}
+    
     void actions (PairActions& pair) {
-        pair.rows = 2;
-        pair.cols = 2;
-        pair.actions0[0] = 0;
-        pair.actions0[1] = 1;
-        pair.actions1[0] = 0;
-        pair.actions1[1] = 1;
+        if (terminal) {
+            pair.rows = 0;
+            pair.cols = 0;
+            /// more
+        } else {
+            pair.rows = 2;
+            pair.cols = 2;
+            pair.actions0[0] = 0;
+            pair.actions0[1] = 1;
+            pair.actions1[0] = 0;
+            pair.actions1[1] = 1;
+        }
+
     };
+
     StateTransitionData transition (Action action0, Action action1) {
         StateTransitionData data;
         if (id == 'u') {
@@ -69,12 +82,4 @@ public:
         return data;
     };
 
-    float rollout () {
-        while (!terminal) {
-            Action action0 = device->random_int(2);
-            Action action1 = device->random_int(2);
-            transition(action0, action1);
-        }
-        return payoff;
-    };
 };

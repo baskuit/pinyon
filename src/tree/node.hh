@@ -20,13 +20,17 @@ public:
 
     bool terminal = false;
     bool expanded = false;
-    int rows = 1;
-    int cols = 1;
+    int rows = 0;
+    int cols = 0;
     Action* actions0;
     Action* actions1;
 
     float value_estimate0 = .5f;
     float value_estimate1 = .5f;
+
+    int visits = 0;
+    float cumulative_value0 = 0.f;
+    float cumulative_value1 = 0.f;
 
     MatrixNode () :
     transitionKey(0) {}
@@ -47,6 +51,10 @@ public:
 
     Action action0;
     Action action1;
+
+    int visits = 0;
+    float cumulative_value0 = 0.f;
+    float cumulative_value1 = 0.f;
 
     ChanceNode (MatrixNode* parent, ChanceNode* prev, Action action0, Action action1) :
     parent(parent), prev(prev), action0(action0), action1(action1) {}

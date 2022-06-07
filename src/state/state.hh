@@ -35,14 +35,15 @@ class State {
 public:
 
     prng* device;
+    float payoff = 0.5f; //garbage unless terminal
 
     State (prng* device) : device(device) {}
-    //virtual State* copy () = 0;
+    State (prng* device, float payoff) : device(device), payoff(payoff) {}
 
-    virtual PairActions* actions () = 0; // change to ref soon?
+    virtual PairActions* actions () = 0;
     virtual void actions (PairActions& actions) = 0;
+
     virtual StateTransitionData transition(Action action0, Action action1) = 0;
-    virtual float rollout() = 0;
 
 };
 
@@ -54,9 +55,10 @@ public:
     int cols = 0;
     float* strategy0 = nullptr;
     float* strategy1 = nullptr;
-    float payoff = .5f;
 
     SolvedState (prng* device) : State(device) {}
+    SolvedState (prng* device, bool terminal, int rows, int cols, float payoff) :
+        State(device, payoff), terminal(terminal), rows(rows), cols(cols) {}
 
     // virtual SolvedState* copy () ;
 

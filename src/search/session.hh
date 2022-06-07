@@ -4,6 +4,8 @@
 #include "../state/state.hh"
 #include "../model/model.hh"
 
+// let this stuff live on heap!!!
+
 struct SearchSessionData {
 
     int playouts = 0;
@@ -13,23 +15,23 @@ struct SearchSessionData {
     float cumulative_score1 = 0.f;
     int* visits0 = nullptr;
     int* visits1 = nullptr;
-    float* strategy0 = nullptr;
+    float* strategy0 = nullptr; // the real result
     float* strategy1 = nullptr;
 
-    SearchSessionData (const PairActions* pair) : 
-    rows(pair->rows), cols(pair->cols), 
-    visits0(new int[pair->rows] {0}), visits1(new int[pair->cols] {0}), 
-    strategy0(new float[pair->rows] {0.f}), strategy1(new float[pair->cols] {0.f})  {};
+    SearchSessionData (const PairActions& pair) : 
+    rows(pair.rows), cols(pair.cols), 
+    visits0(new int[pair.rows] {0}), visits1(new int[pair.cols] {0}), 
+    strategy0(new float[pair.rows] {0.f}), strategy1(new float[pair.cols] {0.f})  {};
     SearchSessionData (int rows, int cols) : 
     rows(rows), cols(cols), 
     visits0(new int[rows] {0}), visits1(new int[cols] {0}), 
     strategy0(new float[rows] {0.f}), strategy1(new float[cols] {0.f})  {};
 
     ~SearchSessionData () {
-        delete visits0;
-        delete visits1;
-        delete strategy0;
-        delete strategy1;
+        delete [] visits0;
+        delete [] visits1;
+        delete [] strategy0;
+        delete [] strategy1;
     }
 
     // 'Add' the results of two searches. New solved strategies are the weighted sums.
@@ -58,29 +60,29 @@ struct SearchSessionData {
 
 class SearchSession {
 public:
-    MatrixNode* root;
-    State* state;
-    Model* model;
-    SearchSession() {};
-    SearchSession (MatrixNode* root, State* state, Model* model) :
-    root(root), state(state), model(model), playouts(0) {
-    };
 
-    virtual void search (int playouts) {};
-    virtual SearchSessionData answer () {
-        return SearchSessionData(root->rows, root->cols);
-    }
+    MatrixNode* root = nullptr;
+    State* state = nullptr;
+    Model* model = nullptr;
 
-    // This is tracked in the node, but multiple search sessions may operate on the same node/tree
     int playouts = 0;
     int* visits0 = nullptr;
     int* visits1 = nullptr;
 
-    virtual MatrixNode* search (MatrixNode* matrix_node_current, State* state){
-        return nullptr;
-    };
-    virtual void expand (MatrixNode* matrix_node, State* state, Model* model) {
-        return;
-    };
+    //SearchSession() {};
+    // SearchSession (MatrixNode* root, State* state, Model* model) :
+    // root(root), state(state), model(model) {
+    //     if (!root->expanded) {
+    //         expand(root, state, model);
+    //     }
+    //     visits0 = new int[root->rows];
+    //     visits1 = new int[root->cols];
+    // };
+
+    virtual SearchSessionData answer () = 0;
+
+    virtual void search (int playouts) = 0;
+    virtual MatrixNode* search (MatrixNode* matrix_node_current, State* state) = 0;
+    virtual void expand (MatrixNode* matrix_node, State* state, Model* model) = 0;
 
 };
