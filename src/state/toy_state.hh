@@ -32,6 +32,7 @@ public:
         // }
     };
 
+    // returns nullptr
     PairActions* actions () {return nullptr;}
     
     void actions (PairActions& pair) {

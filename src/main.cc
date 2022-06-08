@@ -4,7 +4,8 @@
 #include "state/toy_state.hh"
 #include "model/monte_carlo.hh"
 #include "tree/node.hh"
-#include "search/session.hh"
+#include "search/exp3.hh"
+
 
 
 int main () {

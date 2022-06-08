@@ -4,7 +4,7 @@
 #include "state/toy_state.hh"
 #include "model/monte_carlo.hh"
 #include "tree/node.hh"
-#include "search/session.hh"
+#include "search/exp3.hh"
 
 // Passing a prng device to a function by value does not 'work'
 // in the sense that calls inside the function will not progress the device outside the functions scope
@@ -50,39 +50,39 @@ void prng_copy_test_2 () {
 
 void session_math () {
 
-    int rows = 2;
-    int cols = 2;
+    // int rows = 2;
+    // int cols = 2;
     
-    Action actions0[2] = {0, 1};
-    PairActions pair(2, 2, actions0, actions0);
+    // Action actions0[2] = {0, 1};
+    // Action actions1[2] = {0, 1};
+    // PairActions pair(2, 2, actions0, actions1);
 
-    SearchSessionData x(pair);
-    x.playouts = 999.f;
-    x.visits0[0] = 666.f;
-    x.visits0[1] = 333.f;
-    x.visits1[0] = 666.f;
-    x.visits1[1] = 333.f;
-    x.strategy0[0] = 2/3.f;
-    x.strategy0[1] = 1/3.f;
-    x.strategy1[0] = 2/3.f;
-    x.strategy1[1] = 1/3.f;
+    // SearchSessionData x(pair);
+    // x.playouts = 999.f;
+    // x.visits0_[0] = 666.f;
+    // x.visits0_[1] = 333.f;
+    // x.visits1_[0] = 666.f;
+    // x.visits1_[1] = 333.f;
+    // x.strategy0_[0] = 2/3.f;
+    // x.strategy0_[1] = 1/3.f;
+    // x.strategy1_[0] = 2/3.f;
+    // x.strategy1_[1] = 1/3.f;
 
-    SearchSessionData y(pair);
-    y.playouts = 99.f;
-    y.visits0[0] = 33.f;
-    y.visits0[1] = 66.f;
-    y.visits1[0] = 66.f;
-    y.visits1[1] = 33.f;
-    y.strategy0[0] = 1/3.f;
-    y.strategy0[1] = 2/3.f;
-    y.strategy1[0] = 1/3.f;
-    y.strategy1[1] = 2/3.f;
+    // SearchSessionData y(pair);
+    // y.playouts = 99.f;
+    // y.visits0_[0] = 33.f;
+    // y.visits0_[1] = 66.f;
+    // y.visits1_[0] = 66.f;
+    // y.visits1_[1] = 33.f;
+    // y.strategy0_[0] = 1/3.f;
+    // y.strategy0_[1] = 2/3.f;
+    // y.strategy1_[0] = 1/3.f;
+    // y.strategy1_[1] = 2/3.f;
 
-    SearchSessionData z = x + y;
+    // auto z = x + y;
+    // std::cout << z.strategy0_[0] << ' ' << z.strategy0_[1] << std::endl;
 
-    std::cout << z.visits0[0] << std::endl;
-    std::cout << z.visits0[1] << std::endl;
-
+    
 }
 
 int main () {

@@ -1,40 +1,62 @@
-// #include "exp3.hh"
+#include "exp3.hh"
+
+struct Exp3SearchStats : SearchStats {
+public:
+    int* visits0 = nullptr;
+    int* visits1 = nullptr;
+    float* gains0 = nullptr;
+    float* gains1 = nullptr;
+
+    Exp3SearchStats () {}
+    Exp3SearchStats (int* visits0, int* visits1, float* gains0, float* gains1) :
+        visits0(visits0), visits1(visits1), gains0(gains0), gains1(gains1) {}
+    Exp3SearchStats (int rows, int cols) : 
+        visits0(new int[rows] {0}), visits1(new int[cols] {0}), gains0(new float[rows] {0.f}), gains1(new float[cols] {0.f}) {}
+    ~Exp3SearchStats () {
+        delete [] visits0;
+        delete [] visits1;
+        delete [] gains0;
+        delete [] gains1;
+    }
+};
 
 // #include <iostream>
 
-// void MatrixNode :: expand (State* state, Model* model) {
+void Exp3SearchSession :: expand (PairActions& pair, InferenceData& data, MatrixNode* matrix_node, State* state, Model* model) {
 
-//     this->expanded = true;
-//     PairActions* pair = state->actions();
-//     this->rows = pair->rows;
-//     this->cols = pair->cols;
+    state->actions(pair);
+    matrix_node->rows = pair.rows;
+    matrix_node->cols = pair.cols;
     
-//     this->actions0 = new Action[this->rows];
-//     for (int row_idx = 0; row_idx < pair->rows; ++row_idx) {
-//         this->actions0[row_idx] = pair->actions0[row_idx];
-//     }
-//     this->actions1 = new Action[this->cols];
-//     for (int col_idx = 0; col_idx < pair->cols; ++col_idx) {
-//         this->actions1[col_idx] = pair->actions1[col_idx];
-//     }
-//     this->terminal = (rows*cols == 0);
-//     if (this->terminal) {
-//         return;
-//     }
-//     InferenceData data = model->inference(state);
-//     this->value_estimate0 = data.value_estimate0;
-//     this->value_estimate1 = data.value_estimate1;
-//     //this->strategy_prior0 not used in exp3 :/
+    matrix_node->actions0 = new Action[matrix_node->rows];
+    for (int row_idx = 0; row_idx < pair.rows; ++row_idx) {
+        matrix_node->actions0[row_idx] = pair.actions0[row_idx];
+    }
+    matrix_node->actions1 = new Action[matrix_node->cols];
+    for (int col_idx = 0; col_idx < pair.cols; ++col_idx) {
+        matrix_node->actions1[col_idx] = pair.actions1[col_idx];
+    }
 
-//     this->actions0 = pair->actions0;
-//     this->actions1 = pair->actions1;
-//     /*
-//     this->gains0 = new float[this->rows]{0.f};
-//     this->gains1 = new float[this->cols]{0.f};
-//     this->visits0 = new int[this->rows]{0};
-//     this->visits1 = new int[this->cols]{0};
-//     */
-// } 
+    matrix_node->terminal = (pair.rows*pair.cols == 0);
+    if (matrix_node->terminal) {
+        matrix_node->value_estimate0 = state->payoff;
+        matrix_node->value_estimate1 = 1 - state->payoff;
+        return;
+    }
+
+    model->inference(state, pair, data);
+    matrix_node->value_estimate0 = data.value_estimate0;
+    matrix_node->value_estimate1 = data.value_estimate1;
+    //matrix_node->strategy_prior0 not used in exp3 :/
+
+    /*
+    matrix_node->gains0 = new float[matrix_node->rows]{0.f};
+    matrix_node->gains1 = new float[matrix_node->cols]{0.f};
+    matrix_node->visits0 = new int[matrix_node->rows]{0};
+    matrix_node->visits1 = new int[matrix_node->cols]{0};
+    */
+    matrix_node->expanded = true;
+} 
 
 // MatrixNode* Exp3SearchSession::search (MatrixNode* matrix_node_current, State* state) {
 
