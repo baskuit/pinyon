@@ -72,7 +72,7 @@ int main () {
     for (int pp = 0; pp < 10; ++pp) {
         MatrixNode<9, Exp3Stats<9>> root;
         for (int playout = 0; playout < playouts; ++ playout) {
-            auto mold_ = ToyState<9>(device, 'u', 3);
+            auto mold_ = ToyState<9>(device, 'u', 3, 0);
             MatrixNode<9 , Exp3Stats<9>>* leaf = session.search(&root, mold_, model);
             //std::cout << pp << ' ' << leaf->inference.value_estimate0 << std::endl;
 
@@ -82,7 +82,7 @@ int main () {
         std::cout << root.mean_value0() << std::endl;
     }
 
-    while (true) {}
+    //while (true) {}
     //std::cout << ' '<< std::endl;
 
 

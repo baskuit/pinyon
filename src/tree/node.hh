@@ -34,7 +34,25 @@ public:
     parent(parent), prev(prev), transition_data(transition_data) {}
    ~MatrixNode ();
 
-    ChanceNode<size, stats>* access (Action action0, Action action1);
+    ChanceNode<size, stats>* access (Action action0, Action action1) {
+        if (this->child == nullptr) {
+            ChanceNode<size, stats>* child = new ChanceNode<size, stats>(this, nullptr, action0, action1);
+            this->child = child;
+            return child;
+        }
+        ChanceNode<size, stats>* current = this->child; 
+        ChanceNode<size, stats>* previous = this->child;
+        while (current != nullptr) {
+            previous = current;
+            if (current->action0 == action0 && current->action1 == action1) {    
+                return current;
+            }
+            current = current->next;
+        }
+        ChanceNode<size, stats>* child = new ChanceNode<size, stats>(this, previous, action0, action1);
+        previous->next = child;
+        return child;
+    };
 
     void update (float u0, float u1) {
         ++visits;
@@ -81,7 +99,6 @@ template <int size, typename stats>
 class ChanceNode {
 public:
 
-
     MatrixNode<size, stats>* parent = nullptr;
     MatrixNode<size, stats>* child = nullptr;
     ChanceNode<size, stats>* prev = nullptr;
@@ -89,7 +106,7 @@ public:
 
     Action action0;
     Action action1;
-    int poo[100];
+
     int visits = 0;
     float cumulative_value0 = 0.f;
     float cumulative_value1 = 0.f;
@@ -98,27 +115,7 @@ public:
         parent(parent), prev(prev), action0(action0), action1(action1) {}
    ~ChanceNode<size, stats> ();
 
-    MatrixNode<size, stats>* access (StateTransitionData data);
-
-    void update (float u0, float u1) {
-        ++visits;
-        cumulative_value0 += u0;
-        cumulative_value1 += u1;
-    }
-
-    int count () {
-        int c = 0;
-        auto current = child;
-        while (current != nullptr) {
-            c += current->count();
-            current = current->next;
-        }
-        return c;
-    }
-};
-
-template <int size, typename stats>
-MatrixNode<size, stats>* ChanceNode<size, stats> :: access (StateTransitionData data) {
+    MatrixNode<size, stats>* access (StateTransitionData data) {
         if (this->child == nullptr) {
             MatrixNode<size, stats>* child = new MatrixNode<size, stats>(this, nullptr, data);
             this->child = child;
@@ -136,29 +133,29 @@ MatrixNode<size, stats>* ChanceNode<size, stats> :: access (StateTransitionData 
         MatrixNode<size, stats>* child = new MatrixNode<size, stats>(this, previous, data);
         previous->next = child;
         return child;
-}
+    };
 
-template <int size, typename stats>
-ChanceNode<size, stats>* MatrixNode<size, stats> :: access (Action action0, Action action1) {
-        if (this->child == nullptr) {
-            ChanceNode<size, stats>* child = new ChanceNode<size, stats>(this, nullptr, action0, action1);
-            this->child = child;
-            return child;
-        }
-        ChanceNode<size, stats>* current = this->child; 
-        ChanceNode<size, stats>* previous = this->child;
+    void update (float u0, float u1) {
+        ++visits;
+        cumulative_value0 += u0;
+        cumulative_value1 += u1;
+    }
+
+    int count () {
+        int c = 0;
+        auto current = child;
         while (current != nullptr) {
-
-            previous = current;
-            if (current->action0 == action0 && current->action1 == action1) {    
-                return current;
-            }
+            c += current->count();
             current = current->next;
         }
-        ChanceNode<size, stats>* child = new ChanceNode<size, stats>(this, previous, action0, action1);
-        previous->next = child;
-        return child;
-}
+        return c;
+    }
+
+    
+
+};
+
+
 
 template <int size, typename stats>
 MatrixNode<size, stats> :: ~MatrixNode<size, stats>() {

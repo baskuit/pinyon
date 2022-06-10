@@ -83,11 +83,12 @@ public:
 
     char id = 'u';
     int pp = 1;
+    int length = 0;
 
     ToyState<size> (prng& device) :
         SolvedState<size>(device, .5f, 2, 2) {}
-    ToyState<size> (prng& device, char id, int pp) :
-        SolvedState<size>(device, .5f, 2, 2), id(id), pp(pp) {}
+    ToyState<size> (prng& device, char id, int pp, int length) :
+        SolvedState<size>(device, .5f, 2, 2), id(id), pp(pp), length(length) {}
 
     void actions (PairActions<size>& pair) {
         if (this->terminal) {
@@ -105,7 +106,9 @@ public:
 
     StateTransitionData transition (Action action0, Action action1) {
         StateTransitionData x;
+
         if (id == 'u') {
+
                 if (pp == 0) {
                     this->payoff = 0;
                     this->terminal = true;
@@ -129,7 +132,27 @@ public:
                         this->terminal = true;
                     }
                 }
+
+        } else if (id == 's') {
+
+                if (action0 == 0) {
+                    if (length == 0) {
+                        this->payoff = 1.f;
+                        this->terminal = true;
+                    }
+                    --length;
+                } else {
+                    this->payoff = 0.f;
+                    this->terminal = true;
+                }
+
+        } else if (id == '2') {
+
+            x.transitionKey = this->device.random_int(2);
+            x.transitionProb = {1, 2};
+
         }
+
         return x;
     }
 
