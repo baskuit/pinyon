@@ -54,22 +54,54 @@ void prng_copy_test_2 () {
 
 int main () {
 
-    prng device;
-    MoldState<9> state(device, 2);
+    float total = 0;
 
-    PairActions<9> actions;
-    state.actions(actions);
+    // Maybe 
+
+    prng device;
+
+    ToyState<9> toy(device);
+    MoldState<9> mold(device, 2);
+
+    MonteCarlo<9> model(device);
+
+    Exp3SearchSession<9> session;
 
     int playouts = 1000000;
     for (int playout = 0; playout < playouts; ++ playout) {
-        auto state_ = state;
-        MatrixNode<9, Exp3Stats<9>> root;
-        ChanceNode<9, Exp3Stats<9>>* c0 = root.access(0, 0);
-        // this is a memory leak
-        // is the destructor for MatrixNode defined?
+        auto toy_ = toy;
+        total += (model.inference(toy_)).value_estimate0;
+
     }
+    std::cout << total / playouts << std::endl;
+    total = 0;
+
+    MatrixNode<9, Exp3Stats<9>> root;
+    ChanceNode<9, Exp3Stats<9>>* c0 = root.access(0, 0);
+
+    session.expand(root, toy, model);
+
+
+    playouts = 1;
+    for (int playout = 0; playout < playouts; ++ playout) {
+        auto toy_ = toy;
+        session.search(root, toy_, model);
+
+        root.s.gains0[0] += 100;
+
+        std::array<float, 9> forecast0;
+        std::array<float, 9> forecast1;
+
+        session.forecast(forecast0, forecast1, root);
+        for (int i = 0; i < 9; ++i) {
+            std::cout << forecast0[i] << ' ';
+        }
+        std::cout << std::endl;
+        
+    }
+    return 0;
     while (true) {}
     //std::cout << ' '<< std::endl;
 
-    return 0;
+
 }

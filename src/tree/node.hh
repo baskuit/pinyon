@@ -5,7 +5,7 @@
 template <int size, typename stats>
 class ChanceNode;
 
-class stats {};
+struct stats {};
 
 template <int size, typename stats>
 class MatrixNode {

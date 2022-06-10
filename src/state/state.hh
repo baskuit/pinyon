@@ -32,6 +32,10 @@ struct StateTransitionData { // does this copy (return by value) correctly?
         transitionKey(transitionKey), transitionProb(transitionProb) {}
 };
 
+
+// State
+
+
 template <int size>
 class State {
 public:
@@ -44,10 +48,13 @@ public:
     State (prng& device, float payoff) : 
         device(device), payoff(payoff) {}
 
+    virtual float rollout () = 0;
     virtual void actions (PairActions<size>& actions) = 0;
     //virtual StateTransitionData transition(Action action0, Action action1) = 0;
 
 };
+
+
 
 template <int size>
 class SolvedState : public State<size> {
@@ -64,6 +71,8 @@ public:
 
     //virtual void actions (PairActions<size>& actions) = 0;
 };
+
+
 
 template <int size>
 class ToyState : public SolvedState<size> {
