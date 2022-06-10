@@ -1,4 +1,5 @@
 #include <random>
+#include <array>
 
 class prng {
     std::mt19937::result_type seed;
@@ -33,6 +34,18 @@ public:
     // samples an index from a probability distribution
     int sample_pdf (float* input, int k) {
         float p = this->uniform();
+        for (int i = 0; i < k; ++i) {
+            p -= input[i];
+            if (p <= 0) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    template <typename T, int size>
+    int sample_pdf (std::array<T, size> input, int k) {
+        float p = uniform();
         for (int i = 0; i < k; ++i) {
             p -= input[i];
             if (p <= 0) {

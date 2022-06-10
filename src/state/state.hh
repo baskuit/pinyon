@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string.h>
-#include <array>
 
 #include "../libsurskit/math.hh"
 
@@ -50,10 +49,12 @@ public:
 
     virtual float rollout () = 0;
     virtual void actions (PairActions<size>& actions) = 0;
-    //virtual StateTransitionData transition(Action action0, Action action1) = 0;
+    virtual StateTransitionData transition(Action action0, Action action1) = 0;
 
 };
 
+
+// Solved State
 
 
 template <int size>
@@ -73,6 +74,8 @@ public:
 };
 
 
+// Toy State
+
 
 template <int size>
 class ToyState : public SolvedState<size> {
@@ -87,6 +90,11 @@ public:
         SolvedState<size>(device, .5f, 2, 2), id(id), pp(pp) {}
 
     void actions (PairActions<size>& pair) {
+        if (this->terminal) {
+            pair.rows = 0;
+            pair.cols = 0;
+            return;
+        }
         pair.rows = 2;
         pair.cols = 2;
         for (int i = 0; i < 2; ++i) {
@@ -96,15 +104,18 @@ public:
     }
 
     StateTransitionData transition (Action action0, Action action1) {
+        StateTransitionData x;
         if (id == 'u') {
                 if (pp == 0) {
                     this->payoff = 0;
                     this->terminal = true;
+                    return x;
                 }
 
                 if (action0 == 0) {
                     --pp;
                     if (action1 == 0) {
+                        
                     } else {
                         this->payoff = 1;
                         this->terminal = true; 
@@ -119,8 +130,6 @@ public:
                     }
                 }
         }
-
-        StateTransitionData x;
         return x;
     }
 

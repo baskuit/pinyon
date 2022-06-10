@@ -60,48 +60,31 @@ int main () {
 
     prng device;
 
-    ToyState<9> toy(device);
-    MoldState<9> mold(device, 2);
+
+    MoldState<9> mold(device, 5);
 
     MonteCarlo<9> model(device);
 
-    Exp3SearchSession<9> session;
+    Exp3SearchSession<9> session(device, .0001);
 
     int playouts = 1000000;
-    for (int playout = 0; playout < playouts; ++ playout) {
-        auto toy_ = toy;
-        total += (model.inference(toy_)).value_estimate0;
 
-    }
-    std::cout << total / playouts << std::endl;
-    total = 0;
+    for (int pp = 0; pp < 10; ++pp) {
+        MatrixNode<9, Exp3Stats<9>> root;
+        for (int playout = 0; playout < playouts; ++ playout) {
+            auto mold_ = ToyState<9>(device, 'u', 3);
+            MatrixNode<9 , Exp3Stats<9>>* leaf = session.search(&root, mold_, model);
+            //std::cout << pp << ' ' << leaf->inference.value_estimate0 << std::endl;
 
-    MatrixNode<9, Exp3Stats<9>> root;
-    ChanceNode<9, Exp3Stats<9>>* c0 = root.access(0, 0);
-
-    session.expand(root, toy, model);
-
-
-    playouts = 1;
-    for (int playout = 0; playout < playouts; ++ playout) {
-        auto toy_ = toy;
-        session.search(root, toy_, model);
-
-        root.s.gains0[0] += 100;
-
-        std::array<float, 9> forecast0;
-        std::array<float, 9> forecast1;
-
-        session.forecast(forecast0, forecast1, root);
-        for (int i = 0; i < 9; ++i) {
-            std::cout << forecast0[i] << ' ';
+            
         }
-        std::cout << std::endl;
-        
+        std::cout << root.count() << std::endl;
+        std::cout << root.mean_value0() << std::endl;
     }
-    return 0;
+
     while (true) {}
     //std::cout << ' '<< std::endl;
+
 
 
 }

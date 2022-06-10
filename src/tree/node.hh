@@ -7,6 +7,10 @@ class ChanceNode;
 
 struct stats {};
 
+
+// Matrix Node
+
+
 template <int size, typename stats>
 class MatrixNode {
 public:
@@ -50,9 +54,19 @@ public:
 
     }
 
+    int count () {
+        int c = 1;
+        auto current = child;
+        while (current != nullptr) {
+            c += current->count();
+            current = current->next;
+        }
+        return c;
+    }
 
 
-private:
+
+
     int visits = 0;
     float cumulative_value0 = 0.f;
     float cumulative_value1 = 0.f;
@@ -85,6 +99,22 @@ public:
    ~ChanceNode<size, stats> ();
 
     MatrixNode<size, stats>* access (StateTransitionData data);
+
+    void update (float u0, float u1) {
+        ++visits;
+        cumulative_value0 += u0;
+        cumulative_value1 += u1;
+    }
+
+    int count () {
+        int c = 0;
+        auto current = child;
+        while (current != nullptr) {
+            c += current->count();
+            current = current->next;
+        }
+        return c;
+    }
 };
 
 template <int size, typename stats>
@@ -98,7 +128,7 @@ MatrixNode<size, stats>* ChanceNode<size, stats> :: access (StateTransitionData 
         MatrixNode<size, stats>* previous = this->child; 
         while (current != nullptr) {
             previous = current;
-            if (current->transitionKey == data.transitionKey) {
+            if (current->transition_data.transitionKey == data.transitionKey) {
                 return current;
             }
             current = current->next;
