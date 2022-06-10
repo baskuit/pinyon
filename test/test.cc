@@ -4,9 +4,9 @@
 #include "libsurskit/math.hh"
 #include "state/state.hh"
 #include "tree/node.hh"
-//#include "model/monte_carlo.hh"
-//#include "tree/node.hh"
-//#include "search/exp3.hh"
+#include "model/model.hh"
+#include "tree/node.hh"
+#include "search/exp3.hh"
 
 // Passing a prng device to a function by value does not 'work'
 // in the sense that calls inside the function will not progress the device outside the functions scope
@@ -51,23 +51,25 @@ void prng_copy_test_2 () {
 }
 
 
+
 int main () {
 
-    const int max_actions = 9;
-
     prng device;
-    ToyState<max_actions> state(device);
+    MoldState<9> state(device, 2);
 
-    PairActions<max_actions> actions;
+    PairActions<9> actions;
     state.actions(actions);
 
     int playouts = 1000000;
-    float total = 0.f;
     for (int playout = 0; playout < playouts; ++ playout) {
         auto state_ = state;
-        total += state_.rollout();
+        MatrixNode<9, Exp3Stats<9>> root;
+        ChanceNode<9, Exp3Stats<9>>* c0 = root.access(0, 0);
+        // this is a memory leak
+        // is the destructor for MatrixNode defined?
     }
-    std::cout << total / playouts << std::endl;
+    while (true) {}
+    //std::cout << ' '<< std::endl;
 
     return 0;
 }

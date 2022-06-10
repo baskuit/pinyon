@@ -126,3 +126,44 @@ public:
         return this->payoff;
     }
 };
+
+template <int size>
+class MoldState : public State<size> {
+public:
+
+    int depth = 0;
+
+    MoldState<size> (prng& device, int depth) :
+        State<size>(device), depth(depth) {}
+
+    void actions (PairActions<size>& pair) {
+        if (depth == 0) {
+            pair.rows = 0;
+            pair.cols = 0;
+            return;
+        }
+        pair.rows = 2;
+        pair.cols = 2;
+        for (int i = 0; i < 2; ++i) {
+            pair.actions0[i] = i;
+            pair.actions1[i] = i;
+        };
+    }
+
+    StateTransitionData transition (Action action0, Action action1) {
+        --depth;
+        StateTransitionData x;
+        return x;
+    }
+
+    float rollout () {
+        PairActions<size> pair;
+        while (depth > 0) {
+            Action action0 = this->device.random_int(2);
+            Action action1 = this->device.random_int(2);
+            this->transition(action0, action1);
+            //std::cout << action0 << action1 << std::endl;
+        }
+        return this->payoff;
+    }
+};
