@@ -25,9 +25,9 @@ void prng_copy_test () {
         z.uniform();
     }
     for (int i = 0; i < n; ++i) {
-        float a = x.uniform();
-        float b = y.uniform();
-        float c = z.uniform();
+        double a = x.uniform();
+        double b = y.uniform();
+        double c = z.uniform();
         assert (a == b);
         assert (b == c);
     }
@@ -58,20 +58,23 @@ int main () {
     prng device;
     MonteCarlo<9> model(device);
 
+    double eta = .02;
+    int playouts = 10000000;
 
-    int playouts = 100000;
-    
-    for (int pp = 2; pp < 5; ++pp) {
+    for (int pp = 2; pp < 3; ++pp) {
         std::cout << pp << std::endl;
-        ToyState<9> toy(device, 'u', pp, 0);
 
+        ToyState<9> toy(device, 'w', pp, 3);
         MatrixNode<9, Exp3Stats<9>> root;
 
-        Exp3SearchSession<9> session(device, &root, toy, model, .01f);
-        
-        session.search(playouts, toy);
+        Exp3SearchSession<9, ToyState<9>> session(device, &root, toy, model, eta);
+        session.search(playouts);
         auto answer = session.answer();
         answer.print();
+
+        std::cout << "forecast0 (odds): " << exp(root.s.gains0[0] * eta) << " " << exp(root.s.gains0[1] * eta) << std::endl;
+        std::cout << "forecast1 (odds): " << exp(root.s.gains1[0] * eta) << " " << exp(root.s.gains1[1] * eta) << std::endl;
+        std::cout << root.count() << " nodes" << std::endl;
 
     }
 

@@ -54,17 +54,17 @@ public:
         return child;
     };
 
-    void update (float u0, float u1) {
+    void update (double u0, double u1) {
         ++visits;
         cumulative_value0 += u0;
         cumulative_value1 += u1;
     }
 
-    float mean_value0 () {
+    double mean_value0 () {
         return cumulative_value0 / visits;
     }
 
-    float mean_value1 () {
+    double mean_value1 () {
         return cumulative_value1 / visits;
     }
 
@@ -86,8 +86,8 @@ public:
 
 
     int visits = 0;
-    float cumulative_value0 = 0.f;
-    float cumulative_value1 = 0.f;
+    double cumulative_value0 = 0.f;
+    double cumulative_value1 = 0.f;
 
 };
 
@@ -108,8 +108,8 @@ public:
     Action action1;
 
     int visits = 0;
-    float cumulative_value0 = 0.f;
-    float cumulative_value1 = 0.f;
+    double cumulative_value0 = 0.f;
+    double cumulative_value1 = 0.f;
 
     ChanceNode<size, stats> (MatrixNode<size, stats>* parent, ChanceNode<size, stats>* prev, Action action0, Action action1) :
         parent(parent), prev(prev), action0(action0), action1(action1) {}
@@ -135,7 +135,7 @@ public:
         return child;
     };
 
-    void update (float u0, float u1) {
+    void update (double u0, double u1) {
         ++visits;
         cumulative_value0 += u0;
         cumulative_value1 += u1;

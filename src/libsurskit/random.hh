@@ -4,7 +4,7 @@
 class prng {
     std::mt19937::result_type seed;
     std::mt19937 engine;
-    std::uniform_real_distribution<float> uniform_;
+    std::uniform_real_distribution<double> uniform_;
     
 public:
 
@@ -23,7 +23,7 @@ public:
         return seed;
     }
 
-    float uniform () {
+    double uniform () {
         return uniform_(engine);
     }
 
@@ -32,8 +32,8 @@ public:
     }
 
     // samples an index from a probability distribution
-    int sample_pdf (float* input, int k) {
-        float p = this->uniform();
+    int sample_pdf (double* input, int k) {
+        double p = this->uniform();
         for (int i = 0; i < k; ++i) {
             p -= input[i];
             if (p <= 0) {
@@ -45,7 +45,7 @@ public:
 
     template <typename T, int size>
     int sample_pdf (std::array<T, size> input, int k) {
-        float p = uniform();
+        double p = uniform();
         for (int i = 0; i < k; ++i) {
             p -= input[i];
             if (p <= 0) {

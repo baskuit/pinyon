@@ -40,14 +40,14 @@ class State {
 public:
 
     prng& device;
-    float payoff = 0.5f; //garbage unless terminal
+    double payoff = 0.5f; //garbage unless terminal
 
     State (prng& device) : 
         device(device) {}
-    State (prng& device, float payoff) : 
+    State (prng& device, double payoff) : 
         device(device), payoff(payoff) {}
 
-    virtual float rollout () = 0;
+    virtual double rollout () = 0;
     virtual void actions (PairActions<size>& actions) = 0;
     virtual StateTransitionData transition(Action action0, Action action1) = 0;
 
@@ -64,10 +64,10 @@ public:
     bool terminal = true;
     int rows = 0;
     int cols = 0;
-    std::array<float, size> strategy0;
-    std::array<float, size> strategy1;
+    std::array<double, size> strategy0;
+    std::array<double, size> strategy1;
 
-    SolvedState<size> (prng& device, float payoff, int rows, int cols) :
+    SolvedState<size> (prng& device, double payoff, int rows, int cols) :
         State<size>(device, payoff), terminal(rows*cols==0), rows(rows), cols(cols) {}
     //virtual void actions (PairActions<size>& actions) = 0;
 };
@@ -145,17 +145,58 @@ public:
                     this->terminal = true;
                 }
 
+        } else if (id == 't') {
+
+                if (action1 == 0) {
+                    if (length == 0) {
+                        this->payoff = 0.f;
+                        this->terminal = true;
+                    }
+                    --length;
+                } else {
+                    this->payoff = 1.f;
+                    this->terminal = true;
+                }
+
         } else if (id == '2') {
 
             x.transitionKey = this->device.random_int(2);
             x.transitionProb = {1, 2};
 
+        } else if (id == 'w') {
+
+                if (pp == 0) {
+                    this->payoff = 0;
+                    this->terminal = true;
+                    return x;
+                }
+
+                if (action0 == 0) {
+                    --pp;
+                    if (action1 == 0) {
+                        
+                    } else {
+                        this->payoff = 1;
+                        this->id = 's';
+                    }
+                } else {
+                    if (action1 == 0) {
+                        this->payoff = 1;
+                        this->id = 's';
+                    } else {
+                        this->payoff = 0;
+                        this->id = 't';
+                    }
+                }
+
         }
+
+     
 
         return x;
     }
 
-    float rollout () {
+    double rollout () {
         PairActions<size> pair;
         while (!this->terminal) {
             Action action0 = this->device.random_int(2);
@@ -197,7 +238,7 @@ public:
         return x;
     }
 
-    float rollout () {
+    double rollout () {
         PairActions<size> pair;
         while (depth > 0) {
             Action action0 = this->device.random_int(2);

@@ -7,6 +7,6 @@
 
 namespace math {
 
-    void power_norm(float* input, int k, float power, float* output);
+    void power_norm(double* input, int k, double power, double* output);
 
 }

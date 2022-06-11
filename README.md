@@ -11,8 +11,8 @@ It is probably useful to understand the classes defined in this project and how 
 ### prng
 A pseudo random generator class for use in all other classes, for reproducibility.
 
-* `float uniform ()`
-	*	Uniform float between 0 and 1.
+* `double uniform ()`
+	*	Uniform double between 0 and 1.
 * `std::mt19937::result_type  get_seed ()`
 	* Used to instantiate an identical probability outcome. Thread safety remains a problem.
 
@@ -39,7 +39,7 @@ Models only have one method, although there will likely be multi threaded tree s
 * `InferenceData inference ()`
 
 Monte carlo evaluation is encapsulated here, and a default implementation with rollout and uniform policy is provided.
-Note there are two value estimates. In certain algorithms we need the constant sum assumption, but our implementation sacrifices an extra float per node in order to allow for dual model tree search and 'double-loss' outcomes to avoid loops.
+Note there are two value estimates. In certain algorithms we need the constant sum assumption, but our implementation sacrifices an extra double per node in order to allow for dual model tree search and 'double-loss' outcomes to avoid loops.
 
 ## Node 
 The tree is implemented as a linked list of *Nodes*. Each node has a parent, child, and next pointer.
