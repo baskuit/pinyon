@@ -52,39 +52,29 @@ void prng_copy_test_2 () {
 
 
 
+
 int main () {
 
-    float total = 0;
-
-    // Maybe 
-
     prng device;
-
-
-    MoldState<9> mold(device, 5);
-
     MonteCarlo<9> model(device);
 
-    Exp3SearchSession<9> session(device, .0001);
 
-    int playouts = 1000000;
+    int playouts = 100000;
+    
+    for (int pp = 2; pp < 5; ++pp) {
+        std::cout << pp << std::endl;
+        ToyState<9> toy(device, 'u', pp, 0);
 
-    for (int pp = 0; pp < 10; ++pp) {
         MatrixNode<9, Exp3Stats<9>> root;
-        for (int playout = 0; playout < playouts; ++ playout) {
-            auto mold_ = ToyState<9>(device, 'u', 3, 0);
-            MatrixNode<9 , Exp3Stats<9>>* leaf = session.search(&root, mold_, model);
-            //std::cout << pp << ' ' << leaf->inference.value_estimate0 << std::endl;
 
-            
-        }
-        std::cout << root.count() << std::endl;
-        std::cout << root.mean_value0() << std::endl;
+        Exp3SearchSession<9> session(device, &root, toy, model, .01f);
+        
+        session.search(playouts, toy);
+        auto answer = session.answer();
+        answer.print();
+
     }
 
     //while (true) {}
-    //std::cout << ' '<< std::endl;
-
-
 
 }

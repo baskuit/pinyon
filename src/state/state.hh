@@ -69,7 +69,6 @@ public:
 
     SolvedState<size> (prng& device, float payoff, int rows, int cols) :
         State<size>(device, payoff), terminal(rows*cols==0), rows(rows), cols(cols) {}
-
     //virtual void actions (PairActions<size>& actions) = 0;
 };
 
@@ -166,6 +165,7 @@ public:
         }
         return this->payoff;
     }
+
 };
 
 template <int size>
@@ -207,4 +207,5 @@ public:
         }
         return this->payoff;
     }
+
 };

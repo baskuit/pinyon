@@ -22,6 +22,31 @@ struct SearchSession {
 
 
 template <int size>
+struct Exp3Answer {
+    int playouts = 0;
+    float value0 = .5f;
+    float value1 = .5f;
+    std::array<float, size> strategy0 = {0};
+    std::array<float, size> strategy1 = {0};
+    Exp3Answer () {}
+    void print () {
+        std::cout << "s0: ";
+        for (int i = 0; i < size; ++i) {
+            std::cout << strategy0[i] << ' ';
+        }
+        std::cout << std::endl;
+        std::cout << "s1: ";
+        for (int i = 0; i < size; ++i) {
+            std::cout << strategy1[i] << ' ';
+        }
+        std::cout << std::endl;
+        std::cout << "v0: " << value0 << " v1: " << value1 << std::endl;
+    }
+};
+
+
+     
+template <int size>
 struct Exp3SearchSession : SearchSession {
 
     float eta = .01;
@@ -33,25 +58,59 @@ struct Exp3SearchSession : SearchSession {
     int playouts = 0;
     std::array<int, size> visits0 = {0};
     std::array<int, size> visits1 = {0};
+    float cumulative_value0 = 0;
+    float cumulative_value1 = 0;
 
-    Exp3SearchSession<size> (prng& device) :
-        SearchSession(device) {}
-    Exp3SearchSession<size> (prng& device, float eta) :
-        SearchSession(device), eta(eta) {}
+    // Exp3SearchSession<size> (prng& device, ) :
+    //     SearchSession(device) {}
+    Exp3SearchSession<size> (prng& device, MatrixNode<size, Exp3Stats<size>>* root, State<size>& state, Model<size>& model, float eta) :
+        SearchSession(device), root(root), state(state), model(model), eta(eta) {
+            // if (!root->expanded) {
+            //     this->expand(root, state);
+            // }
+        }
 
     // Infernces the state with the model, and applies that information to the matrix node
-    void expand (MatrixNode<size, Exp3Stats<size>>* matrix_node, State<size>& state, Model<size>& model);
+    void expand (MatrixNode<size, Exp3Stats<size>>* matrix_node, State<size>& state);
 
     // Returns the leaf node of a playout. Either game-terminal, pruned-terminal, or just now expanded.
-    MatrixNode<size, Exp3Stats<size>>* search (MatrixNode<size, Exp3Stats<size>>* matrix_node_current, State<size>& state, Model<size>& model);
+    MatrixNode<size, Exp3Stats<size>>* search (MatrixNode<size, Exp3Stats<size>>* matrix_node_current, State<size>& state);
 
-    // Public interface for other search. Updates visits
-    void search (int playouts) {
+    //  Public interface for other search. Updates session statistics for this->answer().
+    template <typename T>
+    void search (int playouts, T& state) {
         this->playouts += playouts;
-        for (int playout = 0; playout < playouts; ++playout) {
-            auto leaf_node = search(MatrixNode)
-            // Get action played at root :\
+        for (int playout = 0; playout < playouts; ++ playout) {
+            T state_ = state;
+            MatrixNode<9 , Exp3Stats<9>>* leaf = this->search(root, state_);
 
+            cumulative_value0 += leaf->inference.value_estimate0;
+            cumulative_value1 += leaf->inference.value_estimate1;
+
+            // We are deducing the actions played from outside the search(Node*, State&) function
+            // So we have do this little rigmarol of tracing back from the leaf 
+
+            if (leaf != root) {
+                while (leaf->parent->parent != root) {
+                    leaf = leaf->parent->parent;
+                }
+                auto a0 = leaf->parent->action0;
+                auto a1 = leaf->parent->action1;
+                int row_idx = 0;
+                int col_idx = 0;
+                for (int i = 0; i < root->pair.rows; ++i) {
+                    if (a0 == root->pair.actions0[i]) {
+                        row_idx = i;
+                    }
+                }
+                for (int j = 0; j < root->pair.cols; ++j) {
+                    if (a1 == root->pair.actions1[j]) {
+                        col_idx = j;
+                    }
+                }
+                visits0[row_idx] += 1;
+                visits1[col_idx] += 1;
+            }
         }
     };
 
@@ -59,7 +118,7 @@ struct Exp3SearchSession : SearchSession {
     void forecast (std::array<float, size>& forecast0, std::array<float, size>& forecast1, MatrixNode<size, Exp3Stats<size>>* matrix_node);
 
     // Returned denoised empirical strategies collected over the session (not over the node's history)
-    void answer ();
+    Exp3Answer<size> answer ();
 };
 
 
@@ -69,7 +128,7 @@ struct Exp3SearchSession : SearchSession {
 
 
 template<int size>
-void Exp3SearchSession<size> :: expand (MatrixNode<size, Exp3Stats<size>>* matrix_node, State<size>& state, Model<size>& model) {
+void Exp3SearchSession<size> :: expand (MatrixNode<size, Exp3Stats<size>>* matrix_node, State<size>& state) {
 
     state.actions(matrix_node->pair);
 
@@ -99,8 +158,7 @@ void Exp3SearchSession<size> :: expand (MatrixNode<size, Exp3Stats<size>>* matri
 template <int size>
 MatrixNode<size, Exp3Stats<size>>* Exp3SearchSession<size> :: search (
     MatrixNode<size, Exp3Stats<size>>* matrix_node_current, 
-    State<size>& state,
-    Model<size>& model) {
+    State<size>& state) {
 
     if (matrix_node_current->terminal == true) {
         return matrix_node_current;
@@ -118,7 +176,7 @@ MatrixNode<size, Exp3Stats<size>>* Exp3SearchSession<size> :: search (
 
             ChanceNode<size, Exp3Stats<size>>* chance_node = matrix_node_current->access(row_idx, col_idx);
             MatrixNode<size, Exp3Stats<size>>* matrix_node_next = chance_node->access(transition_data);
-            MatrixNode<size, Exp3Stats<size>>* matrix_node_leaf = search(matrix_node_next, state, model);
+            MatrixNode<size, Exp3Stats<size>>* matrix_node_leaf = search(matrix_node_next, state);
 
             float u0 = matrix_node_leaf->inference.value_estimate0;
             float u1 = matrix_node_leaf->inference.value_estimate1;
@@ -131,7 +189,7 @@ MatrixNode<size, Exp3Stats<size>>* Exp3SearchSession<size> :: search (
 
             return matrix_node_leaf;
         } else {
-            expand(matrix_node_current, state, model);
+            expand(matrix_node_current, state);
             return matrix_node_current;
         }
     }
@@ -184,3 +242,40 @@ void Exp3SearchSession<size> :: forecast (
         forecast1[i] += eta/matrix_node->pair.cols;
     }
 }
+
+
+
+template <int size>
+Exp3Answer<size> Exp3SearchSession<size> :: answer () {
+    Exp3Answer<size> data;
+    const int rows = root->pair.rows;
+    const int cols = root->pair.cols;
+    for (int i = 0; i < rows; ++i) {
+        data.strategy0[i] = visits0[i]/ (float)playouts;
+    }
+    for (int j = 0; j < cols; ++j) {
+        data.strategy1[j] = visits1[j]/ (float)playouts;
+    }
+    const float eta_ = 1/(1 - eta);
+    float row_sum = 0;
+    for (int i = 0; i < rows; ++i) {
+        data.strategy0[i] -= (eta/(float)rows);
+        data.strategy0[i] *= data.strategy0[i] > 0 ? eta_ : 0;
+        row_sum += data.strategy0[i];
+    }
+    float col_sum = 0;
+    for (int j = 0; j < cols; ++j) {
+        data.strategy1[j] -= (eta/(float)cols);
+        data.strategy1[j] *= data.strategy1[j] > 0 ? eta_ : 0;
+        col_sum += data.strategy1[j];
+    }
+    for (int i = 0; i < rows; ++i) {
+        data.strategy0[i] /= row_sum;
+    }
+    for (int j = 0; j < cols; ++j) {
+        data.strategy1[j] /= col_sum;
+    }
+    data.value0 = cumulative_value0 / playouts;
+    data.value1 = cumulative_value1 / playouts;
+    return data;
+};
