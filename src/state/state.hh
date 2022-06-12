@@ -117,7 +117,6 @@ public:
                 if (action0 == 0) {
                     --pp;
                     if (action1 == 0) {
-                        
                     } else {
                         this->payoff = 1;
                         this->terminal = true; 
@@ -132,6 +131,11 @@ public:
                     }
                 }
 
+            this->strategy0[0] = pp/(double)(pp+1);
+            this->strategy0[1] = 1/(double)(pp+1);
+            this->strategy1[0] = pp/(double)(pp+1);
+            this->strategy1[1] = 1/(double)(pp+1);
+
         } else if (id == 's') {
 
                 if (action0 == 0) {
@@ -145,6 +149,9 @@ public:
                     this->terminal = true;
                 }
 
+            this->strategy0[0] = 1;
+            this->strategy0[1] = 0;
+
         } else if (id == 't') {
 
                 if (action1 == 0) {
@@ -157,6 +164,9 @@ public:
                     this->payoff = 1.f;
                     this->terminal = true;
                 }
+
+            this->strategy1[0] = 1;
+            this->strategy1[1] = 0;
 
         } else if (id == '2') {
 
@@ -189,6 +199,11 @@ public:
                     }
                 }
 
+            this->strategy0[0] = pp/(double)(pp+1);
+            this->strategy0[1] = 1/(double)(pp+1);
+            this->strategy1[0] = pp/(double)(pp+1);
+            this->strategy1[1] = 1/(double)(pp+1);
+
         }
 
      
@@ -202,7 +217,6 @@ public:
             Action action0 = this->device.random_int(2);
             Action action1 = this->device.random_int(2);
             this->transition(action0, action1);
-            //std::cout << action0 << action1 << std::endl;
         }
         return this->payoff;
     }
@@ -244,7 +258,6 @@ public:
             Action action0 = this->device.random_int(2);
             Action action1 = this->device.random_int(2);
             this->transition(action0, action1);
-            //std::cout << action0 << action1 << std::endl;
         }
         return this->payoff;
     }

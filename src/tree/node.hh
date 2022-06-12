@@ -185,26 +185,3 @@ ChanceNode<size, stats> :: ~ChanceNode<size, stats> () {
         parent->child = next;
     }
 };
-
-// void MatrixNode :: print (int n = 0) {
-//     if (this == nullptr) {
-//         return;
-//     }
-//     std::cout << n << ": " << this << std::endl;
-//     if (n == 2){
-//         return;
-//     }
-//     if (this->child != nullptr) {
-//         this->child->print(n+1);
-//     }
-// }
-
-// void ChanceNode :: print (int n = 0) {
-//     if (this == nullptr) {
-//         return;
-//     }
-//     std::cout << n << ": " << this << std::endl;
-//     if (this->child != nullptr) {
-//         this->child->print(n+1);
-//     }
-// }
