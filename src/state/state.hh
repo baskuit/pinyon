@@ -19,6 +19,20 @@ struct PairActions {
     PairActions () {};
     PairActions (int rows, int cols) :
         rows(rows), cols(cols) {};
+
+    void print () {
+        std::cout << "rows: " << rows << " cols: " << cols << std::endl;
+        std::cout << "actions0: ";
+        for (int row_idx = 0; row_idx < rows; ++row_idx) {
+            std::cout << actions0[row_idx] << ' ';
+        }
+        std::cout << std::endl;
+        std::cout << "actions1: ";
+        for (int col_idx = 0; col_idx < rows; ++col_idx) {
+            std::cout << actions1[col_idx] << ' ';
+        }
+        std::cout << std::endl;
+    }
 };
 
 struct StateTransitionData { // does this copy (return by value) correctly?
@@ -47,7 +61,6 @@ public:
     State (prng& device, double payoff) : 
         device(device), payoff(payoff) {}
 
-    virtual double rollout () = 0;
     virtual void actions (PairActions<size>& actions) = 0;
     virtual StateTransitionData transition(Action action0, Action action1) = 0;
 
@@ -211,16 +224,6 @@ public:
         return x;
     }
 
-    double rollout () {
-        PairActions<size> pair;
-        while (!this->terminal) {
-            Action action0 = this->device.random_int(2);
-            Action action1 = this->device.random_int(2);
-            this->transition(action0, action1);
-        }
-        return this->payoff;
-    }
-
 };
 
 template <int size>
@@ -250,16 +253,6 @@ public:
         --depth;
         StateTransitionData x;
         return x;
-    }
-
-    double rollout () {
-        PairActions<size> pair;
-        while (depth > 0) {
-            Action action0 = this->device.random_int(2);
-            Action action1 = this->device.random_int(2);
-            this->transition(action0, action1);
-        }
-        return this->payoff;
     }
 
 };

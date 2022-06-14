@@ -2,4 +2,6 @@ Speed test using heap allocation of state info arrays vs template info types (ma
 
 int* a = new int[10] { 1,2,3,4,5,6,7,8,9,10 };
 
-Need to rewrite using pure virtual methods.
+//Need to rewrite using pure virtual methods.
+
+need payoff0 and payoff1?
