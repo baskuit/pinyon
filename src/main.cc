@@ -23,12 +23,12 @@ double log_loss(ToyState<9>& state, Session& answer) {
     return loss;
 }
 
-template <typename Session>
+template <typename Session, typename Stats>
 double evalSearchParams (int trials, double eta, int playouts, ToyState<9> state) {
     double avg_loss = 0;
     for (int i = 0; i < trials; ++i) {
         prng device;
-        MatrixNode<9, Exp3pStats<9>> root;
+        MatrixNode<9, Stats> root;
         MonteCarlo<9> model(device);
         Session session(device, state, model, &root, playouts);
         session.search(playouts);
@@ -40,12 +40,12 @@ double evalSearchParams (int trials, double eta, int playouts, ToyState<9> state
     return avg_loss;
 }
 
-template <typename Session>
+template <typename Session, typename Stats>
 void hyperparameter_search (int samples, int trials, ToyState<9>& state) {
     for (int sample = 0; sample < samples; ++sample) {
         double eta = .5 * state.device.uniform();
         int playouts = pow(2, 12 + state.device.random_int(8));
-        double avg_loss = evalSearchParams<Session>(trials, eta, playouts, state);
+        double avg_loss = evalSearchParams<Session, Stats>(trials, eta, playouts, state);
         std::cout << "Sample " << sample << ": " << playouts << " " << eta << " : " << avg_loss << std::endl;
     }
 
@@ -58,12 +58,12 @@ int main () {
     ToyState<9> toy(device, 'w', 4, 2);
     toy.transition(0, 0);
     MonteCarlo<9> model(device);
-    MatrixNode<9, Exp3pStats<9>> root;
+    MatrixNode<9, Exp3Stats<9>> root;
     int playouts = 10000;
-    Exp3pSearchSession<9, ToyState<9>> session (device, toy, model, &root, playouts);
+    Exp3SearchSession<9, ToyState<9>> session (device, toy, model, &root, playouts);
 
     std::vector<Exp3pAnswer<9>> answers;
-    hyperparameter_search<Exp3pSearchSession<9, ToyState<9>>> (30, 8, toy); 
+    hyperparameter_search<Exp3pSearchSession<9, ToyState<9>>, Exp3pStats<9>> (30, 8, toy); 
     
     //while (true) {}
 
