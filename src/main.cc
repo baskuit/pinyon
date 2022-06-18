@@ -1,71 +1,87 @@
 #include <iostream>
+#include <array>
+#include <thread>
 
-#include <thread>   
+// // class MonteCarlo : public Model { ...
+// template <typename StateType>
+// class Model {
+//     typedef StateType state_type;
+//     InferenceData<StateType> inference () {
+//         InferenceData<StateType> x;
+//         return x;
+//     }
+// };
 
-#include "libsurskit/math.hh"
+// // class Exp3pStats : public Stats { ...
+// template <typename StateType> // Passing the StateType (and not just size) is 'necessary' because Exp3p needs policies, which ToyStates have but States dont.
+// class Stats {
+// public:
+//     typedef StateType state_type;
+//     std::array<double, StateType::state_size> gains0;
+// };
+
+// template <typename StatsType>
+// class Node {
+// public:
+//     typedef StatsType stats_type;
+//     StatsType stats;
+// };
+
+// // 'Session' is basically a container for the algorithm. As such it should own its StatsType
+// template <typename StatsType>
+// class Session {
+// public:
+//     typedef StatsType stats_type;
+//     void search (int playouts) {};
+// };
+
+/*
+// Example of derivation for Exp3p algorithm
+
+template <typename StateType>
+struct Exp3pStats;
+
+template <typename StateType>
+class Exp3pSession : public Session<StateType> {
+    StateType& state;
+    Model<StateType>& model;
+    Node<Exp3pStats<StateType>>* root;
+
+    Exp3pSession (StateType state, Model<StateType> model, Node<Exp3pStats<StateType>> root);
+
+    Node<Exp3pStats<StateType>>* search ();   
+};
+*/
+
+
+
+
+
 #include "state/state.hh"
-#include "tree/node.hh"
-#include "model/model.hh"
-#include "tree/node.hh"
-#include "search/exp3.hh"
-#include "search/exp3p.hh"
-
-template <typename Session>
-double log_loss(ToyState<9>& state, Session& answer) {
-    float loss = 0;
-    for (int row_idx = 0; row_idx < state.rows; ++row_idx) {
-        //std::cout << state.strategy0[row_idx]  << ' ' << log(answer.strategy0[row_idx] + 1/(double)answer.playouts) << std::endl;
-        loss -= state.strategy0[row_idx] * log(answer.strategy0[row_idx] + 1/(double)answer.time);
-    }
-    for (int col_idx = 0; col_idx < state.cols; ++col_idx) {
-        loss -= state.strategy1[col_idx] * log(answer.strategy1[col_idx] + 1/(double)answer.time);
-    }
-    return loss;
-}
-
-template <typename Session, typename Stats>
-double evalSearchParams (int trials, double eta, int playouts, ToyState<9> state) {
-    double avg_loss = 0;
-    for (int i = 0; i < trials; ++i) {
-        prng device;
-        MatrixNode<9, Stats> root;
-        MonteCarlo<9> model(device);
-        Session session(device, state, model, &root, playouts);
-        session.search(playouts);
-        auto answer = session.answer();
-        float ce_loss = log_loss(state, answer); // does it deduce tpye? does this work?
-        avg_loss += ce_loss;
-    }
-    avg_loss /= trials;
-    return avg_loss;
-}
-
-template <typename Session, typename Stats>
-void hyperparameter_search (int samples, int trials, ToyState<9>& state) {
-    for (int sample = 0; sample < samples; ++sample) {
-        double eta = .5 * state.device.uniform();
-        int playouts = pow(2, 12 + state.device.random_int(8));
-        double avg_loss = evalSearchParams<Session, Stats>(trials, eta, playouts, state);
-        std::cout << "Sample " << sample << ": " << playouts << " " << eta << " : " << avg_loss << std::endl;
-    }
-
-}
-
 int main () {
 
+
     prng device;
+    typedef ToyState<9> ToyState;
+    ToyState toy(device, 'u', 2, 0);
+    // InferenceData<ToyState> inference;
+    // MonteCarlo<ToyState> model(device);
 
-    ToyState<9> toy(device, 'w', 4, 2);
-    toy.transition(0, 0);
-    MonteCarlo<9> model(device);
-    MatrixNode<9, Exp3Stats<9>> root;
-    int playouts = 10000;
-    Exp3SearchSession<9, ToyState<9>> session (device, toy, model, &root, playouts);
-
-    std::vector<Exp3pAnswer<9>> answers;
-    hyperparameter_search<Exp3pSearchSession<9, ToyState<9>>, Exp3pStats<9>> (30, 8, toy); 
+    // ToyState::pair_actions_type pair;
     
-    //while (true) {}
+    // int playouts = 1000000;
+    // double total = 0;
+    // for (int playout = 0; playout < playouts; ++playout) {
+    //     ToyState toy_ = toy;
+    //     inference = model.inference(toy_, pair);
+    //     total += inference.value_estimate0;
+    // }
+    // std::cout << total / playouts << std::endl;
 
+    // typedef Exp3p<MonteCarlo<ToyState>> exp3p;
 
+    // MatrixNode<exp3p> root;
+    // std::cout << (root.child == nullptr) << std::endl;
+    // root.access(0, 0);
+    // std::cout << (root.child == nullptr) << std::endl;
 }

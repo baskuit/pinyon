@@ -4,38 +4,22 @@
 
 #include "../libsurskit/math.hh"
 
-typedef int Action;
 
 typedef int Hash;
 
-template <int size>
+template <int size, typename Action>
 struct PairActions {
-
     int rows = 0;
     int cols = 0;
     std::array<Action, size> actions0;
     std::array<Action, size> actions1;
-
-    PairActions () {};
+    PairActions () {} 
     PairActions (int rows, int cols) :
-        rows(rows), cols(cols) {};
-
-    void print () {
-        std::cout << "rows: " << rows << " cols: " << cols << std::endl;
-        std::cout << "actions0: ";
-        for (int row_idx = 0; row_idx < rows; ++row_idx) {
-            std::cout << actions0[row_idx] << ' ';
-        }
-        std::cout << std::endl;
-        std::cout << "actions1: ";
-        for (int col_idx = 0; col_idx < rows; ++col_idx) {
-            std::cout << actions1[col_idx] << ' ';
-        }
-        std::cout << std::endl;
-    }
+        rows(rows), cols(cols) {}
 };
 
-struct StateTransitionData { // does this copy (return by value) correctly?
+template <typename Hash>
+struct StateTransitionData {
 
     Hash transitionKey = 0;
     Rational transitionProb;
@@ -49,19 +33,24 @@ struct StateTransitionData { // does this copy (return by value) correctly?
 // State
 
 
-template <int size>
+template <int size, typename Action, typename Hash>
 class State {
 public:
 
+    static const int array_size = size;
+    typedef Action action_type;
+    typedef PairActions<size, Action> pair_actions_type;
+
     prng& device;
-    double payoff = 0.5f; //garbage unless terminal
+    double payoff0 = 0.5f; //garbage unless terminal
+    double payoff1 = 0.5f;
 
-    State (prng& device) : 
+    State<size, Action> (prng& device) : 
         device(device) {}
-    State (prng& device, double payoff) : 
-        device(device), payoff(payoff) {}
+    State<size, Action> (prng& device, double payoff) : 
+        device(device), payoff0(payoff), payoff1(1-payoff) {}
 
-    virtual void actions (PairActions<size>& actions) = 0;
+    virtual PairActions<size, Action> actions () = 0;
     virtual StateTransitionData transition(Action action0, Action action1) = 0;
 
 };
@@ -70,8 +59,8 @@ public:
 // Solved State
 
 
-template <int size>
-class SolvedState : public State<size> {
+template <int size, typename Action>
+class SolvedState : public State<size, Action> {
 public:
 
     bool terminal = true;
@@ -80,9 +69,9 @@ public:
     std::array<double, size> strategy0;
     std::array<double, size> strategy1;
 
-    SolvedState<size> (prng& device, double payoff, int rows, int cols) :
-        State<size>(device, payoff), terminal(rows*cols==0), rows(rows), cols(cols) {}
-    //virtual void actions (PairActions<size>& actions) = 0;
+    SolvedState (prng& device, double payoff, int rows, int cols) :
+        State<size, Action>(device, payoff), terminal(rows*cols==0), rows(rows), cols(cols) {}
+
 };
 
 
@@ -90,23 +79,24 @@ public:
 
 
 template <int size>
-class ToyState : public SolvedState<size> {
+class ToyState : public SolvedState<size, int> {
 public:
 
     char id = 'u';
     int pp = 1;
     int length = 0;
 
-    ToyState<size> (prng& device) :
-        SolvedState<size>(device, .5f, 2, 2) {}
-    ToyState<size> (prng& device, char id, int pp, int length) :
-        SolvedState<size>(device, .5f, 2, 2), id(id), pp(pp), length(length) {}
+    ToyState (prng& device) :
+        SolvedState<size, int>(device, .5f, 2, 2) {}
+    ToyState (prng& device, char id, int pp, int length) :
+        SolvedState<size, int>(device, .5f, 2, 2), id(id), pp(pp), length(length) {}
 
-    void actions (PairActions<size>& pair) {
+    PairActions<size, int> actions () { // Doesn't this have to be derived here, otherwise you cant use the answer
+        PairActions<size, int> pair;
         if (this->terminal) {
             pair.rows = 0;
             pair.cols = 0;
-            return;
+            return pair;
         }
         pair.rows = 2;
         pair.cols = 2;
@@ -114,15 +104,16 @@ public:
             pair.actions0[i] = i;
             pair.actions1[i] = i;
         };
+        return pair;
     }
 
-    StateTransitionData transition (Action action0, Action action1) {
+    StateTransitionData transition (int action0, int action1) {
         StateTransitionData x;
 
         if (id == 'u') {
 
                 if (pp == 0) {
-                    this->payoff = 0;
+                    this->payoff0 = 0;
                     this->terminal = true;
                     return x;
                 }
@@ -131,15 +122,15 @@ public:
                     --pp;
                     if (action1 == 0) {
                     } else {
-                        this->payoff = 1;
+                        this->payoff0 = 1;
                         this->terminal = true; 
                     }
                 } else {
                     if (action1 == 0) {
-                        this->payoff = 1;
+                        this->payoff0 = 1;
                         this->terminal = true;
                     } else {
-                        this->payoff = 0;
+                        this->payoff0 = 0;
                         this->terminal = true;
                     }
                 }
@@ -153,12 +144,12 @@ public:
 
                 if (action0 == 0) {
                     if (length == 0) {
-                        this->payoff = 1.f;
+                        this->payoff0 = 1.f;
                         this->terminal = true;
                     }
                     --length;
                 } else {
-                    this->payoff = 0.f;
+                    this->payoff0 = 0.f;
                     this->terminal = true;
                 }
 
@@ -169,12 +160,12 @@ public:
 
                 if (action1 == 0) {
                     if (length == 0) {
-                        this->payoff = 0.f;
+                        this->payoff0 = 0.f;
                         this->terminal = true;
                     }
                     --length;
                 } else {
-                    this->payoff = 1.f;
+                    this->payoff0 = 1.f;
                     this->terminal = true;
                 }
 
@@ -189,7 +180,7 @@ public:
         } else if (id == 'w') {
 
                 if (pp == 0) {
-                    this->payoff = 0;
+                    this->payoff0 = 0;
                     this->terminal = true;
                     return x;
                 }
@@ -199,15 +190,15 @@ public:
                     if (action1 == 0) {
                         
                     } else {
-                        this->payoff = 1;
+                        this->payoff0 = 1;
                         this->id = 's';
                     }
                 } else {
                     if (action1 == 0) {
-                        this->payoff = 1;
+                        this->payoff0 = 1;
                         this->id = 's';
                     } else {
-                        this->payoff = 0;
+                        this->payoff0= 0;
                         this->id = 't';
                     }
                 }
@@ -219,27 +210,26 @@ public:
 
         }
 
-     
-
         return x;
     }
 
 };
-
+ 
 template <int size>
-class MoldState : public State<size> {
+class MoldState : public State<size, int> {
 public:
 
     int depth = 0;
 
     MoldState<size> (prng& device, int depth) :
-        State<size>(device), depth(depth) {}
+        State<size, int>(device), depth(depth) {}
 
-    void actions (PairActions<size>& pair) {
+    PairActions<size, int> actions () {
+        PairActions<size, int> pair;
         if (depth == 0) {
             pair.rows = 0;
             pair.cols = 0;
-            return;
+            return pair;
         }
         pair.rows = 2;
         pair.cols = 2;
@@ -247,9 +237,10 @@ public:
             pair.actions0[i] = i;
             pair.actions1[i] = i;
         };
+        return pair;
     }
 
-    StateTransitionData transition (Action action0, Action action1) {
+    StateTransitionData transition (int action0, int action1) {
         --depth;
         StateTransitionData x;
         return x;

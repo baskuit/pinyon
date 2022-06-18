@@ -8,23 +8,22 @@ add_library(libsurskit STATIC src/main.cc test/test.cc)
 
 add_executable(
 surskit 
-src/libsurskit/math.cc
-# src/state/toy_state.cc
+# src/libsurskit/math.cc
 # src/tree/node.cc
 src/main.cc
 )
 
-add_executable(
-test 
-src/libsurskit/math.cc
-# src/state_on_stack/toy_state.cc
-# src/tree/node.cc
-test/test.cc
-)
+# add_executable(
+# test 
+# src/libsurskit/math.cc
+# # src/state_on_stack/toy_state.cc
+# # src/tree/node.cc
+# test/test.cc
+# )
 
 # add_executable(
 # matrix
-# gambit-master/src/tools/enummixed/enummixed.cc
+# gambit-maste1r/src/tools/enummixed/enummixed.cc
 # # src/state_on_stack/toy_state.cc
 # # src/tree/node.cc
 # )
