@@ -4,9 +4,6 @@
 
 #include "../libsurskit/math.hh"
 
-
-typedef int Hash;
-
 template <int size, typename Action>
 struct PairActions {
     int rows = 0;
@@ -19,14 +16,14 @@ struct PairActions {
 };
 
 template <typename Hash>
-struct StateTransitionData {
+struct TransitionData {
 
-    Hash transitionKey = 0;
-    Rational transitionProb;
+    Hash key;
+    Rational probability;
 
-    StateTransitionData () {}
-    StateTransitionData (Hash transitionKey, Rational transitionProb) :
-        transitionKey(transitionKey), transitionProb(transitionProb) {}
+    TransitionData () {} // Dangerous? Hash type must have default constructor, I believe.
+    TransitionData (Hash key, Rational probability) :
+        key(key), probability(probability) {}
 };
 
 
@@ -37,30 +34,34 @@ template <int size, typename Action, typename Hash>
 class State {
 public:
 
-    static const int array_size = size;
-    typedef Action action_type;
-    typedef PairActions<size, Action> pair_actions_type;
+    static const int size_ = size;
+    typedef Action action_t; 
+    typedef Hash hash_t;
+    typedef PairActions<size, Action> pair_actions_t;
+    typedef TransitionData<Hash> transition_data_t;
 
     prng& device;
-    double payoff0 = 0.5f; //garbage unless terminal
+    double payoff0 = 0.5f;
     double payoff1 = 0.5f;
 
-    State<size, Action> (prng& device) : 
+    State<size, Action, Hash> (prng& device) : 
         device(device) {}
-    State<size, Action> (prng& device, double payoff) : 
+    State<size, Action, Hash> (prng& device, double payoff) : 
         device(device), payoff0(payoff), payoff1(1-payoff) {}
 
     virtual PairActions<size, Action> actions () = 0;
-    virtual StateTransitionData transition(Action action0, Action action1) = 0;
+    virtual TransitionData<Hash> transition(Action action0, Action action1) = 0;
 
 };
 
+// template <int size, typename Action, typename Hash>
+// using State<size, Action, Hash> :: ActionData = ActionData<size, Action>;
 
-// Solved State
+// // Solved State
 
 
-template <int size, typename Action>
-class SolvedState : public State<size, Action> {
+template <int size, typename Action, typename Hash>
+class SolvedState : public State<size, Action, Hash> {
 public:
 
     bool terminal = true;
@@ -70,7 +71,7 @@ public:
     std::array<double, size> strategy1;
 
     SolvedState (prng& device, double payoff, int rows, int cols) :
-        State<size, Action>(device, payoff), terminal(rows*cols==0), rows(rows), cols(cols) {}
+        State<size, Action, Hash>(device, payoff), terminal(rows*cols==0), rows(rows), cols(cols) {}
 
 };
 
@@ -79,7 +80,7 @@ public:
 
 
 template <int size>
-class ToyState : public SolvedState<size, int> {
+class ToyState : public SolvedState<size, int, int> {
 public:
 
     char id = 'u';
@@ -87,11 +88,11 @@ public:
     int length = 0;
 
     ToyState (prng& device) :
-        SolvedState<size, int>(device, .5f, 2, 2) {}
+        SolvedState<size, int, int>(device, .5f, 2, 2) {}
     ToyState (prng& device, char id, int pp, int length) :
-        SolvedState<size, int>(device, .5f, 2, 2), id(id), pp(pp), length(length) {}
+        SolvedState<size, int, int>(device, .5f, 2, 2), id(id), pp(pp), length(length) {}
 
-    PairActions<size, int> actions () { // Doesn't this have to be derived here, otherwise you cant use the answer
+    typename ToyState::pair_actions_t actions () {
         PairActions<size, int> pair;
         if (this->terminal) {
             pair.rows = 0;
@@ -107,8 +108,8 @@ public:
         return pair;
     }
 
-    StateTransitionData transition (int action0, int action1) {
-        StateTransitionData x;
+    typename ToyState::transition_data_t transition (int action0, int action1) {
+        typename ToyState::transition_data_t x(0, Rational());
 
         if (id == 'u') {
 
@@ -174,8 +175,8 @@ public:
 
         } else if (id == '2') {
 
-            x.transitionKey = this->device.random_int(2);
-            x.transitionProb = {1, 2};
+            x.key = this->device.random_int(2);
+            x.probability = {1, 2};
 
         } else if (id == 'w') {
 
@@ -216,15 +217,15 @@ public:
 };
  
 template <int size>
-class MoldState : public State<size, int> {
+class MoldState : public State<size, int, int> {
 public:
 
     int depth = 0;
 
     MoldState<size> (prng& device, int depth) :
-        State<size, int>(device), depth(depth) {}
+        State<size, int, int>(device), depth(depth) {}
 
-    PairActions<size, int> actions () {
+    typename MoldState::pair_actions_t actions () {
         PairActions<size, int> pair;
         if (depth == 0) {
             pair.rows = 0;
@@ -240,9 +241,10 @@ public:
         return pair;
     }
 
-    StateTransitionData transition (int action0, int action1) {
+    typename MoldState::transition_data_t transition (int action0, int action1) {
         --depth;
-        StateTransitionData x;
+        typename MoldState::transition_data_t x;
+        x.key = 0;
         return x;
     }
 
