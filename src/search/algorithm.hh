@@ -19,6 +19,6 @@ public:
     using model_t = Model;
     using inference_t = typename Model::InferenceData;
 
-    struct MatrixStats0 {};
+    struct MatrixStats {};
     struct ChanceStats {};
 };

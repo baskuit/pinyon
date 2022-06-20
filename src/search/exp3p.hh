@@ -7,7 +7,7 @@ template <typename Model>
 class Exp3p : public Algorithm<Model> {
 public:
 
-    struct MatrixStats : Algorithm<Model>::MatrixStats0 {
+    struct MatrixStats : Algorithm<Model>::MatrixStats {
         int t = 0;
         std::array<double, Exp3p::state_t::size_> gains0 = {0};
         std::array<double, Exp3p::state_t::size_> gains1 = {0};

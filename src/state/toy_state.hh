@@ -90,12 +90,14 @@ public:
 
                 if (action0 == 0) {
                     if (length == 0) {
-                        this->payoff0 = 1.f;
+                        this->payoff0 = 1;
+                        this->payoff1 = 0;
                         this->terminal = true;
                     }
                     --length;
                 } else {
-                    this->payoff0 = 0.f;
+                    this->payoff0 = 0;
+                    this->payoff1 = 1;
                     this->terminal = true;
                 }
 
@@ -106,12 +108,14 @@ public:
 
                 if (action1 == 0) {
                     if (length == 0) {
-                        this->payoff0 = 0.f;
+                    this->payoff0 = 0;
+                    this->payoff1 = 1;
                         this->terminal = true;
                     }
                     --length;
                 } else {
-                    this->payoff0 = 1.f;
+                    this->payoff0 = 1;
+                    this->payoff1 = 0;
                     this->terminal = true;
                 }
 
