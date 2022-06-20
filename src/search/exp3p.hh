@@ -7,308 +7,152 @@ template <typename Model>
 class Exp3p : public Algorithm<Model> {
 public:
 
-    struct MatrixStats : Algorithm<Model>::MatrixStats {
-        std::array<double, Exp3p::state_t::size_> gains0;
-        std::array<double, Exp3p::state_t::size_> gains1;
+    struct MatrixStats : Algorithm<Model>::MatrixStats0 {
+        int t = 0;
+        std::array<double, Exp3p::state_t::size_> gains0 = {0};
+        std::array<double, Exp3p::state_t::size_> gains1 = {0};
+        std::array<int, Exp3p::state_t::size_> visits0 = {0};
+        std::array<int, Exp3p::state_t::size_> visits1 = {0};
+
+        int visits = 0;
+        double cumulative_value0 = 0;
+        double cumulative_value1 = 0;
     };
 
+    struct ChanceStats : Algorithm<Model>::ChanceStats {
+        int visits = 0;
+        double cumulative_value0 = 0;
+        double cumulative_value1 = 0;
+    };
+
+    prng& device;
+
+    Exp3p (prng& device)  :
+        device(device) {}
+
+    // Working memory
+    std::array<double, Exp3p::state_t::size_> forecast0;
+    std::array<double, Exp3p::state_t::size_> forecast1;
+
+    void expand (typename Exp3p::state_t& state, Model model, MatrixNode<Exp3p>* matrix_node) {
+        matrix_node->expanded = true;
+        state.actions(matrix_node->pair);
+        matrix_node->terminal = state.terminal;// (matrix_node->pair.rows*matrix_node->pair.cols == 0);
+
+        if (matrix_node->terminal) { // Makes this model independent 
+            matrix_node->inference.value_estimate0 = state.payoff0;
+            matrix_node->inference.value_estimate1 = state.payoff1;
+        } else {
+            model.inference(state, matrix_node->pair);
+            
+            matrix_node->inference = model.inference_; // Inference expects a state, gets T instead...
+        }
+        if (matrix_node->parent != nullptr) {
+            int t_estimate = matrix_node->parent->parent->stats.t / 4;
+            t_estimate = t_estimate == 0 ? 1 : t_estimate;
+            matrix_node->stats.t = t_estimate;
+        }
+    }
+
+    MatrixNode<Exp3p>* search (typename Exp3p::state_t& state, typename Exp3p::model_t model, MatrixNode<Exp3p>* matrix_node) {
+
+        if (matrix_node->terminal == true) {
+            return matrix_node;
+        } else {
+            if (matrix_node->expanded == true) {
+                forecast(matrix_node);
+                int row_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast0, matrix_node->pair.rows);
+                int col_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast1, matrix_node->pair.cols);
+                double inverse_prob0 = 1/forecast0[row_idx];
+                double inverse_prob1 = 1/forecast1[col_idx]; // Forecast is altered by subsequent search calls
+
+                typename Exp3p::action_t action0 = matrix_node->pair.actions0[row_idx];
+                typename Exp3p::action_t action1 = matrix_node->pair.actions1[col_idx];
+                typename Exp3p::transition_data_t transition_data = state.transition(action0, action1);
+
+                ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
+                MatrixNode<Exp3p>* matrix_node_next = chance_node->access(transition_data);
+                    MatrixNode<Exp3p>* matrix_node_leaf = search(state, model, matrix_node_next);
+
+                double u0 = matrix_node_leaf->inference.value_estimate0;
+                double u1 = matrix_node_leaf->inference.value_estimate1;
+                matrix_node->stats.gains0[row_idx] += u0 * inverse_prob0;
+                matrix_node->stats.gains1[col_idx] += u1 * inverse_prob1;
+                update(matrix_node, u0, u1, row_idx, col_idx);
+                update(chance_node, u0, u1);
+                return matrix_node_leaf;
+            } else {
+                expand(state, model, matrix_node);
+                return matrix_node;
+            }
+        }
+    };
+
+private:
+
     // Softmax and uniform noise
-    void softmax (std::array<double, Exp3p::state_t::size_>& forecast, int k, double eta);
+    void softmax (std::array<double, Exp3p::state_t::size_>& forecast, std::array<double, Exp3p::state_t::size_>& gains, int k, double eta) {
+        double max = 0;
+        for (int i = 0; i < k; ++i) {
+            double x = gains[i];
+            if (x > max) {
+                max = x;
+            } 
+        }
+        double sum = 0;
+        for (int i = 0; i < k; ++i) {
+            gains[i] -= max;
+            double x = gains[i];
+            double y = std::exp(x * eta);
+            forecast[i] = y;
+            sum += y;
+        }
+        for (int i = 0; i < k; ++i) {
+            forecast[i] /= sum;
+        }
+    };
 
-    void forecast (std::array<double, Exp3p::state_t::size_>& forecast0, std::array<double, Exp3p::state_t::size_>& forecast1, MatrixNode<Exp3p>* matrix_node) {};
+    void forecast (MatrixNode<Exp3p>* matrix_node) {
+        const int time = matrix_node->stats.t;
+        const int rows = matrix_node->pair.rows;
+        const int cols = matrix_node->pair.cols;
+        if (rows == 1) {
+            forecast0[0] = 1;
+        } else {
+            const double eta = .95 * sqrt(log(rows)/(time*rows));
+            const double gamma_ = 1.05 * sqrt(rows*log(rows)/time);
+            const double gamma = gamma_ < 1 ? gamma_ : 1;
+            softmax(forecast0, matrix_node->stats.gains0, rows, eta);
+            for (int row_idx = 0; row_idx < rows; ++row_idx) {
+                double x = (1 - gamma) * forecast0[row_idx] + (gamma) * matrix_node->inference.strategy_prior0[row_idx];
+                forecast0[row_idx] = x;
+         
+            }
+        }
+        if (cols == 1) {
+            forecast1[0] = 1;
+        } else {
+            const double eta = .95 * sqrt(log(cols)/(time*cols));
+            const double gamma_ = 1.05 * sqrt(cols*log(cols)/time);
+            const double gamma = gamma_ < 1 ? gamma_ : 1;
+            softmax(forecast1, matrix_node->stats.gains1, cols, eta);
+            for (int col_idx = 0; col_idx < cols; ++col_idx) {
+                double x = (1 - gamma) * forecast1[col_idx] + (gamma) * matrix_node->inference.strategy_prior1[col_idx];
+                forecast1[col_idx] = x;
+            }
+        }
+    }
 
+    void update (MatrixNode<Exp3p>* matrix_node, double u0, double u1, int row_idx, int col_idx) {
+        matrix_node->stats.cumulative_value0 += u0;
+        matrix_node->stats.cumulative_value1 += u1;
+        matrix_node->stats.visits += 1; 
+        matrix_node->stats.visits0[row_idx] += 1;
+        matrix_node->stats.visits1[col_idx] += 1;
+    }
+    void update (ChanceNode<Exp3p>* chance_node, double u0, double u1) {
+        chance_node->stats.cumulative_value0 += u0;
+        chance_node->stats.cumulative_value1 += u1;
+        chance_node->stats.visits += 1;
+    }
 };
-
-
-// template<typename Model>
-// void Exp3p<Model> :: softmax (
-//     std::array<double,  Exp3p<Model>::state_type::array_size>& forecast, 
-//     int k, 
-//     double eta
-//     ) {
-
-//     double max = 0;
-//     for (int i = 0; i < k; ++i) {
-//         double x = Exp3p<Model>::Stats::gains0[i];
-//         if (x > max) {
-//             max = x;
-//         } 
-//     }
-//     double sum = 0;
-//     for (int i = 0; i < k; ++i) {
-//         matrix_node->s.gains0[i] -= max;
-//         double x = matrix_node->s.gains0[i];
-//         double y = std::exp(x * eta);
-//         forecast[i] = y;
-//         sum += y;
-//     }
-//     for (int i = 0; i < k; ++i) {
-//         forecast[i] /= sum;
-//     }
-// }
-
-
-
-// template <int size, typename T>
-// void Exp3pSearchSession<size, T> :: forecast (
-//     std::array<double, size>& forecast0, 
-//     std::array<double, size>& forecast1,
-//     MatrixNode<size, Exp3pStats<size>>* matrix_node
-// ) {
-//     const int time = matrix_node->s.time;
-//     const int rows = matrix_node->pair.rows;
-//     const int cols = matrix_node->pair.cols;
-//     if (rows == 1) {
-//         forecast0[0] = 1;
-//     } else {
-//         const double eta = .95 * sqrt(log(rows)/(time*rows));
-//         const double gamma_ = 1.05 * sqrt(rows*log(rows)/time);
-//         const double gamma = gamma_ < 1 ? gamma_ : 1;
-//         softmax(forecast0, matrix_node, eta);
-//         for (int row_idx = 0; row_idx < rows; ++row_idx) {
-//             double x = (1 - gamma) * forecast0[row_idx] + (gamma) * matrix_node->inference.strategy_prior0[row_idx];
-//             forecast0[row_idx] = x;
-//         }
-//     }
-//     if (cols == 1) {
-//         forecast1[0] = 1;
-//     } else {
-//         const double eta = .95 * sqrt(log(cols)/(time*cols));
-//         const double gamma_ = 1.05 * sqrt(cols*log(cols)/time);
-//         const double gamma = gamma_ < 1 ? gamma_ : 1;
-//         softmax(forecast1, matrix_node, eta);
-//         for (int col_idx = 0; col_idx < cols; ++col_idx) {
-//             double x = (1 - gamma) * forecast1[col_idx] + (gamma) * matrix_node->inference.strategy_prior0[col_idx];
-//             forecast1[col_idx] = x;
-//         }
-//     }
-// }
-
-// template <int size>
-// struct Exp3pAnswer {
-//     int time = 0;
-//     double value0 = .5f;
-//     double value1 = .5f;
-//     std::array<double, size> strategy0 = {0};
-//     std::array<double, size> strategy1 = {0};
-//     std::array<int, size> visits0 = {0};
-//     std::array<int, size> visits1 = {0};
-
-//     Exp3pAnswer () {}
-//     void print () {
-//         std::cout << "time: " << time << std::endl;
-//         std::cout << "s0: ";
-//         for (int i = 0; i < size; ++i) {
-//             std::cout << strategy0[i] << ' ';
-//         }
-//         std::cout << std::endl;
-//         std::cout << "v0: ";
-//         for (int i = 0; i < size; ++i) {
-//             std::cout << visits0[i] << ' ';
-//         }
-//         std::cout << std::endl;
-//         std::cout << "s1: ";
-//         for (int i = 0; i < size; ++i) {
-//             std::cout << strategy1[i] << ' ';
-//         }
-//         std::cout << std::endl;
-//         std::cout << "v1: ";
-//         for (int i = 0; i < size; ++i) {
-//             std::cout << visits1[i] << ' ';
-//         }
-//         std::cout << std::endl;
-//         std::cout << "u0: " << value0 << " u1: " << value1 << std::endl;
-//     }
-// };
-
-
-
-
-// template <int size, typename T>
-// struct Exp3pSearchSession : SearchSession {
-
-//     MatrixNode<size, Exp3pStats<size>>* root; 
-//     T& state;
-//     Model<size>& model;
-
-//     int time = 0;
-//     std::array<int, size> visits0 = {0};
-//     std::array<int, size> visits1 = {0};
-//     double cumulative_value0 = 0;
-//     double cumulative_value1 = 0;
-
-//     Exp3pSearchSession<size, T> (
-//     prng& device, 
-//     T& state, 
-//     Model<size>& model, 
-//     MatrixNode<size, Exp3pStats<size>>* root, 
-//     int time) :
-//         SearchSession(device), root(root), state(state), model(model), time(time) {
-//         if (!root->expanded) {
-//             T state_ = state;
-//             expand(time, root, state_);
-//         }
-//     }
-
-//     // Infernces the state with the model, and applies that information to the matrix node
-//     void expand (int time, MatrixNode<size, Exp3pStats<size>>* matrix_node, T& state);
-
-//     // Returns the leaf node of a playout. Either game-terminal, pruned-terminal, or just now expanded.
-//     MatrixNode<size, Exp3pStats<size>>* search (MatrixNode<size, Exp3pStats<size>>* matrix_node_current, T& state);
-
-//     //  Public interface for other search. Updates session statistics for this->answer().
-//     void search (int time) {
-//         this->time += time;
-//         for (int playout = 0; playout < time; ++ playout) {
-//             T state_ = state;
-//             MatrixNode<9 , Exp3pStats<9>>* leaf = this->search(root, state_);
-
-//             cumulative_value0 += leaf->inference.value_estimate0;
-//             cumulative_value1 += leaf->inference.value_estimate1;
-
-//             // We are deducing the actions played from outside the search(Node*, State&) function
-//             // So we have do this little rigmarol of tracing back from the leaf 
-
-//             if (leaf != root) {
-//                 while (leaf->parent->parent != root) {
-//                     leaf = leaf->parent->parent;
-//                 }
-//                 auto a0 = leaf->parent->action0;
-//                 auto a1 = leaf->parent->action1;
-//                 int row_idx = 0;
-//                 int col_idx = 0;
-//                 for (int i = 0; i < root->pair.rows; ++i) {
-//                     if (a0 == root->pair.actions0[i]) {
-//                         row_idx = i;
-//                     }
-//                 }
-//                 for (int j = 0; j < root->pair.cols; ++j) {
-//                     if (a1 == root->pair.actions1[j]) {
-//                         col_idx = j;
-//                     }
-//                 }
-//                 visits0[row_idx] += 1;
-//                 visits1[col_idx] += 1;
-//             }
-//         }
-//     };
-
-//     // Softmax and uniform noise
-//     void softmax (std::array<double, size>& forecast, MatrixNode<size, Exp3pStats<size>>* matrix_node, double eta);
-
-//     void forecast (std::array<double, size>& forecast0, std::array<double, size>& forecast1, MatrixNode<size, Exp3pStats<size>>* matrix_node);
-
-//     // Returned denoised empirical strategies collected over the session (not over the node's history)
-//     Exp3pAnswer<size> answer ();
-// };
-
-
-
-
-
-
-
-// // Implementation ------------------------------------------------------
-
-
-
-
-
-
-
-// template<int size, typename T>
-// void Exp3pSearchSession<size, T> :: expand (int time, MatrixNode<size, Exp3pStats<size>>* matrix_node, T& state) {
-//     matrix_node->expanded = true;
-
-//     matrix_node->inference = model.inference(state, matrix_node->pair); // Inference expects a state, gets T instead...
-//     matrix_node->terminal = (matrix_node->pair.rows*matrix_node->pair.cols == 0);
-    
-//     if (matrix_node->terminal) {
-//         matrix_node->inference.value_estimate0 = state.payoff;
-//         matrix_node->inference.value_estimate1 = 1 - state.payoff;
-//     }
-
-//     matrix_node->s.time = time;
-// } 
-
-
-
-// template<int size, typename T>
-// MatrixNode<size, Exp3pStats<size>>* Exp3pSearchSession<size, T> :: search (
-//     MatrixNode<size, Exp3pStats<size>>* matrix_node_current, 
-//     T& state) {
-
-//     if (matrix_node_current->terminal == true) {
-//         return matrix_node_current;
-//     } else {
-//         if (matrix_node_current->expanded == true) {
-//             std::array<double, size> forecast0;
-//             std::array<double, size> forecast1;
-//             forecast(forecast0, forecast1, matrix_node_current);
-
-//             int row_idx = device.sample_pdf<double, size>(forecast0, matrix_node_current->pair.rows);
-//             int col_idx = device.sample_pdf<double, size>(forecast1, matrix_node_current->pair.cols);
-//             Action action0 = matrix_node_current->pair.actions0[row_idx];
-//             Action action1 = matrix_node_current->pair.actions1[col_idx];
-//             TransitionData transition_data = state.transition(action0, action1);
-
-//             ChanceNode<size, Exp3pStats<size>>* chance_node = matrix_node_current->access(row_idx, col_idx);
-//             MatrixNode<size, Exp3pStats<size>>* matrix_node_next = chance_node->access(transition_data);
-//             MatrixNode<size, Exp3pStats<size>>* matrix_node_leaf = search(matrix_node_next, state);
-
-//             double u0 = matrix_node_leaf->inference.value_estimate0;
-//             double u1 = matrix_node_leaf->inference.value_estimate1;
-//             matrix_node_current->s.gains0[row_idx] += u0 / forecast0[row_idx];
-//             matrix_node_current->s.gains1[col_idx] += u1 / forecast1[col_idx];
-//             matrix_node_current->update(u0, u1);
-//             chance_node->update(u0, u1);
-
-//             return matrix_node_leaf;
-//         } else {
-//             expand(matrix_node_current->s.time, matrix_node_current, state);
-//             return matrix_node_current;
-//         }
-//     }
-// };
-
-
-
-
-// template<int size, typename T>
-// Exp3pAnswer<size> Exp3pSearchSession<size, T> :: answer () {
-//     Exp3pAnswer<size> data;
-//     const int rows = root->pair.rows;
-//     const int cols = root->pair.cols;
-//     for (int i = 0; i < rows; ++i) {
-//         data.strategy0[i] = visits0[i]/ (double)time;
-//     }
-//     for (int j = 0; j < cols; ++j) {
-//         data.strategy1[j] = visits1[j]/ (double)time;
-//     }
-//     const double eta_ = 1;
-//     double row_sum = 0;
-//     for (int i = 0; i < rows; ++i) {
-//         //data.strategy0[i] -= (eta/(double)rows);
-//         data.strategy0[i] *= data.strategy0[i] > 0 ? eta_ : 0;
-//         row_sum += data.strategy0[i];
-//     }
-//     double col_sum = 0;
-//     for (int j = 0; j < cols; ++j) {
-//         //data.strategy1[j] -= (eta/(double)cols);
-//         data.strategy1[j] *= data.strategy1[j] > 0 ? eta_ : 0;
-//         col_sum += data.strategy1[j];
-//     }
-//     for (int i = 0; i < rows; ++i) {
-//         data.visits0[i] = visits0[i];
-//         data.strategy0[i] /= row_sum;
-//     }
-//     for (int j = 0; j < cols; ++j) {
-//         data.visits1[j] = visits1[j];
-//         data.strategy1[j] /= col_sum;
-//     }
-//     data.value0 = cumulative_value0 / time;
-//     data.value1 = cumulative_value1 / time;
-//     data.time = time;
-
-//     return data;
-// };

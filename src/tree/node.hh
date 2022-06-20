@@ -17,7 +17,7 @@ public:
     typedef typename Algorithm::transition_data_t transition_data_t;
     typedef typename Algorithm::model_t model_t;
     typedef typename Algorithm::model_t::InferenceData inference_t;
-    typedef typename Algorithm::MatrixStats matrix_stats_t;
+    typedef typename Algorithm::MatrixStats stats_t;
     
     ChanceNode<Algorithm>* parent = nullptr;
     ChanceNode<Algorithm>* child = nullptr;
@@ -31,7 +31,7 @@ public:
 
     pair_actions_t pair;
     inference_t inference;
-    matrix_stats_t stats; // cumulative_value, vists now part of stats
+    stats_t stats; // cumulative_value, vists now part of stats
 
     MatrixNode () :
     transition_data() {}
@@ -101,6 +101,8 @@ public:
 
     int row_idx;
     int col_idx;
+
+    stats_t stats;
 
     ChanceNode<Algorithm> (MatrixNode<Algorithm>* parent, ChanceNode<Algorithm>* prev, int row_idx, int col_idx) :
         parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}

@@ -2,59 +2,20 @@
 
 #include "../state/state.hh"
 
-template <typename StateType>
+template <typename State>
 class Model {
 public:
-    typedef StateType state_t;
-    typedef typename StateType::action_t action_t;
-    typedef typename StateType::pair_actions_t pair_actions_t;
-    typedef typename StateType::transition_data_t transition_data_t;
+
+    // This pattern ensures each higher type (Model, Nodes, etc) and their derivations have access to all the lower types.
+    using action_t = typename State::action_t;
+    using hash_t = typename State::hash_t;
+    using pair_actions_t = typename State::pair_actions_t;
+    using transition_data_t = typename State::transition_data_t;
+    using state_t = State;
 
     struct InferenceData {};
 
-    InferenceData inference_;
+    InferenceData inference_; //Bad naming. Fix!!!
 
-    virtual InferenceData& inference (StateType& state, pair_actions_t& pair) = 0;
+    virtual InferenceData& inference (State& state, pair_actions_t& pair) = 0;
 };
-
-
-
-// template <int size>
-// class SolvedModel : public Model<size> {
-
-//     prng& device;
-
-//     SolvedModel<size> (prng& device) :
-//     device(device) {}
-
-//     InferenceData<size> inference (SolvedState<size>& state) {
-//         PairActions<size> pair;
-//         InferenceData<size> inference_data;
-//         state.actions(pair);
-//         for (int row_idx = 0; row_idx < pair.rows; ++row_idx) {
-//             inference_data.strategy_prior0[row_idx] = state.strategy0[row_idx];
-//         }
-//         for (int col_idx = 0; col_idx < pair.cols; ++col_idx) {
-//             inference_data.strategy_prior1[col_idx] = state.strategy1[col_idx];
-//         }
-//         double u = state.payoff;
-//         inference_data.value_estimate0 = u;
-//         inference_data.value_estimate1 = 1-u;
-//         return inference_data;
-//     };
-
-//     InferenceData<size> inference (SolvedState<size>& state, PairActions<size>& pair) {
-//         InferenceData<size> inference_data;
-//         state.actions(pair);
-//         for (int row_idx = 0; row_idx < pair.rows; ++row_idx) {
-//             inference_data.strategy_prior0[row_idx] = state.strategy0[row_idx];
-//         }
-//         for (int col_idx = 0; col_idx < pair.cols; ++col_idx) {
-//             inference_data.strategy_prior1[col_idx] = state.strategy1[col_idx];
-//         }
-//         double u = state.payoff;
-//         inference_data.value_estimate0 = u;
-//         inference_data.value_estimate1 = 1-u;
-//         return inference_data;
-//     };
-// };

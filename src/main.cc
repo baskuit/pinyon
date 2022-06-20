@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <iostream>
 
-#include "state/state.hh"
+#include "state/toy_state.hh"
 #include "model/monte_carlo.hh"
 #include "tree/node.hh"
 #include "search/exp3p.hh"
@@ -16,23 +16,33 @@ int main () {
 
     MonteCarlo model(device);
     
+    Exp3p session(device);
 
-    Exp3p session;
-
-    // MatrixNode<Exp3p> root(nullptr, nullptr, TransitionData(0, Rational()));
+    int playouts = 1000000;
     MatrixNode<Exp3p> root;
 
+    root.stats.t = playouts;
+
     double total = 0;
-    int playouts = 1000000;
+
+    State toy(device, 'u', 4, 0);
 
     for (int p = 0; p < playouts; ++p) {
-        State toy(device, 'u', 2, 0);
-        State::pair_actions_t pair;
-        model.inference(toy, pair);
-        total += model.inference_.value_estimate0;
+        State toy_ = toy;
+        session.search(toy_, model, &root);
     }
 
-    std::cout << (total / playouts) << std::endl;
+    std::cout << "s0: ";
+    for (int i = 0; i < 2; ++i) {
+        std::cout << root.stats.visits0[i] << ' ';
+    }
+    std::cout << std::endl;
+
+    std::cout << "s1: ";
+    for (int i = 0; i < 2; ++i) {
+        std::cout << root.stats.visits1[i] << ' ';
+    }
+    std::cout << std::endl;
 
     return 0;
 }

@@ -13,13 +13,12 @@ surskit
 src/main.cc
 )
 
-# add_executable(
-# test 
+add_executable(
+test
 # src/libsurskit/math.cc
-# # src/state_on_stack/toy_state.cc
-# # src/tree/node.cc
-# test/test.cc
-# )
+# src/tree/node.cc
+test/test.cc
+)
 
 # add_executable(
 # matrix
