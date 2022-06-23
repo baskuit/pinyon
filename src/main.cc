@@ -31,7 +31,7 @@ void search (MatrixNode<Exp3pT>* root, int playouts, int idx) {
     for (int playout = 0; playout < playouts; ++playout) {
         auto state_ = toy;
         session.search(state_, model, root);
-        std::cout << idx << ": " << root->stats.visits << std::endl;
+        //std::cout << idx << ": " << root->stats.visits << std::endl;
     }
 
 };
@@ -39,11 +39,11 @@ void search (MatrixNode<Exp3pT>* root, int playouts, int idx) {
 int main () {
 
     const int threads = 6;
-    int playouts = 1000;
+    int playouts = 1000000000;
     std::thread pool[threads];
 
     for (int i = 0; i < threads; ++i) {
-        pool[i] = std::thread(search, &root, playouts, i);
+        pool[i] = std::thread(search, &root, playouts / threads, i);
         // pool[i].join();
     }
     for (int i = 0; i < threads; ++i) {

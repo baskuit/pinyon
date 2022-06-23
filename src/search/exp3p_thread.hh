@@ -67,7 +67,7 @@ public:
         if (matrix_node->terminal == true) {
             return matrix_node;
         } else {
-            matrix_node->stats.mutex.lock();
+matrix_node->stats.mutex.lock();
 
             if (matrix_node->expanded == true) {
                 forecast(matrix_node);
@@ -75,7 +75,7 @@ public:
                 int col_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast1, matrix_node->pair.cols);
                 double inverse_prob0 = 1/forecast0[row_idx];
                 double inverse_prob1 = 1/forecast1[col_idx]; // Forecast is altered by subsequent search calls
-matrix_node->stats.mutex.unlock();
+
 
                 typename Exp3p::action_t action0 = matrix_node->pair.actions0[row_idx];
                 typename Exp3p::action_t action1 = matrix_node->pair.actions1[col_idx];
@@ -84,7 +84,7 @@ matrix_node->stats.mutex.unlock();
                 ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
                 MatrixNode<Exp3p>* matrix_node_next = chance_node->access(transition_data);
 
-                
+matrix_node->stats.mutex.unlock();                
                     MatrixNode<Exp3p>* matrix_node_leaf = search(state, model, matrix_node_next);
 matrix_node->stats.mutex.lock();
 
