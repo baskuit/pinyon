@@ -52,16 +52,16 @@ public:
     double payoff0 = 0.5f;
     double payoff1 = 0.5f;
 
-    State<size, Action, Hash> (prng& device) : 
+    State (prng& device) : 
         device(device) {}
-    State<size, Action, Hash> (prng& device, double payoff) : 
+    State (prng& device, double payoff) : 
         device(device), payoff0(payoff), payoff1(1-payoff) {}
-    State<size, Action, Hash> (prng& device, double payoff0, double payoff1) : 
+    State (prng& device, double payoff0, double payoff1) : 
         device(device), payoff0(payoff0), payoff1(payoff1) {}
 
-    virtual PairActions<size, Action> actions () = 0;
-    virtual void actions (PairActions<size, Action>& pair) = 0;
-    virtual TransitionData<Hash> transition(Action action0, Action action1) = 0;
+    virtual pair_actions_t actions () = 0;
+    virtual void actions (pair_actions_t& pair) = 0;
+    virtual transition_data_t transition(Action action0, Action action1) = 0;
 };
 
 

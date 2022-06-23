@@ -30,3 +30,7 @@ test/test.cc
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
+
+add_library(Gambit STATIC IMPORTED)
+set_property(TARGET Gambit PROPERTY
+             IMPORTED_LOCATION "/gambit")
