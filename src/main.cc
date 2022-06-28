@@ -42,7 +42,7 @@ void search (MatrixNode<Exp3pT>* root, int playouts, int idx) {
 
 int main () {
 
-        
+        // MAIN IS CURRENTLY NOTHING. SHOULD EVENTUALLY BE  A ROCK
 //     MatrixNode<Exp3pT> root;
 //     int playouts = 1000000;
 //     std::cout << "playouts: " << playouts << std::endl;

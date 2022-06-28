@@ -32,11 +32,14 @@ public:
     };
 
     prng device; // used to instantiate thread local prng
-        // std::array<std::mutex, pool_size> pool;
 
     Exp3p () {} // TODO add device
 
-    void expand (typename Exp3p::state_t& state, Model model, MatrixNode<Exp3p>* matrix_node) {
+    void expand (
+        typename Exp3p::state_t& state, 
+        Model model, 
+        MatrixNode<Exp3p>* matrix_node) {
+
         matrix_node->expanded = true;
         
         // actions
@@ -67,8 +70,13 @@ public:
         }
     }
 
-    MatrixNode<Exp3p>* runPlayout (typename Exp3p::state_t& state, typename Exp3p::model_t& model, MatrixNode<Exp3p>* matrix_node) {
-        //std::cout << matrix_node->stats.mutex_idx << std::endl;
+    MatrixNode<Exp3p>* runPlayout (
+        
+        typename Exp3p::state_t& state, 
+        typename Exp3p::model_t& model, 
+        MatrixNode<Exp3p>* matrix_node
+    ) {
+
     std::mutex& mtx = matrix_node->stats.mtx;
 
         if (matrix_node->terminal == true) {
@@ -83,23 +91,22 @@ public:
                 int row_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast0, matrix_node->pair.rows);
                 int col_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast1, matrix_node->pair.cols);
 
-    //             typename Exp3p::action_t action0 = matrix_node->pair.actions0[row_idx];
-    //             typename Exp3p::action_t action1 = matrix_node->pair.actions1[col_idx];
-    //             typename Exp3p::transition_data_t transition_data = state.transition(action0, action1);
-    // mtx.lock();
-    //             ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
-    //             MatrixNode<Exp3p>* matrix_node_next = chance_node->access(transition_data);
-    //                 MatrixNode<Exp3p>* matrix_node_leaf = runPlayout(state, model, matrix_node_next);
+                typename Exp3p::action_t action0 = matrix_node->pair.actions0[row_idx];
+                typename Exp3p::action_t action1 = matrix_node->pair.actions1[col_idx];
+                typename Exp3p::transition_data_t transition_data = state.transition(action0, action1);
+    mtx.lock();
+                ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
+                MatrixNode<Exp3p>* matrix_node_next = chance_node->access(transition_data);
+                    MatrixNode<Exp3p>* matrix_node_leaf = runPlayout(state, model, matrix_node_next);
 
-                double u0 = .5;//matrix_node_leaf->inference.value_estimate0;
-                double u1 = .5;//matrix_node_leaf->inference.value_estimate1;
-    //             matrix_node->stats.gains0[row_idx] += u0 / forecast0[row_idx];
-    //             matrix_node->stats.gains1[col_idx] += u1 / forecast1[col_idx];
-                // update(matrix_node, u0, u1, row_idx, col_idx);
-    //             update(chance_node, u0, u1);
-    // mtx.unlock();
-                matrix_node->stats.visits0[1] += 2;
-                return matrix_node;
+                double u0 = matrix_node_leaf->inference.value_estimate0;
+                double u1 = matrix_node_leaf->inference.value_estimate1;
+                matrix_node->stats.gains0[row_idx] += u0 / forecast0[row_idx];
+                matrix_node->stats.gains1[col_idx] += u1 / forecast1[col_idx];
+                update(matrix_node, u0, u1, row_idx, col_idx);
+                update(chance_node, u0, u1);
+    mtx.unlock();
+                return matrix_node_leaf;
             } else {
                 expand(state, model, matrix_node);
     mtx.unlock();
@@ -111,7 +118,11 @@ public:
     // Called by each thread. Pass state by value and instantiate a new model to guarantee no shared resources
     // PbV state will hard copy the prng, so each thread has same but separate state prng.
     // Toy state does not use this anyway
-    void loopPlayout (int playouts, typename Exp3p::state_t* state, MatrixNode<Exp3p>* matrix_node) {
+    void loopPlayout (
+        int playouts,
+        typename Exp3p::state_t* state, 
+        MatrixNode<Exp3p>* matrix_node
+    ) {
         
         prng device_;
         typename Exp3p::model_t model(device_);
@@ -123,9 +134,15 @@ public:
     }
 
     // Top level search function
-    void search (int threads, int playouts, typename Exp3p::state_t& state, MatrixNode<Exp3p>* root) {
-
+    void search (
+        int threads, 
+        int playouts, 
+        typename Exp3p::state_t& state, 
+        MatrixNode<Exp3p>* root
+    ) {
+        root->stats.t = playouts;
         std::thread thread_pool[threads];
+
         for (int i = 0; i < threads; ++i) {
             const int playouts_thread = playouts / threads;
             thread_pool[i] = std::thread(&Exp3p::loopPlayout, this, playouts_thread, &state, root);
@@ -140,7 +157,13 @@ public:
 private:
 
     // Softmax and uniform noise
-    void softmax (std::array<double, Exp3p::state_t::size_>& forecast, std::array<double, Exp3p::state_t::size_>& gains, int k, double eta) {
+    void softmax (
+        std::array<double, 
+        Exp3p::state_t::size_>& forecast, std::array<double, 
+        Exp3p::state_t::size_>& gains, 
+        int k, 
+        double eta
+    ) {
         double max = 0;
         for (int i = 0; i < k; ++i) {
             double x = gains[i];
@@ -161,7 +184,11 @@ private:
         }
     };
 
-    void forecast (MatrixNode<Exp3p>* matrix_node, std::array<double, Exp3p::state_t::size_>& forecast0, std::array<double, Exp3p::state_t::size_>& forecast1) {
+    void forecast (
+        MatrixNode<Exp3p>* matrix_node, 
+        std::array<double, Exp3p::state_t::size_>& forecast0, 
+        std::array<double, Exp3p::state_t::size_>& forecast1
+    ) {
         const int time = matrix_node->stats.t;
         const int rows = matrix_node->pair.rows;
         const int cols = matrix_node->pair.cols;
@@ -192,11 +219,17 @@ private:
         }
     }
 
-    void update (MatrixNode<Exp3p>* matrix_node, double u0, double u1, int row_idx, int col_idx) {
+    void update (
+        MatrixNode<Exp3p>* matrix_node, 
+        double u0, 
+        double u1, 
+        int row_idx, 
+        int col_idx
+    ) {
+
         matrix_node->stats.cumulative_value0 += u0;
         matrix_node->stats.cumulative_value1 += u1;
         matrix_node->stats.visits += 1; 
-            std::cout << row_idx << ' ' << col_idx << std::endl;
         matrix_node->stats.visits0[row_idx] += 1;
         matrix_node->stats.visits1[col_idx] += 1;
     }

@@ -1,25 +1,17 @@
-
-
 #pragma once
 
 #include "algorithm.hh"
 #include "tree/node.hh"
 
-#include <threads.h>
+#include <thread>
 #include <mutex>
-#include <chrono>
-
-    using std::chrono::high_resolution_clock;
-    using std::chrono::duration_cast;
-    using std::chrono::duration;
-    using std::chrono::milliseconds;
 
 template <typename Model> 
 class Exp3p : public Algorithm<Model> {
 public:
 
     struct MatrixStats : Algorithm<Model>::MatrixStats {
-        int t = 0;
+        int t = 0; //expected number of playouts
         std::array<double, Exp3p::state_t::size_> gains0 = {0};
         std::array<double, Exp3p::state_t::size_> gains1 = {0};
         std::array<int, Exp3p::state_t::size_> visits0 = {0};
@@ -29,9 +21,8 @@ public:
         double cumulative_value0 = 0;
         double cumulative_value1 = 0;
 
-        double lock_time = 0;
-        // 
-        std::mutex mutex;
+
+        std::mutex mtx;
     };
 
     struct ChanceStats : Algorithm<Model>::ChanceStats {
@@ -40,91 +31,139 @@ public:
         double cumulative_value1 = 0;
     };
 
-    prng& device;
+    prng device; // used to instantiate thread local prng
 
-    Exp3p (prng& device)  :
-        device(device) {}
+    Exp3p () {} // TODO add device
 
-    // Working memory
-    std::array<double, Exp3p::state_t::size_> forecast0;
-    std::array<double, Exp3p::state_t::size_> forecast1;
+    void expand (
+        typename Exp3p::state_t& state, 
+        Model model, 
+        MatrixNode<Exp3p>* matrix_node) {
 
-    void expand (typename Exp3p::state_t& state, Model model, MatrixNode<Exp3p>* matrix_node) {
         matrix_node->expanded = true;
+        
+        // actions
         state.actions(matrix_node->pair);
-        matrix_node->terminal = (matrix_node->pair.rows * matrix_node->pair.cols == 0);// (matrix_node->pair.rows*matrix_node->pair.cols == 0);
+        matrix_node->terminal = (matrix_node->pair.rows * matrix_node->pair.cols == 0);
 
-        if (matrix_node->terminal) { // Makes this model independent 
+        // inference
+        if (matrix_node->terminal) {
             matrix_node->inference.value_estimate0 = state.payoff0;
             matrix_node->inference.value_estimate1 = state.payoff1;
         } else {
             model.inference(state, matrix_node->pair);
-            
-            matrix_node->inference = model.inference_; // Inference expects a state, gets T instead...
+            matrix_node->inference = model.inference_; // One model per thread
         }
+
+        // time and mutex
         if (matrix_node->parent != nullptr) {
-            int t_estimate = matrix_node->parent->parent->stats.t / 4;
+            // if (matrix_node->prev != nullptr) {
+            //     matrix_node->stats.mutex_idx = (matrix_node->prev->stats.mutex_idx + 1) % pool_size;
+            // } else {
+            //     matrix_node->stats.mutex_idx = (matrix_node->parent->parent->stats.mutex_idx + 7) % pool_size;
+            // }
+            int t_estimate = matrix_node->parent->parent->stats.t / 4; // TODO
             t_estimate = t_estimate == 0 ? 1 : t_estimate;
             matrix_node->stats.t = t_estimate;
+        } else {
+            // matrix_node->stats.mutex_idx = 0;
         }
     }
 
-    MatrixNode<Exp3p>* search (typename Exp3p::state_t& state, typename Exp3p::model_t model, MatrixNode<Exp3p>* matrix_node) {
+    MatrixNode<Exp3p>* runPlayout (
+        
+        typename Exp3p::state_t& state, 
+        typename Exp3p::model_t& model, 
+        MatrixNode<Exp3p>* matrix_node
+    ) {
 
-        //matrix_node->stats.mutex.lock();
+    std::mutex& mtx = matrix_node->stats.mtx;
+
         if (matrix_node->terminal == true) {
             return matrix_node;
         } else {
-    auto t1 = high_resolution_clock::now();
-matrix_node->stats.mutex.lock();
-    auto t2 = high_resolution_clock::now();
-    double ms_int = duration_cast<milliseconds>(t2 - t1).count();
-    matrix_node->stats.lock_time += ms_int;
+    mtx.lock();
             if (matrix_node->expanded == true) {
-                forecast(matrix_node);
+                std::array<double, Exp3p::state_t::size_> forecast0;
+                std::array<double, Exp3p::state_t::size_> forecast1;
+                forecast(matrix_node, forecast0, forecast1);
+    mtx.unlock();
                 int row_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast0, matrix_node->pair.rows);
                 int col_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast1, matrix_node->pair.cols);
-                double inverse_prob0 = 1/forecast0[row_idx];
-                double inverse_prob1 = 1/forecast1[col_idx]; // Forecast is altered by subsequent search calls
-
-
 
                 typename Exp3p::action_t action0 = matrix_node->pair.actions0[row_idx];
                 typename Exp3p::action_t action1 = matrix_node->pair.actions1[col_idx];
                 typename Exp3p::transition_data_t transition_data = state.transition(action0, action1);
-
+    mtx.lock();
                 ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
                 MatrixNode<Exp3p>* matrix_node_next = chance_node->access(transition_data);
-
-matrix_node->stats.mutex.unlock();                
-                    MatrixNode<Exp3p>* matrix_node_leaf = search(state, model, matrix_node_next);
-    t1 = high_resolution_clock::now();
-matrix_node->stats.mutex.lock();
-    t2 = high_resolution_clock::now();
-    ms_int = duration_cast<milliseconds>(t2 - t1).count();
-    matrix_node->stats.lock_time += ms_int;
-
+                    MatrixNode<Exp3p>* matrix_node_leaf = runPlayout(state, model, matrix_node_next);
 
                 double u0 = matrix_node_leaf->inference.value_estimate0;
                 double u1 = matrix_node_leaf->inference.value_estimate1;
-                matrix_node->stats.gains0[row_idx] += u0 * inverse_prob0;
-                matrix_node->stats.gains1[col_idx] += u1 * inverse_prob1;
+                matrix_node->stats.gains0[row_idx] += u0 / forecast0[row_idx];
+                matrix_node->stats.gains1[col_idx] += u1 / forecast1[col_idx];
                 update(matrix_node, u0, u1, row_idx, col_idx);
                 update(chance_node, u0, u1);
-matrix_node->stats.mutex.unlock();
+    mtx.unlock();
                 return matrix_node_leaf;
             } else {
                 expand(state, model, matrix_node);
-matrix_node->stats.mutex.unlock();
+    mtx.unlock();
                 return matrix_node;
             }
         }
     };
 
+    // Called by each thread. Pass state by value and instantiate a new model to guarantee no shared resources
+    // PbV state will hard copy the prng, so each thread has same but separate state prng.
+    // Toy state does not use this anyway
+    void loopPlayout (
+        int playouts,
+        typename Exp3p::state_t* state, 
+        MatrixNode<Exp3p>* matrix_node
+    ) {
+        
+        prng device_;
+        typename Exp3p::model_t model(device_);
+        
+        for (int playout = 0; playout < playouts; ++playout) {
+            auto state_ = *state;
+            runPlayout(state_, model, matrix_node);
+        }
+    }
+
+    // Top level search function
+    void search (
+        int threads, 
+        int playouts, 
+        typename Exp3p::state_t& state, 
+        MatrixNode<Exp3p>* root
+    ) {
+        root->stats.t = playouts;
+        std::thread thread_pool[threads];
+
+        for (int i = 0; i < threads; ++i) {
+            const int playouts_thread = playouts / threads;
+            thread_pool[i] = std::thread(&Exp3p::loopPlayout, this, playouts_thread, &state, root);
+        }
+        for (int i = 0; i < threads; ++i) {
+            thread_pool[i].join();
+        }
+
+        std::cout << root->stats.visits0[0] << " " << root->stats.visits0[1] << std::endl;
+    }
+
 private:
 
     // Softmax and uniform noise
-    void softmax (std::array<double, Exp3p::state_t::size_>& forecast, std::array<double, Exp3p::state_t::size_>& gains, int k, double eta) {
+    void softmax (
+        std::array<double, 
+        Exp3p::state_t::size_>& forecast, std::array<double, 
+        Exp3p::state_t::size_>& gains, 
+        int k, 
+        double eta
+    ) {
         double max = 0;
         for (int i = 0; i < k; ++i) {
             double x = gains[i];
@@ -145,7 +184,11 @@ private:
         }
     };
 
-    void forecast (MatrixNode<Exp3p>* matrix_node) {
+    void forecast (
+        MatrixNode<Exp3p>* matrix_node, 
+        std::array<double, Exp3p::state_t::size_>& forecast0, 
+        std::array<double, Exp3p::state_t::size_>& forecast1
+    ) {
         const int time = matrix_node->stats.t;
         const int rows = matrix_node->pair.rows;
         const int cols = matrix_node->pair.cols;
@@ -176,7 +219,14 @@ private:
         }
     }
 
-    void update (MatrixNode<Exp3p>* matrix_node, double u0, double u1, int row_idx, int col_idx) {
+    void update (
+        MatrixNode<Exp3p>* matrix_node, 
+        double u0, 
+        double u1, 
+        int row_idx, 
+        int col_idx
+    ) {
+
         matrix_node->stats.cumulative_value0 += u0;
         matrix_node->stats.cumulative_value1 += u1;
         matrix_node->stats.visits += 1; 
