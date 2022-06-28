@@ -60,12 +60,23 @@ public:
         // time and mutex
         int parent_idx = -1;
         int prev_idx = -1;
-        if (matrix_node->parent != nullptr) {
-            parent_idx = matrix_node->parent->parent->stats.mutex_idx;
+        ChanceNode<Exp3p>* parent = matrix_node->parent;
+        if (parent != nullptr) {
+            MatrixNode<Exp3p>*  mparent = parent->parent;
+            parent_idx = mparent->stats.mutex_idx;
+            // get t estimate. wrap in function?
+            int row_idx = parent->row_idx;
+            int col_idx = parent->col_idx;
+            
+            double joint_p = mparent->inference.strategy_prior0[row_idx]*mparent->inference.strategy_prior1[col_idx] * ((double) matrix_node->transition_data.probability);
+            int t_estimate = matrix_node->parent->parent->stats.t * joint_p;
+            t_estimate = t_estimate == 0 ? 1 : t_estimate;
+            matrix_node->stats.t = t_estimate;
         }
         if (matrix_node->prev != nullptr) {
             prev_idx = matrix_node->prev->stats.mutex_idx;
         }
+
         while (true) {
             matrix_node->stats.mutex_idx = model.device.random_int(pool_size);
 
@@ -85,6 +96,7 @@ public:
     std::mutex& mtx = mutex_pool[matrix_node->stats.mutex_idx];
 
         if (matrix_node->terminal == true) {
+            // std::cout << matrix_node->inference.value_estimate0 << std::endl;
             return matrix_node;
         } else {
     mtx.lock();
@@ -99,22 +111,24 @@ public:
                 typename Exp3p::action_t action0 = matrix_node->pair.actions0[row_idx];
                 typename Exp3p::action_t action1 = matrix_node->pair.actions1[col_idx];
                 typename Exp3p::transition_data_t transition_data = state.transition(action0, action1);
-    mtx.lock();
+
                 ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
                 MatrixNode<Exp3p>* matrix_node_next = chance_node->access(transition_data);
                     MatrixNode<Exp3p>* matrix_node_leaf = runPlayout(state, model, matrix_node_next);
 
                 double u0 = matrix_node_leaf->inference.value_estimate0;
                 double u1 = matrix_node_leaf->inference.value_estimate1;
+    mtx.lock();
                 matrix_node->stats.gains0[row_idx] += u0 / forecast0[row_idx];
                 matrix_node->stats.gains1[col_idx] += u1 / forecast1[col_idx];
                 update(matrix_node, u0, u1, row_idx, col_idx);
                 update(chance_node, u0, u1);
-    mtx.unlock();
+    mtx.unlock(); 
                 return matrix_node_leaf;
             } else {
                 expand(state, model, matrix_node);
     mtx.unlock();
+                // std::cout << matrix_node->inference.value_estimate0 << std::endl;
                 return matrix_node;
             }
         }
@@ -163,9 +177,8 @@ private:
 
     // Softmax and uniform noise
     void softmax (
-        std::array<double, 
-        Exp3p::state_t::size_>& forecast, std::array<double, 
-        Exp3p::state_t::size_>& gains, 
+        std::array<double, Exp3p::state_t::size_>& forecast,
+        std::array<double, Exp3p::state_t::size_>& gains, 
         int k, 
         double eta
     ) {
@@ -231,7 +244,6 @@ private:
         int row_idx, 
         int col_idx
     ) {
-
         matrix_node->stats.cumulative_value0 += u0;
         matrix_node->stats.cumulative_value1 += u1;
         matrix_node->stats.visits += 1; 

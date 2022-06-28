@@ -56,13 +56,20 @@ public:
         }
 
         // time and mutex
-        if (matrix_node->parent != nullptr) {
+        ChanceNode<Exp3p>* parent = matrix_node->parent;
+        if (parent != nullptr) {
             // if (matrix_node->prev != nullptr) {
             //     matrix_node->stats.mutex_idx = (matrix_node->prev->stats.mutex_idx + 1) % pool_size;
             // } else {
             //     matrix_node->stats.mutex_idx = (matrix_node->parent->parent->stats.mutex_idx + 7) % pool_size;
             // }
-            int t_estimate = matrix_node->parent->parent->stats.t / 4; // TODO
+            MatrixNode<Exp3p>*  mparent = parent->parent;
+            // get t estimate. wrap in function?
+            int row_idx = parent->row_idx;
+            int col_idx = parent->col_idx;
+            
+            double joint_p = mparent->inference.strategy_prior0[row_idx]*mparent->inference.strategy_prior1[col_idx] * ((double) matrix_node->transition_data.probability);
+            int t_estimate = matrix_node->parent->parent->stats.t * joint_p;
             t_estimate = t_estimate == 0 ? 1 : t_estimate;
             matrix_node->stats.t = t_estimate;
         } else {
@@ -94,13 +101,14 @@ public:
                 typename Exp3p::action_t action0 = matrix_node->pair.actions0[row_idx];
                 typename Exp3p::action_t action1 = matrix_node->pair.actions1[col_idx];
                 typename Exp3p::transition_data_t transition_data = state.transition(action0, action1);
-    mtx.lock();
+
                 ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
                 MatrixNode<Exp3p>* matrix_node_next = chance_node->access(transition_data);
                     MatrixNode<Exp3p>* matrix_node_leaf = runPlayout(state, model, matrix_node_next);
 
                 double u0 = matrix_node_leaf->inference.value_estimate0;
                 double u1 = matrix_node_leaf->inference.value_estimate1;
+    mtx.lock();
                 matrix_node->stats.gains0[row_idx] += u0 / forecast0[row_idx];
                 matrix_node->stats.gains1[col_idx] += u1 / forecast1[col_idx];
                 update(matrix_node, u0, u1, row_idx, col_idx);
