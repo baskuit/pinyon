@@ -13,9 +13,13 @@ public:
     using transition_data_t = typename State::transition_data_t;
     using state_t = State;
 
-    struct InferenceData {};
+    struct InferenceData {
+        double value0 = .5; // wrong to call defacto value an estimate.
+        double value1 = .5; // also storage for solved value, makes sense as inference property
+    };
 
     InferenceData inference_; //Bad naming. Fix!!!
 
     virtual InferenceData& inference (State& state, pair_actions_t& pair) = 0;
+    
 };

@@ -189,24 +189,24 @@ public:
             pair.cols = 0;
             return pair;
         }
-        pair.rows = 2;
-        pair.cols = 2;
-        for (int i = 0; i < 2; ++i) {
+        pair.rows = size;
+        pair.cols = size;
+        for (int i = 0; i < size; ++i) {
             pair.actions0[i] = i;
             pair.actions1[i] = i;
         };
         return pair;
     }
 
-    void actions (typename MoldState::pair_actions_t pair) {
+    void actions (typename MoldState::pair_actions_t& pair) {
         if (depth == 0) {
             pair.rows = 0;
             pair.cols = 0;
             return;
         }
-        pair.rows = 2;
-        pair.cols = 2;
-        for (int i = 0; i < 2; ++i) {
+        pair.rows = size;
+        pair.cols = size;
+        for (int i = 0; i < size; ++i) {
             pair.actions0[i] = i;
             pair.actions1[i] = i;
         };

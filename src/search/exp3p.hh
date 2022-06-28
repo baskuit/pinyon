@@ -3,6 +3,12 @@
 #include "algorithm.hh"
 #include "tree/node.hh"
 
+#include <chrono>
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
+
 template <typename Model> 
 class Exp3p : public Algorithm<Model> {
 public:
@@ -37,7 +43,7 @@ public:
     void expand (typename Exp3p::state_t& state, Model model, MatrixNode<Exp3p>* matrix_node) {
         matrix_node->expanded = true;
         state.actions(matrix_node->pair);
-        matrix_node->terminal = state.terminal;// (matrix_node->pair.rows*matrix_node->pair.cols == 0);
+        matrix_node->terminal = (matrix_node->pair.rows * matrix_node->pair.cols == 0);// (matrix_node->pair.rows*matrix_node->pair.cols == 0);
 
         if (matrix_node->terminal) { // Makes this model independent 
             matrix_node->inference.value_estimate0 = state.payoff0;
