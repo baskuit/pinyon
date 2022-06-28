@@ -38,7 +38,8 @@ public:
     void expand (
         typename Exp3p::state_t& state, 
         Model model, 
-        MatrixNode<Exp3p>* matrix_node) {
+        MatrixNode<Exp3p>* matrix_node
+    ) {
 
         matrix_node->expanded = true;
         
@@ -58,27 +59,17 @@ public:
         // time and mutex
         ChanceNode<Exp3p>* parent = matrix_node->parent;
         if (parent != nullptr) {
-            // if (matrix_node->prev != nullptr) {
-            //     matrix_node->stats.mutex_idx = (matrix_node->prev->stats.mutex_idx + 1) % pool_size;
-            // } else {
-            //     matrix_node->stats.mutex_idx = (matrix_node->parent->parent->stats.mutex_idx + 7) % pool_size;
-            // }
             MatrixNode<Exp3p>*  mparent = parent->parent;
-            // get t estimate. wrap in function?
             int row_idx = parent->row_idx;
             int col_idx = parent->col_idx;
-            
             double joint_p = mparent->inference.strategy_prior0[row_idx]*mparent->inference.strategy_prior1[col_idx] * ((double) matrix_node->transition_data.probability);
             int t_estimate = matrix_node->parent->parent->stats.t * joint_p;
             t_estimate = t_estimate == 0 ? 1 : t_estimate;
             matrix_node->stats.t = t_estimate;
-        } else {
-            // matrix_node->stats.mutex_idx = 0;
         }
     }
 
-    MatrixNode<Exp3p>* runPlayout (
-        
+    MatrixNode<Exp3p>* runPlayout ( 
         typename Exp3p::state_t& state, 
         typename Exp3p::model_t& model, 
         MatrixNode<Exp3p>* matrix_node

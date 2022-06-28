@@ -40,7 +40,8 @@ public:
     void expand (
         typename Exp3p::state_t& state, 
         Model model, 
-        MatrixNode<Exp3p>* matrix_node) {
+        MatrixNode<Exp3p>* matrix_node
+    ) {
 
         matrix_node->expanded = true;
         
@@ -64,10 +65,8 @@ public:
         if (parent != nullptr) {
             MatrixNode<Exp3p>*  mparent = parent->parent;
             parent_idx = mparent->stats.mutex_idx;
-            // get t estimate. wrap in function?
             int row_idx = parent->row_idx;
-            int col_idx = parent->col_idx;
-            
+            int col_idx = parent->col_idx;   
             double joint_p = mparent->inference.strategy_prior0[row_idx]*mparent->inference.strategy_prior1[col_idx] * ((double) matrix_node->transition_data.probability);
             int t_estimate = matrix_node->parent->parent->stats.t * joint_p;
             t_estimate = t_estimate == 0 ? 1 : t_estimate;
@@ -76,10 +75,8 @@ public:
         if (matrix_node->prev != nullptr) {
             prev_idx = matrix_node->prev->stats.mutex_idx;
         }
-
         while (true) {
             matrix_node->stats.mutex_idx = model.device.random_int(pool_size);
-
             if (matrix_node->stats.mutex_idx != parent_idx && matrix_node->stats.mutex_idx != prev_idx) {
                 break;
             }
