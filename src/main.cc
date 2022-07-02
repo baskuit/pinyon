@@ -1,3 +1,4 @@
+
 #include <assert.h>
 #include <iostream>
 
@@ -11,19 +12,23 @@
 int main () {
 
     using ToyState = ToyState<9>;
-    using MonteCarlo = MonteCarlo<ToyState>;
+    using MoldState = MoldState<9>;
+    using MonteCarlo = MonteCarlo<MoldState>;
     using Exp3p = Exp3p<MonteCarlo>;
 
     prng device;
-    ToyState state(device, 'u', 4, 0);
-    state.transition(0,0);
+    ToyState toy(device, 'u', 3, 0);
+    toy.transition(0,0);
+    MoldState mold(device, 7);
+    mold.transition(0, 0);
     MatrixNode<Exp3p> root;
     Exp3p session;
 
-    int threads = 1;
-    int playouts = 10000000;
+    int threads = 4;
+    int playouts = 1000000;
 
-    session.search(threads, playouts, state, &root);
+    session.search(threads, playouts, mold, &root);
+    std::cout << "exp3p threads" << std::endl; 
 
     return 0;
 }

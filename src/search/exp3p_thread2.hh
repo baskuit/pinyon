@@ -1,13 +1,11 @@
+
 #pragma once
 
 #include "algorithm.hh"
 #include "tree/node.hh"
 
-#include <chrono>
-    using std::chrono::high_resolution_clock;
-    using std::chrono::duration_cast;
-    using std::chrono::duration;
-    using std::chrono::milliseconds;
+#include <thread>
+#include <mutex>
 
 template <typename Model> 
 class Exp3p : public Algorithm<Model> {
@@ -23,6 +21,9 @@ public:
         int visits = 0;
         double cumulative_value0 = 0;
         double cumulative_value1 = 0;
+
+        // 
+        std::mutex mutex;
     };
 
     struct ChanceStats : Algorithm<Model>::ChanceStats {
@@ -40,45 +41,35 @@ public:
     std::array<double, Exp3p::state_t::size_> forecast0;
     std::array<double, Exp3p::state_t::size_> forecast1;
 
-    void expand (
-        typename Exp3p::state_t& state, 
-        Model model, 
-        MatrixNode<Exp3p>* matrix_node
-    ) {
+    void expand (typename Exp3p::state_t& state, Model model, MatrixNode<Exp3p>* matrix_node) {
         matrix_node->expanded = true;
         state.actions(matrix_node->pair);
-        matrix_node->terminal = (matrix_node->pair.rows * matrix_node->pair.cols == 0);// (matrix_node->pair.rows*matrix_node->pair.cols == 0);
+        matrix_node->terminal = state.terminal;// (matrix_node->pair.rows*matrix_node->pair.cols == 0);
 
         if (matrix_node->terminal) { // Makes this model independent 
             matrix_node->inference.value_estimate0 = state.payoff0;
             matrix_node->inference.value_estimate1 = state.payoff1;
         } else {
             model.inference(state, matrix_node->pair);
+            
             matrix_node->inference = model.inference_; // Inference expects a state, gets T instead...
         }
-
-        // time
-        ChanceNode<Exp3p>* parent = matrix_node->parent;
-        if (parent != nullptr) {
-            MatrixNode<Exp3p>*  mparent = parent->parent;
-            int row_idx = parent->row_idx;
-            int col_idx = parent->col_idx;
-            double joint_p = mparent->inference.strategy_prior0[row_idx]*mparent->inference.strategy_prior1[col_idx] * ((double) matrix_node->transition_data.probability);
-            int t_estimate = matrix_node->parent->parent->stats.t * joint_p;
+        if (matrix_node->parent != nullptr) {
+            int t_estimate = matrix_node->parent->parent->stats.t / 4;
             t_estimate = t_estimate == 0 ? 1 : t_estimate;
             matrix_node->stats.t = t_estimate;
         }
     }
 
-    MatrixNode<Exp3p>* runPlayout ( 
-        typename Exp3p::state_t& state, 
-        typename Exp3p::model_t& model, 
-        MatrixNode<Exp3p>* matrix_node
-    ) {
+    MatrixNode<Exp3p>* search (typename Exp3p::state_t& state, typename Exp3p::model_t model, MatrixNode<Exp3p>* matrix_node) {
+
+        //matrix_node->stats.mutex.lock();
 
         if (matrix_node->terminal == true) {
             return matrix_node;
         } else {
+matrix_node->stats.mutex.lock();
+
             if (matrix_node->expanded == true) {
                 forecast(matrix_node);
                 int row_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast0, matrix_node->pair.rows);
@@ -86,13 +77,17 @@ public:
                 double inverse_prob0 = 1/forecast0[row_idx];
                 double inverse_prob1 = 1/forecast1[col_idx]; // Forecast is altered by subsequent search calls
 
+
                 typename Exp3p::action_t action0 = matrix_node->pair.actions0[row_idx];
                 typename Exp3p::action_t action1 = matrix_node->pair.actions1[col_idx];
                 typename Exp3p::transition_data_t transition_data = state.transition(action0, action1);
 
                 ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
                 MatrixNode<Exp3p>* matrix_node_next = chance_node->access(transition_data);
-                    MatrixNode<Exp3p>* matrix_node_leaf = runPlayout(state, model, matrix_node_next);
+
+matrix_node->stats.mutex.unlock();                
+                    MatrixNode<Exp3p>* matrix_node_leaf = search(state, model, matrix_node_next);
+matrix_node->stats.mutex.lock();
 
                 double u0 = matrix_node_leaf->inference.value_estimate0;
                 double u1 = matrix_node_leaf->inference.value_estimate1;
@@ -100,28 +95,15 @@ public:
                 matrix_node->stats.gains1[col_idx] += u1 * inverse_prob1;
                 update(matrix_node, u0, u1, row_idx, col_idx);
                 update(chance_node, u0, u1);
+matrix_node->stats.mutex.unlock();
                 return matrix_node_leaf;
             } else {
                 expand(state, model, matrix_node);
+matrix_node->stats.mutex.unlock();
                 return matrix_node;
             }
         }
     };
-
-    void search (
-        int playouts,
-        typename Exp3p::state_t& state, 
-        MatrixNode<Exp3p>* root
-    ) {
-        root->stats.t = playouts;
-        typename Exp3p::model_t model(device);
-        
-        for (int playout = 0; playout < playouts; ++playout) {
-            auto state_ = state;
-            runPlayout(state_, model, root);
-        }
-        std::cout << root->stats.visits0[0] << ' ' << root->stats.visits0[1] << std::endl;
-    }
 
 private:
 

@@ -80,10 +80,10 @@ public:
         if (matrix_node->terminal == true) {
             return matrix_node;
         } else {
-    mtx.lock();
             if (matrix_node->expanded == true) {
                 std::array<double, Exp3p::state_t::size_> forecast0;
                 std::array<double, Exp3p::state_t::size_> forecast1;
+    mtx.lock();
                 forecast(matrix_node, forecast0, forecast1);
     mtx.unlock();
                 int row_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast0, matrix_node->pair.rows);
@@ -95,6 +95,7 @@ public:
 
                 ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
                 MatrixNode<Exp3p>* matrix_node_next = chance_node->access(transition_data);
+    
                     MatrixNode<Exp3p>* matrix_node_leaf = runPlayout(state, model, matrix_node_next);
 
                 double u0 = matrix_node_leaf->inference.value_estimate0;
@@ -107,6 +108,7 @@ public:
     mtx.unlock();
                 return matrix_node_leaf;
             } else {
+    mtx.lock();
                 expand(state, model, matrix_node);
     mtx.unlock();
                 return matrix_node;
@@ -122,7 +124,6 @@ public:
         typename Exp3p::state_t* state, 
         MatrixNode<Exp3p>* matrix_node
     ) {
-        
         prng device_;
         typename Exp3p::model_t model(device_);
         
@@ -131,6 +132,8 @@ public:
             runPlayout(state_, model, matrix_node);
         }
     }
+
+
 
     // Top level search function
     void search (
@@ -146,12 +149,15 @@ public:
             const int playouts_thread = playouts / threads;
             thread_pool[i] = std::thread(&Exp3p::loopPlayout, this, playouts_thread, &state, root);
         }
+
         for (int i = 0; i < threads; ++i) {
             thread_pool[i].join();
         }
 
         std::cout << root->stats.visits0[0] << " " << root->stats.visits0[1] << std::endl;
     }
+
+
 
 private:
 
