@@ -29,16 +29,18 @@ public:
         int visits = 0;
         double cumulative_value0 = 0;
         double cumulative_value1 = 0;
+        double value0 () {return visits > 0 ? cumulative_value0 / visits : .5;}
+        double value1 () {return visits > 0 ? cumulative_value1 / visits : .5;}
     };
 
     prng& device;
 
-    Exp3p (prng& device)  :
-        device(device) {}
-
     // Working memory
     std::array<double, Exp3p::state_t::size_> forecast0;
     std::array<double, Exp3p::state_t::size_> forecast1;
+
+    Exp3p (prng& device)  :
+        device(device) {}
 
     void expand (
         typename Exp3p::state_t& state, 
@@ -120,7 +122,6 @@ public:
             auto state_ = state;
             runPlayout(state_, model, root);
         }
-        std::cout << root->stats.visits0[0] << ' ' << root->stats.visits0[1] << std::endl;
     }
 
 private:

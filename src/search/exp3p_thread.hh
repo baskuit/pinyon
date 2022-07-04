@@ -28,11 +28,14 @@ public:
         int visits = 0;
         double cumulative_value0 = 0;
         double cumulative_value1 = 0;
+        double value0 () {return visits > 0 ? cumulative_value0 / visits : .5;}
+        double value1 () {return visits > 0 ? cumulative_value1 / visits : .5;}
     };
 
     prng device; // used to instantiate thread local prng
 
-    Exp3p () {} // TODO add device
+    Exp3p (prng& device)  :
+        device(device) {}
 
     void expand (
         typename Exp3p::state_t& state, 
@@ -122,8 +125,8 @@ public:
         int playouts,
         typename Exp3p::state_t* state, 
         MatrixNode<Exp3p>* matrix_node
-    ) {
-        prng device_;
+    ) { 
+        prng device_(device.random_int(2147483647));
         typename Exp3p::model_t model(device_);
         
         for (int playout = 0; playout < playouts; ++playout) {
@@ -152,8 +155,6 @@ public:
         for (int i = 0; i < threads; ++i) {
             thread_pool[i].join();
         }
-
-        std::cout << root->stats.visits0[0] << " " << root->stats.visits0[1] << std::endl;
     }
 
 

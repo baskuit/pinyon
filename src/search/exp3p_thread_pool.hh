@@ -30,6 +30,8 @@ public:
         int visits = 0;
         double cumulative_value0 = 0;
         double cumulative_value1 = 0;
+        double value0 () {return visits > 0 ? cumulative_value0 / visits : .5;}
+        double value1 () {return visits > 0 ? cumulative_value1 / visits : .5;}
     };
 
     prng device; // used to instantiate thread local prng
@@ -89,11 +91,10 @@ public:
         typename Exp3p::model_t& model, 
         MatrixNode<Exp3p>* matrix_node
     ) {
-    // Different mutex
+        
     std::mutex& mtx = mutex_pool[matrix_node->stats.mutex_idx];
 
         if (matrix_node->terminal == true) {
-            // std::cout << matrix_node->inference.value_estimate0 << std::endl;
             return matrix_node;
         } else {
     mtx.lock();
@@ -125,22 +126,17 @@ public:
             } else {
                 expand(state, model, matrix_node);
     mtx.unlock();
-                // std::cout << matrix_node->inference.value_estimate0 << std::endl;
                 return matrix_node;
             }
         }
     };
 
-    // Called by each thread. Pass state by value and instantiate a new model to guarantee no shared resources
-    // PbV state will hard copy the prng, so each thread has same but separate state prng.
-    // Toy state does not use this anyway
     void loopPlayout (
         int playouts,
         typename Exp3p::state_t* state, 
         MatrixNode<Exp3p>* matrix_node
     ) {
-        
-        prng device_;
+        prng device_(device.random_int(2147483647));
         typename Exp3p::model_t model(device_);
         
         for (int playout = 0; playout < playouts; ++playout) {
@@ -166,8 +162,6 @@ public:
         for (int i = 0; i < threads; ++i) {
             thread_pool[i].join();
         }
-
-        std::cout << root->stats.visits0[0] << " " << root->stats.visits0[1] << std::endl;
     }
 
 private:

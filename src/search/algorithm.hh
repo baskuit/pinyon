@@ -21,11 +21,7 @@ public:
 
     struct MatrixStats {};
     struct ChanceStats {
-        virtual double value0 () {
-            return .5;
-        };
-        virtual double value1 () {
-            return .5;
-        };
+        virtual double value0 () {return .5;}
+        virtual double value1 () {return .5;}
     };
 };

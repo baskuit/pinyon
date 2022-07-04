@@ -13,12 +13,6 @@ surskit
 src/main.cc
 )
 
-add_executable(
-test
-# src/libsurskit/math.cc
-# src/tree/node.cc
-test/test.cc
-)
 
 # add_executable(
 # matrix
@@ -31,6 +25,6 @@ set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
-add_library(Gambit STATIC IMPORTED)
-set_property(TARGET Gambit PROPERTY
-             IMPORTED_LOCATION "/gambit")
+# add_library(Gambit STATIC IMPORTED)
+# set_property(TARGET Gambit PROPERTY
+#              IMPORTED_LOCATION "/gambit")

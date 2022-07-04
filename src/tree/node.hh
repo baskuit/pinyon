@@ -76,6 +76,14 @@ public:
         return c;
     }
 
+    void matrix (Linear::Matrix<double, state_t::size_>& M) {
+        auto child = this->child;
+        while (child != nullptr) {
+            M.set(child->row_idx, child->col_idx, child->stats.value0());
+            child = child->next;
+        }
+    }
+
 };
 
 

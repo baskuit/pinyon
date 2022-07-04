@@ -17,19 +17,20 @@ int main () {
     using Exp3p = Exp3p<MonteCarlo>;
 
     prng device;
-    ToyState toy(device, 'u', 3, 0);
+    ToyState toy(device, 'u', 4, 0);
     toy.transition(0,0);
-    MoldState mold(device, 7);
-    mold.transition(0, 0);
+    // MoldState mold(device, 7);
+    // mold.transition(0, 0);
     MatrixNode<Exp3p> root;
-    Exp3p session;
+    Exp3p session(device);
 
-    int threads = 4;
+    // int threads = 4;
     int playouts = 1000000;
 
-    session.search(threads, playouts, toy, &root);
-    Linear::Matrix2D<double, 9> M(2, 2, Rational(1, 2));
-    std::cout << "exp3p threads" << std::endl; 
+    session.search(1 ,playouts, toy, &root);
+    Linear::Matrix2D<double, 9> M(2, 2);
+    root.matrix(M);
+    M.print();
 
     return 0;
 }

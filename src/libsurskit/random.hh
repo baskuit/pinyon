@@ -9,9 +9,9 @@ class prng {
 public:
 
     prng () :
-    seed(std::random_device{}()), engine(std::mt19937 {seed}) {}
+        seed(std::random_device{}()), engine(std::mt19937 {seed}) {}
     prng (std::mt19937::result_type seed) : 
-    seed(seed), engine(std::mt19937 {seed}) {}
+        seed(seed), engine(std::mt19937 {seed}) {}
 
     // Same device and seed, but 'restarted'
     // Default copy keeps progress

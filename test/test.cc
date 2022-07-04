@@ -14,7 +14,6 @@ int main () {
     Vector x(5);
     Matrix M(2, 2);
     Matrix N = M*M;
-    std::cout << std::endl;
     N.print();
     // Rational x(3, 4);
     // std::cout << x << std::endl;
