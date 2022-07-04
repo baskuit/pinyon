@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 class Rational {
 
     int p = 1;
@@ -28,13 +30,19 @@ public :
         p(p), q(q) {}
 
     Rational operator+ (Rational y) {
-        Rational z = {p*y.q + y.p*q, p*q};
+        Rational z = {p*y.q + y.p*q, q*y.q};
         z.reduce();
         return z;
     }
 
     Rational operator* (Rational y) {
         Rational z = {p*y.p, q*y.q};
+        z.reduce();
+        return z;
+    }
+
+    Rational operator/ (Rational y) {
+        Rational z = {p*y.q, q*y.p};
         z.reduce();
         return z;
     }
@@ -53,6 +61,18 @@ public :
 
     bool operator>= (Rational y) {
         return p*y.q >= y.p*q;
+    }
+
+    Rational& operator+= (Rational y) {
+        p = p*y.q + y.p*q;
+        q = p*y.q;
+        reduce();
+        return *this;
+    }
+
+    friend std::ostream& operator<< (std::ostream& os, const Rational& x) {
+        os << x.p << '/' << x.q;
+        return os;
     }
 
     operator float() {

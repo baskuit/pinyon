@@ -20,5 +20,12 @@ public:
     using inference_t = typename Model::InferenceData;
 
     struct MatrixStats {};
-    struct ChanceStats {};
+    struct ChanceStats {
+        virtual double value0 () {
+            return .5;
+        };
+        virtual double value1 () {
+            return .5;
+        };
+    };
 };

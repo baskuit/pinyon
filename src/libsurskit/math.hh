@@ -21,7 +21,7 @@ namespace math {
         for (int i = 0; i < k; ++i) {
             output[i] = output[i]/sum;
         }
-    };
+    }
 
     template <typename T, typename U, int size>
     void power_norm(std::array<T, size> input, int k, double power, std::array<U, size>& output) {
@@ -34,9 +34,7 @@ namespace math {
         for (int i = 0; i < k; ++i) {
             output[i] = output[i]/sum;
         }
-    };
-
-
+    }
 
 }
 
@@ -54,6 +52,12 @@ struct Vector {
             data[i] = array[i];
         }
     }
+
+    Vector (int length) : length(length) {
+        for (int i = 0; i < length; ++i) {
+            data[i] = Rational(0, 1);
+        }
+    }
 };
 
 template <typename T, int size>
@@ -63,12 +67,67 @@ struct Matrix {
     Matrix (int rows, int cols) :
     rows(rows), cols(cols) {}
 
-    virtual Matrix<T,size> operator* (const Matrix<T, size> M) = 0;
+    Matrix<T,size> operator* (const Matrix<T, size>& M);
+    virtual T get (int row_idx, int col_idx) = 0;
+    virtual void set (int row_idx, int col_idx, T value) = 0;
 };
 
 template <typename T, int size>
 struct Matrix2D : Matrix<T, size> {
     std::array<std::array<T, size>, size> data;
+
+    Matrix2D<T, size> (int rows, int cols) :
+    Matrix<T, size>(rows, cols) {
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                data[i][j] = Rational(1, 2);
+            }
+        }
+    }
+
+    Matrix2D<T, size> (int rows, int cols, Rational value) :
+    Matrix<T, size>(rows, cols) {
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                data[i][j] = value;
+            }
+        }
+    }
+
+    Matrix2D<T, size> operator* (const Matrix2D<T, size>& M) {
+        assert(this->cols = M.rows);
+        Matrix2D<T, size> product(this->rows, M.cols, Rational(0, 1));
+        for (int i = 0; i < this->rows; ++i) {
+            for (int j = 0; j < M.cols; ++j) {
+                for (int k = 0; k < this->cols; ++k) {
+                    product.data[i][j] = product.data[i][j] + (this->data[i][k] * M.data[k][j]);
+                }
+            }
+        }
+        return product;
+    }
+
+    T get (int row_idx, int col_idx) {
+        return data[row_idx][col_idx];
+    }
+
+    void set (int row_idx, int col_idx, T value) {
+        data[row_idx][col_idx] = value;
+    }
+
+    void print () {
+        for (int i = 0; i < this->rows; ++i) {
+            std::cout << "[";
+            for (int j = 0; j < this->cols; ++j) {
+                std::cout << get(i, j) << ", ";
+            }
+            std::cout << "]" << std::endl;
+        }
+    }
+
+
 };
+
+
 
 };

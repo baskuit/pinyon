@@ -6,24 +6,18 @@
 #include "tree/node.hh"
 #include "search/exp3p.hh"
 
-
+// Currently a sandbox for Linear stuff
 
 int main () {
-
-    using ToyState = ToyState<9>;
-    using MonteCarlo = MonteCarlo<ToyState>;
-    using Exp3p = Exp3p<MonteCarlo>;
-
-    prng device;
-    ToyState state(device, 'u', 4, 0);
-    state.transition(0,0);
-    MatrixNode<Exp3p> root;
-    Exp3p session(device);
-
-    int threads = 1;
-    int playouts = 10000000;
-
-    session.search(playouts, state, &root);
-
+    using Vector = Linear::Vector<double, 9>;
+    using Matrix = Linear::Matrix2D<Rational, 9>;
+    Vector x(5);
+    Matrix M(2, 2);
+    Matrix N = M*M;
+    std::cout << std::endl;
+    N.print();
+    // Rational x(3, 4);
+    // std::cout << x << std::endl;
+    std::cout << Rational(1, 4) + Rational(0, 1) << std::endl;
     return 0;
 }

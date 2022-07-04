@@ -13,7 +13,7 @@ int main () {
 
     using ToyState = ToyState<9>;
     using MoldState = MoldState<9>;
-    using MonteCarlo = MonteCarlo<MoldState>;
+    using MonteCarlo = MonteCarlo<ToyState>;
     using Exp3p = Exp3p<MonteCarlo>;
 
     prng device;
@@ -27,7 +27,8 @@ int main () {
     int threads = 4;
     int playouts = 1000000;
 
-    session.search(threads, playouts, mold, &root);
+    session.search(threads, playouts, toy, &root);
+    Linear::Matrix2D<double, 9> M(2, 2, Rational(1, 2));
     std::cout << "exp3p threads" << std::endl; 
 
     return 0;

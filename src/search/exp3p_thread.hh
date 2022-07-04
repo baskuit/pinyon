@@ -21,7 +21,6 @@ public:
         double cumulative_value0 = 0;
         double cumulative_value1 = 0;
 
-
         std::mutex mtx;
     };
 
@@ -163,9 +162,8 @@ private:
 
     // Softmax and uniform noise
     void softmax (
-        std::array<double, 
-        Exp3p::state_t::size_>& forecast, std::array<double, 
-        Exp3p::state_t::size_>& gains, 
+        std::array<double, Exp3p::state_t::size_>& forecast,
+        std::array<double, Exp3p::state_t::size_>& gains, 
         int k, 
         double eta
     ) {
