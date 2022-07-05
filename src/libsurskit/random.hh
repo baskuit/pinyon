@@ -1,3 +1,5 @@
+#pragma once
+
 #include <random>
 #include <array>
 
@@ -44,7 +46,7 @@ public:
     }
 
     template <typename T, int size>
-    int sample_pdf (std::array<T, size> input, int k) {
+    int sample_pdf (std::array<T, size>& input, int k) {
         double p = uniform();
         for (int i = 0; i < k; ++i) {
             p -= input[i];
