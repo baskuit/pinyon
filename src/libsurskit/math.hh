@@ -167,12 +167,12 @@ struct Bimatrix2D : Bimatrix<T, size> {
 
     Bimatrix2D (int rows, int cols) :
     Bimatrix<T, size>(rows, cols) {
-        for (int i = 0; i < rows; ++i) {
-            for (int j = 0; j < cols; ++j) {
-                data0[i][j] = Rational(1, 2);
-                data1[i][j] = Rational(1, 2);
-            }
-        }
+        // for (int i = 0; i < rows; ++i) {
+        //     for (int j = 0; j < cols; ++j) {
+        //         data0[i][j] = Rational(1, 2);
+        //         data1[i][j] = Rational(1, 2);
+        //     }
+        // }
     }
 
     T get0 (int row_idx, int col_idx) {return data0[row_idx][col_idx];}
@@ -195,6 +195,18 @@ struct Bimatrix2D : Bimatrix<T, size> {
             }
             std::cout << "]" << std::endl;
         }
+    }
+    //TODO delete this
+    Bimatrix2D<T, size> operator+ (const Matrix2D<int, size>& M) {
+        assert(this->cols = M.rows);
+        Bimatrix2D<T, size> product(this->rows, M.cols);
+        for (int i = 0; i < this->rows; ++i) {
+            for (int j = 0; j < M.cols; ++j) {
+                product.data0[i][j] = this->data0[i][j] / M.data[i][j];
+                product.data1[i][j] = this->data1[i][j] / M.data[i][j];
+            }
+        }
+        return product;
     }
 };
 
