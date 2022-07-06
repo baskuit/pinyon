@@ -2,6 +2,7 @@
 #include <math.h>
 #include <assert.h>
 #include <stdexcept>
+#include <algorithm>
 
 #include "random.hh"
 #include "rational.hh"
@@ -74,8 +75,11 @@ template <typename T, int size>
 struct Matrix {
     int rows = 0;
     int cols = 0;
+
+    Matrix () {}
+
     Matrix (int rows, int cols) :
-    rows(rows), cols(cols) {}
+        rows(rows), cols(cols) {}
 
     Matrix<T,size> operator* (const Matrix<T, size>& M);
     virtual T get (int row_idx, int col_idx) = 0;
@@ -83,10 +87,28 @@ struct Matrix {
 };
 
 template <typename T, int size>
+struct Bimatrix {
+    int rows = 0;
+    int cols = 0;
+
+    Bimatrix () {}
+
+    Bimatrix (int rows, int cols) :
+        rows(rows), cols(cols) {}
+
+    virtual T get0 (int row_idx, int col_idx) = 0;
+    virtual T get1 (int row_idx, int col_idx) = 0;
+    virtual void set0 (int row_idx, int col_idx, T value) = 0;
+    virtual void set1 (int row_idx, int col_idx, T value) = 0;
+};
+
+template <typename T, int size>
 struct Matrix2D : Matrix<T, size> {
     std::array<std::array<T, size>, size> data;
 
-    Matrix2D<T, size> (int rows, int cols) :
+    Matrix2D () {}
+
+    Matrix2D (int rows, int cols) :
     Matrix<T, size>(rows, cols) {
         for (int i = 0; i < rows; ++i) {
             for (int j = 0; j < cols; ++j) {
@@ -95,7 +117,7 @@ struct Matrix2D : Matrix<T, size> {
         }
     }
 
-    Matrix2D<T, size> (int rows, int cols, Rational value) :
+    Matrix2D (int rows, int cols, Rational value) :
     Matrix<T, size>(rows, cols) {
         for (int i = 0; i < rows; ++i) {
             for (int j = 0; j < cols; ++j) {
@@ -130,6 +152,46 @@ struct Matrix2D : Matrix<T, size> {
             std::cout << "[";
             for (int j = 0; j < this->cols; ++j) {
                 std::cout << get(i, j) << ", ";
+            }
+            std::cout << "]" << std::endl;
+        }
+    }
+};
+
+template <typename T, int size>
+struct Bimatrix2D : Bimatrix<T, size> {
+    std::array<std::array<T, size>, size> data0;
+    std::array<std::array<T, size>, size> data1;
+
+    Bimatrix2D () {}
+
+    Bimatrix2D (int rows, int cols) :
+    Bimatrix<T, size>(rows, cols) {
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                data0[i][j] = Rational(1, 2);
+                data1[i][j] = Rational(1, 2);
+            }
+        }
+    }
+
+    T get0 (int row_idx, int col_idx) {return data0[row_idx][col_idx];}
+    T get1 (int row_idx, int col_idx) {return data1[row_idx][col_idx];}
+    void set0 (int row_idx, int col_idx, T value) {data0[row_idx][col_idx] = value;}
+    void set1 (int row_idx, int col_idx, T value) {data1[row_idx][col_idx] = value;}
+
+    void print () {
+        for (int i = 0; i < this->rows; ++i) {
+            std::cout << "[";
+            for (int j = 0; j < this->cols; ++j) {
+                std::cout << get0(i, j) << ", ";
+            }
+            std::cout << "]" << std::endl;
+        }
+        for (int i = 0; i < this->rows; ++i) {
+            std::cout << "[";
+            for (int j = 0; j < this->cols; ++j) {
+                std::cout << get1(i, j) << ", ";
             }
             std::cout << "]" << std::endl;
         }
@@ -207,6 +269,7 @@ void forecast (
 template <typename T, int size>
 void SolveMatrix (
     prng& device,
+    int playouts,
     Linear::Matrix<T, size>& M,
     std::array<T, size>& empirical0,
     std::array<T, size>& empirical1
@@ -215,8 +278,6 @@ void SolveMatrix (
     std::array<T, size> forecast1 = {Rational(0, 1)};
     std::array<T, size> gains0 = {Rational(0, 1)};
     std::array<T, size> gains1 = {Rational(0, 1)};
-
-    const int playouts = 1000000;
 
     for (int playout = 0; playout < playouts; ++playout) {
         forecast<T, size>(M.rows, M.cols, playouts, forecast0, forecast1, gains0, gains1);
@@ -227,6 +288,52 @@ void SolveMatrix (
         T u = M.get(row_idx, col_idx);
         gains0[row_idx] += u / forecast0[row_idx];
         gains1[col_idx] += (1-u) / forecast1[col_idx];
+    }
+
+    math::power_norm<T, size>(empirical0, M.rows, 1, empirical0);
+    math::power_norm<T, size>(empirical1, M.cols, 1, empirical1);
+}
+
+template <typename T, int size>
+T exploitability (
+    Linear::Matrix<T, size>& M,
+    std::array<T, size>& strategy0,
+    std::array<T, size>& strategy1
+) {
+    std::array<T, size> best0 = {Rational(0, 1)};
+    std::array<T, size> best1 = {Rational(0, 1)};
+    for (int row_idx = 0; row_idx < M.rows; ++row_idx) {
+        for (int col_idx = 0; col_idx < M.cols; ++col_idx) {
+            const T u = M.get(row_idx, col_idx);
+            best0[row_idx] += u * strategy1[col_idx];
+            best1[col_idx] -= u * strategy0[row_idx];
+        }
+    }
+    return *std::max_element(best0.begin(), best0.begin()+M.rows) + *std::max_element(best1.begin(), best1.begin()+M.cols);
+}
+
+template <typename T, int size>
+// no matching function for call to 'SolveBimatrix(prng&, int, Linear::Bimatrix2D<double, 9>&, std::array<double, 9>&, std::array<double, 9>&)'
+void SolveBimatrix (
+    prng& device,
+    int playouts,
+    Linear::Bimatrix<T, size>& M,
+    std::array<T, size>& empirical0,
+    std::array<T, size>& empirical1
+) {
+    std::array<T, size> forecast0 = {Rational(0, 1)};
+    std::array<T, size> forecast1 = {Rational(0, 1)};
+    std::array<T, size> gains0 = {Rational(0, 1)};
+    std::array<T, size> gains1 = {Rational(0, 1)};
+
+    for (int playout = 0; playout < playouts; ++playout) {
+        forecast<T, size>(M.rows, M.cols, playouts, forecast0, forecast1, gains0, gains1);
+        int row_idx = device.sample_pdf<T, size>(forecast0, M.rows);
+        int col_idx = device.sample_pdf<T, size>(forecast1, M.cols);
+        ++empirical0[row_idx];
+        ++empirical1[col_idx];
+        gains0[row_idx] += M.get0(row_idx, col_idx) / forecast0[row_idx];
+        gains1[col_idx] += M.get1(row_idx, col_idx) / forecast1[col_idx];
     }
 
     math::power_norm<T, size>(empirical0, M.rows, 1, empirical0);

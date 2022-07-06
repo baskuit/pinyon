@@ -3,12 +3,6 @@
 #include "algorithm.hh"
 #include "tree/node.hh"
 
-#include <chrono>
-    using std::chrono::high_resolution_clock;
-    using std::chrono::duration_cast;
-    using std::chrono::duration;
-    using std::chrono::milliseconds;
-
 template <typename Model> 
 class Exp3p : public Algorithm<Model> {
 public:
