@@ -127,8 +127,6 @@ public:
                         strategy0,
                         strategy1
                     );
-                } else {
-                    // std::cout << "skipped" << std::endl;
                 }
 
     // std::cout<<std::endl;
@@ -160,16 +158,17 @@ public:
                 double u1 = matrix_node_leaf->inference.value_estimate1;
         mtx.lock();
                 update(matrix_node, u0, u1, row_idx, col_idx);
-                for (int i = 0; i < 9; ++i) {
-
+                for (int i = 0; i < 2; ++i) {
+                    matrix_node->stats.strategy0[i] = strategy0[i];
+                    matrix_node->stats.strategy1[i] = strategy1[i];
                 }
-                matrix_node->stats.strategy0 = strategy0;
-                matrix_node->stats.strategy1 = strategy1;
+                // matrix_node->stats.strategy0 = strategy0;
+                // matrix_node->stats.strategy1 = strategy1;
         mtx.unlock();                
                 return matrix_node_leaf;
             } else {
-        mtx.unlock();
                 expand(state, model, matrix_node);
+        mtx.unlock();
                 return matrix_node;
             }
         }
