@@ -8,8 +8,11 @@ class MatrixUCB : public Algorithm<Model> {
 public:
 
     struct MatrixStats : Algorithm<Model>::MatrixStats {
+        int t = 0;
         Linear::Bimatrix2D<double, Model::state_t::size_> cumulative_payoffs;
         Linear::Matrix2D<int, Model::state_t::size_> visits;
+        std::array<double, Model::state_t::size_> strategy0;
+        std::array<double, Model::state_t::size_> strategy1;     
     };
 
     struct ChanceStats : Algorithm<Model>::ChanceStats {
@@ -41,7 +44,7 @@ public:
             matrix_node->inference = model.inference_; // Inference expects a state, gets T instead...
         }
 
-        matrix_node->stats.cumulative_payoffs.rows = matrix_node->pair.rows;
+        matrix_node->stats.cumulative_payoffs.rows = matrix_node->pair.rows; 
         matrix_node->stats.cumulative_payoffs.cols = matrix_node->pair.cols;
         matrix_node->stats.visits.rows = matrix_node->pair.rows;
         matrix_node->stats.visits.cols = matrix_node->pair.cols;
@@ -52,6 +55,23 @@ public:
                 matrix_node->stats.visits.set(row_idx, col_idx, 0);
             }
         }
+
+        // Uniform initialization of stats.strategies
+        for (int row_idx = 0; row_idx < matrix_node->pair.rows; ++row_idx) {matrix_node->stats.strategy0[row_idx] = 1 /(float)matrix_node->pair.rows;}
+        for (int col_idx = 0; col_idx < matrix_node->pair.cols; ++col_idx) {matrix_node->stats.strategy1[col_idx] = 1 /(float)matrix_node->pair.cols;}
+
+        // Time
+        ChanceNode<MatrixUCB>* parent = matrix_node->parent;
+        if (parent != nullptr) {
+            MatrixNode<MatrixUCB>*  mparent = parent->parent;
+            int row_idx = parent->row_idx;
+            int col_idx = parent->col_idx;
+            double joint_p = mparent->inference.strategy_prior0[row_idx]*mparent->inference.strategy_prior1[col_idx] * ((double) matrix_node->transition_data.probability);
+            int t_estimate = matrix_node->parent->parent->stats.t * joint_p;
+            t_estimate = t_estimate == 0 ? 1 : t_estimate;
+            matrix_node->stats.t = t_estimate;
+        }
+        
     }
 
     MatrixNode<MatrixUCB>* runPlayout ( 
@@ -61,33 +81,53 @@ public:
     ) {
 
         if (matrix_node->terminal == true) {
-        std::cout << "Termanal" << std::endl;
+
             return matrix_node;
         } else {
-            std::array<double, 9> strategy0 = {0};
-            std::array<double, 9> strategy1 = {0};
-            Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(matrix_node->pair.rows, matrix_node->pair.cols);
-            
-            process_matrix(matrix_node->stats.cumulative_payoffs,matrix_node->stats.visits,A);
-
-
-
 
             if (matrix_node->expanded == true) {
-
-                Bandit::SolveBimatrix<double, MatrixUCB::state_t::size_> (
-                    device,
-                    1000,
+                Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(matrix_node->pair.rows, matrix_node->pair.cols);
+          
+                process_matrix(
+                    matrix_node->stats.cumulative_payoffs,
+                    matrix_node->stats.visits,
                     A,
-                    strategy0,
-                    strategy1
+                    matrix_node->stats.t
                 );
-            std::cout << "Strategies" << std::endl;
-            std::cout << strategy0[0] << ' ' << strategy0[1] << std::endl;
-            std::cout << strategy0[0] << ' ' << strategy0[1] << std::endl;
-                int row_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(strategy0, matrix_node->pair.rows);
-                int col_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(strategy1, matrix_node->pair.cols);
+                double exploitability = Bandit::exploitability<double, MatrixUCB::state_t::size_>(
+                    A, 
+                    matrix_node->stats.strategy0, 
+                    matrix_node->stats.strategy1
+                );
+                if (exploitability > .05) {
+                    Bandit::SolveBimatrix<double, MatrixUCB::state_t::size_> (
+                        device,
+                        10000,
+                        A,
+                        matrix_node->stats.strategy0,
+                        matrix_node->stats.strategy1
+                    );
+                } else {
+                    // std::cout << "skipped" << std::endl;
+                }
 
+    // std::cout<<std::endl;
+    // std::cout << "Time " << matrix_node->stats.t << std::endl;
+    // std::cout << "Payoff" << std::endl;
+    // matrix_node->stats.cumulative_payoffs.print();
+    // std::cout << "Visits" << std::endl;
+    // matrix_node->stats.visits.print();
+    // std::cout << "M" << std::endl;
+    // (matrix_node->stats.cumulative_payoffs + matrix_node->stats.visits).print();
+    // std::cout << "A" << std::endl;
+    // A.print();  
+    // std::cout << "Strategies" << std::endl;
+    // std::cout << matrix_node->stats.strategy0[0] << ' ' << matrix_node->stats.strategy0[1] << std::endl;
+    // std::cout << matrix_node->stats.strategy1[0] << ' ' << matrix_node->stats.strategy1[1] << std::endl;
+    // std::cout << "expl: " << exploitability << std::endl;
+
+                int row_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy0, matrix_node->pair.rows);
+                int col_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy1, matrix_node->pair.cols);
                 typename MatrixUCB::action_t action0 = matrix_node->pair.actions0[row_idx];
                 typename MatrixUCB::action_t action1 = matrix_node->pair.actions1[col_idx];
                 typename MatrixUCB::transition_data_t transition_data = state.transition(action0, action1);
@@ -98,10 +138,10 @@ public:
 
                 double u0 = matrix_node_leaf->inference.value_estimate0;
                 double u1 = matrix_node_leaf->inference.value_estimate1;
-                update(matrix_node, u0, u1, row_idx, col_idx);                return matrix_node_leaf;
+                update(matrix_node, u0, u1, row_idx, col_idx);                
+                return matrix_node_leaf;
             } else {
                 expand(state, model, matrix_node);
-            std::cout << "Termanal" << std::endl;
                 return matrix_node;
             }
         }
@@ -113,7 +153,7 @@ public:
         MatrixNode<MatrixUCB>* root
     ) {
         typename MatrixUCB::model_t model(device);
-        
+        root->stats.t = playouts;
         for (int playout = 0; playout < playouts; ++playout) {
             auto state_ = state;
             runPlayout(state_, model, root);
@@ -135,10 +175,11 @@ private:
     void process_matrix (
         Linear::Bimatrix<double, MatrixUCB::state_t::size_>& cumulative_payoffs, 
         Linear::Matrix<int, MatrixUCB::state_t::size_>& visits, 
-        Linear::Bimatrix<double, MatrixUCB::state_t::size_>& output
+        Linear::Bimatrix<double, MatrixUCB::state_t::size_>& output,
+        int t
     ) {
         // assert dimensions make sense TODO
-        // rename TODO
+        // rename vars TODO
         const int rows = output.rows;
         const int cols = output.cols;
         for (int row_idx = 0; row_idx < rows; ++row_idx) {
@@ -146,12 +187,12 @@ private:
                 double u = cumulative_payoffs.get0(row_idx, col_idx);
                 double v = cumulative_payoffs.get1(row_idx, col_idx);
                 int n = visits.get(row_idx, col_idx);
-                n += (n == 0);
+                n += 1;
                 double a = n > 0 ? u / n : .5;
                 double b = n > 0 ? v / n : .5;
-                int t = 100; //todo
-                const double x = a + std::sqrt(2 * std::log(2 * t * t * rows * cols) / n);
-                const double y = b + std::sqrt(2 * std::log(2 * t * t * rows * cols) / n);
+                double const eta = std::sqrt(2 * std::log(2 * t * t * rows * cols) / n);
+                const double x = a + eta;
+                const double y = b + eta;
                 output.set0(row_idx, col_idx, x);
                 output.set1(row_idx, col_idx, y);
             }
