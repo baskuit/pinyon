@@ -325,6 +325,34 @@ T exploitability (
 }
 
 template <typename T, int size>
+T exploitability (
+    Linear::Bimatrix<T, size>& M,
+    std::array<T, size>& strategy0,
+    std::array<T, size>& strategy1
+) {
+    double earned0 = 0;
+    double earned1 = 0;
+    for (int row_idx = 0; row_idx < M.rows; ++row_idx) {
+        for (int col_idx = 0; col_idx < M.cols; ++col_idx) {
+            double const pq = strategy0[row_idx] * strategy1[col_idx];
+            earned0 += M.get0(row_idx, col_idx) * pq;
+            earned1 += M.get1(row_idx, col_idx) * pq;
+        }
+    }
+    std::array<T, size> best0 = {Rational(0, 1)};
+    std::array<T, size> best1 = {Rational(0, 1)};
+    for (int row_idx = 0; row_idx < M.rows; ++row_idx) {
+        for (int col_idx = 0; col_idx < M.cols; ++col_idx) {
+            const T u = M.get0(row_idx, col_idx);
+            const T v = M.get1(row_idx, col_idx);
+            best0[row_idx] += u * strategy1[col_idx];
+            best1[col_idx] += v * strategy0[row_idx];
+        }
+    }
+    return *std::max_element(best0.begin(), best0.begin()+M.rows) - earned0 + *std::max_element(best1.begin(), best1.begin()+M.cols) - earned1;
+}
+
+template <typename T, int size>
 // no matching function for call to 'SolveBimatrix(prng&, int, Linear::Bimatrix2D<double, 9>&, std::array<double, 9>&, std::array<double, 9>&)'
 void SolveBimatrix (
     prng& device,
