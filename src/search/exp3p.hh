@@ -119,8 +119,25 @@ public:
     std::cout << "Exp3p root visits" << std::endl;
     std::cout << root->stats.visits0[0] << ' ' << root->stats.visits0[1] << std::endl;
     std::cout << root->stats.visits1[0] << ' ' << root->stats.visits1[1] << std::endl;
+    std::cout << "Exp3p root matrix" << std::endl;
+    matrix(root).print();
 
 
+    }
+
+    Linear::Matrix2D<double, Exp3p::state_t::size_> matrix (MatrixNode<Exp3p>* matrix_node) {
+        Linear::Matrix2D<double, Exp3p::state_t::size_> M(matrix_node->pair.rows, matrix_node->pair.cols);
+        for (int i = 0; i < M.rows; ++i) {
+            for (int j = 0; j < M.cols; ++j) {
+                M.set(i, j, .5);
+            }
+        }
+        ChanceNode<Exp3p>* cur = matrix_node->child;
+        while (cur != nullptr) {
+            M.set(cur->row_idx, cur->col_idx, cur->stats.value0());
+            cur = cur->next;
+        }
+        return M;
     }
 
 private:
