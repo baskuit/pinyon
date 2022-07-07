@@ -116,6 +116,11 @@ public:
             auto state_ = state;
             runPlayout(state_, model, root);
         }
+    std::cout << "Exp3p root visits" << std::endl;
+    std::cout << root->stats.visits0[0] << ' ' << root->stats.visits0[1] << std::endl;
+    std::cout << root->stats.visits1[0] << ' ' << root->stats.visits1[1] << std::endl;
+
+
     }
 
 private:

@@ -158,6 +158,28 @@ public:
             auto state_ = state;
             runPlayout(state_, model, root);
         }
+        // TODO remove this
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(root->pair.rows, root->pair.cols);
+        process_matrix_final(
+            root->stats.cumulative_payoffs,
+            root->stats.visits,
+            A,
+            root->stats.t
+        );
+        
+        A.print();
+
+        Bandit::SolveBimatrix<double, MatrixUCB::state_t::size_> (
+            device,
+            10000,
+            A,
+            root->stats.strategy0,
+            root->stats.strategy1
+        );
+
+        std::cout << root->stats.strategy0[0] << ' ' << root->stats.strategy0[1] << std::endl;
+        std::cout << root->stats.strategy1[0] << ' ' << root->stats.strategy1[1] << std::endl;
+
     }
 
 private:
@@ -195,6 +217,30 @@ private:
                 const double y = b + eta;
                 output.set0(row_idx, col_idx, x);
                 output.set1(row_idx, col_idx, y);
+            }
+        }
+    }
+
+    void process_matrix_final (
+        Linear::Bimatrix<double, MatrixUCB::state_t::size_>& cumulative_payoffs, 
+        Linear::Matrix<int, MatrixUCB::state_t::size_>& visits, 
+        Linear::Bimatrix<double, MatrixUCB::state_t::size_>& output,
+        int t
+    ) {
+        // assert dimensions make sense TODO
+        // rename vars TODO
+        const int rows = output.rows;
+        const int cols = output.cols;
+        for (int row_idx = 0; row_idx < rows; ++row_idx) {
+            for (int col_idx = 0; col_idx < cols; ++col_idx) {
+                double u = cumulative_payoffs.get0(row_idx, col_idx);
+                double v = cumulative_payoffs.get1(row_idx, col_idx);
+                int n = visits.get(row_idx, col_idx);
+                n += 1;
+                double a = n > 0 ? u / n : .5;
+                double b = n > 0 ? v / n : .5;
+                output.set0(row_idx, col_idx, a);
+                output.set1(row_idx, col_idx, b);
             }
         }
     }
