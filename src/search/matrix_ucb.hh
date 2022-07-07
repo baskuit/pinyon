@@ -209,10 +209,13 @@ private:
                 double u = cumulative_payoffs.get0(row_idx, col_idx);
                 double v = cumulative_payoffs.get1(row_idx, col_idx);
                 int n = visits.get(row_idx, col_idx);
-                n += 1;
+                if (n == 0) {
+                    n = 1;
+                }
                 double a = n > 0 ? u / n : .5;
                 double b = n > 0 ? v / n : .5;
-                double const eta = std::sqrt(2 * std::log(2 * t * t * rows * cols) / n);
+                double const c = 0;
+                double const eta = c * std::sqrt((2 * std::log(t) + std::log(2 * rows * cols)) / n);
                 const double x = a + eta;
                 const double y = b + eta;
                 output.set0(row_idx, col_idx, x);
