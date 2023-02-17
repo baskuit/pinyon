@@ -3,7 +3,7 @@
 #include "state.hh"
 
 
-// ToyState. A contrived game where the payoff and strategies are always known. Used to test search algorithms.
+// ToyState is a contrived game with known payoff and equilibria. 
 
 
 template <int size>
@@ -19,9 +19,9 @@ public:
     ToyState (prng& device, char id, int pp, int length) :
         SolvedState<size, int, int>(device, .5f, 2, 2), id(id), pp(pp), length(length) {}
 
-    typename ToyState::pair_actions_t actions () {
+    typename ToyState::pair_actions_t get_legal_actions () {
         PairActions<size, int> pair;
-        if (this->terminal) {
+        if (this->is_terminal) {
             pair.rows = 0;
             pair.cols = 0;
             return pair;
@@ -35,8 +35,8 @@ public:
         return pair;
     }
 
-    void actions (typename ToyState::pair_actions_t& pair) {
-        if (this->terminal) {
+    void get_legal_actions (typename ToyState::pair_actions_t& pair) {
+        if (this->is_terminal) {
             pair.rows = 0;
             pair.cols = 0;
             return;
@@ -49,7 +49,7 @@ public:
         };
     }
 
-    typename ToyState::transition_data_t transition (int action0, int action1) {
+    typename ToyState::transition_data_t apply_actions (int action0, int action1) {
         typename ToyState::transition_data_t transition_data(0, Rational());
 
         if (id == 'u') {
@@ -59,7 +59,7 @@ public:
                 if (pp == 0) {
                     this->payoff0 = 0;
                     this->payoff1 = 1;
-                    this->terminal = true;
+                    this->is_terminal = true;
                     return transition_data;
                 }
 
@@ -69,17 +69,17 @@ public:
                     } else {
                         this->payoff0 = 1;
                         this->payoff1 = 0;
-                        this->terminal = true; 
+                        this->is_terminal = true; 
                     }
                 } else {
                     if (action1 == 0) {
                         this->payoff0 = 1;
                         this->payoff1 = 0;
-                        this->terminal = true;
+                        this->is_terminal = true;
                     } else {
                         this->payoff0 = 0;
                         this->payoff1 = 1;
-                        this->terminal = true;
+                        this->is_terminal = true;
                     }
                 }
 
@@ -96,13 +96,13 @@ public:
                     if (length == 0) {
                         this->payoff0 = 1;
                         this->payoff1 = 0;
-                        this->terminal = true;
+                        this->is_terminal = true;
                     }
                     --length;
                 } else {
                     this->payoff0 = 0;
                     this->payoff1 = 1;
-                    this->terminal = true;
+                    this->is_terminal = true;
                 }
 
             this->strategy0[0] = 1;
@@ -116,13 +116,13 @@ public:
                     if (length == 0) {
                     this->payoff0 = 0;
                     this->payoff1 = 1;
-                        this->terminal = true;
+                        this->is_terminal = true;
                     }
                     --length;
                 } else {
                     this->payoff0 = 1;
                     this->payoff1 = 0;
-                    this->terminal = true;
+                    this->is_terminal = true;
                 }
 
             this->strategy1[0] = 1;
@@ -140,7 +140,7 @@ public:
                 if (pp == 0) {
                     this->payoff0 = 0;
                     this->payoff1 = 1;
-                    this->terminal = true;
+                    this->is_terminal = true;
                     return transition_data;
                 }
 
@@ -190,7 +190,7 @@ public:
     MoldState<size> (prng& device, int depth) :
         State<size, int, int>(device), depth(depth) {}
 
-    typename MoldState::pair_actions_t actions () {
+    typename MoldState::pair_actions_t get_legal_actions () {
         typename MoldState::pair_actions_t pair;
         if (depth == 0) {
             pair.rows = 0;
@@ -206,7 +206,7 @@ public:
         return pair;
     }
 
-    void actions (typename MoldState::pair_actions_t& pair) {
+    void get_legal_actions (typename MoldState::pair_actions_t& pair) {
         if (depth == 0) {
             pair.rows = 0;
             pair.cols = 0;
@@ -220,7 +220,7 @@ public:
         };
     }
 
-    typename MoldState::transition_data_t transition (int action0, int action1) {
+    typename MoldState::transition_data_t apply_actions (int action0, int action1) {
         --depth;
         typename MoldState::transition_data_t x;
         x.key = 0;

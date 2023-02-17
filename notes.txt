@@ -1,2 +1,0 @@
-Bad visit counts might be because not initializing exp3p 't' value.
-

@@ -14,8 +14,8 @@ public:
     };
 
     prng& device;
-    // Shadows the base InferenceData type? Also shadows the base inference_ member too, but at no cost?
-    InferenceData inference_;
+    // Shadows the base InferenceData type? Also shadows the base last_inference member too, but at no cost?
+    InferenceData last_inference;
 
     MonteCarlo (prng& device) : device(device) {};
 
@@ -27,23 +27,23 @@ public:
             inference_.strategy_prior0[row_idx] = 1 / (double) pair.rows;
         }
         for (int col_idx = 0; col_idx < pair.cols; ++col_idx) {
-            inference_.strategy_prior1[col_idx] = 1 / (double) pair.cols;
+            last_inference.strategy_prior1[col_idx] = 1 / (double) pair.cols;
         }
         rollout(state);
-        inference_.value_estimate0 = state.payoff0;
-        inference_.value_estimate1 = state.payoff1;
-        return inference_;
+        last_inference.value_estimate0 = state.payoff0;
+        last_inference.value_estimate1 = state.payoff1;
+        return last_inference;
     };
 
     void rollout (State& state) {
-        typename MonteCarlo::pair_actions_t pair = state.actions();
+        typename MonteCarlo::pair_actions_t pair = state.get_legal_actions();
         while (pair.rows * pair.cols != 0) {
             int row_idx = this->device.random_int(pair.rows);
             int col_idx = this->device.random_int(pair.cols);
             typename MonteCarlo::action_t action0 = pair.actions0[row_idx];
             typename MonteCarlo::action_t action1 = pair.actions1[col_idx];
-            state.transition(action0, action1);
-            state.actions(pair);
+            state.apply_actions(action0, action1);
+            state.get_legal_actions(pair);
         }
     }
 
@@ -63,32 +63,30 @@ public:
     };
 
     prng& device;
-    // Shadows the base InferenceData type? Also shadows the base inference_ member too, but at no cost?
-    InferenceData inference_;
+    // Shadows the base InferenceData type? Also shadows the base last_inference member too, but at no cost?
+    InferenceData last_inference;
 
     MonteCarloWithPolicy (prng& device) : device(device) {};
 
-    // The return type is a comprimise.
-    // We would like covariance since each model really should have its own return type.
-    // But using new with a pointer would be slow, so we have a storage member in the class that we modify and return always.
+
     MonteCarloWithPolicy<State>::InferenceData& inference (State& state, typename MonteCarloWithPolicy::pair_actions_t& pair) {
-        math::power_norm<double, State::size_>(state.strategy0, state.rows, p, inference_.strategy_prior0);
-        math::power_norm<double, State::size_>(state.strategy1, state.cols, p, inference_.strategy_prior1);
+        math::power_norm<double, State::size_>(state.strategy0, state.rows, p, last_inference.strategy_prior0);
+        math::power_norm<double, State::size_>(state.strategy1, state.cols, p, last_inference.strategy_prior1);
         rollout(state);
-        inference_.value_estimate0 = state.payoff0;
-        inference_.value_estimate1 = state.payoff1;
-        return inference_;
+        last_inference.value_estimate0 = state.payoff0;
+        last_inference.value_estimate1 = state.payoff1;
+        return last_inference;
     };
 
     void rollout (State& state) {
-        typename MonteCarloWithPolicy::pair_actions_t pair = state.actions();
+        typename MonteCarloWithPolicy::pair_actions_t pair = state.get_legal_actions();
         while (pair.rows * pair.cols != 0) {
             int row_idx = this->device.random_int(pair.rows);
             int col_idx = this->device.random_int(pair.cols);
             typename MonteCarloWithPolicy::action_t action0 = pair.actions0[row_idx];
             typename MonteCarloWithPolicy::action_t action1 = pair.actions1[col_idx];
-            state.transition(action0, action1);
-            state.actions(pair);
+            state.apply_actions(action0, action1);
+            state.get_legal_actions(pair);
         }
     }
 

@@ -26,7 +26,7 @@ public:
 
     transition_data_t transition_data;
 
-    bool terminal = false;
+    bool is_terminal = false;
     bool expanded = false;
 
     pair_actions_t pair;
@@ -63,7 +63,7 @@ public:
         while (child != nullptr) {
             delete child;
         }
-        terminal = true;
+        is_terminal = true;
     }
 
     int count () {

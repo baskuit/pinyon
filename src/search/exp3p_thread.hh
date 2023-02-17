@@ -46,16 +46,16 @@ public:
         matrix_node->expanded = true;
         
         // actions
-        state.actions(matrix_node->pair);
-        matrix_node->terminal = (matrix_node->pair.rows * matrix_node->pair.cols == 0);
+        state.get_legal_actions(matrix_node->pair);
+        matrix_node->is_terminal = (matrix_node->pair.rows * matrix_node->pair.cols == 0);
 
         // inference
-        if (matrix_node->terminal) {
+        if (matrix_node->is_terminal) {
             matrix_node->inference.value_estimate0 = state.payoff0;
             matrix_node->inference.value_estimate1 = state.payoff1;
         } else {
             model.inference(state, matrix_node->pair);
-            matrix_node->inference = model.inference_; // One model per thread
+            matrix_node->inference = model.last_inference; // One model per thread
         }
 
         // time and mutex
@@ -79,7 +79,7 @@ public:
 
     std::mutex& mtx = matrix_node->stats.mtx;
 
-        if (matrix_node->terminal == true) {
+        if (matrix_node->is_terminal == true) {
             return matrix_node;
         } else {
             if (matrix_node->expanded == true) {
@@ -93,7 +93,7 @@ public:
 
                 typename Exp3p::action_t action0 = matrix_node->pair.actions0[row_idx];
                 typename Exp3p::action_t action1 = matrix_node->pair.actions1[col_idx];
-                typename Exp3p::transition_data_t transition_data = state.transition(action0, action1);
+                typename Exp3p::transition_data_t transition_data = state.apply_actions(action0, action1);
 
                 ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
                 MatrixNode<Exp3p>* matrix_node_next = chance_node->access(transition_data);

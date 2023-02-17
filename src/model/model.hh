@@ -18,7 +18,7 @@ public:
         double value1 = .5; // also storage for solved value, makes sense as inference property
     };
 
-    InferenceData inference_; //Bad naming. Fix!!!
+    InferenceData last_inference;
 
     virtual InferenceData& inference (State& state, pair_actions_t& pair) = 0;
     

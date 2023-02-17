@@ -38,15 +38,15 @@ public:
         MatrixNode<MatrixUCB>* matrix_node
     ) {
         matrix_node->expanded = true;
-        state.actions(matrix_node->pair);
-        matrix_node->terminal = (matrix_node->pair.rows * matrix_node->pair.cols == 0);
+        state.get_legal_actions(matrix_node->pair);
+        matrix_node->is_terminal = (matrix_node->pair.rows * matrix_node->pair.cols == 0);
 
-        if (matrix_node->terminal) { // Makes this model independent 
+        if (matrix_node->is_terminal) { // Makes this model independent 
             matrix_node->inference.value_estimate0 = state.payoff0;
             matrix_node->inference.value_estimate1 = state.payoff1;
         } else {
             model.inference(state, matrix_node->pair);
-            matrix_node->inference = model.inference_; // Inference expects a state, gets T instead...
+            matrix_node->inference = model.last_inference; // Inference expects a state, gets T instead...
         }
 
         matrix_node->stats.cumulative_payoffs.rows = matrix_node->pair.rows; 
@@ -98,7 +98,7 @@ public:
 
     std::mutex& mtx = mutex_pool[matrix_node->stats.mutex_idx];
 
-        if (matrix_node->terminal == true) {
+        if (matrix_node->is_terminal == true) {
 
             return matrix_node;
         } else {
@@ -148,7 +148,7 @@ public:
                 int col_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy1, matrix_node->pair.cols);
                 typename MatrixUCB::action_t action0 = matrix_node->pair.actions0[row_idx];
                 typename MatrixUCB::action_t action1 = matrix_node->pair.actions1[col_idx];
-                typename MatrixUCB::transition_data_t transition_data = state.transition(action0, action1);
+                typename MatrixUCB::transition_data_t transition_data = state.apply_actions(action0, action1);
 
                 ChanceNode<MatrixUCB>* chance_node = matrix_node->access(row_idx, col_idx);
                 MatrixNode<MatrixUCB>* matrix_node_next = chance_node->access(transition_data);
