@@ -20,32 +20,32 @@ public:
         SolvedState<size, int, int>(device, .5f, 2, 2), id(id), pp(pp), length(length) {}
 
     typename ToyState::pair_actions_t get_legal_actions () {
-        PairActions<size, int> pair;
+        PairActions<size, int> legal_actions;
         if (this->is_terminal) {
-            pair.rows = 0;
-            pair.cols = 0;
-            return pair;
+            legal_actions.rows = 0;
+            legal_actions.cols = 0;
+            return legal_actions;
         }
-        pair.rows = 2;
-        pair.cols = 2;
+        legal_actions.rows = 2;
+        legal_actions.cols = 2;
         for (int i = 0; i < 2; ++i) {
-            pair.actions0[i] = i;
-            pair.actions1[i] = i;
+            legal_actions.actions0[i] = i;
+            legal_actions.actions1[i] = i;
         };
-        return pair;
+        return legal_actions;
     }
 
-    void get_legal_actions (typename ToyState::pair_actions_t& pair) {
+    void get_legal_actions (typename ToyState::pair_actions_t& legal_actions) {
         if (this->is_terminal) {
-            pair.rows = 0;
-            pair.cols = 0;
+            legal_actions.rows = 0;
+            legal_actions.cols = 0;
             return;
         }
-        pair.rows = 2;
-        pair.cols = 2;
+        legal_actions.rows = 2;
+        legal_actions.cols = 2;
         for (int i = 0; i < 2; ++i) {
-            pair.actions0[i] = i;
-            pair.actions1[i] = i;
+            legal_actions.actions0[i] = i;
+            legal_actions.actions1[i] = i;
         };
     }
 
@@ -191,32 +191,32 @@ public:
         State<size, int, int>(device), depth(depth) {}
 
     typename MoldState::pair_actions_t get_legal_actions () {
-        typename MoldState::pair_actions_t pair;
+        typename MoldState::pair_actions_t legal_actions;
         if (depth == 0) {
-            pair.rows = 0;
-            pair.cols = 0;
-            return pair;
+            legal_actions.rows = 0;
+            legal_actions.cols = 0;
+            return legal_actions;
         }
-        pair.rows = size;
-        pair.cols = size;
+        legal_actions.rows = size;
+        legal_actions.cols = size;
         for (int i = 0; i < size; ++i) {
-            pair.actions0[i] = i;
-            pair.actions1[i] = i;
+            legal_actions.actions0[i] = i;
+            legal_actions.actions1[i] = i;
         };
-        return pair;
+        return legal_actions;
     }
 
-    void get_legal_actions (typename MoldState::pair_actions_t& pair) {
+    void get_legal_actions (typename MoldState::pair_actions_t& legal_actions) {
         if (depth == 0) {
-            pair.rows = 0;
-            pair.cols = 0;
+            legal_actions.rows = 0;
+            legal_actions.cols = 0;
             return;
         }
-        pair.rows = size;
-        pair.cols = size;
+        legal_actions.rows = size;
+        legal_actions.cols = size;
         for (int i = 0; i < size; ++i) {
-            pair.actions0[i] = i;
-            pair.actions1[i] = i;
+            legal_actions.actions0[i] = i;
+            legal_actions.actions1[i] = i;
         };
     }
 

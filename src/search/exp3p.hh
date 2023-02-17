@@ -41,15 +41,15 @@ public:
         Model model, 
         MatrixNode<Exp3p>* matrix_node
     ) {
-        matrix_node->expanded = true;
-        state.get_legal_actions(matrix_node->pair);
-        matrix_node->is_terminal = (matrix_node->pair.rows * matrix_node->pair.cols == 0);// (matrix_node->pair.rows*matrix_node->pair.cols == 0);
+        matrix_node->is_expanded = true;
+        state.get_legal_actions(matrix_node->legal_actions);
+        matrix_node->is_terminal = (matrix_node->legal_actions.rows * matrix_node->legal_actions.cols == 0);// (matrix_node->legal_actions.rows*matrix_node->legal_actions.cols == 0);
 
         if (matrix_node->is_terminal) { // Makes this model independent 
             matrix_node->inference.value_estimate0 = state.payoff0;
             matrix_node->inference.value_estimate1 = state.payoff1;
         } else {
-            model.inference(state, matrix_node->pair);
+            model.inference(state, matrix_node->legal_actions);
             matrix_node->inference = model.last_inference; // Inference expects a state, gets T instead...
         }
 
@@ -75,15 +75,15 @@ public:
         if (matrix_node->is_terminal == true) {
             return matrix_node;
         } else {
-            if (matrix_node->expanded == true) {
+            if (matrix_node->is_expanded == true) {
                 forecast(matrix_node);
-                int row_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast0, matrix_node->pair.rows);
-                int col_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast1, matrix_node->pair.cols);
+                int row_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast0, matrix_node->legal_actions.rows);
+                int col_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast1, matrix_node->legal_actions.cols);
                 double inverse_prob0 = 1/forecast0[row_idx];
                 double inverse_prob1 = 1/forecast1[col_idx]; // Forecast is altered by subsequent search calls
 
-                typename Exp3p::action_t action0 = matrix_node->pair.actions0[row_idx];
-                typename Exp3p::action_t action1 = matrix_node->pair.actions1[col_idx];
+                typename Exp3p::action_t action0 = matrix_node->legal_actions.actions0[row_idx];
+                typename Exp3p::action_t action1 = matrix_node->legal_actions.actions1[col_idx];
                 typename Exp3p::transition_data_t transition_data = state.apply_actions(action0, action1);
 
                 ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
@@ -110,23 +110,23 @@ public:
         MatrixNode<Exp3p>* root
     ) {
         root->stats.t = playouts;
-        typename Exp3p::model_t model(device);
+        typename Exp3p::model_t model(device); // TODO move this to args, doesnt work for NNs.
         
         for (int playout = 0; playout < playouts; ++playout) {
             auto state_ = state;
             runPlayout(state_, model, root);
         }
-    std::cout << "Exp3p root visits" << std::endl;
-    std::cout << root->stats.visits0[0] << ' ' << root->stats.visits0[1] << std::endl;
-    std::cout << root->stats.visits1[0] << ' ' << root->stats.visits1[1] << std::endl;
-    std::cout << "Exp3p root matrix" << std::endl;
-    matrix(root).print();
+    // std::cout << "Exp3p root visits" << std::endl;
+    // std::cout << root->stats.visits0[0] << ' ' << root->stats.visits0[1] << std::endl;
+    // std::cout << root->stats.visits1[0] << ' ' << root->stats.visits1[1] << std::endl;
+    // std::cout << "Exp3p root matrix" << std::endl;
+    // matrix(root).print();
 
 
     }
 
     Linear::Matrix2D<double, Exp3p::state_t::size_> matrix (MatrixNode<Exp3p>* matrix_node) {
-        Linear::Matrix2D<double, Exp3p::state_t::size_> M(matrix_node->pair.rows, matrix_node->pair.cols);
+        Linear::Matrix2D<double, Exp3p::state_t::size_> M(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
         for (int i = 0; i < M.rows; ++i) {
             for (int j = 0; j < M.cols; ++j) {
                 M.set(i, j, .5);
@@ -166,8 +166,8 @@ private:
 
     void forecast (MatrixNode<Exp3p>* matrix_node) {
         const int time = matrix_node->stats.t;
-        const int rows = matrix_node->pair.rows;
-        const int cols = matrix_node->pair.cols;
+        const int rows = matrix_node->legal_actions.rows;
+        const int cols = matrix_node->legal_actions.cols;
         if (rows == 1) {
             forecast0[0] = 1;
         } else {

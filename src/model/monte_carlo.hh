@@ -22,12 +22,12 @@ public:
     // The return type is a comprimise.
     // We would like covariance since each model really should have its own return type.
     // But using new with a pointer would be slow, so we have a storage member in the class that we modify and return always.
-    MonteCarlo<State>::InferenceData& inference (State& state, typename MonteCarlo::pair_actions_t& pair) {
-        for (int row_idx = 0; row_idx < pair.rows; ++row_idx) {
-            inference_.strategy_prior0[row_idx] = 1 / (double) pair.rows;
+    MonteCarlo<State>::InferenceData& inference (State& state, typename MonteCarlo::pair_actions_t& legal_actions) {
+        for (int row_idx = 0; row_idx < legal_actions.rows; ++row_idx) {
+            last_inference.strategy_prior0[row_idx] = 1 / (double) legal_actions.rows;
         }
-        for (int col_idx = 0; col_idx < pair.cols; ++col_idx) {
-            last_inference.strategy_prior1[col_idx] = 1 / (double) pair.cols;
+        for (int col_idx = 0; col_idx < legal_actions.cols; ++col_idx) {
+            last_inference.strategy_prior1[col_idx] = 1 / (double) legal_actions.cols;
         }
         rollout(state);
         last_inference.value_estimate0 = state.payoff0;
@@ -36,14 +36,14 @@ public:
     };
 
     void rollout (State& state) {
-        typename MonteCarlo::pair_actions_t pair = state.get_legal_actions();
-        while (pair.rows * pair.cols != 0) {
-            int row_idx = this->device.random_int(pair.rows);
-            int col_idx = this->device.random_int(pair.cols);
-            typename MonteCarlo::action_t action0 = pair.actions0[row_idx];
-            typename MonteCarlo::action_t action1 = pair.actions1[col_idx];
+        typename MonteCarlo::pair_actions_t legal_actions = state.get_legal_actions();
+        while (legal_actions.rows * legal_actions.cols != 0) {
+            int row_idx = this->device.random_int(legal_actions.rows);
+            int col_idx = this->device.random_int(legal_actions.cols);
+            typename MonteCarlo::action_t action0 = legal_actions.actions0[row_idx];
+            typename MonteCarlo::action_t action1 = legal_actions.actions1[col_idx];
             state.apply_actions(action0, action1);
-            state.get_legal_actions(pair);
+            state.get_legal_actions(legal_actions);
         }
     }
 
@@ -69,7 +69,7 @@ public:
     MonteCarloWithPolicy (prng& device) : device(device) {};
 
 
-    MonteCarloWithPolicy<State>::InferenceData& inference (State& state, typename MonteCarloWithPolicy::pair_actions_t& pair) {
+    MonteCarloWithPolicy<State>::InferenceData& inference (State& state, typename MonteCarloWithPolicy::pair_actions_t& legal_actions) {
         math::power_norm<double, State::size_>(state.strategy0, state.rows, p, last_inference.strategy_prior0);
         math::power_norm<double, State::size_>(state.strategy1, state.cols, p, last_inference.strategy_prior1);
         rollout(state);
@@ -79,14 +79,14 @@ public:
     };
 
     void rollout (State& state) {
-        typename MonteCarloWithPolicy::pair_actions_t pair = state.get_legal_actions();
-        while (pair.rows * pair.cols != 0) {
-            int row_idx = this->device.random_int(pair.rows);
-            int col_idx = this->device.random_int(pair.cols);
-            typename MonteCarloWithPolicy::action_t action0 = pair.actions0[row_idx];
-            typename MonteCarloWithPolicy::action_t action1 = pair.actions1[col_idx];
+        typename MonteCarloWithPolicy::pair_actions_t legal_actions = state.get_legal_actions();
+        while (legal_actions.rows * legal_actions.cols != 0) {
+            int row_idx = this->device.random_int(legal_actions.rows);
+            int col_idx = this->device.random_int(legal_actions.cols);
+            typename MonteCarloWithPolicy::action_t action0 = legal_actions.actions0[row_idx];
+            typename MonteCarloWithPolicy::action_t action1 = legal_actions.actions1[col_idx];
             state.apply_actions(action0, action1);
-            state.get_legal_actions(pair);
+            state.get_legal_actions(legal_actions);
         }
     }
 

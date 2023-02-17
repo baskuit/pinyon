@@ -11,13 +11,13 @@ template <typename Algorithm>
 class MatrixNode {
 public:
 
-    typedef typename Algorithm::state_t state_t;
-    typedef typename Algorithm::action_t action_t;
-    typedef typename Algorithm::pair_actions_t pair_actions_t;
-    typedef typename Algorithm::transition_data_t transition_data_t;
-    typedef typename Algorithm::model_t model_t;
-    typedef typename Algorithm::model_t::InferenceData inference_t;
-    typedef typename Algorithm::MatrixStats stats_t;
+    using state_t = typename Algorithm::state_t;
+    using action_t = typename Algorithm::action_t;
+    using pair_actions_t = typename Algorithm::pair_actions_t;
+    using transition_data_t = typename Algorithm::transition_data_t;
+    using model_t = typename Algorithm::model_t;
+    using inference_t = typename Algorithm::inference_t;
+    using stats_t = typename Algorithm::MatrixStats;
     
     ChanceNode<Algorithm>* parent = nullptr;
     ChanceNode<Algorithm>* child = nullptr;
@@ -27,9 +27,9 @@ public:
     transition_data_t transition_data;
 
     bool is_terminal = false;
-    bool expanded = false;
+    bool is_expanded = false;
 
-    pair_actions_t pair;
+    pair_actions_t legal_actions;
     inference_t inference;
     stats_t stats; // cumulative_value, vists now part of stats
 
@@ -94,13 +94,13 @@ template <typename Algorithm>
 class ChanceNode {
 public:
 
-    typedef typename Algorithm::state_t state_t;
-    typedef typename Algorithm::action_t action_t;
-    typedef typename Algorithm::pair_actions_t pair_actions_t;
-    typedef typename Algorithm::transition_data_t transition_data_t;
-    typedef typename Algorithm::model_t model_t;
-    typedef typename Algorithm::model_t::InferenceData inference_t;
-    typedef typename Algorithm::ChanceStats stats_t;
+    using state_t = typename Algorithm::state_t;
+    using action_t = typename Algorithm::action_t;
+    using pair_actions_t = typename Algorithm::pair_actions_t;
+    using transition_data_t = typename Algorithm::transition_data_t;
+    using model_t = typename Algorithm::model_t;
+    using inference_data_t = typename Algorithm::inference_t;
+    using stats_t = typename Algorithm::ChanceStats;
 
     MatrixNode<Algorithm>* parent = nullptr;
     MatrixNode<Algorithm>* child = nullptr;
@@ -148,7 +148,7 @@ public:
 
 };
 
-
+// We have to hold off on destructor definitions until here
 
 template <typename Algorithm>
 MatrixNode<Algorithm> :: ~MatrixNode<Algorithm>() {

@@ -20,6 +20,7 @@ public:
 
     InferenceData last_inference;
 
-    virtual InferenceData& inference (State& state, pair_actions_t& pair) = 0;
-    
+    virtual InferenceData& inference (State& state, pair_actions_t& legal_actions) = 0;
+    // Intended that the last_inference member be updated and then returned
+    // *note* perhaps this should be return type void and the arg should have inference_data. Does argument covariance work? dont remember tbh     
 };

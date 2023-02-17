@@ -86,7 +86,7 @@ public:
     // We use copy constructors for this
 
     virtual pair_actions_t get_legal_actions () = 0;
-    virtual void get_legal_actions (pair_actions_t& pair) = 0;
+    virtual void get_legal_actions (pair_actions_t& legal_actions) = 0;
     virtual transition_data_t apply_actions(Action action0, Action action1) = 0;
 };
 

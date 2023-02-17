@@ -24,19 +24,19 @@ int main () {
     // toy.transition(0,0);
     // MoldState mold(device, 7);
     // mold.transition(0, 0);
-    MatrixNode<MatrixUCB> root;
-    MatrixUCB session(device);
+    MatrixNode<MatrixUCB> matrixucb_root;
+    MatrixUCB matrixucb_session(device);
 
-    MatrixNode<Exp3p> root_;
-    Exp3p session_(device_);
+    MatrixNode<Exp3p> exp3p_root;
+    Exp3p exp3p_session(device_);
 
     // int threads = 4;
     int playouts = 10000;
 
-    session.search(1, playouts, toy, &root);
-    session_.search(playouts, toy, &root_);
+    matrixucb_session.search(1, playouts, toy, &matrixucb_root);
+    exp3p_session.search(playouts, toy, &exp3p_root);
 
-    std::cout << root.count() << std::endl;
+    // std::cout << matrixucb_root.count() << std::endl;
 
     return 0;
 }

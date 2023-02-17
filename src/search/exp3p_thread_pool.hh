@@ -45,18 +45,18 @@ public:
         MatrixNode<Exp3p>* matrix_node
     ) {
 
-        matrix_node->expanded = true;
+        matrix_node->is_expanded = true;
         
         // actions
-        state.get_legal_actions(matrix_node->pair);
-        matrix_node->is_terminal = (matrix_node->pair.rows * matrix_node->pair.cols == 0);
+        state.get_legal_actions(matrix_node->legal_actions);
+        matrix_node->is_terminal = (matrix_node->legal_actions.rows * matrix_node->legal_actions.cols == 0);
 
         // inference
         if (matrix_node->is_terminal) {
             matrix_node->inference.value_estimate0 = state.payoff0;
             matrix_node->inference.value_estimate1 = state.payoff1;
         } else {
-            model.inference(state, matrix_node->pair);
+            model.inference(state, matrix_node->legal_actions);
             matrix_node->inference = model.last_inference; // One model per thread
         }
 
@@ -98,16 +98,16 @@ public:
             return matrix_node;
         } else {
     mtx.lock();
-            if (matrix_node->expanded == true) {
+            if (matrix_node->is_expanded == true) {
                 std::array<double, Exp3p::state_t::size_> forecast0;
                 std::array<double, Exp3p::state_t::size_> forecast1;
                 forecast(matrix_node, forecast0, forecast1);
     mtx.unlock();
-                int row_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast0, matrix_node->pair.rows);
-                int col_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast1, matrix_node->pair.cols);
+                int row_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast0, matrix_node->legal_actions.rows);
+                int col_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast1, matrix_node->legal_actions.cols);
 
-                typename Exp3p::action_t action0 = matrix_node->pair.actions0[row_idx];
-                typename Exp3p::action_t action1 = matrix_node->pair.actions1[col_idx];
+                typename Exp3p::action_t action0 = matrix_node->legal_actions.actions0[row_idx];
+                typename Exp3p::action_t action1 = matrix_node->legal_actions.actions1[col_idx];
                 typename Exp3p::transition_data_t transition_data = state.apply_actions(action0, action1);
 
                 ChanceNode<Exp3p>* chance_node = matrix_node->access(row_idx, col_idx);
@@ -199,8 +199,8 @@ private:
         std::array<double, Exp3p::state_t::size_>& forecast1
     ) {
         const int time = matrix_node->stats.t;
-        const int rows = matrix_node->pair.rows;
-        const int cols = matrix_node->pair.cols;
+        const int rows = matrix_node->legal_actions.rows;
+        const int cols = matrix_node->legal_actions.cols;
         if (rows == 1) {
             forecast0[0] = 1;
         } else {

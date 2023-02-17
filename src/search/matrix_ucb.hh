@@ -32,24 +32,24 @@ public:
         Model model, 
         MatrixNode<MatrixUCB>* matrix_node
     ) {
-        matrix_node->expanded = true;
-        state.get_legal_actions(matrix_node->pair);
-        matrix_node->is_terminal = (matrix_node->pair.rows * matrix_node->pair.cols == 0);
+        matrix_node->is_expanded = true;
+        state.get_legal_actions(matrix_node->legal_actions);
+        matrix_node->is_terminal = (matrix_node->legal_actions.rows * matrix_node->legal_actions.cols == 0);
 
         if (matrix_node->is_terminal) { // Makes this model independent 
             matrix_node->inference.value_estimate0 = state.payoff0;
             matrix_node->inference.value_estimate1 = state.payoff1;
         } else {
-            model.inference(state, matrix_node->pair);
+            model.inference(state, matrix_node->legal_actions);
             matrix_node->inference = model.last_inference; // Inference expects a state, gets T instead...
         }
 
-        matrix_node->stats.cumulative_payoffs.rows = matrix_node->pair.rows; 
-        matrix_node->stats.cumulative_payoffs.cols = matrix_node->pair.cols;
-        matrix_node->stats.visits.rows = matrix_node->pair.rows;
-        matrix_node->stats.visits.cols = matrix_node->pair.cols;
-        for (int row_idx = 0; row_idx < matrix_node->pair.rows; ++row_idx) {
-            for (int col_idx = 0; col_idx < matrix_node->pair.cols; ++col_idx) {
+        matrix_node->stats.cumulative_payoffs.rows = matrix_node->legal_actions.rows; 
+        matrix_node->stats.cumulative_payoffs.cols = matrix_node->legal_actions.cols;
+        matrix_node->stats.visits.rows = matrix_node->legal_actions.rows;
+        matrix_node->stats.visits.cols = matrix_node->legal_actions.cols;
+        for (int row_idx = 0; row_idx < matrix_node->legal_actions.rows; ++row_idx) {
+            for (int col_idx = 0; col_idx < matrix_node->legal_actions.cols; ++col_idx) {
                 matrix_node->stats.cumulative_payoffs.set0(row_idx, col_idx, 0);
                 matrix_node->stats.cumulative_payoffs.set1(row_idx, col_idx, 0);
                 matrix_node->stats.visits.set(row_idx, col_idx, 0);
@@ -57,8 +57,8 @@ public:
         }
 
         // Uniform initialization of stats.strategies
-        for (int row_idx = 0; row_idx < matrix_node->pair.rows; ++row_idx) {matrix_node->stats.strategy0[row_idx] = 1 /(float)matrix_node->pair.rows;}
-        for (int col_idx = 0; col_idx < matrix_node->pair.cols; ++col_idx) {matrix_node->stats.strategy1[col_idx] = 1 /(float)matrix_node->pair.cols;}
+        for (int row_idx = 0; row_idx < matrix_node->legal_actions.rows; ++row_idx) {matrix_node->stats.strategy0[row_idx] = 1 /(float)matrix_node->legal_actions.rows;}
+        for (int col_idx = 0; col_idx < matrix_node->legal_actions.cols; ++col_idx) {matrix_node->stats.strategy1[col_idx] = 1 /(float)matrix_node->legal_actions.cols;}
 
         // Time
         ChanceNode<MatrixUCB>* parent = matrix_node->parent;
@@ -85,8 +85,8 @@ public:
             return matrix_node;
         } else {
 
-            if (matrix_node->expanded == true) {
-                Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(matrix_node->pair.rows, matrix_node->pair.cols);
+            if (matrix_node->is_expanded == true) {
+                Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
           
                 process_matrix(
                     matrix_node->stats.cumulative_payoffs,
@@ -126,10 +126,10 @@ public:
     // std::cout << matrix_node->stats.strategy1[0] << ' ' << matrix_node->stats.strategy1[1] << std::endl;
     // std::cout << "expl: " << exploitability << std::endl;
 
-                int row_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy0, matrix_node->pair.rows);
-                int col_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy1, matrix_node->pair.cols);
-                typename MatrixUCB::action_t action0 = matrix_node->pair.actions0[row_idx];
-                typename MatrixUCB::action_t action1 = matrix_node->pair.actions1[col_idx];
+                int row_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy0, matrix_node->legal_actions.rows);
+                int col_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy1, matrix_node->legal_actions.cols);
+                typename MatrixUCB::action_t action0 = matrix_node->legal_actions.actions0[row_idx];
+                typename MatrixUCB::action_t action1 = matrix_node->legal_actions.actions1[col_idx];
                 typename MatrixUCB::transition_data_t transition_data = state.apply_actions(action0, action1);
 
                 ChanceNode<MatrixUCB>* chance_node = matrix_node->access(row_idx, col_idx);
@@ -159,7 +159,7 @@ public:
             runPlayout(state_, model, root);
         }
         // TODO remove this
-        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(root->pair.rows, root->pair.cols);
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(root->legal_actions.rows, root->legal_actions.cols);
         process_matrix_final(
             root->stats.cumulative_payoffs,
             root->stats.visits,
