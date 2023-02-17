@@ -1,7 +1,12 @@
 #pragma once
 
+#include "libsurskit/random.hh"
+#include "libsurskit/math.hh"
 #include "algorithm.hh"
 #include "tree/node.hh"
+
+#include "gambit.h"
+#include "solvers/enummixed/enummixed.h"
 
 template <typename Model> 
 class MatrixUCB : public Algorithm<Model> {
@@ -9,10 +14,10 @@ public:
 
     struct MatrixStats : Algorithm<Model>::MatrixStats {
         int t = 0;
-        Linear::Bimatrix2D<double, Model::state_t::size_> cumulative_payoffs;
-        Linear::Matrix2D<int, Model::state_t::size_> visits;
-        std::array<double, Model::state_t::size_> strategy0;
-        std::array<double, Model::state_t::size_> strategy1;     
+        Linear::Bimatrix2D<double, state_t::size_> cumulative_payoffs;
+        Linear::Matrix2D<int, state_t::size_> visits;
+        std::array<double, state_t::size_> strategy0;
+        std::array<double, state_t::size_> strategy1;  
     };
 
     struct ChanceStats : Algorithm<Model>::ChanceStats {
@@ -25,7 +30,17 @@ public:
     prng& device;
 
     MatrixUCB (prng& device)  :
-        device(device) {}
+        device(device) {
+
+            shared_ptr<StrategyProfileRenderer<double> > renderer;
+            renderer = new MixedStrategyCSVRenderer<double>(std::cout,
+                                    numDecimals);
+            EnumMixedStrategySolver<double> solver(renderer);
+            shared_ptr<EnumMixedStrategySolution<double> > solution =
+            solver.SolveDetailed(game);
+
+
+        }
 
     void expand (
         typename MatrixUCB::state_t& state, 
@@ -86,16 +101,16 @@ public:
         } else {
 
             if (matrix_node->is_expanded == true) {
-                Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
+                Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> bimatrix (matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
           
                 process_matrix(
                     matrix_node->stats.cumulative_payoffs,
                     matrix_node->stats.visits,
-                    A,
+                    bimatrix,
                     matrix_node->stats.t
                 );
                 double exploitability = Bandit::exploitability<double, MatrixUCB::state_t::size_>(
-                    A, 
+                    bimatrix, 
                     matrix_node->stats.strategy0, 
                     matrix_node->stats.strategy1
                 );
@@ -197,13 +212,13 @@ private:
     void process_matrix (
         Linear::Bimatrix<double, MatrixUCB::state_t::size_>& cumulative_payoffs, 
         Linear::Matrix<int, MatrixUCB::state_t::size_>& visits, 
-        Linear::Bimatrix<double, MatrixUCB::state_t::size_>& output,
+        Linear::Bimatrix<double, MatrixUCB::state_t::size_>& bimatrix,
         int t
     ) {
         // assert dimensions make sense TODO
         // rename vars TODO
-        const int rows = output.rows;
-        const int cols = output.cols;
+        const int rows = bimatrix.rows;
+        const int cols = bimatrix.cols;
         for (int row_idx = 0; row_idx < rows; ++row_idx) {
             for (int col_idx = 0; col_idx < cols; ++col_idx) {
                 double u = cumulative_payoffs.get0(row_idx, col_idx);
@@ -218,8 +233,8 @@ private:
                 double const eta = c * std::sqrt((2 * std::log(t) + std::log(2 * rows * cols)) / n);
                 const double x = a + eta;
                 const double y = b + eta;
-                output.set0(row_idx, col_idx, x);
-                output.set1(row_idx, col_idx, y);
+                bimatrix.set0(row_idx, col_idx, x);
+                bimatrix.set1(row_idx, col_idx, y);
             }
         }
     }
@@ -227,13 +242,13 @@ private:
     void process_matrix_final (
         Linear::Bimatrix<double, MatrixUCB::state_t::size_>& cumulative_payoffs, 
         Linear::Matrix<int, MatrixUCB::state_t::size_>& visits, 
-        Linear::Bimatrix<double, MatrixUCB::state_t::size_>& output,
+        Linear::Bimatrix<double, MatrixUCB::state_t::size_>& bimatrix,
         int t
     ) {
         // assert dimensions make sense TODO
         // rename vars TODO
-        const int rows = output.rows;
-        const int cols = output.cols;
+        const int rows = bimatrix.rows;
+        const int cols = bimatrix.cols;
         for (int row_idx = 0; row_idx < rows; ++row_idx) {
             for (int col_idx = 0; col_idx < cols; ++col_idx) {
                 double u = cumulative_payoffs.get0(row_idx, col_idx);
@@ -242,8 +257,8 @@ private:
                 n += 1;
                 double a = n > 0 ? u / n : .5;
                 double b = n > 0 ? v / n : .5;
-                output.set0(row_idx, col_idx, a);
-                output.set1(row_idx, col_idx, b);
+                bimatrix.set0(row_idx, col_idx, a);
+                bimatrix.set1(row_idx, col_idx, b);
             }
         }
     }
