@@ -10,6 +10,13 @@
 
 template <int size, typename Action>
 struct PairActions {
+
+    /*
+    Legal actions for players 0 and 1.
+    Stored in each matrix node, for example
+    Actions a_i player 0 after i=rows are garbage, ditto for cols, player 1.
+    */
+
     int rows = 0;
     int cols = 0;
     std::array<Action, size> actions0;
@@ -29,7 +36,16 @@ struct TransitionData {
     Hash key;
     Rational probability;
 
-    TransitionData () {} // Dangerous? Hash type must have default constructor, I believe.
+    /*
+    After applying a pair of actions to a matrix node, we stochastically transition to another matrix node
+    and recieve some identifying observation of type Hash.
+    Hash is essentially the type of the chance player.
+    We use rational numbers to quantify the probability of that transition
+    This has nice properties; for example, the sum of probabilities at a chance node 
+    equals 1 if and only if all actions of the chace player have been explored.
+    */
+
+    TransitionData () {}
     TransitionData (Hash key, Rational probability) :
         key(key), probability(probability) {}
 };
@@ -41,6 +57,13 @@ struct TransitionData {
 template <int size, typename Action, typename Hash>
 class State {
 public:
+
+    /*
+    Markov Desicion Process.
+    We assume rewards at each transition are 0 until the end until the last
+    Rewards at the end are called payoffs. In the example code and motivating papers 
+    we assume payoff0 + payoff1 = 1. 
+    */
 
     static const int size_ = size;
     using action_t = Action;
@@ -65,13 +88,18 @@ public:
 };
 
 
-
-// // Solved State
+// Solved State
 
 
 template <int size, typename Action, typename Hash>
 class SolvedState : public State<size, Action, Hash> {
 public:
+
+    /*
+    State where a given Nash equilibrium is known.
+    We then also know the legal actions and terminality too
+    so we store this info as members.
+    */
 
     bool terminal = true;
     int rows = 0;

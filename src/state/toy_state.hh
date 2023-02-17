@@ -50,15 +50,17 @@ public:
     }
 
     typename ToyState::transition_data_t transition (int action0, int action1) {
-        typename ToyState::transition_data_t x(0, Rational());
+        typename ToyState::transition_data_t transition_data(0, Rational());
 
         if (id == 'u') {
+
+            // "Sucker Punch" game
 
                 if (pp == 0) {
                     this->payoff0 = 0;
                     this->payoff1 = 1;
                     this->terminal = true;
-                    return x;
+                    return transition_data;
                 }
 
                 if (action0 == 0) {
@@ -88,6 +90,8 @@ public:
 
         } else if (id == 's') {
 
+            // Player 0 to win by player action=0
+
                 if (action0 == 0) {
                     if (length == 0) {
                         this->payoff0 = 1;
@@ -105,6 +109,8 @@ public:
             this->strategy0[1] = 0;
 
         } else if (id == 't') {
+
+            // Player 1 to win by playing action=0
 
                 if (action1 == 0) {
                     if (length == 0) {
@@ -124,16 +130,18 @@ public:
 
         } else if (id == '2') {
 
-            x.key = this->device.random_int(2);
-            x.probability = {1, 2};
+            transition_data.key = this->device.random_int(2);
+            transition_data.probability = {1, 2};
 
         } else if (id == 'w') {
+
+            // Sucker punch game where game end by K.O is replaced by corresponding 's' or 't' game.
 
                 if (pp == 0) {
                     this->payoff0 = 0;
                     this->payoff1 = 1;
                     this->terminal = true;
-                    return x;
+                    return transition_data;
                 }
 
                 if (action0 == 0) {
@@ -164,13 +172,13 @@ public:
 
         }
 
-        return x;
+        return transition_data;
     }
 
 };
  
 
-// Large tree for memory tests etc.
+// Large uniform tree for testing etc. So called because it spreads out until it can't.
 
 
 template <int size>
