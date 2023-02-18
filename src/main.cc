@@ -13,20 +13,22 @@ Example of applying Exp3p search
 
 int main () {
 
-    using ToyState = ToyState<2>;
-    using MonteCarlo = MonteCarlo<ToyState>;
+    using MoldState = MoldState<2>;
+    using MonteCarlo = MonteCarlo<MoldState>;
     using Exp3p = Exp3p<MonteCarlo>;
+    
 
-
-    // Init prng devices to use in algorithm and in this case state
-    prng device;
-    ToyState toy_state(device, 'w', 2, 2);
-    MonteCarlo model();
+    prng device(0);
+    ToyState<2> toy_state(device, sucker_punch_win_by, 4, 5);
+    MoldState mold_state(device, 100);
+    MonteCarlo model(device);
     Exp3p session(device);
     MatrixNode<Exp3p> root;
 
-    int playouts = 10000;
-    session.search(playouts, toy_state, &root);
+    int playouts = 1000000;
+    session.search(playouts, mold_state, root);
+    std::cout << "Playouts: " << playouts << std::endl;
+    std::cout << "Size of root tree after search: " << root.count() << std::endl;
 
     return 0;
 }

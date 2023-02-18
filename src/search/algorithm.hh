@@ -24,4 +24,7 @@ public:
         virtual double value0 () {return .5;}
         virtual double value1 () {return .5;}
     };
+
+    void search (state_t& state) {} // TODO
+    // Will have other arguments in the subclasses of Algo, not sure how to make this virtual rather than decorative
 };

@@ -5,19 +5,25 @@
 
 // ToyState is a contrived game with known payoff and equilibria. 
 
+enum ToyStatePhase {
+        sucker_punch,
+        p0_win_by_0,
+        p1_win_by_0,
+        sucker_punch_win_by,
+};
 
 template <int size>
 class ToyState : public SolvedState<size, int, int> {
 public:
 
-    char id = 'u';
+    ToyStatePhase phase = sucker_punch;
     int pp = 1;
     int length = 0;
 
     ToyState (prng& device) :
         SolvedState<size, int, int>(device, .5f, 2, 2) {} // TODO: Need to calculate payoff, strategies on initialization too
-    ToyState (prng& device, char id, int pp, int length) :
-        SolvedState<size, int, int>(device, .5f, 2, 2), id(id), pp(pp), length(length) {}
+    ToyState (prng& device, ToyStatePhase phase, int pp, int length) :
+        SolvedState<size, int, int>(device, .5f, 2, 2), phase(phase), pp(pp), length(length) {}
 
     typename ToyState::pair_actions_t get_legal_actions () {
         PairActions<size, int> legal_actions;
@@ -52,7 +58,7 @@ public:
     typename ToyState::transition_data_t apply_actions (int action0, int action1) {
         typename ToyState::transition_data_t transition_data(0, Rational());
 
-        if (id == 'u') {
+        if (phase == sucker_punch) {
 
             // "Sucker Punch" game
 
@@ -88,7 +94,7 @@ public:
             this->strategy1[0] = pp/(double)(pp+1);
             this->strategy1[1] = 1/(double)(pp+1);
 
-        } else if (id == 's') {
+        } else if (phase == p0_win_by_0) {
 
             // Player 0 to win by player action=0
 
@@ -108,7 +114,7 @@ public:
             this->strategy0[0] = 1;
             this->strategy0[1] = 0;
 
-        } else if (id == 't') {
+        } else if (phase == p1_win_by_0) {
 
             // Player 1 to win by playing action=0
 
@@ -128,12 +134,7 @@ public:
             this->strategy1[0] = 1;
             this->strategy1[1] = 0;
 
-        } else if (id == '2') {
-
-            transition_data.key = this->device.random_int(2);
-            transition_data.probability = {1, 2};
-
-        } else if (id == 'w') {
+        } else if (phase == sucker_punch_win_by) {
 
             // Sucker punch game where game end by K.O is replaced by corresponding 's' or 't' game.
 
@@ -151,17 +152,17 @@ public:
                     } else {
                         this->payoff0 = 1;
                         this->payoff1 = 0;
-                        this->id = 's';
+                        this->phase = p0_win_by_0;
                     }
                 } else {
                     if (action1 == 0) {
                         this->payoff0 = 1;
                         this->payoff1 = 0;
-                        this->id = 's';
+                        this->phase = p0_win_by_0;
                     } else {
                         this->payoff0 = 0;
                         this->payoff1 = 1;
-                        this->id = 't';
+                        this->phase = p1_win_by_0;
                     }
                 }
 

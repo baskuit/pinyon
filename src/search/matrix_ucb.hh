@@ -8,6 +8,9 @@
 #include "gambit.h"
 #include "solvers/enummixed/enummixed.h"
 
+using namespace Gambit;
+using namespace Gambit::Nash;
+
 template <typename Model> 
 class MatrixUCB : public Algorithm<Model> {
 public:
@@ -28,18 +31,11 @@ public:
     };
 
     prng& device;
+    EnumMixedStrategySolver<double> solver(nullptr);
 
     MatrixUCB (prng& device)  :
         device(device) {
-
-            shared_ptr<StrategyProfileRenderer<double> > renderer;
-            renderer = new MixedStrategyCSVRenderer<double>(std::cout,
-                                    numDecimals);
-            EnumMixedStrategySolver<double> solver(renderer);
-            shared_ptr<EnumMixedStrategySolution<double> > solution =
-            solver.SolveDetailed(game);
-
-
+            EnumMixedStrategySolver<double> solver(nullptr);
         }
 
     void expand (
@@ -86,7 +82,6 @@ public:
             t_estimate = t_estimate == 0 ? 1 : t_estimate;
             matrix_node->stats.t = t_estimate;
         }
-        
     }
 
     MatrixNode<MatrixUCB>* runPlayout ( 

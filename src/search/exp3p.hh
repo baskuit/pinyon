@@ -107,14 +107,14 @@ public:
     void search (
         int playouts,
         typename Exp3p::state_t& state, 
-        MatrixNode<Exp3p>* root
+        MatrixNode<Exp3p>& root
     ) {
-        root->stats.t = playouts;
+        root.stats.t = playouts;
         typename Exp3p::model_t model(device); // TODO move this to args, doesnt work for NNs.
         
         for (int playout = 0; playout < playouts; ++playout) {
             auto state_ = state;
-            runPlayout(state_, model, root);
+            runPlayout(state_, model, &root);
         }
     // std::cout << "Exp3p root visits" << std::endl;
     // std::cout << root->stats.visits0[0] << ' ' << root->stats.visits0[1] << std::endl;
