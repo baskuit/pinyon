@@ -49,6 +49,7 @@ namespace math {
 
 }
 
+// TODO Vector currently unused
 namespace Linear {
 
 template <typename T, int size>
@@ -102,6 +103,15 @@ struct Bimatrix {
     virtual void set1 (int row_idx, int col_idx, T value) = 0;
 };
 
+/*
+Matrix is a virtual implementation.
+Matrix2D is a non-virtual subclass that uses arrays of arrays, exploiting the fact that we still template states with a size ('max_actions') parameter.
+I just checked, and we could do away with this, and use vectors instead.
+Arrays are used instead of vectors to store "PairActions" as well as all the various things in the algo stats like gains for exp3
+But it is somewhat slower even though it probably uses a bit less memory. Overall not worth changing just yet.
+The indended use case of all this has size=9, which is totally reasonable.
+*/
+
 template <typename T, int size>
 struct Matrix2D : Matrix<T, size> {
     std::array<std::array<T, size>, size> data;
@@ -109,7 +119,7 @@ struct Matrix2D : Matrix<T, size> {
     Matrix2D () {}
 
     Matrix2D (int rows, int cols) :
-    Matrix<T, size>(rows, cols) {
+        Matrix<T, size>(rows, cols) {
         for (int i = 0; i < rows; ++i) {
             for (int j = 0; j < cols; ++j) {
                 data[i][j] = Rational(1, 2);
