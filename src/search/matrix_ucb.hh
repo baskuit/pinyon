@@ -5,11 +5,11 @@
 #include "algorithm.hh"
 #include "tree/node.hh"
 
-#include "gambit.h"
-#include "solvers/enummixed/enummixed.h"
+// #include "gambit.h"
+// #include "solvers/enummixed/enummixed.h"
 
-using namespace Gambit;
-using namespace Gambit::Nash;
+// using namespace Gambit;
+// using namespace Gambit::Nash;
 
 template <typename Model>
 class MatrixUCB : public Algorithm<Model>
@@ -37,7 +37,7 @@ public:
     };
 
     prng &device;
-    EnumMixedStrategySolver<double> solver();
+    // EnumMixedStrategySolver<double> solver();
 
     MatrixUCB(prng &device) : device(device)
     {
