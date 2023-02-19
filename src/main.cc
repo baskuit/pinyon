@@ -6,35 +6,30 @@
 #include "model/monte_carlo.hh"
 #include "tree/node.hh"
 #include "search/exp3p.hh"
-#include "search/matrix_ucb_thread_pool.hh"
+#include "search/matrix_ucb.hh"
 
-int main () {
+/*
+Example of applying MatrixUCB search
+*/
 
-    using ToyState = ToyState<2>;
+int main()
+{
+
     using MoldState = MoldState<2>;
-    using MonteCarlo = MonteCarlo<ToyState>;
-    using Exp3p = Exp3p<MonteCarlo>;
-    using MatrixUCB = MatrixUCB<MonteCarlo, 128>;
+    using MonteCarlo = MonteCarlo<ToyState<2>>;
+    using MatrixUCB = MatrixUCB<MonteCarlo>;
 
+    prng device(0);
+    ToyState<2> toy_state(device, sucker_punch_win_by, 3, 0);
+    MoldState mold_state(device, 10);
+    MonteCarlo model(device);
+    MatrixUCB session(device);
+    MatrixNode<MatrixUCB> root;
 
-    // Init prng devices to use in algorithm and in this case state
-    prng device;
-    prng device_;
-    ToyState toy_state(device, 'w', 2, 2);
+    int playouts = 800;
+    session.search(playouts, toy_state, model, root);
+    std::cout << "Playouts: " << playouts << std::endl;
+    std::cout << "Size of root tree after search: " << root.count() << std::endl;
 
-    
-    MatrixNode<MatrixUCB> matrixucb_root;
-    MatrixUCB matrixucb_session(device);
-
-    MatrixNode<Exp3p> exp3p_root;
-    Exp3p exp3p_session(device_);
-
-    // int threads = 4;
-    int playouts = 10000;
-
-    matrixucb_session.search(1, playouts, toy_state, &matrixucb_root);
-    exp3p_session.search(playouts, toy_state, &exp3p_root);
-
-    // std::cout << std::format("{}", matrixucb_root.count()) << std::endl;
     return 0;
 }
