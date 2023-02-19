@@ -10,8 +10,8 @@ public:
     {
         std::array<double, State::size_> strategy_prior0;
         std::array<double, State::size_> strategy_prior1;
-        double value_estimate0;
-        double value_estimate1;
+        double value0;
+        double value1;
     };
 
     prng &device;
@@ -34,8 +34,8 @@ public:
             last_inference.strategy_prior1[col_idx] = 1 / (double)legal_actions.cols;
         }
         rollout(state);
-        last_inference.value_estimate0 = state.payoff0;
-        last_inference.value_estimate1 = state.payoff1;
+        last_inference.value0 = state.payoff0;
+        last_inference.value1 = state.payoff1;
         return last_inference;
     };
 
@@ -64,8 +64,8 @@ public:
     {
         std::array<double, State::size_> strategy_prior0;
         std::array<double, State::size_> strategy_prior1;
-        double value_estimate0;
-        double value_estimate1;
+        double value0;
+        double value1;
     };
 
     prng &device;
@@ -79,8 +79,8 @@ public:
         math::power_norm<double, State::size_>(state.strategy0, state.rows, p, last_inference.strategy_prior0);
         math::power_norm<double, State::size_>(state.strategy1, state.cols, p, last_inference.strategy_prior1);
         rollout(state);
-        last_inference.value_estimate0 = state.payoff0;
-        last_inference.value_estimate1 = state.payoff1;
+        last_inference.value0 = state.payoff0;
+        last_inference.value1 = state.payoff1;
         return last_inference;
     };
 
