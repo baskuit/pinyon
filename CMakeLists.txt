@@ -3,16 +3,18 @@ project(surskit VERSION 0.1.0)
 
 
 include_directories(src gambit/src)
-add_library(libsurskit STATIC src/main.cc test/test.cc)
+add_library(libsurskit STATIC src/main.cc test/test.cc test/exp3p_thread_test.cc)
 
 
 add_executable(
 surskit 
-# src/libsurskit/math.cc
-# src/tree/node.cc
 src/main.cc
 )
 
+add_executable(
+test 
+test/exp3p_thread_test.cc
+)
 
 # add_executable(
 # matrix

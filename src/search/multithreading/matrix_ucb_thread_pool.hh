@@ -44,8 +44,8 @@ public:
 
         if (matrix_node->is_terminal)
         { // Makes this model independent
-            matrix_node->inference.value_estimate0 = state.payoff0;
-            matrix_node->inference.value_estimate1 = state.payoff1;
+            matrix_node->inference.value0 = state.payoff0;
+            matrix_node->inference.value1 = state.payoff1;
         }
         else
         {
@@ -127,7 +127,7 @@ public:
                 Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
                 std::array<double, MatrixUCB::state_t::size_> strategy0 = {1 / (double)matrix_node->legal_actions.rows};
                 std::array<double, MatrixUCB::state_t::size_> strategy1 = {1 / (double)matrix_node->legal_actions.cols};
-                process_matrix(
+                get_ucb_matrix(
                     matrix_node->stats.cumulative_payoffs,
                     matrix_node->stats.visits,
                     A,
@@ -172,8 +172,8 @@ public:
                 MatrixNode<MatrixUCB> *matrix_node_next = chance_node->access(transition_data);
                 MatrixNode<MatrixUCB> *matrix_node_leaf = runPlayout(state, model, matrix_node_next);
 
-                double u0 = matrix_node_leaf->inference.value_estimate0;
-                double u1 = matrix_node_leaf->inference.value_estimate1;
+                double u0 = matrix_node_leaf->inference.value0;
+                double u1 = matrix_node_leaf->inference.value1;
                 mtx.lock();
                 update(matrix_node, u0, u1, row_idx, col_idx);
                 for (int i = 0; i < 2; ++i)
@@ -231,7 +231,7 @@ public:
 
         // TODO remove this
         Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(root->legal_actions.rows, root->legal_actions.cols);
-        process_matrix_final(
+        get_matrix(
             root->stats.cumulative_payoffs,
             root->stats.visits,
             A,
@@ -262,7 +262,7 @@ private:
         // TODO add increment overloads
     }
 
-    void process_matrix(
+    void get_ucb_matrix(
         Linear::Bimatrix<double, MatrixUCB::state_t::size_> &cumulative_payoffs,
         Linear::Matrix<int, MatrixUCB::state_t::size_> &visits,
         Linear::Bimatrix<double, MatrixUCB::state_t::size_> &output,
@@ -292,7 +292,7 @@ private:
         }
     }
 
-    void process_matrix_final(
+    void get_matrix(
         Linear::Bimatrix<double, MatrixUCB::state_t::size_> &cumulative_payoffs,
         Linear::Matrix<int, MatrixUCB::state_t::size_> &visits,
         Linear::Bimatrix<double, MatrixUCB::state_t::size_> &output,

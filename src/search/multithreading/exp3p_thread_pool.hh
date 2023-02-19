@@ -6,7 +6,9 @@
 #include <thread>
 #include <mutex>
 
-template <typename Model>
+// Uses a mutex pool with random indices
+
+template <typename Model, int pool_size>
 class Exp3p : public Algorithm<Model>
 {
 public:
@@ -22,7 +24,7 @@ public:
         double cumulative_value0 = 0;
         double cumulative_value1 = 0;
 
-        std::mutex mtx;
+        int mutex_idx = 0;
     };
 
     struct ChanceStats : Algorithm<Model>::ChanceStats
@@ -30,13 +32,14 @@ public:
         int visits = 0;
         double cumulative_value0 = 0;
         double cumulative_value1 = 0;
-        double value0() { return visits > 0 ? cumulative_value0 / visits : .5; }
-        double value1() { return visits > 0 ? cumulative_value1 / visits : .5; }
+        double get_expected_value0() { return visits > 0 ? cumulative_value0 / visits : .5; }
+        double get_expected_value1() { return visits > 0 ? cumulative_value1 / visits : .5; }
     };
 
     prng device; // used to instantiate thread local prng
+    std::array<std::mutex, pool_size> mutex_pool;
 
-    Exp3p(prng &device) : device(device) {}
+    Exp3p() {} // TODO add device
 
     void expand(
         typename Exp3p::state_t &state,
@@ -53,8 +56,8 @@ public:
         // inference
         if (matrix_node->is_terminal)
         {
-            matrix_node->inference.value_estimate0 = state.payoff0;
-            matrix_node->inference.value_estimate1 = state.payoff1;
+            matrix_node->inference.value0 = state.payoff0;
+            matrix_node->inference.value1 = state.payoff1;
         }
         else
         {
@@ -63,10 +66,13 @@ public:
         }
 
         // time and mutex
+        int parent_idx = -1;
+        int prev_idx = -1;
         ChanceNode<Exp3p> *parent = matrix_node->parent;
         if (parent != nullptr)
         {
             MatrixNode<Exp3p> *mparent = parent->parent;
+            parent_idx = mparent->stats.mutex_idx;
             int row_idx = parent->row_idx;
             int col_idx = parent->col_idx;
             double joint_p = mparent->inference.strategy_prior0[row_idx] * mparent->inference.strategy_prior1[col_idx] * ((double)matrix_node->transition_data.probability);
@@ -74,15 +80,28 @@ public:
             t_estimate = t_estimate == 0 ? 1 : t_estimate;
             matrix_node->stats.t = t_estimate;
         }
+        if (matrix_node->prev != nullptr)
+        {
+            prev_idx = matrix_node->prev->stats.mutex_idx;
+        }
+        while (true)
+        {
+            matrix_node->stats.mutex_idx = model.device.random_int(pool_size);
+            if (matrix_node->stats.mutex_idx != parent_idx && matrix_node->stats.mutex_idx != prev_idx)
+            {
+                break;
+            }
+        }
     }
 
     MatrixNode<Exp3p> *runPlayout(
+
         typename Exp3p::state_t &state,
         typename Exp3p::model_t &model,
         MatrixNode<Exp3p> *matrix_node)
     {
 
-        std::mutex &mtx = matrix_node->stats.mtx;
+        std::mutex &mtx = mutex_pool[matrix_node->stats.mutex_idx];
 
         if (matrix_node->is_terminal == true)
         {
@@ -90,11 +109,11 @@ public:
         }
         else
         {
+            mtx.lock();
             if (matrix_node->is_expanded == true)
             {
                 std::array<double, Exp3p::state_t::size_> forecast0;
                 std::array<double, Exp3p::state_t::size_> forecast1;
-                mtx.lock();
                 forecast(matrix_node, forecast0, forecast1);
                 mtx.unlock();
                 int row_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast0, matrix_node->legal_actions.rows);
@@ -106,11 +125,10 @@ public:
 
                 ChanceNode<Exp3p> *chance_node = matrix_node->access(row_idx, col_idx);
                 MatrixNode<Exp3p> *matrix_node_next = chance_node->access(transition_data);
-
                 MatrixNode<Exp3p> *matrix_node_leaf = runPlayout(state, model, matrix_node_next);
 
-                double u0 = matrix_node_leaf->inference.value_estimate0;
-                double u1 = matrix_node_leaf->inference.value_estimate1;
+                double u0 = matrix_node_leaf->inference.value0;
+                double u1 = matrix_node_leaf->inference.value1;
                 mtx.lock();
                 matrix_node->stats.gains0[row_idx] += u0 / forecast0[row_idx];
                 matrix_node->stats.gains1[col_idx] += u1 / forecast1[col_idx];
@@ -121,7 +139,6 @@ public:
             }
             else
             {
-                mtx.lock();
                 expand(state, model, matrix_node);
                 mtx.unlock();
                 return matrix_node;
@@ -129,9 +146,6 @@ public:
         }
     };
 
-    // Called by each thread. Pass state by value and instantiate a new model to guarantee no shared resources
-    // PbV state will hard copy the prng, so each thread has same but separate state prng.
-    // Toy state does not use this anyway
     void loopPlayout(
         int playouts,
         typename Exp3p::state_t *state,
@@ -162,7 +176,6 @@ public:
             const int playouts_thread = playouts / threads;
             thread_pool[i] = std::thread(&Exp3p::loopPlayout, this, playouts_thread, &state, root);
         }
-
         for (int i = 0; i < threads; ++i)
         {
             thread_pool[i].join();
@@ -250,7 +263,6 @@ private:
         int row_idx,
         int col_idx)
     {
-
         matrix_node->stats.cumulative_value0 += u0;
         matrix_node->stats.cumulative_value1 += u1;
         matrix_node->stats.visits += 1;
