@@ -15,8 +15,8 @@ public:
 
     struct InferenceData
     {
-        double value0 = .5; // wrong to call defacto value an estimate.
-        double value1 = .5; // also storage for solved value, makes sense as inference property
+        double value0 = .5;
+        double value1 = .5;
     };
 
     InferenceData last_inference;
