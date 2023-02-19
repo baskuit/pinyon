@@ -1,6 +1,6 @@
 #pragma once
 
-// #include "../model/model.hh"
+#include "../libsurskit/math.hh"
 
 template <typename Algorithm>
 class ChanceNode;
@@ -87,7 +87,7 @@ public:
         auto child = this->child;
         while (child != nullptr)
         {
-            M.set(child->row_idx, child->col_idx, child->stats.get_expected_value_0());
+            M.set(child->row_idx, child->col_idx, child->stats.get_expected_value0());
             child = child->next;
         }
     }
@@ -154,6 +154,16 @@ public:
             current = current->next;
         }
         return c;
+    }
+
+    Rational get_explored_total () {
+           Rational total(0, 1);
+           MatrixNode<Algorithm> cur = child;
+           while (cur != nullptr) {
+                total += cur.transition_data.probability;
+                cur = cur->next;
+           }
+           return total;
     }
 };
 
