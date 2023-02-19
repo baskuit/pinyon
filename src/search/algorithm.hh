@@ -17,7 +17,7 @@ public:
     };
     struct ChanceStats
     {
-        virtual double get_expected_value_0() { return .5; }
-        virtual double get_expected_value_1() { return .5; }
+        virtual double get_expected_value0() = 0;
+        virtual double get_expected_value1() = 0;
     };
 };
