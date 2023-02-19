@@ -16,6 +16,11 @@ test
 test/exp3p_thread_test.cc
 )
 
+add_executable(
+link
+test/gambit_link_test.cc
+)
+
 # add_executable(
 # matrix
 # gambit-maste1r/src/tools/enummixed/enummixed.cc
