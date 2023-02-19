@@ -28,6 +28,8 @@ class Rational
 public:
     Rational() {}
 
+    Rational(int p) : p(p), q(1) {}
+
     Rational(int p, int q) : p(p), q(q) {}
 
     Rational operator+(Rational y)
