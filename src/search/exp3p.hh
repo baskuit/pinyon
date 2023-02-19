@@ -25,8 +25,8 @@ public:
         int visits = 0;
         double cumulative_value0 = 0;
         double cumulative_value1 = 0;
-        double get_expected_value_0() { return visits > 0 ? cumulative_value0 / visits : .5; }
-        double get_expected_value_1() { return visits > 0 ? cumulative_value1 / visits : .5; }
+        double get_expected_value0() { return visits > 0 ? cumulative_value0 / visits : .5; }
+        double get_expected_value1() { return visits > 0 ? cumulative_value1 / visits : .5; }
     };
 
     prng &device;
@@ -48,8 +48,8 @@ public:
 
         if (matrix_node->is_terminal)
         { // Makes this model independent
-            matrix_node->inference.value_estimate0 = state.payoff0;
-            matrix_node->inference.value_estimate1 = state.payoff1;
+            matrix_node->inference.value0 = state.payoff0;
+            matrix_node->inference.value1 = state.payoff1;
         }
         else
         {
@@ -99,8 +99,8 @@ public:
                 MatrixNode<Exp3p> *matrix_node_next = chance_node->access(transition_data);
                 MatrixNode<Exp3p> *matrix_node_leaf = runPlayout(state, model, matrix_node_next);
 
-                double u0 = matrix_node_leaf->inference.value_estimate0;
-                double u1 = matrix_node_leaf->inference.value_estimate1;
+                double u0 = matrix_node_leaf->inference.value0;
+                double u1 = matrix_node_leaf->inference.value1;
                 matrix_node->stats.gains0[row_idx] += u0 * inverse_prob0;
                 matrix_node->stats.gains1[col_idx] += u1 * inverse_prob1;
                 update(matrix_node, u0, u1, row_idx, col_idx);
@@ -128,8 +128,8 @@ public:
             runPlayout(state_, model, &root);
         }
         std::cout << "Exp3p root visits" << std::endl;
-        std::cout << root.stats.visits0[0] << ' ' << root.stats.visits0[1] << std::endl;
-        std::cout << root.stats.visits1[0] << ' ' << root.stats.visits1[1] << std::endl;
+        std::cout << "p0: " << root.stats.visits0[0] << ' ' << root.stats.visits0[1] << std::endl;
+        std::cout << "p1: " << root.stats.visits1[0] << ' ' << root.stats.visits1[1] << std::endl;
         std::cout << "Exp3p root matrix" << std::endl;
         get_matrix(&root).print();
     }
@@ -150,8 +150,8 @@ public:
         ChanceNode<Exp3p> *cur = matrix_node->child;
         while (cur != nullptr)
         {
-            M.set0(cur->row_idx, cur->col_idx, cur->stats.get_expected_value_0());
-            M.set1(cur->row_idx, cur->col_idx, cur->stats.get_expected_value_1());
+            M.set0(cur->row_idx, cur->col_idx, cur->stats.get_expected_value0());
+            M.set1(cur->row_idx, cur->col_idx, cur->stats.get_expected_value1());
             cur = cur->next;
         }
         return M;
