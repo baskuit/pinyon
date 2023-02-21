@@ -1,5 +1,5 @@
 # Surskit
-![node](surskit.png ?raw=true)
+![node](surskit.png?raw=true)
 
 Surskit is a meta-algorithm implementation for stochastic matrix games using templates in C++.
 It is a generalization of "growing tree" algorithms such as [SM-MCTS](https://arxiv.org/abs/1804.09045) and [MatrixUCB](https://arxiv.org/abs/2006.05145).
