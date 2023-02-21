@@ -47,6 +47,15 @@ public:
     EnumMixedStrategySolver<double> solver;
     shared_ptr<StrategyProfileRenderer<double>> renderer;
 
+    double c_uct = 2;
+    // solutions to ucb matrix are recalculated if the exploitability is above the threshold.
+    double expl_threshold = .05;
+    // number of times the above happens.
+    int expl_hits = 0;
+    // number of times we use bandit solver
+    int gambit_hits = 0;
+
+
     MatrixUCB(prng &device) : device(device)
     {
         int numDecimals = 10;
@@ -72,6 +81,7 @@ public:
                 root.stats.visits);
         std::cout << "expected value matrix:" << std::endl;
         bimatrix.print();
+        std::cout << "visit matrix" << std::endl;
         root.stats.visits.print();
     }
 
@@ -102,9 +112,31 @@ private:
                     bimatrix,
                     matrix_node->stats.strategy0,
                     matrix_node->stats.strategy1);
-                if (true)
+                if (exploitability > this->expl_threshold || false)
                 {
+                    ++this->expl_hits;
                     solve_bimatrix(bimatrix, matrix_node->stats.strategy0, matrix_node->stats.strategy1);
+                    double is_interior = 1.0;
+                    for (int i = 0; i < bimatrix.rows; ++i) {
+                        if (matrix_node->stats.strategy0[i] == 0){
+                            is_interior *= 1 - matrix_node->stats.strategy0[i];
+                        }
+                    }
+                    for (int j = 0; j < bimatrix.cols; ++j) {
+                        if (matrix_node->stats.strategy0[j] == 0){
+                            is_interior *= 1 - matrix_node->stats.strategy1[j];
+                        }
+                    }
+                    if (is_interior == 0) {
+                        ++this->gambit_hits;
+                        Bandit::SolveBimatrix<double, MatrixUCB::state_t::size_>(
+                            device,
+                            10000,
+                            bimatrix,
+                            matrix_node->stats.strategy0,
+                            matrix_node->stats.strategy1
+                        );
+                    }
                 }
 
                 int row_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy0, matrix_node->legal_actions.rows);
@@ -184,7 +216,7 @@ private:
             // transition prob from matrix_parent to matrix child, factoring all players', including chance, strategies.
             double joint_p = matrix_parent->inference.strategy_prior0[row_idx] * matrix_parent->inference.strategy_prior1[col_idx] * ((double)matrix_node->transition_data.probability);
             int t_estimate = matrix_node->parent->parent->stats.t * joint_p;
-            t_estimate = t_estimate == 0 ? 1 : t_estimate;
+            t_estimate = t_estimate < 1 ? 1 : t_estimate;
             matrix_node->stats.t = t_estimate;
         }
     }
@@ -195,13 +227,9 @@ private:
         std::array<double, MatrixUCB::state_t::size_> &strategy1)
     {
         Game game = build_nfg(bimatrix);
-        shared_ptr<EnumMixedStrategySolution<double>> solution = solver.SolveDetailed(game);
-        game->Write(std::cout);
+        shared_ptr<EnumMixedStrategySolution<double>> solution = solver.SolveDetailed(game); // No exceptino handling 8)
         List<List<MixedStrategyProfile<double>>> cliques = solution->GetCliques();
-
         MixedStrategyProfile<double> joint_strategy = cliques[1][1];
-        PrintCliques(cliques, renderer);
-
         for (int i = 0; i < bimatrix.rows; ++i)
         {
             strategy0[i] = joint_strategy[i + 1];
@@ -271,10 +299,9 @@ private:
                 {
                     n = 1;
                 }
-                double a = n > 0 ? u / n : .5;
-                double b = n > 0 ? v / n : .5;
-                double const c = 0;
-                double const eta = c * std::sqrt((2 * std::log(t) + std::log(2 * rows * cols)) / n);
+                double a = u / n;
+                double b = v / n;
+                double const eta = this->c_uct * std::sqrt((2 * std::log(t) + std::log(2 * rows * cols)) / n);
                 const double x = a + eta;
                 const double y = b + eta;
                 bimatrix.set0(row_idx, col_idx, x);
@@ -301,10 +328,9 @@ private:
                 {
                     n = 1;
                 }
-                double a = n > 0 ? u / n : .5;
-                double b = n > 0 ? v / n : .5;
-                double const c = 0;
-                double const eta = c * std::sqrt((2 * std::log(t) + std::log(2 * rows * cols)) / n);
+                double a = u / n;
+                double b = v / n;
+                double const eta = this->c_uct * std::sqrt((2 * std::log(t) + std::log(2 * rows * cols)) / n);
                 const double x = a + eta;
                 const double y = b + eta;
                 bimatrix.set0(row_idx, col_idx, x);
@@ -373,6 +399,8 @@ void PrintCliques(const List<List<MixedStrategyProfile<T>>> &p_cliques,
         {
             p_renderer->Render(p_cliques[cl][i],
                                "convex-" + lexical_cast<std::string>(cl));
+                                std::cout << cl << ' ' << i << std::endl;
         }
     }
+    std::cout << std::endl;
 }
