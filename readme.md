@@ -1,5 +1,5 @@
 # Surskit
-![node](surskit.png =200x200)
+![node](surskit.png =200x200 ?raw=true)
 
 Surskit is a meta-algorithm implementation for stochastic matrix games using templates in C++.
 It is a generalization of "growing tree" algorithms such as [SM-MCTS](https://arxiv.org/abs/1804.09045) and [MatrixUCB](https://arxiv.org/abs/2006.05145).
@@ -24,5 +24,3 @@ A more detailed explanation of the type system is [here](https://github.com/bask
 
 **[Gambit](https://github.com/gambitproject/gambit)** is an open-source collection of tools for doing computation in game theory. 
 The computation of Nash Equilibrium strategies is necessary for the MatrixUCB algorithm.
-
-*TODO: Gambit is not currently linked with Surskit and so matrix game solving is instead done approximately, using the average strategy of a regret minimizing algorithm (exp3).*
