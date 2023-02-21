@@ -177,12 +177,12 @@ struct Bimatrix2D : Bimatrix<T, size> {
 
     Bimatrix2D (int rows, int cols) :
     Bimatrix<T, size>(rows, cols) {
-        // for (int i = 0; i < rows; ++i) {
-        //     for (int j = 0; j < cols; ++j) {
-        //         data0[i][j] = Rational(1, 2);
-        //         data1[i][j] = Rational(1, 2);
-        //     }
-        // }
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                data0[i][j] = Rational(0);
+                data1[i][j] = Rational(0);
+            }
+        }
     }
 
     T get0 (int row_idx, int col_idx) {return data0[row_idx][col_idx];}
