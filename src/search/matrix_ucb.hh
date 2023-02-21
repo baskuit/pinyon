@@ -1,15 +1,22 @@
 #pragma once
 
+#include <string>
+
 #include "libsurskit/random.hh"
 #include "libsurskit/math.hh"
 #include "algorithm.hh"
 #include "tree/node.hh"
 
-// #include "gambit.h"
-// #include "solvers/enummixed/enummixed.h"
+#include "gambit.h"
+#include "solvers/enummixed/enummixed.h"
 
-// using namespace Gambit;
-// using namespace Gambit::Nash;
+using namespace Gambit;
+using namespace Gambit::Nash;
+
+Game build_nfg(); // TODO see if need forward decs
+template <class T>
+void PrintCliques(const List<List<MixedStrategyProfile<T>>> &p_cliques,
+                  shared_ptr<StrategyProfileRenderer<T>> p_renderer);
 
 template <typename Model>
 class MatrixUCB : public Algorithm<Model>
@@ -37,11 +44,13 @@ public:
     };
 
     prng &device;
-    // EnumMixedStrategySolver<double> solver();
+    EnumMixedStrategySolver<double> solver;
+    shared_ptr<StrategyProfileRenderer<double>> renderer;
 
     MatrixUCB(prng &device) : device(device)
     {
-        // EnumMixedStrategySolver<double> solver(nullptr);
+        int numDecimals = 10;
+        renderer = new MixedStrategyCSVRenderer<double>(std::cout, numDecimals);
     }
 
     void search(
@@ -63,22 +72,64 @@ public:
                 root.stats.visits);
         std::cout << "expected value matrix:" << std::endl;
         bimatrix.print();
-
-        Bandit::SolveBimatrix<double, MatrixUCB::state_t::size_>(
-            device,
-            10000,
-            bimatrix,
-            root.stats.strategy0,
-            root.stats.strategy1);
-
-        std::cout << "expected value solution" << std::endl;
-
-        std::cout << root.stats.strategy0[0] << ' ' << root.stats.strategy0[1] << std::endl;
-        std::cout << root.stats.strategy1[0] << ' ' << root.stats.strategy1[1] << std::endl;
-        std::cout << "end search output" << std::endl;
+        root.stats.visits.print();
     }
 
 private:
+    MatrixNode<MatrixUCB> *runPlayout(
+        typename MatrixUCB::state_t &state,
+        typename MatrixUCB::model_t &model,
+        MatrixNode<MatrixUCB> *matrix_node)
+    {
+
+        if (matrix_node->is_terminal == true)
+        {
+            return matrix_node;
+        }
+        else
+        {
+
+            if (matrix_node->is_expanded == true)
+            {
+                Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> bimatrix(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
+
+                get_ucb_matrix(
+                    bimatrix,
+                    matrix_node->stats.cumulative_payoffs,
+                    matrix_node->stats.visits,
+                    matrix_node->stats.t);
+                double exploitability = Bandit::exploitability<double, MatrixUCB::state_t::size_>(
+                    bimatrix,
+                    matrix_node->stats.strategy0,
+                    matrix_node->stats.strategy1);
+                if (true)
+                {
+                    solve_bimatrix(bimatrix, matrix_node->stats.strategy0, matrix_node->stats.strategy1);
+                }
+
+                int row_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy0, matrix_node->legal_actions.rows);
+                int col_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy1, matrix_node->legal_actions.cols);
+                typename MatrixUCB::action_t action0 = matrix_node->legal_actions.actions0[row_idx];
+                typename MatrixUCB::action_t action1 = matrix_node->legal_actions.actions1[col_idx];
+                typename MatrixUCB::transition_data_t transition_data = state.apply_actions(action0, action1);
+
+                ChanceNode<MatrixUCB> *chance_node = matrix_node->access(row_idx, col_idx);
+                MatrixNode<MatrixUCB> *matrix_node_next = chance_node->access(transition_data);
+                MatrixNode<MatrixUCB> *matrix_node_leaf = runPlayout(state, model, matrix_node_next);
+
+                double u0 = matrix_node_leaf->inference.value0;
+                double u1 = matrix_node_leaf->inference.value1;
+                update(matrix_node, u0, u1, row_idx, col_idx);
+                return matrix_node_leaf;
+            }
+            else
+            {
+                expand(state, model, matrix_node);
+                return matrix_node;
+            }
+        }
+    }
+
     void expand(
         typename MatrixUCB::state_t &state,
         Model model,
@@ -138,83 +189,56 @@ private:
         }
     }
 
-    MatrixNode<MatrixUCB> *runPlayout(
-        typename MatrixUCB::state_t &state,
-        typename MatrixUCB::model_t &model,
-        MatrixNode<MatrixUCB> *matrix_node)
+    void solve_bimatrix(
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> bimatrix,
+        std::array<double, MatrixUCB::state_t::size_> &strategy0,
+        std::array<double, MatrixUCB::state_t::size_> &strategy1)
     {
+        Game game = build_nfg(bimatrix);
+        shared_ptr<EnumMixedStrategySolution<double>> solution = solver.SolveDetailed(game);
+        game->Write(std::cout);
+        List<List<MixedStrategyProfile<double>>> cliques = solution->GetCliques();
 
-        if (matrix_node->is_terminal == true)
+        MixedStrategyProfile<double> joint_strategy = cliques[1][1];
+        PrintCliques(cliques, renderer);
+
+        for (int i = 0; i < bimatrix.rows; ++i)
         {
-
-            return matrix_node;
+            strategy0[i] = joint_strategy[i + 1];
         }
-        else
+        for (int j = bimatrix.rows; j < bimatrix.rows + bimatrix.cols; ++j)
         {
+            strategy1[j - bimatrix.rows] = joint_strategy[j + 1];
+        }
+        delete game;
+    }
 
-            if (matrix_node->is_expanded == true)
+    Game build_nfg(
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> bimatrix)
+    {
+        Array<int> dim(2);
+        dim[1] = bimatrix.rows;
+        dim[2] = bimatrix.cols;
+
+        GameRep *nfg = NewTable(dim);
+        // Assigning this to the container assures that, if something goes
+        // wrong, the class will automatically be cleaned up.. idk tho
+        Game game = nfg;
+
+        StrategyProfileIterator iter(StrategySupportProfile(static_cast<GameRep *>(nfg)));
+
+        for (int i = 0; i < bimatrix.rows; ++i)
+        {
+            for (int j = 0; j < bimatrix.cols; ++j)
             {
-                Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> bimatrix(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
-
-                get_ucb_matrix(
-                    bimatrix,
-                    matrix_node->stats.cumulative_payoffs,
-                    matrix_node->stats.visits,
-                    matrix_node->stats.t);
-                double exploitability = Bandit::exploitability<double, MatrixUCB::state_t::size_>(
-                    bimatrix,
-                    matrix_node->stats.strategy0,
-                    matrix_node->stats.strategy1);
-                if (exploitability > .05)
-                {
-                    Bandit::SolveBimatrix<double, MatrixUCB::state_t::size_>(
-                        device,
-                        10000,
-                        bimatrix,
-                        matrix_node->stats.strategy0,
-                        matrix_node->stats.strategy1);
-                }
-                else
-                {
-                    // std::cout << "skipped" << std::endl;
-                }
-
-                // std::cout<<std::endl;
-                // std::cout << "Time " << matrix_node->stats.t << std::endl;
-                // std::cout << "Payoff" << std::endl;
-                // matrix_node->stats.cumulative_payoffs.print();
-                // std::cout << "Visits" << std::endl;
-                // matrix_node->stats.visits.print();
-                // std::cout << "M" << std::endl;
-                // (matrix_node->stats.cumulative_payoffs + matrix_node->stats.visits).print();
-                // std::cout << "bimatrix" << std::endl;
-                // A.print();
-                // std::cout << "Strategies" << std::endl;
-                // std::cout << matrix_node->stats.strategy0[0] << ' ' << matrix_node->stats.strategy0[1] << std::endl;
-                // std::cout << matrix_node->stats.strategy1[0] << ' ' << matrix_node->stats.strategy1[1] << std::endl;
-                // std::cout << "expl: " << exploitability << std::endl;
-
-                int row_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy0, matrix_node->legal_actions.rows);
-                int col_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy1, matrix_node->legal_actions.cols);
-                typename MatrixUCB::action_t action0 = matrix_node->legal_actions.actions0[row_idx];
-                typename MatrixUCB::action_t action1 = matrix_node->legal_actions.actions1[col_idx];
-                typename MatrixUCB::transition_data_t transition_data = state.apply_actions(action0, action1);
-
-                ChanceNode<MatrixUCB> *chance_node = matrix_node->access(row_idx, col_idx);
-                MatrixNode<MatrixUCB> *matrix_node_next = chance_node->access(transition_data);
-                MatrixNode<MatrixUCB> *matrix_node_leaf = runPlayout(state, model, matrix_node_next);
-
-                double u0 = matrix_node_leaf->inference.value0;
-                double u1 = matrix_node_leaf->inference.value1;
-                update(matrix_node, u0, u1, row_idx, col_idx);
-                return matrix_node_leaf;
-            }
-            else
-            {
-                expand(state, model, matrix_node);
-                return matrix_node;
+                (*iter)->GetOutcome()->SetPayoff(1, std::to_string(bimatrix.get0(i, j)));
+                (*iter)->GetOutcome()->SetPayoff(2, std::to_string(bimatrix.get1(i, j)));
+                iter++;
             }
         }
+
+        // game->Write(std::cout);
+        return game;
     }
 
     void update(MatrixNode<MatrixUCB> *matrix_node, double u0, double u1, int row_idx, int col_idx)
@@ -336,3 +360,19 @@ private:
         }
     }
 };
+
+// enummixed.cc helper
+template <class T>
+void PrintCliques(const List<List<MixedStrategyProfile<T>>> &p_cliques,
+                  shared_ptr<StrategyProfileRenderer<T>> p_renderer)
+{
+    for (int cl = 1; cl <= p_cliques.size(); cl++)
+    {
+
+        for (int i = 1; i <= p_cliques[cl].size(); i++)
+        {
+            p_renderer->Render(p_cliques[cl][i],
+                               "convex-" + lexical_cast<std::string>(cl));
+        }
+    }
+}
