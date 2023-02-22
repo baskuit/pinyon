@@ -84,15 +84,6 @@ public:
         return c;
     }
 
-    void matrix(Linear::Matrix<double, state_t::_size> &M)
-    {
-        auto child = this->child;
-        while (child != nullptr)
-        {
-            M.set(child->row_idx, child->col_idx, child->stats.get_expected_value0());
-            child = child->next;
-        }
-    }
 };
 
 // Chance Node
