@@ -8,8 +8,8 @@ class MonteCarlo : public Model<State>
 public:
     struct InferenceData : Model<State>::InferenceData
     {
-        std::array<double, State::size_> strategy_prior0;
-        std::array<double, State::size_> strategy_prior1;
+        std::array<double, State::_size> strategy_prior0;
+        std::array<double, State::_size> strategy_prior1;
         double value0;
         double value1;
     };
@@ -62,8 +62,8 @@ public:
 
     struct InferenceData : Model<State>::InferenceData
     {
-        std::array<double, State::size_> strategy_prior0;
-        std::array<double, State::size_> strategy_prior1;
+        std::array<double, State::_size> strategy_prior0;
+        std::array<double, State::_size> strategy_prior1;
         double value0;
         double value1;
     };
@@ -76,8 +76,8 @@ public:
 
     MonteCarloWithPolicy<State>::InferenceData &inference(State &state, typename MonteCarloWithPolicy::pair_actions_t &legal_actions)
     {
-        math::power_norm<double, State::size_>(state.strategy0, state.rows, p, last_inference.strategy_prior0);
-        math::power_norm<double, State::size_>(state.strategy1, state.cols, p, last_inference.strategy_prior1);
+        math::power_norm<double, State::_size>(state.strategy0, state.rows, p, last_inference.strategy_prior0);
+        math::power_norm<double, State::_size>(state.strategy1, state.cols, p, last_inference.strategy_prior1);
         rollout(state);
         last_inference.value0 = state.payoff0;
         last_inference.value1 = state.payoff1;

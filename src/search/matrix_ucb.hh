@@ -25,10 +25,10 @@ public:
     struct MatrixStats : Algorithm<Model>::MatrixStats
     {
         int t = 0;
-        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> cumulative_payoffs;
-        Linear::Matrix2D<int, MatrixUCB::state_t::size_> visits;
-        std::array<double, MatrixUCB::state_t::size_> strategy0;
-        std::array<double, MatrixUCB::state_t::size_> strategy1;
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> cumulative_payoffs;
+        Linear::Matrix2D<int, MatrixUCB::state_t::_size> visits;
+        std::array<double, MatrixUCB::state_t::_size> strategy0;
+        std::array<double, MatrixUCB::state_t::_size> strategy1;
         // When we calculate NE, it's likely that that strategy
         // will be just as effective as the one calculated at the next round.
         // So we store it here.
@@ -75,7 +75,7 @@ public:
             runPlayout(state_, model, &root);
         }
         std::cout << "begin search output" << std::endl;
-        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> bimatrix =
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> bimatrix =
             get_matrix(
                 root.stats.cumulative_payoffs,
                 root.stats.visits);
@@ -101,14 +101,14 @@ private:
 
             if (matrix_node->is_expanded == true)
             {
-                Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> bimatrix(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
+                Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> bimatrix(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
 
                 get_ucb_matrix(
                     bimatrix,
                     matrix_node->stats.cumulative_payoffs,
                     matrix_node->stats.visits,
                     matrix_node->stats.t);
-                double exploitability = Bandit::exploitability<double, MatrixUCB::state_t::size_>(
+                double exploitability = Bandit::exploitability<double, MatrixUCB::state_t::_size>(
                     bimatrix,
                     matrix_node->stats.strategy0,
                     matrix_node->stats.strategy1);
@@ -129,7 +129,7 @@ private:
                     }
                     if (is_interior == 0) {
                         ++this->gambit_hits;
-                        Bandit::SolveBimatrix<double, MatrixUCB::state_t::size_>(
+                        Bandit::SolveBimatrix<double, MatrixUCB::state_t::_size>(
                             device,
                             10000,
                             bimatrix,
@@ -139,8 +139,8 @@ private:
                     }
                 }
 
-                int row_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy0, matrix_node->legal_actions.rows);
-                int col_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy1, matrix_node->legal_actions.cols);
+                int row_idx = device.sample_pdf<double, MatrixUCB::state_t::_size>(matrix_node->stats.strategy0, matrix_node->legal_actions.rows);
+                int col_idx = device.sample_pdf<double, MatrixUCB::state_t::_size>(matrix_node->stats.strategy1, matrix_node->legal_actions.cols);
                 typename MatrixUCB::action_t action0 = matrix_node->legal_actions.actions0[row_idx];
                 typename MatrixUCB::action_t action1 = matrix_node->legal_actions.actions1[col_idx];
                 typename MatrixUCB::transition_data_t transition_data = state.apply_actions(action0, action1);
@@ -222,9 +222,9 @@ private:
     }
 
     void solve_bimatrix(
-        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> bimatrix,
-        std::array<double, MatrixUCB::state_t::size_> &strategy0,
-        std::array<double, MatrixUCB::state_t::size_> &strategy1)
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> bimatrix,
+        std::array<double, MatrixUCB::state_t::_size> &strategy0,
+        std::array<double, MatrixUCB::state_t::_size> &strategy1)
     {
         Game game = build_nfg(bimatrix);
         shared_ptr<EnumMixedStrategySolution<double>> solution = solver.SolveDetailed(game); // No exceptino handling 8)
@@ -242,7 +242,7 @@ private:
     }
 
     Game build_nfg(
-        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> bimatrix)
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> bimatrix)
     {
         Array<int> dim(2);
         dim[1] = bimatrix.rows;
@@ -281,9 +281,9 @@ private:
     }
     // Bimatrix of UCB Scores (EV + Exploration)
     void get_ucb_matrix(
-        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> &bimatrix,
-        Linear::Bimatrix<double, MatrixUCB::state_t::size_> &cumulative_payoffs,
-        Linear::Matrix<int, MatrixUCB::state_t::size_> &visits,
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> &bimatrix,
+        Linear::Bimatrix<double, MatrixUCB::state_t::_size> &cumulative_payoffs,
+        Linear::Matrix<int, MatrixUCB::state_t::_size> &visits,
         int t)
     {
         const int rows = bimatrix.rows;
@@ -309,12 +309,12 @@ private:
             }
         }
     }
-    Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> get_ucb_matrix(
-        Linear::Bimatrix<double, MatrixUCB::state_t::size_> &cumulative_payoffs,
-        Linear::Matrix<int, MatrixUCB::state_t::size_> &visits,
+    Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> get_ucb_matrix(
+        Linear::Bimatrix<double, MatrixUCB::state_t::_size> &cumulative_payoffs,
+        Linear::Matrix<int, MatrixUCB::state_t::_size> &visits,
         int t)
     {
-        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> bimatrix(visits.rows, visits.cols);
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> bimatrix(visits.rows, visits.cols);
         const int rows = bimatrix.rows;
         const int cols = bimatrix.cols;
         for (int row_idx = 0; row_idx < rows; ++row_idx)
@@ -340,11 +340,11 @@ private:
         return bimatrix;
     }
     // Bimatrix of EV
-    Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> get_matrix(
-        Linear::Bimatrix<double, MatrixUCB::state_t::size_> &cumulative_payoffs,
-        Linear::Matrix<int, MatrixUCB::state_t::size_> &visits)
+    Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> get_matrix(
+        Linear::Bimatrix<double, MatrixUCB::state_t::_size> &cumulative_payoffs,
+        Linear::Matrix<int, MatrixUCB::state_t::_size> &visits)
     {
-        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> bimatrix(visits.rows, visits.cols);
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> bimatrix(visits.rows, visits.cols);
         const int rows = bimatrix.rows;
         const int cols = bimatrix.cols;
         for (int row_idx = 0; row_idx < rows; ++row_idx)
@@ -364,9 +364,9 @@ private:
         return bimatrix;
     }
     void get_matrix(
-        Linear::Bimatrix<double, MatrixUCB::state_t::size_> &cumulative_payoffs,
-        Linear::Matrix<int, MatrixUCB::state_t::size_> &visits,
-        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> &bimatrix)
+        Linear::Bimatrix<double, MatrixUCB::state_t::_size> &cumulative_payoffs,
+        Linear::Matrix<int, MatrixUCB::state_t::_size> &visits,
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> &bimatrix)
     {
         const int rows = bimatrix.rows;
         const int cols = bimatrix.cols;

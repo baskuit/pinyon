@@ -2,6 +2,8 @@
 
 #include "../libsurskit/math.hh"
 
+// TODO: Consider making these subclasses of "Node"
+
 template <typename Algorithm>
 class ChanceNode;
 
@@ -82,7 +84,7 @@ public:
         return c;
     }
 
-    void matrix(Linear::Matrix<double, state_t::size_> &M)
+    void matrix(Linear::Matrix<double, state_t::_size> &M)
     {
         auto child = this->child;
         while (child != nullptr)
