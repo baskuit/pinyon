@@ -1,7 +1,9 @@
-#include "state.hh"
-#include "../tree/node.hh"
-#include "../search/matrix_ucb.hh"
-#include "../model/monte_carlo.hh"
+#pragma once
+
+#include "state/state.hh"
+// #include "../tree/node.hh"
+// #include "../search/matrix_ucb.hh"
+// #include "../model/monte_carlo.hh"
 
 /*
 SeedState contains just enough info to pseudo-randomly expand to a recursively solved game tree.
@@ -11,8 +13,10 @@ which is simply a wrapper the MatrixNode/ChanceNode tree created by the Grow alg
 */
 
 template <int size>
-class SeedState : public State<int, int, size>
+class SeedState : public State<size, int, int>
 {
+
+public:
     int depth_bound = 0;
     int rows = size;
     int cols = size;
@@ -21,14 +25,14 @@ class SeedState : public State<int, int, size>
 
     typename SeedState::pair_actions_t get_legal_actions()
     {
-        typename SeedState::pairs_t legal_actions;
+        typename SeedState::pair_actions_t legal_actions;
         legal_actions.rows = this->rows;
         legal_actions.cols = this->cols;
         for (int i = 0; i < this->rows; ++i)
         {
             legal_actions.actions0[i] = i;
         };
-        for (int j = 0; i < this->cols; ++j)
+        for (int j = 0; j < this->cols; ++j)
         {
             legal_actions.actions1[j] = j;
         };
@@ -43,7 +47,7 @@ class SeedState : public State<int, int, size>
         {
             legal_actions.actions0[i] = i;
         };
-        for (int j = 0; i < this->cols; ++j)
+        for (int j = 0; j < this->cols; ++j)
         {
             legal_actions.actions1[j] = j;
         };
@@ -61,12 +65,4 @@ class SeedState : public State<int, int, size>
         typename SeedState::transition_data_t transition_data(0, Rational(1));
         return transition_data;
     }
-};
-
-template <int size>
-class TreeState : public State<size, int, int>
-{
-
-    MatrixNode<MatrixUCB<MonteCarlo<SeedState<size>>>> *root;
-    MatrixNode<MatrixUCB<MonteCarlo<SeedState<size>>>> *current;
 };
