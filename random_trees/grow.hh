@@ -6,11 +6,7 @@
 #include "search/algorithm.hh"
 
 
-// #include "gambit.h"
 #include "solvers/enummixed/enummixed.h"
-
-// using namespace Gambit;
-// using namespace Gambit::Nash;
 
 using Solver = Gambit::Nash::EnumMixedStrategySolver<double>;
 using Solution = Gambit::List<Gambit::List<Gambit::MixedStrategyProfile<double>>>;
