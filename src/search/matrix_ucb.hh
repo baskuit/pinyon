@@ -83,6 +83,15 @@ public:
         bimatrix.print();
         std::cout << "visit matrix" << std::endl;
         root.stats.visits.print();
+        std::cout << "strategies" << std::endl;
+        for (int i = 0; i < bimatrix.rows; ++i) {
+            std::cout << root.stats.strategy0[i] << ' ';
+        }
+        std::cout << std::endl;
+        for (int j = 0; j < bimatrix.cols; ++j) {
+            std::cout << root.stats.strategy1[j] << ' ';            
+        }
+        std::cout << std::endl;
     }
 
 private:
@@ -354,7 +363,6 @@ private:
                 double u = cumulative_payoffs.get0(row_idx, col_idx);
                 double v = cumulative_payoffs.get1(row_idx, col_idx);
                 int n = visits.get(row_idx, col_idx);
-                n += 1;
                 double a = n > 0 ? u / n : .5;
                 double b = n > 0 ? v / n : .5;
                 bimatrix.set0(row_idx, col_idx, a);
@@ -377,7 +385,6 @@ private:
                 double u = cumulative_payoffs.get0(row_idx, col_idx);
                 double v = cumulative_payoffs.get1(row_idx, col_idx);
                 int n = visits.get(row_idx, col_idx);
-                n += 1;
                 double a = n > 0 ? u / n : .5;
                 double b = n > 0 ? v / n : .5;
                 bimatrix.set0(row_idx, col_idx, a);
