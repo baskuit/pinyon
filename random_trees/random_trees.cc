@@ -18,21 +18,19 @@ int main()
     TreeState tree_state(device, 3, 3, 3);
     MonteCarlo<TreeState> model(device);
 
-    std::cout << "tree_state size: " << tree_state.root->count() << std::endl;
+    std::cout << "tree_state size: " << tree_state.count() << std::endl;
     std::cout << "tree_state expected value: " << std::endl;
-    tree_state.root->stats.expected_value.print();
-    Linear::Vector<double, size> strategy0(tree_state.root->stats.strategy0, tree_state.root->legal_actions.rows);
-    Linear::Vector<double, size> strategy1(tree_state.root->stats.strategy1, tree_state.root->legal_actions.cols);
+    tree_state.get_expected_value_matrix().print();
 
     std::cout << "tree_state strategies: " << std::endl;
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < tree_state.rows; ++i)
     {
-        std::cout << tree_state.root->stats.strategy0[i] << ' ';
+        std::cout << tree_state.strategy0[i] << ' ';
     }
     std::cout << std::endl;
-    for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < tree_state.cols; ++j)
     {
-        std::cout << tree_state.root->stats.strategy1[i] << ' ';
+        std::cout << tree_state.strategy1[j] << ' ';
     }
     std::cout << std::endl;
 

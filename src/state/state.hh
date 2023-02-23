@@ -99,6 +99,7 @@ public:
     std::array<double, size> strategy0;
     std::array<double, size> strategy1;
 
+    SolvedState(prng &device) : State<size, Action, Hash>(device) {}
     SolvedState(prng &device, double payoff, int rows, int cols) : State<size, Action, Hash>(device, payoff), is_terminal(rows * cols == 0), rows(rows), cols(cols) {}
     SolvedState(prng &device, double payoff0, double payoff1, int rows, int cols) : State<size, Action, Hash>(device, payoff0, payoff1), is_terminal(rows * cols == 0), rows(rows), cols(cols) {}
 };
