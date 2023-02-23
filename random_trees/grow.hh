@@ -5,7 +5,6 @@
 #include "tree/node.hh"
 #include "search/algorithm.hh"
 
-#include "tree_state.hh"
 
 // #include "gambit.h"
 #include "solvers/enummixed/enummixed.h"
@@ -25,19 +24,12 @@ public:
         bool grown = false;
         double payoff = 0;
         Linear::Bimatrix2D<double, Grow::state_t::_size> expected_value;
-        Linear::Bimatrix2D<double, Grow::state_t::_size> expl_min;
-        Linear::Bimatrix2D<double, Grow::state_t::_size> expl_max;
-        std::array<double, Grow::state_t::_size> strategy0;
-        std::array<double, Grow::state_t::_size> strategy1;
+        std::array<double, Grow::state_t::_size> strategy0 = {0};
+        std::array<double, Grow::state_t::_size> strategy1 = {0};
     };
 
     struct ChanceStats : Algorithm<Model>::ChanceStats
     {
-        int visits = 0;
-        double cumulative_value0 = 0;
-        double cumulative_value1 = 0;
-        double get_expected_value0() { return visits > 0 ? cumulative_value0 / visits : .5; }
-        double get_expected_value1() { return visits > 0 ? cumulative_value1 / visits : .5; }
     };
 
     prng &device;
@@ -57,6 +49,8 @@ public:
         }
         // forward
         typename Grow::pair_actions_t legal_actions = state.get_legal_actions();
+        matrix_node->stats.expected_value.rows = legal_actions.rows;
+        matrix_node->stats.expected_value.cols = legal_actions.cols;
         for (int i = 0; i < legal_actions.rows; ++i)
         {
             for (int j = 0; j < legal_actions.cols; ++j)
@@ -74,7 +68,6 @@ public:
             }
         }
 
-        // return;
         // backward
         if (legal_actions.rows * legal_actions.cols == 0)
         {
@@ -121,7 +114,7 @@ private:
             is_interior *= 1 - strategy1[j];
         }
 
-        if (is_interior == 0)
+        if (is_interior == 0 && false)
         {
             Bandit::SolveBimatrix<double, Grow::state_t::_size>(
                 this->device,
