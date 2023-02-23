@@ -30,6 +30,7 @@ public:
 
     prng &device;
     Solver solver;
+    bool require_interior = false;
 
     Grow(prng &device) : device(device)
     {
@@ -110,7 +111,7 @@ private:
             is_interior *= 1 - strategy1[j];
         }
 
-        if (is_interior == 0 && false)
+        if (is_interior == 0 && this->require_interior)
         {
             Bandit::SolveBimatrix<double, Grow::state_t::_size>(
                 this->device,
@@ -131,9 +132,9 @@ private:
         Gambit::GameRep *nfg = NewTable(dim);
         Gambit::Game game = nfg;
         Gambit::StrategyProfileIterator iter(Gambit::StrategySupportProfile(static_cast<Gambit::GameRep *>(nfg)));
-        for (int i = 0; i < bimatrix.rows; ++i)
+        for (int j = 0; j < bimatrix.cols; ++j)
         {
-            for (int j = 0; j < bimatrix.cols; ++j)
+            for (int i = 0; i < bimatrix.rows; ++i)
             {
                 (*iter)->GetOutcome()->SetPayoff(1, std::to_string(bimatrix.get0(i, j)));
                 (*iter)->GetOutcome()->SetPayoff(2, std::to_string(bimatrix.get1(i, j)));
