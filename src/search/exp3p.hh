@@ -37,6 +37,41 @@ public:
 
     Exp3p(prng &device) : device(device) {}
 
+    void search(
+        int playouts,
+        typename Exp3p::state_t &state,
+        typename Exp3p::model_t &model,
+        MatrixNode<Exp3p> &root)
+    {
+        root.stats.t = playouts;
+        for (int playout = 0; playout < playouts; ++playout)
+        {
+            auto state_ = state;
+            runPlayout(state_, model, &root);
+        }
+        std::cout << "Exp3p root visits" << std::endl;
+        std::cout << "p0: " << root.stats.visits0[0] << ' ' << root.stats.visits0[1] << std::endl;
+        std::cout << "p1: " << root.stats.visits1[0] << ' ' << root.stats.visits1[1] << std::endl;
+        std::cout << "Exp3p root matrix" << std::endl;
+        get_matrix(&root).print();
+
+        std::array<double, Exp3p::state_t::_size> strategy0;
+        std::array<double, Exp3p::state_t::_size> strategy1;
+
+        std::cout << "strategies" << std::endl;
+        math::power_norm<int, double, Exp3p::state_t::_size>(root.stats.visits0, root.legal_actions.rows, 1, strategy0);
+        for (int i = 0; i < root.legal_actions.rows; ++i) {
+            std::cout << strategy0[i] << ' ';   
+        }        
+        std::cout << std::endl;
+        math::power_norm<int, double, Exp3p::state_t::_size>(root.stats.visits1, root.legal_actions.cols, 1, strategy1);
+        for (int j = 0; j < root.legal_actions.cols; ++j) {
+            std::cout << strategy1[j] << ' ';            
+        }
+        std::cout << std::endl;
+    }
+
+private:
     void expand(
         typename Exp3p::state_t &state,
         Model model,
@@ -114,25 +149,6 @@ public:
             }
         }
     };
-
-    void search(
-        int playouts,
-        typename Exp3p::state_t &state,
-        typename Exp3p::model_t &model,
-        MatrixNode<Exp3p> &root)
-    {
-        root.stats.t = playouts;
-        for (int playout = 0; playout < playouts; ++playout)
-        {
-            auto state_ = state;
-            runPlayout(state_, model, &root);
-        }
-        std::cout << "Exp3p root visits" << std::endl;
-        std::cout << "p0: " << root.stats.visits0[0] << ' ' << root.stats.visits0[1] << std::endl;
-        std::cout << "p1: " << root.stats.visits1[0] << ' ' << root.stats.visits1[1] << std::endl;
-        std::cout << "Exp3p root matrix" << std::endl;
-        get_matrix(&root).print();
-    }
 
     Linear::Bimatrix2D<double, Exp3p::state_t::_size> get_matrix(MatrixNode<Exp3p> *matrix_node)
     {
@@ -232,6 +248,7 @@ private:
         matrix_node->stats.visits0[row_idx] += 1;
         matrix_node->stats.visits1[col_idx] += 1;
     }
+
     void update(ChanceNode<Exp3p> *chance_node, double u0, double u1)
     {
         chance_node->stats.cumulative_value0 += u0;

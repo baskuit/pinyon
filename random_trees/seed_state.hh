@@ -1,9 +1,6 @@
 #pragma once
 
 #include "state/state.hh"
-// #include "../tree/node.hh"
-// #include "../search/matrix_ucb.hh"
-// #include "../model/monte_carlo.hh"
 
 /*
 SeedState contains just enough info to pseudo-randomly expand to a recursively solved game tree.
