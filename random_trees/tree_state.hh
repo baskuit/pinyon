@@ -9,14 +9,19 @@ template <int size>
 class TreeState : public State<size, int, int>
 {
 public:
+
+    using SeedStateNode = MatrixNode<Grow<MonteCarlo<SeedState<size>>>>;
+
     prng &device;
     SeedState<size> seed;
-    MatrixNode<Grow<MonteCarlo<SeedState<size>>>>& root;
-    MatrixNode<Grow<MonteCarlo<SeedState<size>>>> *current;
+    std::shared_ptr<SeedStateNode> root;
+    SeedStateNode *current;
+    // Trying out make shared to keep copy assignment but also have automatic memory management
 
-    TreeState(prng &device, MatrixNode<Grow<MonteCarlo<SeedState<size>>>>& root, int depth_bound, int rows, int cols) : State<size, int, int>(device), device(device), seed(SeedState<size>(device, depth_bound, rows, cols)), root(root)
+    TreeState(prng &device, int depth_bound, int rows, int cols) : State<size, int, int>(device), device(device), seed(SeedState<size>(device, depth_bound, rows, cols))
     {
-        current = &root;
+        this->root = std::make_shared<SeedStateNode>();
+        this->current = &*root;
         Grow<MonteCarlo<SeedState<size>>> session(device);
         session.grow(seed, current);
     }

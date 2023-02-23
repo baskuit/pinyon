@@ -4,49 +4,57 @@
 
 #include <iostream>
 
-int main () {
-    prng device;
+int main()
+{
 
-    using TreeState = TreeState<4>;
+    const int size = 4;
+
+    using TreeState = TreeState<size>;
     using MatrixUCB = MatrixUCB<MonteCarlo<TreeState>>;
     using Exp3p = Exp3p<MonteCarlo<TreeState>>;
 
-    MatrixNode<Grow<MonteCarlo<SeedState<4>>>> root;
-    TreeState tree(device, root, 6, 3, 3);
+     // Initialization now runs the Grow algorithm automatically
+    prng device;
+    TreeState tree_state(device, 3, 3, 3);
+    MonteCarlo<TreeState> model(device);
 
-    std::cout << "tree size: " << tree.root.count() << std::endl;
-    std::cout << "tree expected value: " << std::endl;
-    tree.root.stats.expected_value.print();
-    // Linear::Vector<double, 4> strategy0(root.stats.strategy0, root.legal_actions.rows);
-    // Linear::Vector<double, 4> strategy1(root.stats.strategy1, root.legal_actions.cols);
-    // strategy0.print();
-    // strategy1.print();
-    std::cout << "tree strategies: " << std::endl;
-    for (int i = 0; i < 3; ++i){
-        std::cout << root.stats.strategy0[i] << ' ';
+    std::cout << "tree_state size: " << tree_state.root->count() << std::endl;
+    std::cout << "tree_state expected value: " << std::endl;
+    tree_state.root->stats.expected_value.print();
+    Linear::Vector<double, size> strategy0(tree_state.root->stats.strategy0, tree_state.root->legal_actions.rows);
+    Linear::Vector<double, size> strategy1(tree_state.root->stats.strategy1, tree_state.root->legal_actions.cols);
+
+    std::cout << "tree_state strategies: " << std::endl;
+    for (int i = 0; i < 3; ++i)
+    {
+        std::cout << tree_state.root->stats.strategy0[i] << ' ';
     }
     std::cout << std::endl;
-    for (int i = 0; i < 3; ++i){
-        std::cout << root.stats.strategy1[i] << ' ';
+    for (int i = 0; i < 3; ++i)
+    {
+        std::cout << tree_state.root->stats.strategy1[i] << ' ';
     }
     std::cout << std::endl;
 
-
+    // MatrixUCB search with multiple c_uct values.
 
     MatrixUCB matrix_ucb_session(device);
     Exp3p exp3p_session(device);
 
-    MonteCarlo<TreeState> model(device);
+    
 
-
-    double c_ucts[3] = {10, 5, 1};
-    for (int i = 0; i < 3; ++i) {
+    double c_ucts[3] = {2, 1.4142, 1};
+    for (int i = 0; i < 3; ++i)
+    {
         double c_uct = c_ucts[i];
         matrix_ucb_session.c_uct = c_uct;
-        matrix_ucb_session.expl_threshold = .005;
-        MatrixNode<MatrixUCB> matrix_ucb_root;
-        matrix_ucb_session.search(10000, tree, model, matrix_ucb_root);
-    }   
+        matrix_ucb_session.require_interior = false;
+        matrix_ucb_session.expl_threshold = .05;
+        int playouts = 800;
+
+        MatrixNode<Exp3p> matrix_ucb_root;
+        exp3p_session.search(playouts, tree_state, model, matrix_ucb_root);
+    }
 
     return 0;
 }
