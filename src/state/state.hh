@@ -73,8 +73,6 @@ public:
     State(prng &device, double payoff) : device(device), payoff0(payoff), payoff1(1 - payoff) {}
     State(prng &device, double payoff0, double payoff1) : device(device), payoff0(payoff0), payoff1(payoff1) {
     }
-    // The overarching search function is given a state that is then copied for each rollout.
-    // We use copy constructors for this
 
     virtual pair_actions_t get_legal_actions() = 0;
     virtual void get_legal_actions(pair_actions_t &legal_actions) = 0;
