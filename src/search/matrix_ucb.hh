@@ -7,16 +7,9 @@
 #include "algorithm.hh"
 #include "tree/node.hh"
 
-#include "gambit.h"
 #include "solvers/enummixed/enummixed.h"
 
-using namespace Gambit;
-using namespace Gambit::Nash;
-
-Game build_nfg(); // TODO see if need forward decs
-template <class T>
-void PrintCliques(const List<List<MixedStrategyProfile<T>>> &p_cliques,
-                  shared_ptr<StrategyProfileRenderer<T>> p_renderer);
+using Solver = Gambit::Nash::EnumMixedStrategySolver<double>;
 
 template <typename Model>
 class MatrixUCB : public Algorithm<Model>
@@ -44,22 +37,21 @@ public:
     };
 
     prng &device;
-    EnumMixedStrategySolver<double> solver;
-    shared_ptr<StrategyProfileRenderer<double>> renderer;
+    Solver solver;
 
     double c_uct = 2;
     // solutions to ucb matrix are recalculated if the exploitability is above the threshold.
     double expl_threshold = .05;
     // number of times the above happens.
     int expl_hits = 0;
-    // number of times we use bandit solver
+    // number of times gambit produces non-interior
     int gambit_hits = 0;
+    // do we recompute if above
+    bool require_interior = false;
 
 
     MatrixUCB(prng &device) : device(device)
     {
-        int numDecimals = 10;
-        renderer = new MixedStrategyCSVRenderer<double>(std::cout, numDecimals);
     }
 
     void search(
@@ -125,27 +117,6 @@ private:
                 {
                     ++this->expl_hits;
                     solve_bimatrix(bimatrix, matrix_node->stats.strategy0, matrix_node->stats.strategy1);
-                    double is_interior = 1.0;
-                    for (int i = 0; i < bimatrix.rows; ++i) {
-                        if (matrix_node->stats.strategy0[i] == 0){
-                            is_interior *= 1 - matrix_node->stats.strategy0[i];
-                        }
-                    }
-                    for (int j = 0; j < bimatrix.cols; ++j) {
-                        if (matrix_node->stats.strategy0[j] == 0){
-                            is_interior *= 1 - matrix_node->stats.strategy1[j];
-                        }
-                    }
-                    if (is_interior == 0) {
-                        ++this->gambit_hits;
-                        Bandit::SolveBimatrix<double, MatrixUCB::state_t::_size>(
-                            device,
-                            10000,
-                            bimatrix,
-                            matrix_node->stats.strategy0,
-                            matrix_node->stats.strategy1
-                        );
-                    }
                 }
 
                 int row_idx = device.sample_pdf<double, MatrixUCB::state_t::_size>(matrix_node->stats.strategy0, matrix_node->legal_actions.rows);
@@ -231,39 +202,48 @@ private:
     }
 
     void solve_bimatrix(
-        Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> bimatrix,
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> &bimatrix,
         std::array<double, MatrixUCB::state_t::_size> &strategy0,
         std::array<double, MatrixUCB::state_t::_size> &strategy1)
     {
-        Game game = build_nfg(bimatrix);
-        shared_ptr<EnumMixedStrategySolution<double>> solution = solver.SolveDetailed(game); // No exceptino handling 8)
-        List<List<MixedStrategyProfile<double>>> cliques = solution->GetCliques();
-        MixedStrategyProfile<double> joint_strategy = cliques[1][1];
+        Gambit::Game game = build_nfg(bimatrix);
+        Gambit::shared_ptr<Gambit::Nash::EnumMixedStrategySolution<double>> solution = solver.SolveDetailed(game); // No exceptino handling 8)
+        Gambit::List<Gambit::List<Gambit::MixedStrategyProfile<double>>> cliques = solution->GetCliques();
+        Gambit::MixedStrategyProfile<double> joint_strategy = cliques[1][1];
+        double is_interior = 1.0;
         for (int i = 0; i < bimatrix.rows; ++i)
         {
             strategy0[i] = joint_strategy[i + 1];
+            is_interior *= 1 - strategy0[i];
         }
         for (int j = bimatrix.rows; j < bimatrix.rows + bimatrix.cols; ++j)
         {
             strategy1[j - bimatrix.rows] = joint_strategy[j + 1];
+            is_interior *= 1 - strategy1[j];
+        }
+
+        if (is_interior == 0 && this->require_interior)
+        {
+            ++this->gambit_hits;
+            Bandit::SolveBimatrix<double, MatrixUCB::state_t::_size>(
+                this->device,
+                10000,
+                bimatrix,
+                strategy0,
+                strategy1);
         }
         delete game;
     }
 
-    Game build_nfg(
+    Gambit::Game build_nfg(
         Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> bimatrix)
     {
-        Array<int> dim(2);
+        Gambit::Array<int> dim(2);
         dim[1] = bimatrix.rows;
         dim[2] = bimatrix.cols;
-
-        GameRep *nfg = NewTable(dim);
-        // Assigning this to the container assures that, if something goes
-        // wrong, the class will automatically be cleaned up.. idk tho
-        Game game = nfg;
-
-        StrategyProfileIterator iter(StrategySupportProfile(static_cast<GameRep *>(nfg)));
-
+        Gambit::GameRep *nfg = NewTable(dim);
+        Gambit::Game game = nfg;
+        Gambit::StrategyProfileIterator iter(Gambit::StrategySupportProfile(static_cast<Gambit::GameRep *>(nfg)));
         for (int i = 0; i < bimatrix.rows; ++i)
         {
             for (int j = 0; j < bimatrix.cols; ++j)
@@ -273,8 +253,6 @@ private:
                 iter++;
             }
         }
-
-        // game->Write(std::cout);
         return game;
     }
 
@@ -393,21 +371,3 @@ private:
         }
     }
 };
-
-// enummixed.cc helper
-template <class T>
-void PrintCliques(const List<List<MixedStrategyProfile<T>>> &p_cliques,
-                  shared_ptr<StrategyProfileRenderer<T>> p_renderer)
-{
-    for (int cl = 1; cl <= p_cliques.size(); cl++)
-    {
-
-        for (int i = 1; i <= p_cliques[cl].size(); i++)
-        {
-            p_renderer->Render(p_cliques[cl][i],
-                               "convex-" + lexical_cast<std::string>(cl));
-                                std::cout << cl << ' ' << i << std::endl;
-        }
-    }
-    std::cout << std::endl;
-}
