@@ -72,5 +72,7 @@ add_library(gambit STATIC ${GAMBIT_SOURCES}) # removed headers
 # add_library(surskit SHARED ${SURSKIT_SOURCES})
 
 add_executable(matrix_ucb src/main.cc)
+add_executable(random_trees random_trees/random_trees.cc)
 
 target_link_libraries(matrix_ucb gambit)
+target_link_libraries(random_trees gambit)

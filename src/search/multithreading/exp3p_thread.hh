@@ -20,10 +20,10 @@ public:
     struct MatrixStats : Algorithm<Model>::MatrixStats
     {
         int t = 0; // expected number of playouts
-        std::array<double, Exp3p::state_t::size_> gains0 = {0};
-        std::array<double, Exp3p::state_t::size_> gains1 = {0};
-        std::array<int, Exp3p::state_t::size_> visits0 = {0};
-        std::array<int, Exp3p::state_t::size_> visits1 = {0};
+        std::array<double, Exp3p::state_t::_size> gains0 = {0};
+        std::array<double, Exp3p::state_t::_size> gains1 = {0};
+        std::array<int, Exp3p::state_t::_size> visits0 = {0};
+        std::array<int, Exp3p::state_t::_size> visits1 = {0};
 
         int visits = 0;
         double cumulative_value0 = 0;
@@ -99,13 +99,13 @@ public:
         {
             if (matrix_node->is_expanded == true)
             {
-                std::array<double, Exp3p::state_t::size_> forecast0;
-                std::array<double, Exp3p::state_t::size_> forecast1;
+                std::array<double, Exp3p::state_t::_size> forecast0;
+                std::array<double, Exp3p::state_t::_size> forecast1;
                 mtx.lock();
                 forecast(matrix_node, forecast0, forecast1);
                 mtx.unlock();
-                int row_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast0, matrix_node->legal_actions.rows);
-                int col_idx = device.sample_pdf<double, Exp3p::state_t::size_>(forecast1, matrix_node->legal_actions.cols);
+                int row_idx = device.sample_pdf<double, Exp3p::state_t::_size>(forecast0, matrix_node->legal_actions.rows);
+                int col_idx = device.sample_pdf<double, Exp3p::state_t::_size>(forecast1, matrix_node->legal_actions.cols);
 
                 typename Exp3p::action_t action0 = matrix_node->legal_actions.actions0[row_idx];
                 typename Exp3p::action_t action1 = matrix_node->legal_actions.actions1[col_idx];
@@ -179,9 +179,9 @@ public:
         }
     }
 
-    Linear::Bimatrix2D<double, Exp3p::state_t::size_> get_matrix(MatrixNode<Exp3p> *matrix_node)
+    Linear::Bimatrix2D<double, Exp3p::state_t::_size> get_matrix(MatrixNode<Exp3p> *matrix_node)
     {
-        Linear::Bimatrix2D<double, Exp3p::state_t::size_> M(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
+        Linear::Bimatrix2D<double, Exp3p::state_t::_size> M(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
         for (int i = 0; i < M.rows; ++i)
         {
             for (int j = 0; j < M.cols; ++j)
@@ -208,8 +208,8 @@ public:
 private:
     // Softmax and uniform noise
     void softmax(
-        std::array<double, Exp3p::state_t::size_> &forecast,
-        std::array<double, Exp3p::state_t::size_> &gains,
+        std::array<double, Exp3p::state_t::_size> &forecast,
+        std::array<double, Exp3p::state_t::_size> &gains,
         int k,
         double eta)
     {
@@ -239,8 +239,8 @@ private:
 
     void forecast(
         MatrixNode<Exp3p> *matrix_node,
-        std::array<double, Exp3p::state_t::size_> &forecast0,
-        std::array<double, Exp3p::state_t::size_> &forecast1)
+        std::array<double, Exp3p::state_t::_size> &forecast0,
+        std::array<double, Exp3p::state_t::_size> &forecast1)
     {
         const int time = matrix_node->stats.t;
         const int rows = matrix_node->legal_actions.rows;

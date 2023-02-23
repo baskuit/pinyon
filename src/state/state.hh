@@ -59,7 +59,7 @@ public:
     we assume payoff0 + payoff1 = 1.
     */
 
-    static const int size_ = size;
+    static const int _size = size;
     using action_t = Action;
     using hash_t = Hash;
     using pair_actions_t = PairActions<size, Action>;
@@ -69,15 +69,15 @@ public:
     double payoff0 = 0.5f;
     double payoff1 = 0.5f;
     // Currently reward type is 'hard'-coded. Float is not accurate enough, and no need for e.g. Rational type.
-
     State(prng &device) : device(device) {}
     State(prng &device, double payoff) : device(device), payoff0(payoff), payoff1(1 - payoff) {}
-    State(prng &device, double payoff0, double payoff1) : device(device), payoff0(payoff0), payoff1(payoff1) {}
-    // The overarching search function is given a state that is then copied for each rollout.
-    // We use copy constructors for this
+    State(prng &device, double payoff0, double payoff1) : device(device), payoff0(payoff0), payoff1(payoff1)
+    {
+    }
 
     virtual pair_actions_t get_legal_actions() = 0;
     virtual void get_legal_actions(pair_actions_t &legal_actions) = 0;
+    // transition function mirrors MDP formulation. From a game theory pov, we are returning chance players action with its prob.
     virtual transition_data_t apply_actions(Action action0, Action action1) = 0;
 };
 

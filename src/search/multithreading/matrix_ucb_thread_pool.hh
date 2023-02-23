@@ -13,10 +13,10 @@ public:
     struct MatrixStats : Algorithm<Model>::MatrixStats
     {
         int t = 0;
-        Linear::Bimatrix2D<double, Model::state_t::size_> cumulative_payoffs;
-        Linear::Matrix2D<int, Model::state_t::size_> visits;
-        std::array<double, Model::state_t::size_> strategy0;
-        std::array<double, Model::state_t::size_> strategy1;
+        Linear::Bimatrix2D<double, Model::state_t::_size> cumulative_payoffs;
+        Linear::Matrix2D<int, Model::state_t::_size> visits;
+        std::array<double, Model::state_t::_size> strategy0;
+        std::array<double, Model::state_t::_size> strategy1;
         int mutex_idx = 0;
     };
 
@@ -124,22 +124,22 @@ public:
             mtx.lock();
             if (matrix_node->is_expanded == true)
             {
-                Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
-                std::array<double, MatrixUCB::state_t::size_> strategy0 = {1 / (double)matrix_node->legal_actions.rows};
-                std::array<double, MatrixUCB::state_t::size_> strategy1 = {1 / (double)matrix_node->legal_actions.cols};
+                Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> A(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
+                std::array<double, MatrixUCB::state_t::_size> strategy0 = {1 / (double)matrix_node->legal_actions.rows};
+                std::array<double, MatrixUCB::state_t::_size> strategy1 = {1 / (double)matrix_node->legal_actions.cols};
                 get_ucb_matrix(
                     matrix_node->stats.cumulative_payoffs,
                     matrix_node->stats.visits,
                     A,
                     matrix_node->stats.t);
                 mtx.unlock();
-                double exploitability = Bandit::exploitability<double, MatrixUCB::state_t::size_>(
+                double exploitability = Bandit::exploitability<double, MatrixUCB::state_t::_size>(
                     A,
                     strategy0,
                     strategy1);
                 if (exploitability > .05)
                 {
-                    Bandit::SolveBimatrix<double, MatrixUCB::state_t::size_>(
+                    Bandit::SolveBimatrix<double, MatrixUCB::state_t::_size>(
                         device,
                         10000,
                         A,
@@ -162,8 +162,8 @@ public:
                 // std::cout << matrix_node->stats.strategy1[0] << ' ' << matrix_node->stats.strategy1[1] << std::endl;
                 // std::cout << "expl: " << exploitability << std::endl;
 
-                int row_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy0, matrix_node->legal_actions.rows);
-                int col_idx = device.sample_pdf<double, MatrixUCB::state_t::size_>(matrix_node->stats.strategy1, matrix_node->legal_actions.cols);
+                int row_idx = device.sample_pdf<double, MatrixUCB::state_t::_size>(matrix_node->stats.strategy0, matrix_node->legal_actions.rows);
+                int col_idx = device.sample_pdf<double, MatrixUCB::state_t::_size>(matrix_node->stats.strategy1, matrix_node->legal_actions.cols);
                 typename MatrixUCB::action_t action0 = matrix_node->legal_actions.actions0[row_idx];
                 typename MatrixUCB::action_t action1 = matrix_node->legal_actions.actions1[col_idx];
                 typename MatrixUCB::transition_data_t transition_data = state.apply_actions(action0, action1);
@@ -230,7 +230,7 @@ public:
         }
 
         // TODO remove this
-        Linear::Bimatrix2D<double, MatrixUCB::state_t::size_> A(root->legal_actions.rows, root->legal_actions.cols);
+        Linear::Bimatrix2D<double, MatrixUCB::state_t::_size> A(root->legal_actions.rows, root->legal_actions.cols);
         get_matrix(
             root->stats.cumulative_payoffs,
             root->stats.visits,
@@ -239,7 +239,7 @@ public:
 
         A.print();
 
-        Bandit::SolveBimatrix<double, MatrixUCB::state_t::size_>(
+        Bandit::SolveBimatrix<double, MatrixUCB::state_t::_size>(
             device,
             10000,
             A,
@@ -263,9 +263,9 @@ private:
     }
 
     void get_ucb_matrix(
-        Linear::Bimatrix<double, MatrixUCB::state_t::size_> &cumulative_payoffs,
-        Linear::Matrix<int, MatrixUCB::state_t::size_> &visits,
-        Linear::Bimatrix<double, MatrixUCB::state_t::size_> &output,
+        Linear::Bimatrix<double, MatrixUCB::state_t::_size> &cumulative_payoffs,
+        Linear::Matrix<int, MatrixUCB::state_t::_size> &visits,
+        Linear::Bimatrix<double, MatrixUCB::state_t::_size> &output,
         int t)
     {
         // assert dimensions make sense TODO
@@ -293,9 +293,9 @@ private:
     }
 
     void get_matrix(
-        Linear::Bimatrix<double, MatrixUCB::state_t::size_> &cumulative_payoffs,
-        Linear::Matrix<int, MatrixUCB::state_t::size_> &visits,
-        Linear::Bimatrix<double, MatrixUCB::state_t::size_> &output,
+        Linear::Bimatrix<double, MatrixUCB::state_t::_size> &cumulative_payoffs,
+        Linear::Matrix<int, MatrixUCB::state_t::_size> &visits,
+        Linear::Bimatrix<double, MatrixUCB::state_t::_size> &output,
         int t)
     {
         // assert dimensions make sense TODO
