@@ -71,7 +71,8 @@ public:
     // Currently reward type is 'hard'-coded. Float is not accurate enough, and no need for e.g. Rational type.
     State(prng &device) : device(device) {}
     State(prng &device, double payoff) : device(device), payoff0(payoff), payoff1(1 - payoff) {}
-    State(prng &device, double payoff0, double payoff1) : device(device), payoff0(payoff0), payoff1(payoff1) {
+    State(prng &device, double payoff0, double payoff1) : device(device), payoff0(payoff0), payoff1(payoff1)
+    {
     }
 
     virtual pair_actions_t get_legal_actions() = 0;

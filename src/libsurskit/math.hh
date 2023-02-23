@@ -71,8 +71,10 @@ namespace Linear
 
         Vector(std::array<T, size> &data, int length) : data(data), length(length) {}
 
-        void print () {
-            for (int i = 0; i < length; ++i) {
+        void print()
+        {
+            for (int i = 0; i < length; ++i)
+            {
                 std::cout << data[i] << ' ';
             }
             std::cout << std::endl;
