@@ -2,16 +2,19 @@
 
 #include "../state/state.hh"
 
-template <typename State>
+template <typename _State>
 class Model
 {
 public:
-    // This pattern ensures each higher type (Model, Nodes, etc) and their derivations have access to all the lower types.
-    using action_t = typename State::action_t;
-    using hash_t = typename State::hash_t;
-    using pair_actions_t = typename State::pair_actions_t;
-    using transition_data_t = typename State::transition_data_t;
-    using state_t = State;
+    using State = _State;
+    using PlayerAction = typename _State::PlayerAction;
+    using ChanceAction = typename _State::ChanceAction;
+    using Number = typename _State::Number;
+    using VectorDouble = typename _State::VectorDouble;
+    using VectorInt = typename _State::VectorInt;
+    using VectorAction = typename _State::VectorAction;
+    using TransitionData = typename _State::TransitionData;
+    using PairActions = typename _State::PairActions;
 
     struct InferenceData
     {
@@ -19,9 +22,9 @@ public:
         double value1 = .5;
     };
 
-    InferenceData last_inference;
+    InferenceData inference_data;
 
-    virtual InferenceData &inference(State &state, pair_actions_t &legal_actions) = 0;
-    // Intended that the last_inference member be updated and then returned
-    // *note* perhaps this should be return type void and the arg should have inference_data. Does argument covariance work? dont remember tbh
+    Model () {}
+
+    virtual void inference(State &state) = 0;
 };
