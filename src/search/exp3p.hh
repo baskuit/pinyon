@@ -42,7 +42,7 @@ public:
 
     Exp3p(prng &device) : device(device) {}
 
-    void run () {}
+    void run() {}
 
     void run(
         int playouts,
@@ -53,9 +53,11 @@ public:
         root.stats.t = playouts;
         for (int playout = 0; playout < playouts; ++playout)
         {
-            typename Exp3p::State state_copy = state;
+            auto state_copy = state;
             this->playout(state_copy, model, &root);
+            std::cout << std::endl;
         }
+
         // std::cout << "Exp3p root visits" << std::endl;
         // std::cout << "p0: " << root.stats.row_visits[0] << ' ' << root.stats.row_visits[1] << std::endl;
         // std::cout << "p1: " << root.stats.col_visits[0] << ' ' << root.stats.col_visits[1] << std::endl;
@@ -66,14 +68,14 @@ public:
         // typename Exp3p::VectorDouble strategy1;
 
         // std::cout << "strategies" << std::endl;
-        // math::power_norm<Exp3p::VectorDouble>(root.stats.row_visits, root.legal_actions.rows, 1, strategy0);
-        // for (int i = 0; i < root.legal_actions.rows; ++i)
+        // math::power_norm<Exp3p::VectorDouble>(root.stats.row_visits, root.pair_actions.rows, 1, strategy0);
+        // for (int i = 0; i < root.pair_actions.rows; ++i)
         // {
         //     std::cout << strategy0[i] << ' ';
         // }
         // std::cout << std::endl;
-        // math::power_norm<int, double, Exp3p::State::_size>(root.stats.col_visits, root.legal_actions.cols, 1, strategy1);
-        // for (int j = 0; j < root.legal_actions.cols; ++j)
+        // math::power_norm<int, double, Exp3p::State::_size>(root.stats.col_visits, root.pair_actions.cols, 1, strategy1);
+        // for (int j = 0; j < root.pair_actions.cols; ++j)
         // {
         //     std::cout << strategy1[j] << ' ';
         // }
@@ -82,14 +84,15 @@ public:
 
     // Linear::Bimatrix2D<double, Exp3p::State::_size> get_matrix(MatrixNode<Exp3p> *matrix_node)
     // {
-    //     Linear::Bimatrix2D<double, Exp3p::State::_size> M(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
+    //     Linear::Bimatrix2D<double, Exp3p::State::_size> M(matrix_node->pair_actions.rows, matrix_node->pair_actions.cols);
     //     for (int i = 0; i < M.rows; ++i)
     //     {
     //         for (int j = 0; j < M.cols; ++j)
     //         {
     //             M.set0(i, j, .5);
     //             M.set1(i, j, .5);
-    //         }
+    //         }        state.get_player_actions();
+
     //     }
 
     //     // cur iterates through all chance node children
@@ -104,37 +107,42 @@ public:
     // }
 
 private:
-
     MatrixNode<Exp3p> *playout(
         typename Exp3p::State &state,
         Model &model,
         MatrixNode<Exp3p> *matrix_node)
     {
+        std::cout << matrix_node << std::endl;
         /*
         Performs one playout of the growing tree algorithm.
         This recursive function returns the leaf node of the playout, which stores inference data for backpropogation
         */
         if (matrix_node->is_terminal == true)
         {
+            std::cout << "node is terminal" << std::endl;
             return matrix_node;
         }
         else
         {
             if (matrix_node->is_expanded == true)
             {
-
+                std::cout << "choosing" << std::endl;
                 this->forecast(matrix_node);
-                int row_idx = device.sample_pdf<typename Exp3p::VectorDouble>(this->row_forecast, matrix_node->legal_actions.rows);
-                int col_idx = device.sample_pdf<typename Exp3p::VectorDouble>(this->col_forecast, matrix_node->legal_actions.cols);
-                typename Exp3p::action_t action0 = matrix_node->legal_actions.actions0[row_idx];
-                typename Exp3p::action_t action1 = matrix_node->legal_actions.actions1[col_idx];
+                int row_idx = device.sample_pdf<typename Exp3p::VectorDouble>(this->row_forecast, matrix_node->pair_actions.rows);
+                int col_idx = device.sample_pdf<typename Exp3p::VectorDouble>(this->col_forecast, matrix_node->pair_actions.cols);
+                typename Exp3p::PlayerAction row_action = matrix_node->pair_actions.row_actions[row_idx];
+                typename Exp3p::PlayerAction col_action = matrix_node->pair_actions.col_actions[col_idx];
+
+                // std::cout << this->row_forecast[0] << ' ' << this->row_forecast[1] << ' ' << this->row_forecast[2] << ' ' << std::endl;9
+                // std::cout << "Playout indices: " << row_idx << ' ' << col_idx << std::endl;
+                // std::cout << "Playout actions: " << row_action << ' ' << col_action << std::endl;
 
                 ChanceNode<Exp3p> *chance_node = matrix_node->access(row_idx, col_idx);
                 MatrixNode<Exp3p> *matrix_node_next = chance_node->access(state.transition_data);
                 MatrixNode<Exp3p> *matrix_node_leaf = this->playout(state, model, matrix_node_next);
 
-                double row_payoff = matrix_node_leaf->inference.row_value;
-                double col_payoff = matrix_node_leaf->inference.col_value;
+                double row_payoff = matrix_node_leaf->inference_data.row_value;
+                double col_payoff = matrix_node_leaf->inference_data.col_value;
                 double row_inverse_prob = 1 / this->row_forecast[row_idx];
                 double col_inverse_prob = 1 / this->col_forecast[col_idx];
 
@@ -148,7 +156,9 @@ private:
             }
             else
             {
+                std::cout << "node will be expanded" << std::endl;
                 this->expand(state, model, matrix_node);
+                std::cout << "terminal status of expanded node: " << matrix_node->is_terminal << std::endl;
                 return matrix_node;
             }
         }
@@ -156,24 +166,26 @@ private:
 
     inline void expand(
         typename Exp3p::State &state,
-        Model model,
+        Model &model,
         MatrixNode<Exp3p> *matrix_node)
     {
         /*
         Expand a leaf node, right before we return it.
         */
         matrix_node->is_expanded = true;
+        state.get_player_actions();
+        std::cout << "state terminal status: " << state.is_terminal << std::endl;
         matrix_node->is_terminal = state.is_terminal;
-        state.get_legal_actions(matrix_node->legal_actions);
+        matrix_node->pair_actions = state.pair_actions;
 
         if (matrix_node->is_terminal)
         {
-            matrix_node->inference.row_value = state.row_payoff;
-            matrix_node->inference.col_value = state.col_payoff;
+            matrix_node->inference_data.row_value = state.row_payoff;
+            matrix_node->inference_data.col_value = state.col_payoff;
         }
         else
         {
-            model.inference(state, matrix_node->legal_actions);
+            model.inference(state);
             matrix_node->inference_data = model.inference_data;
         }
 
@@ -182,9 +194,9 @@ private:
         if (chance_parent != nullptr)
         {
             MatrixNode<Exp3p> *matrix_parent = chance_parent->parent;
-            int row_idx = parent->row_idx;
-            int col_idx = parent->col_idx;
-            double reach_probability = matrix_parent->inference.row_priors[row_idx] * matrix_parent->inference.col_priors[col_idx] * ((double)matrix_node->transition_data.probability);
+            int row_idx = chance_parent->row_idx;
+            int col_idx = chance_parent->col_idx;
+            double reach_probability = matrix_parent->inference_data.row_priors[row_idx] * matrix_parent->inference_data.col_priors[col_idx] * ((double)matrix_node->transition_data.probability);
             int t_estimate = matrix_parent->stats.t * reach_probability;
             t_estimate = t_estimate == 0 ? 1 : t_estimate;
             matrix_node->stats.t = t_estimate;
@@ -198,8 +210,8 @@ private:
         The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
         */
         const int time = matrix_node->stats.t;
-        const int rows = matrix_node->legal_actions.rows;
-        const int cols = matrix_node->legal_actions.cols;
+        const int rows = matrix_node->pair_actions.rows;
+        const int cols = matrix_node->pair_actions.cols;
         if (rows == 1)
         {
             this->row_forecast[0] = 1;
@@ -212,8 +224,9 @@ private:
             this->softmax(this->row_forecast, matrix_node->stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
-                double x = (1 - gamma) * this->row_forecast[row_idx] + (gamma)*matrix_node->inference.row_priors[row_idx];
-                this->row_forecast[row_idx] = x;
+                this->row_forecast[row_idx] = 
+                    (1 - gamma) * this->row_forecast[row_idx] + 
+                    (gamma)*matrix_node->inference_data.row_priors[row_idx];
             }
         }
         if (cols == 1)
@@ -228,8 +241,9 @@ private:
             this->softmax(this->col_forecast, matrix_node->stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                double x = (1 - gamma) * this->col_forecast[col_idx] + (gamma)*matrix_node->inference.col_priors[col_idx];
-                this->col_forecast[col_idx] = x;
+                this->col_forecast[col_idx] =
+                    (1 - gamma) * this->col_forecast[col_idx] +
+                    (gamma)*matrix_node->inference_data.col_priors[col_idx];
             }
         }
     }
@@ -276,7 +290,7 @@ private:
         matrix_node->stats.col_visits[col_idx] += 1;
         const double rows = matrix_node->pair_actions.rows;
         const double cols = matrix_node->pair_actions.cols;
-        const double time = matrix_node->stats.time;
+        const double time = matrix_node->stats.t;
         const double row_beta = std::sqrt(std::log(rows) / (double)(time * rows));
         const double col_beta = std::sqrt(std::log(cols) / (double)(time * cols));
         matrix_node->stats.row_gains[row_idx] += row_beta * row_inverse_prob;
