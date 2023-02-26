@@ -25,17 +25,17 @@ namespace math
         }
     }
 
-    template <typename T, int size>
-    void power_norm(std::array<T, size> input, int k, double power, std::array<T, size> &output)
+    template <typename Vector>
+    void power_norm(Vector& input, int length, double power, Vector &output)
     {
         double sum = 0;
-        for (int i = 0; i < k; ++i)
+        for (int i = 0; i < length; ++i)
         {
             double x = std::pow(input[i], power);
             output[i] = x;
             sum += x;
         }
-        for (int i = 0; i < k; ++i)
+        for (int i = 0; i < length; ++i)
         {
             output[i] = output[i] / sum;
         }
