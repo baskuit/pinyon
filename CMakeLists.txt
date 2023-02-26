@@ -50,11 +50,6 @@ set(GAMBIT_SOURCES
     gambit/src/solvers/lrs/lrsnashlib.c
 )
 
-set(SURSKIT_SOURCES
-    src/main.cc
-    test/gambit_link_test.cc
-)
-
 INCLUDE_DIRECTORIES(
     src	
 	gambit/src
@@ -65,14 +60,10 @@ INCLUDE_DIRECTORIES(
 	gambit/src/lrs
 )
 
-add_library(gambit STATIC ${GAMBIT_SOURCES}) # removed headers
+add_library(gambit STATIC ${GAMBIT_SOURCES})
 
+add_executable(rewrite src/main.cc)
+# add_executable(random_trees random_trees/random_trees.cc)
 
-
-# add_library(surskit SHARED ${SURSKIT_SOURCES})
-
-add_executable(matrix_ucb src/main.cc)
-add_executable(random_trees random_trees/random_trees.cc)
-
-target_link_libraries(matrix_ucb gambit)
-target_link_libraries(random_trees gambit)
+target_link_libraries(rewrite gambit)
+# target_link_libraries(random_trees gambit)
