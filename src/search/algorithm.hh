@@ -1,16 +1,20 @@
 #pragma once
 
-template <typename Model>
+template <typename _Model>
 class Algorithm
 {
 public:
-    using action_t = typename Model::action_t;
-    using hash_t = typename Model::hash_t;
-    using pair_actions_t = typename Model::pair_actions_t;
-    using transition_data_t = typename Model::transition_data_t;
-    using state_t = typename Model::state_t;
-    using model_t = Model;
-    using inference_t = typename Model::InferenceData;
+    using State = _Model;
+    using PlayerAction = typename _Model::PlayerAction;
+    using ChanceAction = typename _Model::ChanceAction;
+    using Number = typename _Model::Number;
+    using VectorDouble = typename _Model::VectorDouble;
+    using VectorInt = typename _Model::VectorInt;
+    using VectorAction = typename _Model::VectorAction;
+    using TransitionData = typename _Model::TransitionData;
+    using PairActions = typename _Model::PairActions;
+    using Model = _Model;
+    using InferenceData = typename _Model::InferenceData; 
 
     struct MatrixStats
     {
@@ -18,4 +22,10 @@ public:
     struct ChanceStats
     {
     };
+
+    struct SearchParameters
+    {
+    };
+
+    virtual void run () = 0;
 };
