@@ -3,52 +3,62 @@
 #include "../libsurskit/math.hh"
 
 // TODO: Consider making these subclasses of "Node"
+// template <typename _Algorithm>
+// class Node;
 
-template <typename Algorithm>
+template <typename _Algorithm>
 class ChanceNode;
 
 // Matrix Node
 
-template <typename Algorithm>
+template <typename _Algorithm>
 class MatrixNode
 {
 public:
-    using state_t = typename Algorithm::state_t;
-    using action_t = typename Algorithm::action_t;
-    using pair_actions_t = typename Algorithm::pair_actions_t;
-    using transition_data_t = typename Algorithm::transition_data_t;
-    using model_t = typename Algorithm::model_t;
-    using inference_t = typename Algorithm::inference_t;
-    using stats_t = typename Algorithm::MatrixStats;
+    using State = typename _Algorithm::State;
+    using PlayerAction = typename _Algorithm::PlayerAction;
+    using ChanceAction = typename _Algorithm::ChanceAction;
+    using Number = typename _Algorithm::Number;
+    using VectorDouble = typename _Algorithm::VectorDouble;
+    using VectorInt = typename _Algorithm::VectorInt;
+    using VectorAction = typename _Algorithm::VectorAction;
+    using TransitionData = typename _Algorithm::TransitionData;
+    using PairActions = typename _Algorithm::PairActions;
+    using Model = typename _Algorithm::Model;
+    using InferenceData = typename _Algorithm::InferenceData;
+    using Algorithm = _Algorithm;
+    using MatrixStats = typename _Algorithm::MatrixStats;
+    using ChanceStats = typename _Algorithm::ChanceStats;
 
-    ChanceNode<Algorithm> *parent = nullptr;
-    ChanceNode<Algorithm> *child = nullptr;
-    MatrixNode<Algorithm> *prev = nullptr;
-    MatrixNode<Algorithm> *next = nullptr;
-
-    transition_data_t transition_data;
+    ChanceNode<_Algorithm> *parent = nullptr;
+    ChanceNode<_Algorithm> *child = nullptr;
+    MatrixNode<_Algorithm> *prev = nullptr;
+    MatrixNode<_Algorithm> *next = nullptr;
 
     bool is_terminal = false;
     bool is_expanded = false;
 
-    pair_actions_t legal_actions;
-    inference_t inference;
-    stats_t stats; // cumulative_value, vists now part of stats
+    TransitionData transition_data;
+    PairActions pair_actions;
+    InferenceData inference_data;
+    MatrixStats stats; // cumulative_value, vists now part of stats
 
-    MatrixNode() : transition_data() {}
-    MatrixNode(ChanceNode<Algorithm> *parent, MatrixNode<Algorithm> *prev, transition_data_t transition_data) : parent(parent), prev(prev), transition_data(transition_data) {}
+    MatrixNode () {};
+    MatrixNode(
+        ChanceNode<_Algorithm> *parent,
+        MatrixNode<_Algorithm> *prev,
+        TransitionData transition_data) : parent(parent), prev(prev), transition_data(transition_data) {}
     ~MatrixNode();
 
-    ChanceNode<Algorithm> *access(int row_idx, int col_idx)
+    ChanceNode<_Algorithm> *access(int row_idx, int col_idx)
     {
         if (this->child == nullptr)
         {
-            ChanceNode<Algorithm> *child = new ChanceNode<Algorithm>(this, nullptr, row_idx, col_idx);
-            this->child = child;
-            return child;
+            this->child = new ChanceNode<_Algorithm>(this, nullptr, row_idx, col_idx);
+            return this->child;
         }
-        ChanceNode<Algorithm> *current = this->child;
-        ChanceNode<Algorithm> *previous = this->child;
+        ChanceNode<_Algorithm> *current = this->child;
+        ChanceNode<_Algorithm> *previous = this->child;
         while (current != nullptr)
         {
             previous = current;
@@ -58,24 +68,24 @@ public:
             }
             current = current->next;
         }
-        ChanceNode<Algorithm> *child = new ChanceNode<Algorithm>(this, previous, row_idx, col_idx);
+        ChanceNode<_Algorithm> *child = new ChanceNode<_Algorithm>(this, previous, row_idx, col_idx);
         previous->next = child;
         return child;
     };
 
-    void make_terminal()
-    {
-        while (child != nullptr)
-        {
-            delete child;
-        }
-        is_terminal = true;
-    }
+    // void make_terminal()
+    // {
+    //     while (child != nullptr)
+    //     {
+    //         delete child;
+    //     }
+    //     is_terminal = true;
+    // }
 
     int count()
     {
         int c = 1;
-        ChanceNode<Algorithm> *current = child;
+        ChanceNode<_Algorithm> *current = this->child;
         while (current != nullptr)
         {
             c += current->count();
@@ -83,56 +93,66 @@ public:
         }
         return c;
     }
-
 };
 
 // Chance Node
 
-template <typename Algorithm>
+template <typename _Algorithm>
 class ChanceNode
 {
 public:
-    using state_t = typename Algorithm::state_t;
-    using action_t = typename Algorithm::action_t;
-    using pair_actions_t = typename Algorithm::pair_actions_t;
-    using transition_data_t = typename Algorithm::transition_data_t;
-    using model_t = typename Algorithm::model_t;
-    using inference_data_t = typename Algorithm::inference_t;
-    using stats_t = typename Algorithm::ChanceStats;
+    using State = typename _Algorithm::State;
+    using PlayerAction = typename _Algorithm::PlayerAction;
+    using ChanceAction = typename _Algorithm::ChanceAction;
+    using Number = typename _Algorithm::Number;
+    using VectorDouble = typename _Algorithm::VectorDouble;
+    using VectorInt = typename _Algorithm::VectorInt;
+    using VectorAction = typename _Algorithm::VectorAction;
+    using TransitionData = typename _Algorithm::TransitionData;
+    using PairActions = typename _Algorithm::PairActions;
+    using Model = typename _Algorithm::Model;
+    using InferenceData = typename _Algorithm::InferenceData;
+    using Algorithm = _Algorithm;
+    using MatrixStats = typename _Algorithm::MatrixStats;
+    using ChanceStats = typename _Algorithm::ChanceStats;
 
-    MatrixNode<Algorithm> *parent = nullptr;
-    MatrixNode<Algorithm> *child = nullptr;
-    ChanceNode<Algorithm> *prev = nullptr;
-    ChanceNode<Algorithm> *next = nullptr;
+    MatrixNode<_Algorithm> *parent = nullptr;
+    MatrixNode<_Algorithm> *child = nullptr;
+    ChanceNode<_Algorithm> *prev = nullptr;
+    ChanceNode<_Algorithm> *next = nullptr;
 
     int row_idx;
     int col_idx;
 
-    stats_t stats;
+    ChanceStats stats;
 
-    ChanceNode<Algorithm>(MatrixNode<Algorithm> *parent, ChanceNode<Algorithm> *prev, int row_idx, int col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
-    ~ChanceNode<Algorithm>();
+    ChanceNode<_Algorithm>(
+        MatrixNode<_Algorithm> *parent,
+        ChanceNode<_Algorithm> *prev,
+        int row_idx,
+        int col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
+    ~ChanceNode<_Algorithm>();
 
-    MatrixNode<Algorithm> *access(transition_data_t data)
+    MatrixNode<_Algorithm> *access(TransitionData &transition_data)
     {
         if (this->child == nullptr)
         {
-            MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, nullptr, data);
+            MatrixNode<_Algorithm> *child = new MatrixNode<_Algorithm>(this, nullptr, transition_data);
             this->child = child;
             return child;
         }
-        MatrixNode<Algorithm> *current = this->child;
-        MatrixNode<Algorithm> *previous = this->child;
+        MatrixNode<_Algorithm> *current = this->child;
+        MatrixNode<_Algorithm> *previous = this->child;
         while (current != nullptr)
         {
             previous = current;
-            if (current->transition_data.key == data.key)
+            if (current->transition_data.chance_action == transition_data.chance_action)
             {
                 return current;
             }
             current = current->next;
         }
-        MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, previous, data);
+        MatrixNode<_Algorithm> *child = new MatrixNode<_Algorithm>(this, previous, transition_data);
         previous->next = child;
         return child;
     };
@@ -140,7 +160,7 @@ public:
     int count()
     {
         int c = 0;
-        MatrixNode<Algorithm> *current = child;
+        MatrixNode<_Algorithm> *current = this->child;
         while (current != nullptr)
         {
             c += current->count();
@@ -149,54 +169,56 @@ public:
         return c;
     }
 
-    Rational get_explored_total () {
-           Rational total(0, 1);
-           MatrixNode<Algorithm> cur = child;
-           while (cur != nullptr) {
-                total += cur.transition_data.probability;
-                cur = cur->next;
-           }
-           return total;
-    }
+    // Rational get_explored_total()
+    // {
+    //     Rational total(0, 1);
+    //     MatrixNode<_Algorithm> cur = child;
+    //     while (cur != nullptr)
+    //     {
+    //         total += cur.transition_data.probability;
+    //         cur = cur->next;
+    //     }
+    //     return total;
+    // }
 };
 
 // We have to hold off on destructor definitions until here
 
-template <typename Algorithm>
-MatrixNode<Algorithm>::~MatrixNode<Algorithm>()
+template <typename _Algorithm>
+MatrixNode<_Algorithm>::~MatrixNode<_Algorithm>()
 {
 
-    while (child != nullptr)
+    while (this->child != nullptr)
     {
-        ChanceNode<Algorithm> *victim = child;
-        child = child->next;
+        ChanceNode<_Algorithm> *victim = this->child;
+        this->child = this->child->next;
         delete victim;
     }
-    if (prev != nullptr)
+    if (this->prev != nullptr)
     {
-        prev->next = next;
+        this->prev->next = this->next;
     }
-    else if (parent != nullptr)
+    else if (this->parent != nullptr)
     {
-        parent->child = next;
+        this->parent->child = this->next;
     }
 }
 
-template <typename Algorithm>
-ChanceNode<Algorithm>::~ChanceNode<Algorithm>()
+template <typename _Algorithm>
+ChanceNode<_Algorithm>::~ChanceNode<_Algorithm>()
 {
-    while (child != nullptr)
+    while (this->child != nullptr)
     {
-        MatrixNode<Algorithm> *victim = child;
-        child = child->next;
+        MatrixNode<_Algorithm> *victim = this->child;
+        this->child = this->child->next;
         delete victim;
     }
-    if (prev != nullptr)
+    if (this->prev != nullptr)
     {
-        prev->next = next;
+        this->prev->next = this->next;
     }
-    else if (parent != nullptr)
+    else if (this->parent != nullptr)
     {
-        parent->child = next;
+        this->parent->child = this->next;
     }
 };
