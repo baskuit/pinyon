@@ -4,102 +4,85 @@
 
 #include "../libsurskit/math.hh"
 
-// PairActions
 
-template <int size, typename Action>
-struct PairActions
-{
-
-    /*
-    Legal actions for players 0 and 1.
-    Stored in each matrix node, for example
-    Actions a_i player 0 after i=rows are garbage, ditto for cols, player 1.
-    */
-
-    int rows = 0;
-    int cols = 0;
-    std::array<Action, size> actions0;
-    std::array<Action, size> actions1;
-    PairActions() {}
-    PairActions(int rows, int cols) : rows(rows), cols(cols) {}
-};
-
-// TransitionData
-
-template <typename Hash>
-struct TransitionData
-{
-
-    Hash key;
-    Rational probability;
-
-    /*
-    After applying a pair of actions to a matrix node, we stochastically transition to another matrix node
-    and recieve some identifying observation of type Hash.
-    Hash is essentially the type of the chance player's actions.
-    We use rational numbers to quantify the probability of that transition
-    This has nice properties; for example, the sum of probabilities at a chance node
-    equals 1 if and only if all actions of the chace player have been explored.
-    */
-
-    TransitionData() {}
-    TransitionData(Hash key, Rational probability) : key(key), probability(probability) {}
-};
-
-// State
-
-template <int size, typename Action, typename Hash>
+template <typename _PlayerAction, typename _ChanceAction, typename _Number,
+          typename _VectorDouble, typename _VectorInt, typename _VectorAction>
 class State
 {
 public:
-    /*
-    Markov Desicion Process.
-    We assume rewards at each transition are 0 until the end until the last
-    Rewards at the end are called payoffs. In the example code and motivating papers
-    we assume payoff0 + payoff1 = 1.
-    */
+    using PlayerAction = _PlayerAction;
+    using ChanceAction = _ChanceAction;
+    using Number = _Number;
+    using VectorDouble = _VectorDouble;
+    using VectorInt = _VectorInt;
+    using VectorAction = _VectorAction;
 
-    static const int _size = size;
-    using action_t = Action;
-    using hash_t = Hash;
-    using pair_actions_t = PairActions<size, Action>;
-    using transition_data_t = TransitionData<Hash>;
-
-    prng &device;
-    double payoff0 = 0.5f;
-    double payoff1 = 0.5f;
-    // Currently reward type is 'hard'-coded. Float is not accurate enough, and no need for e.g. Rational type.
-    State(prng &device) : device(device) {}
-    State(prng &device, double payoff) : device(device), payoff0(payoff), payoff1(1 - payoff) {}
-    State(prng &device, double payoff0, double payoff1) : device(device), payoff0(payoff0), payoff1(payoff1)
+    struct TransitionData
     {
-    }
+        ChanceAction chance_action;
+        Number probability;
+    };
 
-    virtual pair_actions_t get_legal_actions() = 0;
-    virtual void get_legal_actions(pair_actions_t &legal_actions) = 0;
-    // transition function mirrors MDP formulation. From a game theory pov, we are returning chance players action with its prob.
-    virtual transition_data_t apply_actions(Action action0, Action action1) = 0;
+    TransitionData transition_data;
+    // If we want TransitionData, PairActions to be nested classes,
+    // then we can't make apply_actions, get_player_actions virtual
+    // while still passing references to the output, since arguments are not covariate
+    // Rather than resort to outputing these by value, we opt to just store these as members.
+
+    struct PairActions
+    {
+        int rows;
+        int cols;
+        VectorAction row_actions;
+        VectorAction col_actions;
+    };
+
+    PairActions pair_actions;
+
+    double row_payoff;
+    double col_payoff;
+    bool terminal = false;
+    // We break from the old convention of using rows * cols = 0 iff terminal.
+    // This is because we'd like Surskit to better handle situations where
+    // we may not have complete knowledge of our a given player's actions.
+
+    virtual void get_player_actions() = 0;
+    virtual void apply_actions(
+        PlayerAction row_action, 
+        PlayerAction col_action
+    ) = 0;
+    // TransitionData get_player_actions() = 0;
 };
 
-// Solved State
+template <int size, typename _PlayerAction, typename _ChanceAction, typename _Probability>
+class StateArray : public State<
+                       _PlayerAction,
+                       _ChanceAction,
+                       _Probability,
+                       std::array<double, size>,
+                       std::array<int, size>,
+                       std::array<_PlayerAction, size>>
+{
+};
 
-template <int size, typename Action, typename Hash>
-class SolvedState : public State<size, Action, Hash>
+/*
+This derived class represents states that accept input for the chance player.
+The convention by which derived classes in Surskit access type names is displayed here
+ `typename Derived::TypeName`
+This gives us access to lower level types (State < Model < Algorithm < Node)
+while sparing us the use of template arguments, which using the Base class would require.
+*/
+
+template <typename _PlayerAction, typename _ChanceAction, typename _Number,
+          typename _VectorDouble, typename _VectorInt, typename _VectorAction>
+class StateChance : public State< _PlayerAction,  _ChanceAction,  _Number,
+           _VectorDouble,  _VectorInt,  _VectorAction>
 {
 public:
-    /*
-    State where a given Nash equilibrium is known.
-    We then also know the legal actions and terminality too
-    so we store this info as members.
-    */
-
-    bool is_terminal = true;
-    int rows = 0;
-    int cols = 0;
-    std::array<double, size> strategy0;
-    std::array<double, size> strategy1;
-
-    SolvedState(prng &device) : State<size, Action, Hash>(device) {}
-    SolvedState(prng &device, double payoff, int rows, int cols) : State<size, Action, Hash>(device, payoff), is_terminal(rows * cols == 0), rows(rows), cols(cols) {}
-    SolvedState(prng &device, double payoff0, double payoff1, int rows, int cols) : State<size, Action, Hash>(device, payoff0, payoff1), is_terminal(rows * cols == 0), rows(rows), cols(cols) {}
+    virtual void apply_actions (
+        typename StateChance::PlayerAction row_action,
+        typename StateChance::PlayerAction col_action,
+        typename StateChance::ChanceAction chance_action,
+        typename StateChance::TransitionData &transition_data
+    ) = 0;
 };
