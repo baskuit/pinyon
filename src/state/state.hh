@@ -19,6 +19,8 @@ public:
 
     struct TransitionData
     {
+        // TransitionData () {}
+        // TransitionData (TransitionData &t) {}
         ChanceAction chance_action;
         Number probability;
     };
@@ -31,8 +33,8 @@ public:
 
     struct PairActions
     {
-        PairActions () {}
-        PairActions (PairActions &t) {}
+        // PairActions () {}
+        // PairActions (PairActions &t) {}
         int rows;
         int cols;
         VectorAction row_actions;
@@ -43,13 +45,13 @@ public:
 
     double row_payoff;
     double col_payoff;
-    bool is_terminal;
+    bool is_terminal = false;
     // We break from the old convention of using rows * cols = 0 iff terminal.
     // This is because we'd like Surskit to better handle situations where
     // we may not have complete knowledge of our a given player's actions.
 
-    State () {}
-    State (State &t) {}
+    // State () {}
+    // State (State &t) {}
 
     virtual void get_player_actions() = 0;
     virtual void apply_actions(

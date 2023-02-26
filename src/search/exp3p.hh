@@ -55,7 +55,6 @@ public:
         {
             auto state_copy = state;
             this->playout(state_copy, model, &root);
-            std::cout << std::endl;
         }
 
         // std::cout << "Exp3p root visits" << std::endl;
@@ -112,30 +111,24 @@ private:
         Model &model,
         MatrixNode<Exp3p> *matrix_node)
     {
-        std::cout << matrix_node << std::endl;
         /*
         Performs one playout of the growing tree algorithm.
         This recursive function returns the leaf node of the playout, which stores inference data for backpropogation
         */
         if (matrix_node->is_terminal == true)
         {
-            std::cout << "node is terminal" << std::endl;
             return matrix_node;
         }
         else
         {
             if (matrix_node->is_expanded == true)
             {
-                std::cout << "choosing" << std::endl;
                 this->forecast(matrix_node);
                 int row_idx = device.sample_pdf<typename Exp3p::VectorDouble>(this->row_forecast, matrix_node->pair_actions.rows);
                 int col_idx = device.sample_pdf<typename Exp3p::VectorDouble>(this->col_forecast, matrix_node->pair_actions.cols);
                 typename Exp3p::PlayerAction row_action = matrix_node->pair_actions.row_actions[row_idx];
                 typename Exp3p::PlayerAction col_action = matrix_node->pair_actions.col_actions[col_idx];
-
-                // std::cout << this->row_forecast[0] << ' ' << this->row_forecast[1] << ' ' << this->row_forecast[2] << ' ' << std::endl;9
-                // std::cout << "Playout indices: " << row_idx << ' ' << col_idx << std::endl;
-                // std::cout << "Playout actions: " << row_action << ' ' << col_action << std::endl;
+                state.apply_actions(row_action, col_action);
 
                 ChanceNode<Exp3p> *chance_node = matrix_node->access(row_idx, col_idx);
                 MatrixNode<Exp3p> *matrix_node_next = chance_node->access(state.transition_data);
@@ -156,9 +149,7 @@ private:
             }
             else
             {
-                std::cout << "node will be expanded" << std::endl;
                 this->expand(state, model, matrix_node);
-                std::cout << "terminal status of expanded node: " << matrix_node->is_terminal << std::endl;
                 return matrix_node;
             }
         }
@@ -174,7 +165,6 @@ private:
         */
         matrix_node->is_expanded = true;
         state.get_player_actions();
-        std::cout << "state terminal status: " << state.is_terminal << std::endl;
         matrix_node->is_terminal = state.is_terminal;
         matrix_node->pair_actions = state.pair_actions;
 

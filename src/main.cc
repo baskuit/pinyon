@@ -18,7 +18,7 @@ int main()
     using MonteCarlo = MonteCarlo<MoldState>;
     using Exp3p = Exp3p<MonteCarlo>;
 
-    MoldState state(3);
+    MoldState state(2);
     prng device(0);
     MonteCarlo model(device);
 
@@ -28,7 +28,7 @@ int main()
     MatrixNode<Exp3p> root;
     Exp3p session(device);
     session.run(
-        5,
+        200,
         state,
         model,
         root
