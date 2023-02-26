@@ -4,8 +4,8 @@
 
 #include "state/test_states.hh"
 #include "model/monte_carlo.hh"
-// #include "tree/node.hh"
 #include "search/exp3p.hh"
+// #include "tree/node.hh"
 // #include "search/matrix_ucb.hh"
 
 /*
@@ -25,7 +25,7 @@ int main()
     state_.get_player_actions();
     model.inference(state_);
 
-    // Exp3p session(device);
+    Exp3p session(device);
 
     
 

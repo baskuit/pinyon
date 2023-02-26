@@ -18,8 +18,8 @@ public:
 
     struct InferenceData
     {
-        double value0 = .5;
-        double value1 = .5;
+        double row_value = .5;
+        double col_value = .5;
     };
 
     InferenceData inference_data;

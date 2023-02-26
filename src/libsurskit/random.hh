@@ -50,8 +50,8 @@ public:
         return 0;
     }
 
-    template <typename T, int size>
-    int sample_pdf(std::array<T, size> &input, int k)
+    template <typename Vector>
+    int sample_pdf(Vector &input, int k)
     {
         double p = uniform();
         for (int i = 0; i < k; ++i)

@@ -8,14 +8,12 @@ class MonteCarlo : public Model<State>
 public:
     struct InferenceData : Model<State>::InferenceData
     {
-        typename MonteCarlo::VectorDouble strategy_prior0;
-        typename MonteCarlo::VectorDouble strategy_prior1;
-        // double value0;
-        // double value1;
+        typename MonteCarlo::VectorDouble row_priors;
+        typename MonteCarlo::VectorDouble col_priors;
     };
 
     prng &device;
-    InferenceData inference_data;
+    MonteCarlo::InferenceData inference_data;
 
     MonteCarlo(prng &device) : device(device){};
 
@@ -23,13 +21,13 @@ public:
     {
         for (int row_idx = 0; row_idx < state.pair_actions.rows; ++row_idx)
         {
-            MonteCarlo::inference_data.strategy_prior0[row_idx] = 1 / (double)state.pair_actions.rows;
+            MonteCarlo::inference_data.row_priors[row_idx] = 1 / (double)state.pair_actions.rows;
         }
         for (int col_idx = 0; col_idx < state.pair_actions.cols; ++col_idx)
         {
-            MonteCarlo::inference_data.strategy_prior1[col_idx] = 1 / (double)state.pair_actions.cols;
+            MonteCarlo::inference_data.col_priors[col_idx] = 1 / (double)state.pair_actions.cols;
         }
-        rollout(state);
+        this->rollout(state);
         MonteCarlo::inference_data.value0 = state.row_payoff;
         MonteCarlo::inference_data.value1 = state.col_payoff;
     };
@@ -38,7 +36,7 @@ public:
     {
         // state.get_legal_actions();
         // In all bandit algo's, we always get actions before applying inference.
-        while (!state.terminal)
+        while (!state.is_terminal)
         {
             int row_idx = this->device.random_int(state.pair_actions.rows);
             int col_idx = this->device.random_int(state.pair_actions.cols);
@@ -58,8 +56,8 @@ public:
 
 //     struct InferenceData : Model<State>::InferenceData
 //     {
-//         std::array<double, State::_size> strategy_prior0;
-//         std::array<double, State::_size> strategy_prior1;
+//         std::array<double, State::_size> row_priors;
+//         std::array<double, State::_size> col_priors;
 //         double value0;
 //         double value1;
 //     };
@@ -72,8 +70,8 @@ public:
 
 //     MonteCarloWithPolicy<State>::InferenceData &inference(State &state, typename MonteCarloWithPolicy::pair_actions_t &legal_actions)
 //     {
-//         math::power_norm<double, State::_size>(state.strategy0, state.rows, p, last_inference.strategy_prior0);
-//         math::power_norm<double, State::_size>(state.strategy1, state.cols, p, last_inference.strategy_prior1);
+//         math::power_norm<double, State::_size>(state.strategy0, state.rows, p, last_inference.row_priors);
+//         math::power_norm<double, State::_size>(state.strategy1, state.cols, p, last_inference.col_priors);
 //         rollout(state);
 //         last_inference.value0 = state.payoff0;
 //         last_inference.value1 = state.payoff1;

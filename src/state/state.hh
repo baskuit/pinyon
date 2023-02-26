@@ -41,7 +41,7 @@ public:
 
     double row_payoff;
     double col_payoff;
-    bool terminal = false;
+    bool is_terminal = false;
     // We break from the old convention of using rows * cols = 0 iff terminal.
     // This is because we'd like Surskit to better handle situations where
     // we may not have complete knowledge of our a given player's actions.
