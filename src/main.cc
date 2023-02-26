@@ -5,7 +5,7 @@
 #include "state/test_states.hh"
 #include "model/monte_carlo.hh"
 #include "search/exp3p.hh"
-// #include "tree/node.hh"
+#include "tree/node.hh"
 // #include "search/matrix_ucb.hh"
 
 /*
@@ -21,14 +21,18 @@ int main()
     MoldState state(3);
     prng device(0);
     MonteCarlo model(device);
-    auto state_ = state;
-    state_.get_player_actions();
-    model.inference(state_);
 
+    std::cout << "is_terminal: " << state.is_terminal << std::endl;
+    std::cout << "depth: " << state.depth << std::endl;
+
+    MatrixNode<Exp3p> root;
     Exp3p session(device);
+    session.run(
+        5,
+        state,
+        model,
+        root
+    );
 
-    
-
-
-
+    std::cout << "root count: " << root.count() << std::endl;
 }
