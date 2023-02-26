@@ -28,8 +28,8 @@ public:
             MonteCarlo::inference_data.col_priors[col_idx] = 1 / (double)state.pair_actions.cols;
         }
         this->rollout(state);
-        MonteCarlo::inference_data.value0 = state.row_payoff;
-        MonteCarlo::inference_data.value1 = state.col_payoff;
+        MonteCarlo::inference_data.row_value = state.row_payoff;
+        MonteCarlo::inference_data.col_value = state.col_payoff;
     };
 
     void rollout(State &state)

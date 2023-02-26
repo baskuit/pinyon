@@ -4,7 +4,7 @@ template <typename _Model>
 class Algorithm
 {
 public:
-    using State = _Model;
+    using State = typename _Model::State;
     using PlayerAction = typename _Model::PlayerAction;
     using ChanceAction = typename _Model::ChanceAction;
     using Number = typename _Model::Number;
