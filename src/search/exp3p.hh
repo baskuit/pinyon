@@ -10,10 +10,10 @@ public:
     struct MatrixStats : Algorithm<Model>::MatrixStats
     {
         int t = 0;
-        std::array<double, Exp3p::state_t::_size> gains0 = {0};
-        std::array<double, Exp3p::state_t::_size> gains1 = {0};
-        std::array<int, Exp3p::state_t::_size> visits0 = {0};
-        std::array<int, Exp3p::state_t::_size> visits1 = {0};
+        typename Exp3p::VectorDouble row_gains = {0};
+        typename Exp3p::VectorDouble col_gains = {0};
+        typename Exp3p::VectorInt row_visits = {0};
+        typename Exp3p::VectorInt col_visits = {0};
 
         int visits = 0;
         double cumulative_value0 = 0;
@@ -25,22 +25,27 @@ public:
         int visits = 0;
         double cumulative_value0 = 0;
         double cumulative_value1 = 0;
-        double get_expected_value0() { return visits > 0 ? cumulative_value0 / visits : .5; }
-        double get_expected_value1() { return visits > 0 ? cumulative_value1 / visits : .5; }
     };
+
+    struct SearchParameters : Algorithm<Model>::SearchParameters
+    {
+        int playouts = 1;
+    };
+
+    Exp3p::SearchParameters search_parameters;
 
     prng &device;
 
     // Working memory
-    std::array<double, Exp3p::state_t::_size> forecast0;
-    std::array<double, Exp3p::state_t::_size> forecast1;
+    typename Exp3p::VectorDouble forecast0;
+    typename Exp3p::VectorDouble forecast1;
 
     Exp3p(prng &device) : device(device) {}
 
-    void search(
+    void run(
         int playouts,
-        typename Exp3p::state_t &state,
-        typename Exp3p::model_t &model,
+        typename Exp3p::State &state,
+        typename Exp3p::Model &model,
         MatrixNode<Exp3p> &root)
     {
         root.stats.t = playouts;
@@ -50,21 +55,21 @@ public:
             runPlayout(state_, model, &root);
         }
         std::cout << "Exp3p root visits" << std::endl;
-        std::cout << "p0: " << root.stats.visits0[0] << ' ' << root.stats.visits0[1] << std::endl;
-        std::cout << "p1: " << root.stats.visits1[0] << ' ' << root.stats.visits1[1] << std::endl;
+        std::cout << "p0: " << root.stats.row_visits[0] << ' ' << root.stats.row_visits[1] << std::endl;
+        std::cout << "p1: " << root.stats.col_visits[0] << ' ' << root.stats.col_visits[1] << std::endl;
         std::cout << "Exp3p root matrix" << std::endl;
         get_matrix(&root).print();
 
-        std::array<double, Exp3p::state_t::_size> strategy0;
-        std::array<double, Exp3p::state_t::_size> strategy1;
+        typename Exp3p::VectorDouble strategy0;
+        typename Exp3p::VectorDouble strategy1;
 
         std::cout << "strategies" << std::endl;
-        math::power_norm<int, double, Exp3p::state_t::_size>(root.stats.visits0, root.legal_actions.rows, 1, strategy0);
+        math::power_norm<Exp3p::VectorDouble>(root.stats.row_visits, root.legal_actions.rows, 1, strategy0);
         for (int i = 0; i < root.legal_actions.rows; ++i) {
             std::cout << strategy0[i] << ' ';   
         }        
         std::cout << std::endl;
-        math::power_norm<int, double, Exp3p::state_t::_size>(root.stats.visits1, root.legal_actions.cols, 1, strategy1);
+        math::power_norm<int, double, Exp3p::State::_size>(root.stats.col_visits, root.legal_actions.cols, 1, strategy1);
         for (int j = 0; j < root.legal_actions.cols; ++j) {
             std::cout << strategy1[j] << ' ';            
         }
@@ -73,7 +78,7 @@ public:
 
 private:
     void expand(
-        typename Exp3p::state_t &state,
+        typename Exp3p::State &state,
         Model model,
         MatrixNode<Exp3p> *matrix_node)
     {
@@ -107,7 +112,7 @@ private:
     }
 
     MatrixNode<Exp3p> *runPlayout(
-        typename Exp3p::state_t &state,
+        typename Exp3p::State &state,
         Model &model,
         MatrixNode<Exp3p> *matrix_node)
     {
@@ -121,8 +126,8 @@ private:
             if (matrix_node->is_expanded == true)
             {
                 forecast(matrix_node);
-                int row_idx = device.sample_pdf<double, Exp3p::state_t::_size>(forecast0, matrix_node->legal_actions.rows);
-                int col_idx = device.sample_pdf<double, Exp3p::state_t::_size>(forecast1, matrix_node->legal_actions.cols);
+                int row_idx = device.sample_pdf<double, Exp3p::State::_size>(forecast0, matrix_node->legal_actions.rows);
+                int col_idx = device.sample_pdf<double, Exp3p::State::_size>(forecast1, matrix_node->legal_actions.cols);
                 double inverse_prob0 = 1 / forecast0[row_idx];
                 double inverse_prob1 = 1 / forecast1[col_idx]; // Forecast is altered by subsequent search calls
 
@@ -136,8 +141,8 @@ private:
 
                 double u0 = matrix_node_leaf->inference.value0;
                 double u1 = matrix_node_leaf->inference.value1;
-                matrix_node->stats.gains0[row_idx] += u0 * inverse_prob0;
-                matrix_node->stats.gains1[col_idx] += u1 * inverse_prob1;
+                matrix_node->stats.row_gains[row_idx] += u0 * inverse_prob0;
+                matrix_node->stats.col_gains[col_idx] += u1 * inverse_prob1;
                 update(matrix_node, u0, u1, row_idx, col_idx);
                 update(chance_node, u0, u1);
                 return matrix_node_leaf;
@@ -150,9 +155,9 @@ private:
         }
     };
 
-    Linear::Bimatrix2D<double, Exp3p::state_t::_size> get_matrix(MatrixNode<Exp3p> *matrix_node)
+    Linear::Bimatrix2D<double, Exp3p::State::_size> get_matrix(MatrixNode<Exp3p> *matrix_node)
     {
-        Linear::Bimatrix2D<double, Exp3p::state_t::_size> M(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
+        Linear::Bimatrix2D<double, Exp3p::State::_size> M(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
         for (int i = 0; i < M.rows; ++i)
         {
             for (int j = 0; j < M.cols; ++j)
@@ -175,7 +180,7 @@ private:
 
 private:
     // Softmax and uniform noise
-    void softmax(std::array<double, Exp3p::state_t::_size> &forecast, std::array<double, Exp3p::state_t::_size> &gains, int k, double eta)
+    void softmax(typename Exp3p::VectorDouble &forecast, typename Exp3p::VectorDouble &gains, int k, double eta)
     {
         double max = 0;
         for (int i = 0; i < k; ++i)
@@ -215,7 +220,7 @@ private:
             const double eta = .95 * sqrt(log(rows) / (time * rows));
             const double gamma_ = 1.05 * sqrt(rows * log(rows) / time);
             const double gamma = gamma_ < 1 ? gamma_ : 1;
-            softmax(forecast0, matrix_node->stats.gains0, rows, eta);
+            softmax(forecast0, matrix_node->stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
                 double x = (1 - gamma) * forecast0[row_idx] + (gamma)*matrix_node->inference.strategy_prior0[row_idx];
@@ -231,7 +236,7 @@ private:
             const double eta = .95 * sqrt(log(cols) / (time * cols));
             const double gamma_ = 1.05 * sqrt(cols * log(cols) / time);
             const double gamma = gamma_ < 1 ? gamma_ : 1;
-            softmax(forecast1, matrix_node->stats.gains1, cols, eta);
+            softmax(forecast1, matrix_node->stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
                 double x = (1 - gamma) * forecast1[col_idx] + (gamma)*matrix_node->inference.strategy_prior1[col_idx];
@@ -245,8 +250,8 @@ private:
         matrix_node->stats.cumulative_value0 += u0;
         matrix_node->stats.cumulative_value1 += u1;
         matrix_node->stats.visits += 1;
-        matrix_node->stats.visits0[row_idx] += 1;
-        matrix_node->stats.visits1[col_idx] += 1;
+        matrix_node->stats.row_visits[row_idx] += 1;
+        matrix_node->stats.col_visits[col_idx] += 1;
     }
 
     void update(ChanceNode<Exp3p> *chance_node, double u0, double u1)
