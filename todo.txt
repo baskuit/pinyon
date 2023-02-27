@@ -1,0 +1,18 @@
+Things to do for rewrite:
+
+Make sure Exp3p works correctly before doing anything else.
+Check:
+    Node Counts
+    Root strategies for ToyStates
+    Really look at that shit dog
+    You moved the inverse_probs thing which actually breaks it (since the playout(matrix_node_next) call mutates forecasts)
+    You also forgot the beta term this whole time. Compare with beta to without
+
+Learn:
+    It seems the presense of constructors and copy constructors really made a difference when all that State shit was happening.
+    Mostly it was that deleted apply_actions call (lmao), but you should somehow devise other tests
+
+Then move on to matrix ucb and then the bandit style search_parameters
+
+Consider making both Exp3p, MatrixUCB derived classes of this new one
+There was one other instance of making something a derived but I don't remember what it was

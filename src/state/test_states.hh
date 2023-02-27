@@ -39,3 +39,30 @@ public:
         MoldState::transition_data.chance_action = 0;
     }   
 };
+
+class PennyMatching : public StateArray<2, int, int, double> {
+public:
+    void get_player_actions () {
+        this->pair_actions.rows = 0;
+        this->pair_actions.cols = 0;
+        for (int i = 0; i < 2; ++i) {
+            this->pair_actions.row_actions[i] = i;
+            this->pair_actions.col_actions[i] = i;
+        }
+    }
+    void apply_actions (
+        typename PennyMatching::PlayerAction row_action,
+        typename PennyMatching::PlayerAction col_action
+    ) {
+        this->transition_data.probability = 1.0;
+        this->transition_data.chance_action = 0;
+        this->is_terminal = true;
+        if (row_action == col_action) {
+            this->row_payoff = 1.0;
+            this->col_payoff = 0.0;
+        } else {
+            this->row_payoff = 0.0;
+            this->col_payoff = 1.0;         
+        }
+    }
+};

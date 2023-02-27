@@ -63,47 +63,25 @@ public:
         // std::cout << "Exp3p root matrix" << std::endl;
         // get_matrix(&root).print();
 
-        // typename Exp3p::VectorDouble strategy0;
-        // typename Exp3p::VectorDouble strategy1;
+        typename Exp3p::VectorDouble root_row_strategy;
+        typename Exp3p::VectorDouble root_col_strategy;
 
-        // std::cout << "strategies" << std::endl;
-        // math::power_norm<Exp3p::VectorDouble>(root.stats.row_visits, root.pair_actions.rows, 1, strategy0);
-        // for (int i = 0; i < root.pair_actions.rows; ++i)
-        // {
-        //     std::cout << strategy0[i] << ' ';
-        // }
-        // std::cout << std::endl;
-        // math::power_norm<int, double, Exp3p::State::_size>(root.stats.col_visits, root.pair_actions.cols, 1, strategy1);
-        // for (int j = 0; j < root.pair_actions.cols; ++j)
-        // {
-        //     std::cout << strategy1[j] << ' ';
-        // }
-        // std::cout << std::endl;
+        std::cout << "Exp3p root strategies:" << std::endl;
+        math::power_norm<typename Exp3p::VectorInt, typename Exp3p::VectorDouble>
+            (root.stats.row_visits, root.pair_actions.rows, 1, root_row_strategy);
+        for (int i = 0; i < root.pair_actions.rows; ++i)
+        {
+            std::cout << root_row_strategy[i] << ' ';
+        }
+        std::cout << std::endl;
+        math::power_norm<typename Exp3p::VectorInt, typename Exp3p::VectorDouble>
+            (root.stats.col_visits, root.pair_actions.cols, 1, root_col_strategy);
+        for (int j = 0; j < root.pair_actions.cols; ++j)
+        {
+            std::cout << root_col_strategy[j] << ' ';
+        }
+        std::cout << std::endl;
     }
-
-    // Linear::Bimatrix2D<double, Exp3p::State::_size> get_matrix(MatrixNode<Exp3p> *matrix_node)
-    // {
-    //     Linear::Bimatrix2D<double, Exp3p::State::_size> M(matrix_node->pair_actions.rows, matrix_node->pair_actions.cols);
-    //     for (int i = 0; i < M.rows; ++i)
-    //     {
-    //         for (int j = 0; j < M.cols; ++j)
-    //         {
-    //             M.set0(i, j, .5);
-    //             M.set1(i, j, .5);
-    //         }        state.get_player_actions();
-
-    //     }
-
-    //     // cur iterates through all chance node children
-    //     ChanceNode<Exp3p> *cur = matrix_node->child;
-    //     while (cur != nullptr)
-    //     {
-    //         M.set0(cur->row_idx, cur->col_idx, cur->stats.get_expected_value0());
-    //         M.set1(cur->row_idx, cur->col_idx, cur->stats.get_expected_value1());
-    //         cur = cur->next;
-    //     }
-    //     return M;
-    // }
 
 private:
     MatrixNode<Exp3p> *playout(
@@ -126,6 +104,8 @@ private:
                 this->forecast(matrix_node);
                 int row_idx = device.sample_pdf<typename Exp3p::VectorDouble>(this->row_forecast, matrix_node->pair_actions.rows);
                 int col_idx = device.sample_pdf<typename Exp3p::VectorDouble>(this->col_forecast, matrix_node->pair_actions.cols);
+                double row_inverse_prob = 1 / this->row_forecast[row_idx];
+                double col_inverse_prob = 1 / this->col_forecast[col_idx];
                 typename Exp3p::PlayerAction row_action = matrix_node->pair_actions.row_actions[row_idx];
                 typename Exp3p::PlayerAction col_action = matrix_node->pair_actions.col_actions[col_idx];
                 state.apply_actions(row_action, col_action);
@@ -136,8 +116,7 @@ private:
 
                 double row_payoff = matrix_node_leaf->inference_data.row_value;
                 double col_payoff = matrix_node_leaf->inference_data.col_value;
-                double row_inverse_prob = 1 / this->row_forecast[row_idx];
-                double col_inverse_prob = 1 / this->col_forecast[col_idx];
+
 
                 this->update_matrix_node(
                     matrix_node,

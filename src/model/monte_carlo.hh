@@ -40,9 +40,9 @@ public:
         {
             int row_idx = this->device.random_int(state.pair_actions.rows);
             int col_idx = this->device.random_int(state.pair_actions.cols);
-            typename MonteCarlo::PlayerAction action0 = state.pair_actions.row_actions[row_idx];
-            typename MonteCarlo::PlayerAction action1 = state.pair_actions.col_actions[col_idx];
-            state.apply_actions(action0, action1);
+            typename MonteCarlo::PlayerAction row_action = state.pair_actions.row_actions[row_idx];
+            typename MonteCarlo::PlayerAction col_action = state.pair_actions.col_actions[col_idx];
+            state.apply_actions(row_action, col_action);
             state.get_player_actions();
         }
     }
@@ -85,9 +85,9 @@ public:
 //         {
 //             int row_idx = this->device.random_int(legal_actions.rows);
 //             int col_idx = this->device.random_int(legal_actions.cols);
-//             typename MonteCarloWithPolicy::action_t action0 = legal_actions.actions0[row_idx];
-//             typename MonteCarloWithPolicy::action_t action1 = legal_actions.actions1[col_idx];
-//             state.apply_actions(action0, action1);
+//             typename MonteCarloWithPolicy::action_t row_action = legal_actions.actions0[row_idx];
+//             typename MonteCarloWithPolicy::action_t col_action = legal_actions.actions1[col_idx];
+//             state.apply_actions(row_action, col_action);
 //             state.get_legal_actions(legal_actions);
 //         }
 //     }

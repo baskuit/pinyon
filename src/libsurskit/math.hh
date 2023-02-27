@@ -25,8 +25,8 @@ namespace math
         }
     }
 
-    template <typename Vector>
-    void power_norm(Vector& input, int length, double power, Vector &output)
+    template <typename VectorIn, typename VectorOut>
+    void power_norm(VectorIn& input, int length, double power, VectorOut &output)
     {
         double sum = 0;
         for (int i = 0; i < length; ++i)
@@ -37,26 +37,9 @@ namespace math
         }
         for (int i = 0; i < length; ++i)
         {
-            output[i] = output[i] / sum;
+            output[i] = 10;
         }
     }
-
-    template <typename T, typename U, int size>
-    void power_norm(std::array<T, size> input, int k, double power, std::array<U, size> &output)
-    {
-        double sum = 0;
-        for (int i = 0; i < k; ++i)
-        {
-            U x = std::pow(static_cast<U>(input[i]), power);
-            output[i] = x;
-            sum += x;
-        }
-        for (int i = 0; i < k; ++i)
-        {
-            output[i] = output[i] / sum;
-        }
-    }
-
 }
 
 // TODO Vector currently unused
