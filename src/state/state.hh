@@ -1,95 +1,121 @@
 #pragma once
 
-#include <string.h>
-
 #include "../libsurskit/math.hh"
 
+#include <concepts>
 
-template <typename _PlayerAction, typename _ChanceAction, typename _Number,
-          typename _VectorDouble, typename _VectorInt, typename _VectorAction>
-class State
+class AbstractState
 {
 public:
-    using PlayerAction = _PlayerAction;
-    using ChanceAction = _ChanceAction;
-    using Number = _Number;
-    using VectorDouble = _VectorDouble;
-    using VectorInt = _VectorInt;
-    using VectorAction = _VectorAction;
-
-    struct TransitionData
+    struct Transition
     {
-        // TransitionData () {}
-        // TransitionData (TransitionData &t) {}
-        ChanceAction chance_action;
-        Number probability;
     };
-
-    TransitionData transition_data;
-    // If we want TransitionData, PairActions to be nested classes,
-    // then we can't make apply_actions, get_player_actions virtual
-    // while still passing references to the output, since arguments are not covariate
-    // Rather than resort to outputing these by value, we opt to just store these as members.
-
-    struct PairActions
+    struct Actions
     {
-        // PairActions () {}
-        // PairActions (PairActions &t) {}
-        int rows;
-        int cols;
-        VectorAction row_actions;
-        VectorAction col_actions;
     };
-
-    PairActions pair_actions;
-
-    double row_payoff;
-    double col_payoff;
-    bool is_terminal = false;
-    // We break from the old convention of using rows * cols = 0 iff terminal.
-    // This is because we'd like Surskit to better handle situations where
-    // we may not have complete knowledge of our a given player's actions.
-
-    // State () {}
-    // State (State &t) {}
-
-    virtual void get_player_actions() = 0;
-    virtual void apply_actions(
-        PlayerAction row_action, 
-        PlayerAction col_action
-    ) = 0;
-    // TransitionData get_player_actions() = 0;
 };
 
-template <int size, typename _PlayerAction, typename _ChanceAction, typename _Probability>
+class PartiallyObservableStochastic : public AbstractState
+{
+};
+
+template <
+    typename _Action,
+    typename _Observation,
+    typename _Probability,
+    typename _Real,
+    typename _VectorAction,
+    typename _VectorReal,
+    typename _VectorInt>
+// Template type correctness
+// requires std::floating_point<_Real>
+
+class State : public PartiallyObservableStochastic
+{
+public:
+    struct Transition;
+    struct Actions;
+    struct Types
+    {
+        using Action = _Action;
+        using Observation = _Observation;
+        using Probability = _Probability;
+        using Real = _Real;
+        using VectorAction = _VectorAction;
+        using VectorReal = _VectorReal;
+        using VectorInt = _VectorInt;
+        using Transition = State::Transition;
+        using Actions = State::Actions;
+    };
+
+    bool is_terminal = false;
+    bool opaque = false;
+    bool blind = false;
+
+    typename Types::Real row_payoff, col_payoff;
+
+    struct Transition : PartiallyObservableStochastic::Transition
+    {
+        typename Types::Observation obs;
+        typename Types::Probability prob;
+    };
+    Transition transition;
+
+    struct Actions : PartiallyObservableStochastic::Actions
+    {
+        typename Types::VectorAction row_actions;
+        typename Types::VectorAction col_actions;
+        int rows;
+        int cols;
+    };
+    Actions actions;
+
+    /*
+    See readme about generallity of States.
+    */
+
+    void get_actions();
+    void apply_actions(
+        typename Types::Action row_action,
+        typename Types::Action col_action);
+};
+
+/*
+Derived class of AbstractState most likely to see use.
+*/
+
+template <int size, typename _Action, typename _Observation, typename _Probability>
 class StateArray : public State<
-                       _PlayerAction,
-                       _ChanceAction,
+                       _Action,
+                       _Observation,
                        _Probability,
+                       double,
                        std::array<double, size>,
                        std::array<int, size>,
-                       std::array<_PlayerAction, size>>
+                       std::array<_Action, size>>
 {
 };
 
 /*
-This derived class represents states that accept input for the chance player.
-The convention by which derived classes in Surskit access type names is displayed here
- `typename Derived::TypeName`
-This gives us access to lower level types (State < Model < Algorithm < Node)
-while sparing us the use of template arguments, which using the Base class would require.
+This represents states that accept input for the chance player.
 */
 
-template <typename _PlayerAction, typename _ChanceAction, typename _Number,
-          typename _VectorDouble, typename _VectorInt, typename _VectorAction>
-class StateChance : public State< _PlayerAction,  _ChanceAction,  _Number,
-           _VectorDouble,  _VectorInt,  _VectorAction>
+template <
+    typename _Action,
+    typename _Observation,
+    typename _Probablity,
+    typename _Real,
+    typename _VectorReal,
+    typename _VectorInt,
+    typename _VectorAction>
+class StateChance : public State<_Action, _Observation, _Probablity, _Real, _VectorReal, _VectorInt, _VectorAction>
 {
 public:
-    virtual void apply_actions (
-        typename StateChance::PlayerAction row_action,
-        typename StateChance::PlayerAction col_action,
-        typename StateChance::ChanceAction chance_action,
-        typename StateChance::TransitionData &transition_data
-    ) = 0;
+    struct Types : State<_Action, _Observation, _Probablity, _Real, _VectorReal, _VectorInt, _VectorAction>
+    {
+    };
+    void apply_actions(
+        typename Types::Action row_action,
+        typename Types::Action col_action,
+        typename Types::Observation chance_action);
 };
