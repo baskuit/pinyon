@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(surskit VERSION 0.1.0)
 
+
 set(GAMBIT_SOURCES
     gambit/src/core/dvector.cc
     gambit/src/core/function.cc
@@ -66,4 +67,5 @@ add_executable(rewrite src/main.cc)
 # add_executable(random_trees random_trees/random_trees.cc)
 
 target_link_libraries(rewrite gambit)
+set_property(TARGET rewrite PROPERTY CXX_STANDARD 20)  
 # target_link_libraries(random_trees gambit)
