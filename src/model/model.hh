@@ -2,29 +2,49 @@
 
 #include "../state/state.hh"
 
-template <typename _State>
-class Model
+class AbstractModel
 {
 public:
-    using State = _State;
-    using PlayerAction = typename _State::PlayerAction;
-    using ChanceAction = typename _State::ChanceAction;
-    using Number = typename _State::Number;
-    using VectorDouble = typename _State::VectorDouble;
-    using VectorInt = typename _State::VectorInt;
-    using VectorAction = typename _State::VectorAction;
-    using TransitionData = typename _State::TransitionData;
-    using PairActions = typename _State::PairActions;
-
-    struct InferenceData
+    struct Inference
     {
-        double row_value = .5;
-        double col_value = .5;
+    };
+};
+
+template <class State>
+// requires std::derived_from<State, AbstractState>;
+class PolicyValueModel : public AbstractModel
+{
+public:
+    struct Inference;
+    struct Types : public State::Types
+    {
+        using Inference = PolicyValueModel::Inference;
     };
 
-    InferenceData inference_data;
+    struct Inference
+    {
+        typename Types::Real value;
+        typename Types::VectorReal policy;
+    };
 
-    Model () {}
+    void get_inference(typename Types::Inference &inference);
+};
 
-    virtual void inference(State &state) = 0;
+template <class State>
+// requires std::derived_from<State, AbstractState>;
+class MonteCarloModel : public PolicyValueModel<State>
+{
+public:
+    struct Types : PolicyValueModel<State>::Types
+    {
+    };
+
+    void get_inference(
+        State state,
+        typename Types::Inference &inference)
+    {
+        while (!state.terminal) {
+            // TODO
+        }
+    }
 };

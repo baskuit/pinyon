@@ -1,4 +1,6 @@
 #include "state/test_states.hh"
+#include "model/model.hh"
+
 #include <iostream>
 
 int main()
