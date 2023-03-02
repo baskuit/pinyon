@@ -1,1 +1,1 @@
-TODO: Make the same changes you made in the single threaded versions.
+TODO: Make generic bandit tree search with multithreaded(pool) implementations

@@ -4,46 +4,58 @@
 
 #include <concepts>
 
+struct _AbstractTypeList {
+
+};
+
+// _Name so that the Type name does not shadow the template 
+template <typename _Action,
+          typename _Observation,
+          typename _Probability,
+          typename _Real,
+          typename _VectorAction,
+          typename _VectorReal,
+          typename _VectorInt>
+// requires std::floating_point<_Real>
+// requires actions be printable
+struct TypeList
+{
+    using Action = _Action;
+    using Observation = _Observation;
+    using Probability = _Probability;
+    using Real = _Real;
+    using VectorAction = _VectorAction;
+    using VectorReal = _VectorReal;
+    using VectorInt = _VectorInt;
+};
+
+class _AbstractState {};
+template <class _TypeList> // weird name when jumping levels
 class AbstractState
 {
+static_assert(std::derived_from<_TypeList, _AbstractTypeList> == true);
 public:
-    struct Transition
+    struct Types : _TypeList // AbstractUpper<ConcreteLower>'s job to introduce ConcreteLower's types
     {
+        using TypeList = _TypeList;
     };
-    struct Actions
-    {
-    };
+    struct Transition;
+    struct Actions;
 };
 
-class PartiallyObservableStochastic : public AbstractState
+/*
+Default State
+*/
+class _State : public _AbstractState {};
+template <class TypeList>
+class State : public _State
 {
-};
-
-template <
-    typename _Action,
-    typename _Observation,
-    typename _Probability,
-    typename _Real,
-    typename _VectorAction,
-    typename _VectorReal,
-    typename _VectorInt>
-// Template type correctness
-// requires std::floating_point<_Real>
-
-class State : public PartiallyObservableStochastic
-{
+static_assert(std::derived_from<TypeList, _AbstractTypeList> == true);
 public:
     struct Transition;
     struct Actions;
-    struct Types
+    struct Types : AbstractState<TypeList>::Types
     {
-        using Action = _Action;
-        using Observation = _Observation;
-        using Probability = _Probability;
-        using Real = _Real;
-        using VectorAction = _VectorAction;
-        using VectorReal = _VectorReal;
-        using VectorInt = _VectorInt;
         using Transition = State::Transition;
         using Actions = State::Actions;
     };
@@ -54,25 +66,37 @@ public:
 
     typename Types::Real row_payoff, col_payoff;
 
-    struct Transition : PartiallyObservableStochastic::Transition
+    struct Transition : AbstractState<TypeList>::Transition
     {
         typename Types::Observation obs;
         typename Types::Probability prob;
     };
     Transition transition;
 
-    struct Actions : PartiallyObservableStochastic::Actions
+    struct Actions : AbstractState<TypeList>::Actions
     {
         typename Types::VectorAction row_actions;
         typename Types::VectorAction col_actions;
         int rows;
         int cols;
+
+        void print()
+        {
+            std::cout << "row_actions: ";
+            for (int i = 0; i < rows; ++i)
+            {
+                std::cout << row_actions[i] << ", ";
+            }
+            std::cout << std::endl;
+            std::cout << "col_actions: ";
+            for (int j = 0; j < cols; ++j)
+            {
+                std::cout << col_actions[j] << ", ";
+            }
+            std::cout << std::endl;
+        }
     };
     Actions actions;
-
-    /*
-    See readme about generallity of States.
-    */
 
     void get_actions();
     void apply_actions(
@@ -80,42 +104,36 @@ public:
         typename Types::Action col_action);
 };
 
-/*
-Derived class of AbstractState most likely to see use.
-*/
-
-template <int size, typename _Action, typename _Observation, typename _Probability>
-class StateArray : public State<
-                       _Action,
-                       _Observation,
-                       _Probability,
-                       double,
-                       std::array<double, size>,
-                       std::array<int, size>,
-                       std::array<_Action, size>>
-{
-};
+template <int size, typename Action, typename Observation, typename Probability>
+using StateArray = State<TypeList<Action, Observation, Probability, double, std::array<Action, size>, std::array<double, size>, std::array<int, size>>>;
 
 /*
 This represents states that accept input for the chance player.
 */
-
-template <
-    typename _Action,
-    typename _Observation,
-    typename _Probablity,
-    typename _Real,
-    typename _VectorReal,
-    typename _VectorInt,
-    typename _VectorAction>
-class StateChance : public State<_Action, _Observation, _Probablity, _Real, _VectorReal, _VectorInt, _VectorAction>
+class _StateChance : _State {};
+template <class TypeList>
+class StateChance : public State<TypeList>
 {
+static_assert(std::derived_from<TypeList, _AbstractTypeList> == true);
+
 public:
-    struct Types : State<_Action, _Observation, _Probablity, _Real, _VectorReal, _VectorInt, _VectorAction>
+    struct Types : State<TypeList>::Types
     {
     };
     void apply_actions(
         typename Types::Action row_action,
         typename Types::Action col_action,
         typename Types::Observation chance_action);
+};
+
+template <class TypeList>
+// requires std::derived_from<State, AbstractState<TypeList>>
+class SolvedState : public State<TypeList>
+{
+static_assert(std::derived_from<TypeList, _AbstractTypeList> == true);
+public:
+    struct Types : State<TypeList>::Types
+    {
+    };
+    typename Types::VectorReal row_strategy, col_strategy;
 };

@@ -38,20 +38,20 @@ public:
     }
 
     void apply_actions(
-        typename MoldState::PlayerAction row_action,
-        typename MoldState::PlayerAction col_action)
+        typename Types::Action row_action,
+        typename Types::Action col_action)
     {
-        --this->depth;
-        MoldState::transition_data.prob = true;
         // For deterministic and unknown prob states, we can be cheeky and use true/false for transtion probs
-        MoldState::transition_data.obs = 0;
+        MoldState::transition.prob = true;
+        MoldState::transition.obs = 0;
+        --this->depth;
     }
 };
 
 class PennyMatching : public StateArray<2, int, int, bool>
 {
 public:
-    struct Types : StateArray<2, int, int, double>::Types
+    struct Types : StateArray<2, int, int, bool>::Types
     {
     };
     // Let's try using the surskit design pattern.
