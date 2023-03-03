@@ -3,7 +3,9 @@
 #include "../libsurskit/math.hh"
 
 #include <concepts>
-struct AbstractTypeList {};
+struct AbstractTypeList
+{
+};
 // _Name so that the Type name does not shadow the template
 template <typename _Action,
           typename _Observation,
@@ -33,8 +35,12 @@ public:
     {
         using TypeList = _TypeList;
     };
-    struct Transition {};
-    struct Actions {};
+    struct Transition
+    {
+    };
+    struct Actions
+    {
+    };
 };
 
 /*
@@ -43,7 +49,8 @@ Default State
 template <class TypeList>
 class State : public AbstractState<TypeList>
 {
-static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
+    static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
+
 public:
     struct Transition;
     struct Actions;
@@ -106,7 +113,8 @@ This represents states that accept input for the chance player.
 template <class TypeList>
 class StateChance : public State<TypeList>
 {
-static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
+    static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
+
 public:
     struct Types : State<TypeList>::Types
     {
@@ -120,7 +128,8 @@ public:
 template <class TypeList>
 class SolvedState : public State<TypeList>
 {
-static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
+    static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
+
 public:
     struct Types : State<TypeList>::Types
     {
