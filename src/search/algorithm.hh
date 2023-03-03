@@ -63,10 +63,9 @@ public:
 template <class Algorithm>
 class TreeBandit : public Algorithm
 {
-    // static_assert(std::derived_from<Algorithm, BanditAlgorithm<typename Algorithm::Types::Model>> == true);
+    static_assert(std::derived_from<Algorithm, BanditAlgorithm<typename Algorithm::Types::Model>>);
 
 public:
-    // struct MatrixStats;
     struct Types : Algorithm::Types
     {
     };

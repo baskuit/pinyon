@@ -2,7 +2,7 @@
 #include "state/test_states.hh"
 #include "model/model.hh"
 #include "search/algorithm.hh"
-#include "search/e.hh"
+#include "search/exp3p.hh"
 
 #include <iostream>
 #include "tree/node.hh"
