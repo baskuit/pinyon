@@ -8,7 +8,16 @@
 #include "tree/node.hh"
 
 template <int size>
-using SimpleTypes = TypeList<int, int, double, double, std::array<int, size>, std::array<double, size>, std::array<int, size>>;
+using SimpleTypes = TypeList<
+    int, 
+    int, 
+    double, 
+    double, 
+    std::array<int, size>, 
+    std::array<double, size>, 
+    std::array<int, size>,
+    Linear::Matrix<double, size>,
+    Linear::Matrix<int, size>>;
 
 int main()
 {
@@ -29,13 +38,13 @@ int main()
     TreeBandit will derive to TreeBanditMultiThreaded(Pool) so we want to accept Algorithm as template param
     */
 
-
-
     TreeBandit session(device);
 
+    // Linear::Matrix<double, 5> x(1, 3, 3);
+    // (x*x).print();
     
     session.run(
-        100000, game, model, root
+        1000000, game, model, root
     );
 
     math::print(root.stats.row_visits, 2);

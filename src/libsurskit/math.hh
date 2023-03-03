@@ -35,7 +35,50 @@ namespace math
     }
 }
 
-// // TODO Vector currently unused
+namespace Linear
+{
+
+template <typename T, int size>
+class Matrix {
+public:
+    std::array<std::array<T, size>, size> data;
+    int rows, cols;
+    Matrix(int rows, int cols) : rows(rows), cols(cols) {}
+    Matrix(T x, int rows, int cols) : data(), rows(rows), cols(cols) {
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                data[i][j] = x;
+            }
+        }        
+    }
+
+    void print () {
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                std::cout << data[i][j] << ", ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    Matrix operator* (Matrix N) {
+        const Matrix& M = *this;
+        assert(M.cols == N.rows);
+        Matrix output(0, M.rows, N.cols);
+        for (int i = 0; i < output.rows; ++i) {
+            for (int j = 0; j < output.cols; ++j) {
+                for (int k = 0; k < M.cols; ++k) {
+                    output.data[i][j] += M.data[i][k] * N.data[k][j];
+                }
+            }
+            std::cout << std::endl;
+        }
+        return output;
+    }
+};
+
+}
+
 // namespace Linear
 // {
 

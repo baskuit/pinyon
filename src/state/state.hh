@@ -13,7 +13,9 @@ template <typename _Action,
           typename _Real,
           typename _VectorAction,
           typename _VectorReal,
-          typename _VectorInt>
+          typename _VectorInt,
+          typename _MatrixReal,
+          typename _MatrixInt>
 // TODO requires std::floating_point<_Real>
 struct TypeList : AbstractTypeList
 {
@@ -24,6 +26,8 @@ struct TypeList : AbstractTypeList
     using VectorAction = _VectorAction;
     using VectorReal = _VectorReal;
     using VectorInt = _VectorInt;
+    using MatrixReal = _MatrixReal;
+    using MatrixInt = _MatrixInt;
 };
 
 template <class _TypeList>
@@ -49,7 +53,7 @@ Default State
 template <class TypeList>
 class State : public AbstractState<TypeList>
 {
-    static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
+    static_assert(std::derived_from<TypeList, AbstractTypeList>);
 
 public:
     struct Transition;
@@ -103,8 +107,43 @@ public:
 /*
 Handy alias
 */
+// template <int size, typename Action, typename Observation, typename Probability>
+// class StateArray : public State<TypeList<
+//     Action, 
+//     Observation, 
+//     Probability, 
+//     double, 
+//     std::array<Action, size>, 
+//     std::array<double, size>, 
+//     std::array<int, size>, 
+//     Linear::Matrix<double, size>, 
+//     Linear::Matrix<int, size>
+// >> {
+// public:
+//     struct Types : State<TypeList<
+//     Action, 
+//     Observation, 
+//     Probability, 
+//     double, 
+//     std::array<Action, size>, 
+//     std::array<double, size>, 
+//     std::array<int, size>, 
+//     Linear::Matrix<double, size>, 
+//     Linear::Matrix<int, size>>;
+// };
+
 template <int size, typename Action, typename Observation, typename Probability>
-using StateArray = State<TypeList<Action, Observation, Probability, double, std::array<Action, size>, std::array<double, size>, std::array<int, size>>>;
+using StateArray = State<TypeList<
+    Action, 
+    Observation, 
+    Probability, 
+    double, 
+    std::array<Action, size>, 
+    std::array<double, size>, 
+    std::array<int, size>, 
+    Linear::Matrix<double, size>, 
+    Linear::Matrix<int, size>
+>>;
 
 /*
 This represents states that accept input for the chance player.
@@ -113,7 +152,7 @@ This represents states that accept input for the chance player.
 template <class TypeList>
 class StateChance : public State<TypeList>
 {
-    static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
+    static_assert(std::derived_from<TypeList, AbstractTypeList>);
 
 public:
     struct Types : State<TypeList>::Types
@@ -128,7 +167,7 @@ public:
 template <class TypeList>
 class SolvedState : public State<TypeList>
 {
-    static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
+    static_assert(std::derived_from<TypeList, AbstractTypeList>);
 
 public:
     struct Types : State<TypeList>::Types

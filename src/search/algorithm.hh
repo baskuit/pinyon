@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../tree/node.hh"
-
 /*
 This algorithm generalizes the typical "MCTS" pattern found in UCT, PUCT, SM-MCTS(-A), MatrixUCB etc.
 This will also be subclassed for multithreaded implementations.*/
@@ -9,7 +8,7 @@ This will also be subclassed for multithreaded implementations.*/
 template <class _Model>
 class AbstractAlgorithm
 {
-    static_assert(std::derived_from<_Model, DualPolicyValueModel<typename _Model::Types::State>> == true);
+    static_assert(std::derived_from<_Model, DualPolicyValueModel<typename _Model::Types::State>>);
 
 public:
     struct MatrixStats
@@ -29,7 +28,7 @@ public:
 template <class Model>
 class BanditAlgorithm : public AbstractAlgorithm<Model>
 {
-    static_assert(std::derived_from<Model, AbstractModel<typename Model::Types::State>> == true);
+    static_assert(std::derived_from<Model, AbstractModel<typename Model::Types::State>>);
 
 public:
     struct Outcome; // If you don't add to types, you have to typename BanditAlgorithm<Model> in the specification...

@@ -7,7 +7,7 @@
 template <class Model>
 class Exp3p : public BanditAlgorithm<Model>
 {
-    static_assert(std::derived_from<Model, AbstractModel<typename Model::Types::State>> == true);
+    static_assert(std::derived_from<Model, AbstractModel<typename Model::Types::State>>);
 
 public:
     struct MatrixStats;
