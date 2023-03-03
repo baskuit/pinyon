@@ -2,7 +2,6 @@
 
 #include <random>
 #include <array>
-
 /*
 The only behaviour needing explanation is the copy mechanism.
 We don't override the default copy constructor. That preserves the progress of the generator as well as the seed.
@@ -40,19 +39,19 @@ public:
     }
 
     // samples an index from a probability distribution
-    int sample_pdf(double *input, int k)
-    {
-        double p = this->uniform();
-        for (int i = 0; i < k; ++i)
-        {
-            p -= input[i];
-            if (p <= 0)
-            {
-                return i;
-            }
-        }
-        return 0;
-    }
+    // int sample_pdf(double *input, int k)
+    // {
+    //     double p = this->uniform();
+    //     for (int i = 0; i < k; ++i)
+    //     {
+    //         p -= input[i];
+    //         if (p <= 0)
+    //         {
+    //             return i;
+    //         }
+    //     }
+    //     return 0;
+    // }
 
     template <typename Vector>
     int sample_pdf(Vector &input, int k)

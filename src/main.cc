@@ -15,16 +15,16 @@ int main()
     using SimpleTypes = SimpleTypes<4>;
     using State = State<SimpleTypes>;
     using MoldState = MoldState<4>;
-    using Model = MonteCarloModel<PennyMatching>;
-    using BanditAlgorithm = Exp3p<Model>;
-    using TreeBandit = TreeBandit<BanditAlgorithm>;
+    using Model = MonteCarloModel<Sucker>;
+    using Exp3p = Exp3p<Model>;
+    using TreeBandit = TreeBandit<Exp3p>;
 
     // MoldState mold_state(3);
-    PennyMatching game;
-    prng device(0);
+    Sucker game;
+    prng device;
     Model model(device);
 
-    MatrixNode<BanditAlgorithm> root;
+    MatrixNode<Exp3p> root;
     /*
     TreeBandit will derive to TreeBanditMultiThreaded(Pool) so we want to accept Algorithm as template param
     */
@@ -32,11 +32,14 @@ int main()
 
 
     TreeBandit session(device);
+
+    
     session.run(
-        1000000, game, model, root
+        100000, game, model, root
     );
 
     math::print(root.stats.row_visits, 2);
+    math::print(session.row_forecast, 2);
 
     return 0;
 }

@@ -45,19 +45,19 @@ public:
         // Actor policy at row_idx, col_idx.
     };
 
-    static void select(
+    void select(
         MatrixNode<BanditAlgorithm> *matrix_node,
         Outcome &outcome) {}
-    static void expand(
+    void expand(
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> *matrix_node){};
-    static void init_stats(
+    void init_stats(
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> *matrix_node) {}
-    static void update_matrix_node(MatrixNode<BanditAlgorithm> *matrix_node, Outcome &outcome){};
-    static void update_chance_node(ChanceNode<BanditAlgorithm> *chance_node, Outcome &outcome){};
+    void update_matrix_node(MatrixNode<BanditAlgorithm> *matrix_node, Outcome &outcome){};
+    void update_chance_node(ChanceNode<BanditAlgorithm> *chance_node, Outcome &outcome){};
 };
 
 template <class Algorithm>
@@ -70,8 +70,10 @@ public:
     {
     };
 
-    template <typename ...Args>
-    TreeBandit (Args... args) : Algorithm(args...) {}
+    // template <typename ...Args>
+    // TreeBandit (Args... args) : Algorithm(args...) {}
+
+    TreeBandit(prng &device) : Algorithm(device) {}
 
     void run(
         int playouts,
