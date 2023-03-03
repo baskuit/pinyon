@@ -43,14 +43,65 @@ public:
     static void expand(
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Exp3p> *matrix_node){};
+        MatrixNode<Exp3p> *matrix_node)
+    {
+        /*
+        Expand a leaf node, right before we return it.
+        */
+        matrix_node->is_expanded = true;
+        state.get_actions();
+        matrix_node->is_terminal = state.is_terminal;
+        matrix_node->actions = state.actions;
+
+        if (matrix_node->is_terminal)
+        {
+            matrix_node->inference.row_value = state.row_payoff;
+            matrix_node->inference.col_value = state.col_payoff;
+        }
+        else
+        {
+            model.get_inference(state, matrix_node->inference);
+        }
+
+        // // Calculate Exp3p's time parameter using parent's.
+        // ChanceNode<Exp3p> *chance_parent = matrix_node->parent;
+        // if (chance_parent != nullptr)
+        // {
+        //     MatrixNode<Exp3p> *matrix_parent = chance_parent->parent;
+        //     int row_idx = chance_parent->row_idx;
+        //     int col_idx = chance_parent->col_idx;
+        //     double reach_probability = matrix_parent->inference.row_priors[row_idx] * matrix_parent->inference.col_priors[col_idx] * ((double)matrix_node->transition_data.probability);
+        //     int t_estimate = matrix_parent->stats.t * reach_probability;
+        //     t_estimate = t_estimate == 0 ? 1 : t_estimate;
+        //     matrix_node->stats.t = t_estimate;
+        // }
+    };
+    // Done:
     static void init_stats(
+        int playouts,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Exp3p> *matrix_node) {}
+        MatrixNode<Exp3p> *matrix_node)
+    {
+        matrix_node->stats.time = playouts;
+    }
     static void update_matrix_node(
         MatrixNode<Exp3p> *matrix_node,
-        typename Types::Outcome &outcome){};
+        typename Types::Outcome &outcome)
+    {
+        matrix_node->stats.row_value_total += outcome.row_value;
+        matrix_node->stats.col_value_total += outcome.col_value;
+        matrix_node->stats.visits += 1;
+        matrix_node->stats.row_visits[outcome.row_idx] += 1;
+        matrix_node->stats.col_visits[outcome.col_idx] += 1;
+        const double rows = matrix_node->actions.rows;
+        const double cols = matrix_node->actions.cols;
+        const double time = matrix_node->stats.time;
+        const double row_beta = std::sqrt(std::log(rows) / (double)(time * rows));
+        const double col_beta = std::sqrt(std::log(cols) / (double)(time * cols));
+        matrix_node->stats.row_gains[outcome.row_idx] += outcome.row_value / outcome.row_mu + row_beta; // TODO check this lmao
+        matrix_node->stats.col_gains[outcome.col_idx] += outcome.col_value / outcome.col_mu + col_beta;
+    }
     static void update_chance_node(
         ChanceNode<Exp3p> *chance_node,
         typename Types::Outcome &outcome)
@@ -58,7 +109,7 @@ public:
         chance_node->stats.row_value_total += outcome.row_value;
         chance_node->stats.col_value_total += outcome.col_value;
         chance_node->stats.visits += 1;
-    };
+    }
 
 private:
     inline void forecast(
@@ -69,8 +120,8 @@ private:
         The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
         */
         const int time = matrix_node->stats.time;
-        const int rows = matrix_node->pair_actions.rows;
-        const int cols = matrix_node->pair_actions.cols;
+        const int rows = matrix_node->actions.rows;
+        const int cols = matrix_node->actions.cols;
         if (rows == 1)
         {
             this->row_forecast[0] = 1;
@@ -85,7 +136,7 @@ private:
             {
                 this->row_forecast[row_idx] =
                     (1 - gamma) * this->row_forecast[row_idx] +
-                    (gamma)*matrix_node->inference_data.row_priors[row_idx];
+                    (gamma)*matrix_node->inference.row_priors[row_idx];
             }
         }
         if (cols == 1)
@@ -102,7 +153,7 @@ private:
             {
                 this->col_forecast[col_idx] =
                     (1 - gamma) * this->col_forecast[col_idx] +
-                    (gamma)*matrix_node->inference_data.col_priors[col_idx];
+                    (gamma)*matrix_node->inference.col_priors[col_idx];
             }
         }
     }

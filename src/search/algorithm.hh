@@ -98,7 +98,7 @@ public:
         typename Types::Model &model,
         MatrixNode<Algorithm> &matrix_node)
     {
-        Algorithm::init_stats(state, model, &matrix_node);
+        Algorithm::init_stats(playouts, state, model, &matrix_node);
         for (int playout = 0; playout < playouts; ++playout)
         {
             _playout(state, model, &matrix_node);
