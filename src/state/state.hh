@@ -3,12 +3,8 @@
 #include "../libsurskit/math.hh"
 
 #include <concepts>
-
-struct _AbstractTypeList {
-
-};
-
-// _Name so that the Type name does not shadow the template 
+struct AbstractTypeList {};
+// _Name so that the Type name does not shadow the template
 template <typename _Action,
           typename _Observation,
           typename _Probability,
@@ -16,9 +12,8 @@ template <typename _Action,
           typename _VectorAction,
           typename _VectorReal,
           typename _VectorInt>
-// requires std::floating_point<_Real>
-// requires actions be printable
-struct TypeList
+// TODO requires std::floating_point<_Real>
+struct TypeList : AbstractTypeList
 {
     using Action = _Action;
     using Observation = _Observation;
@@ -29,28 +24,26 @@ struct TypeList
     using VectorInt = _VectorInt;
 };
 
-class _AbstractState {};
-template <class _TypeList> // weird name when jumping levels
+template <class _TypeList>
+// underscore when going up a level, since you don't want to shadow template param with Type
 class AbstractState
 {
-static_assert(std::derived_from<_TypeList, _AbstractTypeList> == true);
 public:
-    struct Types : _TypeList // AbstractUpper<ConcreteLower>'s job to introduce ConcreteLower's types
+    struct Types : _TypeList
     {
         using TypeList = _TypeList;
     };
-    struct Transition;
-    struct Actions;
+    struct Transition {};
+    struct Actions {};
 };
 
 /*
 Default State
 */
-class _State : public _AbstractState {};
 template <class TypeList>
-class State : public _State
+class State : public AbstractState<TypeList>
 {
-static_assert(std::derived_from<TypeList, _AbstractTypeList> == true);
+static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
 public:
     struct Transition;
     struct Actions;
@@ -61,9 +54,6 @@ public:
     };
 
     bool is_terminal = false;
-    bool opaque = false;
-    bool blind = false;
-
     typename Types::Real row_payoff, col_payoff;
 
     struct Transition : AbstractState<TypeList>::Transition
@@ -103,19 +93,20 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action);
 };
-
+/*
+Handy alias
+*/
 template <int size, typename Action, typename Observation, typename Probability>
 using StateArray = State<TypeList<Action, Observation, Probability, double, std::array<Action, size>, std::array<double, size>, std::array<int, size>>>;
 
 /*
 This represents states that accept input for the chance player.
 */
-class _StateChance : _State {};
+
 template <class TypeList>
 class StateChance : public State<TypeList>
 {
-static_assert(std::derived_from<TypeList, _AbstractTypeList> == true);
-
+static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
 public:
     struct Types : State<TypeList>::Types
     {
@@ -127,10 +118,9 @@ public:
 };
 
 template <class TypeList>
-// requires std::derived_from<State, AbstractState<TypeList>>
 class SolvedState : public State<TypeList>
 {
-static_assert(std::derived_from<TypeList, _AbstractTypeList> == true);
+static_assert(std::derived_from<TypeList, AbstractTypeList> == true);
 public:
     struct Types : State<TypeList>::Types
     {

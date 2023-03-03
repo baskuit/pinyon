@@ -11,7 +11,7 @@ public:
     struct Types : StateArray<size, int, int, bool>::Types
     {
     };
-    int depth;
+    int depth = 0;
 
     MoldState(int depth) : depth((depth >= 0) * depth) {}
     // MoldState (MoldState &t) {}
@@ -22,17 +22,17 @@ public:
         {
             for (int i = 0; i < size; ++i)
             {
-                MoldState::actions.row_actions[i] = i;
-                MoldState::actions.col_actions[i] = i;
+                this->actions.row_actions[i] = i;
+                this->actions.col_actions[i] = i;
             }
-            MoldState::actions.rows = size;
-            MoldState::actions.cols = size;
+            this->actions.rows = size;
+            this->actions.cols = size;
             this->is_terminal = false;
         }
         else
         {
-            MoldState::actions.rows = 0;
-            MoldState::actions.cols = 0;
+            this->actions.rows = 0;
+            this->actions.cols = 0;
             this->is_terminal = true;
         }
     }
@@ -42,8 +42,8 @@ public:
         typename Types::Action col_action)
     {
         // For deterministic and unknown prob states, we can be cheeky and use true/false for transtion probs
-        MoldState::transition.prob = true;
-        MoldState::transition.obs = 0;
+        this->transition.prob = true;
+        this->transition.obs = 0;
         --this->depth;
     }
 };
@@ -54,7 +54,6 @@ public:
     struct Types : StateArray<2, int, int, bool>::Types
     {
     };
-    // Let's try using the surskit design pattern.
 
     // PennyMatching () {
     //     this->actions.rows = 2;

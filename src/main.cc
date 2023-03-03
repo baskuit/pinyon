@@ -1,6 +1,6 @@
 #include "state/state.hh"
-// #include "state/test_states.hh"
-// #include "model/model.hh"
+#include "state/test_states.hh"
+#include "model/model.hh"
 
 #include <iostream>
 
@@ -11,6 +11,10 @@ int main()
 {
     using SimpleTypes = SimpleTypes<4>;
     using State = State<SimpleTypes>;
-    
+    using MoldState = MoldState<4>;
+
+    MoldState mold_state(3);
+    PennyMatching game;
+    DualPolicyValueModel<PennyMatching> model;
     return 0;
 }
