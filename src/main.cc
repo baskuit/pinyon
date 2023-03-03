@@ -33,8 +33,10 @@ int main()
 
     TreeBandit session(device);
     session.run(
-        1, game, model, root
+        1000000, game, model, root
     );
+
+    math::print(root.stats.row_visits, 2);
 
     return 0;
 }
