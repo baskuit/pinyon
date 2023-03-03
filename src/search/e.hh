@@ -49,7 +49,7 @@ public:
     {
         forecast(matrix_node);
     }
-    static void expand(
+    void expand(
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Exp3p> *matrix_node)
@@ -89,7 +89,7 @@ public:
         }
     };
     // Done:
-    static void init_stats(
+    void init_stats(
         int playouts,
         typename Types::State &state,
         typename Types::Model &model,
@@ -97,7 +97,7 @@ public:
     {
         matrix_node->stats.time = playouts;
     }
-    static void update_matrix_node(
+    void update_matrix_node(
         MatrixNode<Exp3p> *matrix_node,
         typename Types::Outcome &outcome)
     {
@@ -114,7 +114,7 @@ public:
         matrix_node->stats.row_gains[outcome.row_idx] += outcome.row_value / outcome.row_mu + row_beta; // TODO check this lmao
         matrix_node->stats.col_gains[outcome.col_idx] += outcome.col_value / outcome.col_mu + col_beta;
     }
-    static void update_chance_node(
+    void update_chance_node(
         ChanceNode<Exp3p> *chance_node,
         typename Types::Outcome &outcome)
     {
