@@ -37,9 +37,18 @@ public:
         double col_value_total = 0;
     };
 
-    static void select(
+    prng& device;
+    typename Types::VectorReal row_forecast;
+    typename Types::VectorReal col_forecast;
+
+    Exp3p(prng &device) : device(device) {}
+
+    void select(
         MatrixNode<Exp3p> *matrix_node,
-        typename Types::Outcome &outcome) {}
+        typename Types::Outcome &outcome) 
+    {
+        forecast(matrix_node);
+    }
     static void expand(
         typename Types::State &state,
         typename Types::Model &model,
@@ -63,18 +72,21 @@ public:
             model.get_inference(state, matrix_node->inference);
         }
 
-        // // Calculate Exp3p's time parameter using parent's.
-        // ChanceNode<Exp3p> *chance_parent = matrix_node->parent;
-        // if (chance_parent != nullptr)
-        // {
-        //     MatrixNode<Exp3p> *matrix_parent = chance_parent->parent;
-        //     int row_idx = chance_parent->row_idx;
-        //     int col_idx = chance_parent->col_idx;
-        //     double reach_probability = matrix_parent->inference.row_priors[row_idx] * matrix_parent->inference.col_priors[col_idx] * ((double)matrix_node->transition_data.probability);
-        //     int t_estimate = matrix_parent->stats.t * reach_probability;
-        //     t_estimate = t_estimate == 0 ? 1 : t_estimate;
-        //     matrix_node->stats.t = t_estimate;
-        // }
+        // Calculate Exp3p's time parameter using parent's.
+        ChanceNode<Exp3p> *chance_parent = matrix_node->parent;
+        if (chance_parent != nullptr)
+        {
+            MatrixNode<Exp3p> *matrix_parent = chance_parent->parent;
+            int row_idx = chance_parent->row_idx;
+            int col_idx = chance_parent->col_idx;
+            double reach_probability = 
+                matrix_parent->inference.row_policy[row_idx] * 
+                matrix_parent->inference.col_policy[col_idx] * 
+                ((double)matrix_node->transition.prob);
+            int time_estimate = matrix_parent->stats.time * reach_probability;
+            time_estimate = time_estimate == 0 ? 1 : time_estimate;
+            matrix_node->stats.time = time_estimate;
+        }
     };
     // Done:
     static void init_stats(
@@ -136,7 +148,7 @@ private:
             {
                 this->row_forecast[row_idx] =
                     (1 - gamma) * this->row_forecast[row_idx] +
-                    (gamma)*matrix_node->inference.row_priors[row_idx];
+                    (gamma)*matrix_node->inference.row_policy[row_idx];
             }
         }
         if (cols == 1)
@@ -153,7 +165,7 @@ private:
             {
                 this->col_forecast[col_idx] =
                     (1 - gamma) * this->col_forecast[col_idx] +
-                    (gamma)*matrix_node->inference.col_priors[col_idx];
+                    (gamma)*matrix_node->inference.col_policy[col_idx];
             }
         }
     }

@@ -3,18 +3,19 @@
 #include "../libsurskit/math.hh"
 
 // TODO: Consider making these subclasses of "Node"
-// template <typename _Algorithm>
+// template <typename Algorithm>
 // class Node;
 
 template <class _Algorithm>
 class AbstractNode {
+public:
     struct Types : _Algorithm::Types {
         using Algorithm = _Algorithm;
     };
 };
 
 template <typename Algorithm>
-class ChanceNode : public AbstractNode<Algorithm>;
+class ChanceNode;
 
 // Matrix Node
 
@@ -26,36 +27,35 @@ public:
     {
     };
     
-
-    ChanceNode<_Algorithm> *parent = nullptr;
-    ChanceNode<_Algorithm> *child = nullptr;
-    MatrixNode<_Algorithm> *prev = nullptr;
-    MatrixNode<_Algorithm> *next = nullptr;
+    ChanceNode<Algorithm> *parent = nullptr;
+    ChanceNode<Algorithm> *child = nullptr;
+    MatrixNode<Algorithm> *prev = nullptr;
+    MatrixNode<Algorithm> *next = nullptr;
 
     bool is_terminal = false;
     bool is_expanded = false;
 
-    TransitionData transition_data;
-    PairActions pair_actions;
-    InferenceData inference_data;
-    MatrixStats stats; // cumulative_value, vists now part of stats
+    typename Types::Transition transition;
+    typename Types::Actions actions;
+    typename Types::Inference inference;
+    typename Types::MatrixStats stats; // cumulative_value, vists now part of stats
 
     MatrixNode () {};
     MatrixNode(
-        ChanceNode<_Algorithm> *parent,
-        MatrixNode<_Algorithm> *prev,
-        TransitionData transition_data) : parent(parent), prev(prev), transition_data(transition_data) {}
+        ChanceNode<Algorithm> *parent,
+        MatrixNode<Algorithm> *prev,
+        typename Types::Transition transition) : parent(parent), prev(prev), transition(transition) {}
     ~MatrixNode();
 
-    ChanceNode<_Algorithm> *access(int row_idx, int col_idx)
+    ChanceNode<Algorithm> *access(int row_idx, int col_idx)
     {
         if (this->child == nullptr)
         {
-            this->child = new ChanceNode<_Algorithm>(this, nullptr, row_idx, col_idx);
+            this->child = new ChanceNode<Algorithm>(this, nullptr, row_idx, col_idx);
             return this->child;
         }
-        ChanceNode<_Algorithm> *current = this->child;
-        ChanceNode<_Algorithm> *previous = this->child;
+        ChanceNode<Algorithm> *current = this->child;
+        ChanceNode<Algorithm> *previous = this->child;
         while (current != nullptr)
         {
             previous = current;
@@ -65,7 +65,7 @@ public:
             }
             current = current->next;
         }
-        ChanceNode<_Algorithm> *child = new ChanceNode<_Algorithm>(this, previous, row_idx, col_idx);
+        ChanceNode<Algorithm> *child = new ChanceNode<Algorithm>(this, previous, row_idx, col_idx);
         previous->next = child;
         return child;
     };
@@ -82,7 +82,7 @@ public:
     int count()
     {
         int c = 1;
-        ChanceNode<_Algorithm> *current = this->child;
+        ChanceNode<Algorithm> *current = this->child;
         while (current != nullptr)
         {
             c += current->count();
@@ -93,63 +93,51 @@ public:
 };
 
 // Chance Node
-
-template <typename _Algorithm>
-class ChanceNode
+template <typename Algorithm>
+class ChanceNode : public AbstractNode<Algorithm>
 {
 public:
-    using State = typename _Algorithm::State;
-    using PlayerAction = typename _Algorithm::PlayerAction;
-    using ChanceAction = typename _Algorithm::ChanceAction;
-    using Number = typename _Algorithm::Number;
-    using VectorDouble = typename _Algorithm::VectorDouble;
-    using VectorInt = typename _Algorithm::VectorInt;
-    using VectorAction = typename _Algorithm::VectorAction;
-    using TransitionData = typename _Algorithm::TransitionData;
-    using PairActions = typename _Algorithm::PairActions;
-    using Model = typename _Algorithm::Model;
-    using InferenceData = typename _Algorithm::InferenceData;
-    using Algorithm = _Algorithm;
-    using MatrixStats = typename _Algorithm::MatrixStats;
-    using ChanceStats = typename _Algorithm::ChanceStats;
+    struct Types : AbstractNode<Algorithm>::Types
+    {
+    };
 
-    MatrixNode<_Algorithm> *parent = nullptr;
-    MatrixNode<_Algorithm> *child = nullptr;
-    ChanceNode<_Algorithm> *prev = nullptr;
-    ChanceNode<_Algorithm> *next = nullptr;
+    MatrixNode<Algorithm> *parent = nullptr;
+    MatrixNode<Algorithm> *child = nullptr;
+    ChanceNode<Algorithm> *prev = nullptr;
+    ChanceNode<Algorithm> *next = nullptr;
 
     int row_idx;
     int col_idx;
 
-    ChanceStats stats;
+    typename Types::ChanceStats stats;
 
-    ChanceNode<_Algorithm>(
-        MatrixNode<_Algorithm> *parent,
-        ChanceNode<_Algorithm> *prev,
+    ChanceNode(
+        MatrixNode<Algorithm> *parent,
+        ChanceNode<Algorithm> *prev,
         int row_idx,
         int col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
-    ~ChanceNode<_Algorithm>();
+    ~ChanceNode();
 
-    MatrixNode<_Algorithm> *access(TransitionData &transition_data)
+    MatrixNode<Algorithm> *access(typename Types::Transition &transition)
     {
         if (this->child == nullptr)
         {
-            MatrixNode<_Algorithm> *child = new MatrixNode<_Algorithm>(this, nullptr, transition_data);
+            MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, nullptr, transition);
             this->child = child;
             return child;
         }
-        MatrixNode<_Algorithm> *current = this->child;
-        MatrixNode<_Algorithm> *previous = this->child;
+        MatrixNode<Algorithm> *current = this->child;
+        MatrixNode<Algorithm> *previous = this->child;
         while (current != nullptr)
         {
             previous = current;
-            if (current->transition_data.chance_action == transition_data.chance_action)
+            if (current->transition.obs == transition.obs)
             {
                 return current;
             }
             current = current->next;
         }
-        MatrixNode<_Algorithm> *child = new MatrixNode<_Algorithm>(this, previous, transition_data);
+        MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, previous, transition);
         previous->next = child;
         return child;
     };
@@ -157,7 +145,7 @@ public:
     int count()
     {
         int c = 0;
-        MatrixNode<_Algorithm> *current = this->child;
+        MatrixNode<Algorithm> *current = this->child;
         while (current != nullptr)
         {
             c += current->count();
@@ -166,28 +154,28 @@ public:
         return c;
     }
 
-    // Rational get_explored_total()
-    // {
-    //     Rational total(0, 1);
-    //     MatrixNode<_Algorithm> cur = child;
-    //     while (cur != nullptr)
-    //     {
-    //         total += cur.transition_data.probability;
-    //         cur = cur->next;
-    //     }
-    //     return total;
-    // }
+    typename Types::Probability get_explored_total()
+    {
+        typename Types::Probability total(0, 1);
+        MatrixNode<Algorithm> cur = child;
+        while (cur != nullptr)
+        {
+            total += cur.transition.prob;
+            cur = cur->next;
+        }
+        return total;
+    }
 };
 
 // We have to hold off on destructor definitions until here
 
-template <typename _Algorithm>
-MatrixNode<_Algorithm>::~MatrixNode<_Algorithm>()
+template <typename Algorithm>
+MatrixNode<Algorithm>::~MatrixNode()
 {
 
     while (this->child != nullptr)
     {
-        ChanceNode<_Algorithm> *victim = this->child;
+        ChanceNode<Algorithm> *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }
@@ -201,12 +189,12 @@ MatrixNode<_Algorithm>::~MatrixNode<_Algorithm>()
     }
 }
 
-template <typename _Algorithm>
-ChanceNode<_Algorithm>::~ChanceNode<_Algorithm>()
+template <typename Algorithm>
+ChanceNode<Algorithm>::~ChanceNode()
 {
     while (this->child != nullptr)
     {
-        MatrixNode<_Algorithm> *victim = this->child;
+        MatrixNode<Algorithm> *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }

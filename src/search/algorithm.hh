@@ -1,27 +1,10 @@
 #pragma once
 
-template <class Algorith>
-class ChanceNode;
+#include "../tree/node.hh"
 
-template <class Algorithm>
-class MatrixNode
-{
-public:
-    bool is_terminal = false;
-    bool is_expanded = false;
-    ChanceNode<Algorithm> *access(int i, int j);
-    typename Algorithm::Types::Actions actions;
-    typename Algorithm::Types::Inference inference;
-    typename Algorithm::Types::MatrixStats stats;
-};
-
-template <class Algorithm>
-class ChanceNode
-{
-public:
-    MatrixNode<Algorithm> *access(typename Algorithm::Types::Transition);
-    typename Algorithm::Types::ChanceStats stats;
-};
+/*
+This algorithm generalizes the typical "MCTS" pattern found in UCT, PUCT, SM-MCTS(-A), MatrixUCB etc.
+This will also be subclassed for multithreaded implementations.*/
 
 template <class _Model>
 class AbstractAlgorithm
@@ -42,10 +25,6 @@ public:
         using ChanceStats = AbstractAlgorithm::ChanceStats;
     };
 };
-
-/*
-This algorithm generalizes the typical "MCTS" pattern found in UCT, PUCT, SM-MCTS(-A), MatrixUCB etc.
-This will also be subclassed for multithreaded implementations.*/
 
 template <class Model>
 class BanditAlgorithm : public AbstractAlgorithm<Model>
@@ -84,13 +63,16 @@ public:
 template <class Algorithm>
 class TreeBandit : public Algorithm
 {
-    // static_assert(std::derived_from<Algorithm, Bandit<typename Algorithm::Types::Model>> == true);
+    // static_assert(std::derived_from<Algorithm, BanditAlgorithm<typename Algorithm::Types::Model>> == true);
 
 public:
     // struct MatrixStats;
     struct Types : Algorithm::Types
     {
     };
+
+    template <typename ...Args>
+    TreeBandit (Args... args) : Algorithm(args...) {}
 
     void run(
         int playouts,
@@ -117,7 +99,7 @@ private:
             {
                 typename Types::Outcome outcome;
 
-                Algorithm::select(matrix_node, outcome);
+                this->select(matrix_node, outcome);
 
                 typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
                 typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
@@ -130,13 +112,13 @@ private:
 
                 outcome.row_value = matrix_node_leaf->inference.row_value;
                 outcome.col_value = matrix_node_leaf->inference.col_value;
-                Algorithm::update_matrix_node(matrix_node, outcome);
-                Algorithm::update_chance_node(chance_node, outcome);
+                this->update_matrix_node(matrix_node, outcome);
+                this->update_chance_node(chance_node, outcome);
                 return matrix_node_leaf;
             }
             else
             {
-                Algorithm::expand(state, model, matrix_node);
+                this->expand(state, model, matrix_node);
                 return matrix_node;
             }
         }

@@ -3,11 +3,11 @@
 #include "algorithm.hh"
 #include "tree/node.hh"
 
-template <typename Model>
-class Exp3p : public Algorithm<Model>
+template <typename Algorithm>
+class Exp3p : public Algorithm<Algorithm>
 {
 public:
-    struct MatrixStats : Algorithm<Model>::MatrixStats
+    struct MatrixStats : Algorithm<Algorithm>::MatrixStats
     {
         int t = 0;
         typename Exp3p::VectorDouble row_gains = {0};
@@ -20,14 +20,14 @@ public:
         double col_value_total = 0;
     };
 
-    struct ChanceStats : Algorithm<Model>::ChanceStats
+    struct ChanceStats : Algorithm<Algorithm>::ChanceStats
     {
         int visits = 0;
         double row_value_total = 0;
         double col_value_total = 0;
     };
 
-    struct SearchParameters : Algorithm<Model>::SearchParameters
+    struct SearchParameters : Algorithm<Algorithm>::SearchParameters
     {
         int playouts = 1;
     };
@@ -86,7 +86,7 @@ public:
 private:
     MatrixNode<Exp3p> *playout(
         typename Exp3p::State &state,
-        Model &model,
+        Algorithm &model,
         MatrixNode<Exp3p> *matrix_node)
     {
         /*
@@ -136,7 +136,7 @@ private:
 
     inline void expand(
         typename Exp3p::State &state,
-        Model &model,
+        Algorithm &model,
         MatrixNode<Exp3p> *matrix_node)
     {
         /*

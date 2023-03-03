@@ -1,10 +1,11 @@
 #include "state/state.hh"
 #include "state/test_states.hh"
 #include "model/model.hh"
-// #include "search/algorithm.hh"
+#include "search/algorithm.hh"
 #include "search/e.hh"
 
 #include <iostream>
+#include "tree/node.hh"
 
 template <int size>
 using SimpleTypes = TypeList<int, int, double, double, std::array<int, size>, std::array<double, size>, std::array<int, size>>;
@@ -18,7 +19,7 @@ int main()
     using BanditAlgorithm = Exp3p<Model>;
     using TreeBandit = TreeBandit<BanditAlgorithm>;
 
-    MoldState mold_state(3);
+    // MoldState mold_state(3);
     PennyMatching game;
     prng device(0);
     Model model(device);
@@ -30,8 +31,8 @@ int main()
 
 
 
-    TreeBandit tree_bandit;
-    tree_bandit.run(
+    TreeBandit session(device);
+    session.run(
         1, game, model, root
     );
 
