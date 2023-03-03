@@ -6,29 +6,26 @@
 // template <typename _Algorithm>
 // class Node;
 
-template <typename _Algorithm>
-class ChanceNode;
+template <class _Algorithm>
+class AbstractNode {
+    struct Types : _Algorithm::Types {
+        using Algorithm = _Algorithm;
+    };
+};
+
+template <typename Algorithm>
+class ChanceNode : public AbstractNode<Algorithm>;
 
 // Matrix Node
 
-template <typename _Algorithm>
-class MatrixNode
+template <typename Algorithm>
+class MatrixNode : public AbstractNode<Algorithm>
 {
 public:
-    using State = typename _Algorithm::State;
-    using PlayerAction = typename _Algorithm::PlayerAction;
-    using ChanceAction = typename _Algorithm::ChanceAction;
-    using Number = typename _Algorithm::Number;
-    using VectorDouble = typename _Algorithm::VectorDouble;
-    using VectorInt = typename _Algorithm::VectorInt;
-    using VectorAction = typename _Algorithm::VectorAction;
-    using TransitionData = typename _Algorithm::TransitionData;
-    using PairActions = typename _Algorithm::PairActions;
-    using Model = typename _Algorithm::Model;
-    using InferenceData = typename _Algorithm::InferenceData;
-    using Algorithm = _Algorithm;
-    using MatrixStats = typename _Algorithm::MatrixStats;
-    using ChanceStats = typename _Algorithm::ChanceStats;
+    struct Types : AbstractNode<Algorithm>::Types
+    {
+    };
+    
 
     ChanceNode<_Algorithm> *parent = nullptr;
     ChanceNode<_Algorithm> *child = nullptr;

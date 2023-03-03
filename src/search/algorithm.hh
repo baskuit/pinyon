@@ -12,6 +12,7 @@ public:
     ChanceNode<Algorithm> *access(int i, int j);
     typename Algorithm::Types::Actions actions;
     typename Algorithm::Types::Inference inference;
+    typename Algorithm::Types::MatrixStats stats;
 };
 
 template <class Algorithm>
@@ -19,6 +20,7 @@ class ChanceNode
 {
 public:
     MatrixNode<Algorithm> *access(typename Algorithm::Types::Transition);
+    typename Algorithm::Types::ChanceStats stats;
 };
 
 template <class _Model>
@@ -59,7 +61,7 @@ public:
     struct Outcome
     {
         int row_idx, col_idx;
-        typename Types::Real row_payoff, col_payoff;
+        typename Types::Real row_value, col_value;
         typename Types::Real row_mu, col_mu;
         // Actor policy at row_idx, col_idx.
     };
@@ -75,8 +77,8 @@ public:
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> *matrix_node) {}
-    static void update_matrix_node(Outcome &outcome){};
-    static void update_chance_node(Outcome &outcome){};
+    static void update_matrix_node(MatrixNode<BanditAlgorithm> *matrix_node, Outcome &outcome){};
+    static void update_chance_node(ChanceNode<BanditAlgorithm> *chance_node, Outcome &outcome){};
 };
 
 template <class Algorithm>
@@ -126,10 +128,10 @@ private:
 
                 MatrixNode<Algorithm> *matrix_node_leaf = _playout(state, model, matrix_node_next);
 
-                outcome.row_payoff = matrix_node_leaf->inference.row_value;
-                outcome.row_payoff = matrix_node_leaf->inference.col_value;
-                Algorithm::update_matrix_node(outcome);
-                Algorithm::update_chance_node(outcome);
+                outcome.row_value = matrix_node_leaf->inference.row_value;
+                outcome.col_value = matrix_node_leaf->inference.col_value;
+                Algorithm::update_matrix_node(matrix_node, outcome);
+                Algorithm::update_chance_node(chance_node, outcome);
                 return matrix_node_leaf;
             }
             else

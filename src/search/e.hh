@@ -14,6 +14,8 @@ public:
     struct ChanceStats;
     struct Types : BanditAlgorithm<Model>::Types
     {
+        using MatrixStats = Exp3p::MatrixStats;
+        using ChanceStats = Exp3p::ChanceStats;
     };
     struct MatrixStats : BanditAlgorithm<Model>::MatrixStats
     {
@@ -46,11 +48,19 @@ public:
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Exp3p> *matrix_node) {}
-    static void update_matrix_node(typename Types::Outcome &outcome){};
-    static void update_chance_node(typename Types::Outcome &outcome){};
+    static void update_matrix_node(
+        MatrixNode<Exp3p> *matrix_node,
+        typename Types::Outcome &outcome){};
+    static void update_chance_node(
+        ChanceNode<Exp3p> *chance_node,
+        typename Types::Outcome &outcome)
+    {
+        chance_node->stats.row_value_total += outcome.row_value;
+        chance_node->stats.col_value_total += outcome.col_value;
+        chance_node->stats.visits += 1;
+    };
 
 private:
-
     inline void forecast(
         MatrixNode<Exp3p> *matrix_node)
     {
@@ -70,11 +80,11 @@ private:
             const double eta = .95 * sqrt(log(rows) / (time * rows));
             const double gamma_ = 1.05 * sqrt(rows * log(rows) / time);
             const double gamma = gamma_ < 1 ? gamma_ : 1;
-            this->softmax(this->row_forecast, matrix_node->stats.row_gains, rows, eta);
+            softmax(this->row_forecast, matrix_node->stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
-                this->row_forecast[row_idx] = 
-                    (1 - gamma) * this->row_forecast[row_idx] + 
+                this->row_forecast[row_idx] =
+                    (1 - gamma) * this->row_forecast[row_idx] +
                     (gamma)*matrix_node->inference_data.row_priors[row_idx];
             }
         }
@@ -87,7 +97,7 @@ private:
             const double eta = .95 * sqrt(log(cols) / (time * cols));
             const double gamma_ = 1.05 * sqrt(cols * log(cols) / time);
             const double gamma = gamma_ < 1 ? gamma_ : 1;
-            this->softmax(this->col_forecast, matrix_node->stats.col_gains, cols, eta);
+            softmax(this->col_forecast, matrix_node->stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
                 this->col_forecast[col_idx] =
@@ -98,9 +108,9 @@ private:
     }
 
     inline void softmax(
-        typename Types::VectorReal &forecast, 
-        typename Types::VectorReal &gains, 
-        int k, 
+        typename Types::VectorReal &forecast,
+        typename Types::VectorReal &gains,
+        int k,
         typename Types::Real eta)
     {
         /*
