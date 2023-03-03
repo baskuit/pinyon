@@ -1,6 +1,8 @@
 #include "state/state.hh"
 #include "state/test_states.hh"
 #include "model/model.hh"
+// #include "search/algorithm.hh"
+#include "search/e.hh"
 
 #include <iostream>
 
@@ -12,9 +14,26 @@ int main()
     using SimpleTypes = SimpleTypes<4>;
     using State = State<SimpleTypes>;
     using MoldState = MoldState<4>;
+    using Model = MonteCarloModel<PennyMatching>;
+    using BanditAlgorithm = Exp3p<Model>;
+    using TreeBandit = TreeBandit<BanditAlgorithm>;
 
     MoldState mold_state(3);
     PennyMatching game;
-    DualPolicyValueModel<PennyMatching> model;
+    prng device(0);
+    Model model(device);
+
+    MatrixNode<BanditAlgorithm> root;
+    /*
+    TreeBandit will derive to TreeBanditMultiThreaded(Pool) so we want to accept Algorithm as template param
+    */
+
+
+
+    TreeBandit tree_bandit;
+    tree_bandit.run(
+        1, game, model, root
+    );
+
     return 0;
 }
