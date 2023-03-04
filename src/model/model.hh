@@ -6,17 +6,27 @@ template <class _State>
 class AbstractModel
 {
 public:
+    struct Inference;
     struct Types : _State::Types
     {
         using State = _State;
+        using Inference = AbstractModel::Inference;
     };
     struct Inference
     {
     };
+
+    void get_inference(
+        typename Types::State &state,
+        typename Types::Inference &inference);
 };
 
+/*
+Equivalent to `State`, in that virtually all models will be derived from it.
+*/
+
 template <class State>
-// requires std::derived_from<State, AbstractState>;
+
 class DualPolicyValueModel : public AbstractModel<State>
 {
     static_assert(std::derived_from<State, AbstractState<typename State::Types::TypeList>>);
@@ -35,11 +45,11 @@ public:
         typename Types::VectorReal row_policy;
         typename Types::VectorReal col_policy;
     };
-
-    void get_inference(
-        typename Types::State &state,
-        typename Types::Inference &inference);
 };
+
+/*
+Universal model.
+*/
 
 template <class State>
 class MonteCarloModel : public DualPolicyValueModel<State>
@@ -96,13 +106,7 @@ MonteCarlo model that uses a priori solutions to simulate expert inference
 template <class State>
 class SolvedMonteCarloModel : public DualPolicyValueModel<State>
 {   
-    // static_assert(State::Types::TypeList);
-    // static_assert(std::derived_from<State, AbstractState<State::Types::TypeList>);
-    //     typename State::Types::Action,
-    //     typename State::Types::Observation,
-    //     typename State::Types::Probability,
-    //     typename State::Types::Action>>
-    // );
+    static_assert(std::derived_from<State, SolvedState<typename State::Types::TypeList>>);
 
 public:
     struct Types : DualPolicyValueModel<State>::Types
@@ -118,8 +122,8 @@ public:
         typename Types::State &state,
         typename Types::Inference &inference)
     {
-        math::power_norm(state.row_strategy, state.actions.rows, this->power, inference.row_strategy);
-        math::power_norm(state.col_strategy, state.actions.cols, this->power, inference.col_strategy);
+        math::power_norm(state.row_strategy, state.actions.rows, power, inference.row_strategy);
+        math::power_norm(state.col_strategy, state.actions.cols, power, inference.col_strategy);
         this->rollout(state);
         inference.row_value = state.row_payoff;
         inference.col_value = state.col_payoff;

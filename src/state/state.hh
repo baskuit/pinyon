@@ -53,7 +53,8 @@ about this State being totally observed.
 Indeed, the Node access() methods simply assume that the same chance node must be the same
 
 We assume that calculating actions takes work, so we make it explicit.
-Not sure where to put stuff though...
+The BanditTree algorithm is safe because it always calls actions before running inference or applying actions.
+There may be a way to statically guarantee this.
 */
 
 template <class TypeList>
@@ -72,6 +73,7 @@ public:
 
     bool is_terminal = false;
     typename Types::Real row_payoff, col_payoff;
+
 
     struct Transition : AbstractState<TypeList>::Transition
     {
