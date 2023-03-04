@@ -6,7 +6,7 @@
 struct AbstractTypeList
 {
 };
-// _Name so that the Type name does not shadow the template
+// "_Name" so that the Type name does not shadow the template
 template <typename _Action,
           typename _Observation,
           typename _Probability,
@@ -31,7 +31,6 @@ struct TypeList : AbstractTypeList
 };
 
 template <class _TypeList>
-// underscore when going up a level, since you don't want to shadow template param with Type
 class AbstractState
 {
 public:
@@ -48,8 +47,15 @@ public:
 };
 
 /*
-Default State
+Default State. Pretty much every implementation of anything so far assumes that the State object derives from this.
+This is where our most basic assumptions about a "State" manifest. However, I'm not sure if the rest of Surskit makes assumptions
+about this State being totally observed.
+Indeed, the Node access() methods simply assume that the same chance node must be the same
+
+We assume that calculating actions takes work, so we make it explicit.
+Not sure where to put stuff though...
 */
+
 template <class TypeList>
 class State : public AbstractState<TypeList>
 {
@@ -104,25 +110,53 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action);
 };
+
 /*
-Handy alias
+Handy alias.
+The Real number data type is assumed to be double and Vector, Matrix types are handled with Arrays.
 */
 
 template <int size, typename Action, typename Observation, typename Probability>
 using StateArray = State<TypeList<
-    Action, 
-    Observation, 
-    Probability, 
-    double, 
-    std::array<Action, size>, 
-    std::array<double, size>, 
-    std::array<int, size>, 
-    Linear::Matrix<double, size>, 
-    Linear::Matrix<int, size>
->>;
+    Action,
+    Observation,
+    Probability,
+    double,
+    std::array<Action, size>,
+    std::array<double, size>,
+    std::array<int, size>,
+    Linear::Matrix<double, size>,
+    Linear::Matrix<int, size>>>;
+
+template <class TypeList>
+class SolvedState : public State<TypeList>
+{
+    static_assert(std::derived_from<TypeList, AbstractTypeList>);
+
+public:
+    struct Types : State<TypeList>::Types
+    {
+    };
+    typename Types::VectorReal row_strategy, col_strategy;
+};
+
+template <int size, typename Action, typename Observation, typename Probability>
+using SolvedStateArray = SolvedState<TypeList<
+    Action,
+    Observation,
+    Probability,
+    double,
+    std::array<Action, size>,
+    std::array<double, size>,
+    std::array<int, size>,
+    Linear::Matrix<double, size>,
+    Linear::Matrix<int, size>>>;
 
 /*
 This represents states that accept input for the chance player.
+Since this uses Obs as chance action, this must be fully observed.
+
+Currently not used by any Search algorithms, but I have ideas.
 */
 
 template <class TypeList>
@@ -140,27 +174,7 @@ public:
         typename Types::Observation chance_action);
 };
 
-template <class TypeList>
-class SolvedState : public State<TypeList>
-{
-    static_assert(std::derived_from<TypeList, AbstractTypeList>);
-
-public:
-    struct Types : State<TypeList>::Types
-    {
-    };
-    typename Types::VectorReal row_strategy, col_strategy;
-};
-
-template <int size, typename Action, typename Observation, typename Probability>
-using SolvedStateArray = SolvedState<TypeList<
-    Action, 
-    Observation, 
-    Probability, 
-    double, 
-    std::array<Action, size>, 
-    std::array<double, size>, 
-    std::array<int, size>, 
-    Linear::Matrix<double, size>, 
-    Linear::Matrix<int, size>
->>;
+/*
+Tests:
+Initializing ToyStates with different type lists to make sure std::vector and cheeky bool/rational implementations are working.
+*/
