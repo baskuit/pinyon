@@ -1,9 +1,6 @@
 #pragma once
 
 #include "../tree/node.hh"
-/*
-This algorithm generalizes the typical "MCTS" pattern found in UCT, PUCT, SM-MCTS(-A), MatrixUCB etc.
-This will also be subclassed for multithreaded implementations.*/
 
 template <class _Model>
 class AbstractAlgorithm
@@ -25,10 +22,15 @@ public:
     };
 };
 
+/*
+Node local bandit algorithm.
+*/
+
 template <class Model>
 class BanditAlgorithm : public AbstractAlgorithm<Model>
 {
     static_assert(std::derived_from<Model, AbstractModel<typename Model::Types::State>>);
+    // We don't assume that Model is a DVPmodel.
 
 public:
     struct Outcome; // If you don't add to types, you have to typename BanditAlgorithm<Model> in the specification...
@@ -40,39 +42,57 @@ public:
     {
         int row_idx, col_idx;
         typename Types::Real row_value, col_value;
-        typename Types::Real row_mu, col_mu;
-        // Actor policy at row_idx, col_idx.
+        typename Types::Real row_mu, col_mu; // Actor policy at row_idx, col_idx.
     };
 
     void select(
         MatrixNode<BanditAlgorithm> *matrix_node,
-        Outcome &outcome) {}
+        Outcome &outcome);
     void expand(
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<BanditAlgorithm> *matrix_node){};
+        MatrixNode<BanditAlgorithm> *matrix_node);
     void init_stats(
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<BanditAlgorithm> *matrix_node) {}
-    void update_matrix_node(MatrixNode<BanditAlgorithm> *matrix_node, Outcome &outcome){};
-    void update_chance_node(ChanceNode<BanditAlgorithm> *chance_node, Outcome &outcome){};
+        MatrixNode<BanditAlgorithm> *matrix_node);
+    void update_matrix_node(
+        MatrixNode<BanditAlgorithm> *matrix_node,
+        Outcome &outcome);
+    void update_chance_node(
+        ChanceNode<BanditAlgorithm> *chance_node,
+        Outcome &outcome);
 };
 
-template <class Algorithm>
+/*
+This algorithm generalizes the typical "MCTS" pattern found in UCT, PUCT, SM-MCTS(-A), MatrixUCB etc.
+This will also be subclassed for multithreaded implementations.
+*/
+
+template <class Algorithm> // TODO consider make template params reflect "LowerDerived"
 class TreeBandit : public Algorithm
 {
-    static_assert(std::derived_from<Algorithm, BanditAlgorithm<typename Algorithm::Types::Model>>);
+    static_assert(std::derived_from<Algorithm, BanditAlgorithm<typename Algorithm::Types::Model>>,
+        "TreeBandit only accepts a BanditAlgorithm as its template paramater"
+    );
 
 public:
+    struct MatrixStats;
+    struct ChanceStats;
     struct Types : Algorithm::Types
     {
+        using MatrixStats = TreeBandit::MatrixStats;
+        using ChanceStats = TreeBandit::ChanceStats;
     };
+
+    // TreeBandit(prng &device) : Algorithm(device) {}
+
+    using Algorithm::Algorithm;
+    // Constructor forwarding. I consider this take care of for now.
 
     // template <typename ...Args>
     // TreeBandit (Args... args) : Algorithm(args...) {}
-
-    TreeBandit(prng &device) : Algorithm(device) {}
+    // Future me: If you use template (...Args) type stuff then the prng device at the bandit level will not perform sample_pdf right. It's fucked idk
 
     void run(
         int playouts,

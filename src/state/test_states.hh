@@ -11,26 +11,23 @@ public:
     struct Types : StateArray<size, int, int, bool>::Types
     {
     };
-    int depth = 0;
+    int depth = 1;
 
-    MoldState(int depth) : depth((depth >= 0) * depth) {}
-    // MoldState (MoldState &t) {}
+    MoldState(int depth) : depth((depth >= 0) * depth) {
+        for (int i = 0; i < size; ++i)
+        {
+            this->actions.row_actions[i] = i;
+            this->actions.col_actions[i] = i;
+            this->actions.rows = size;
+            this->actions.cols = size;
+        }
+        this->transition.prob = true;
+        this->transition.obs = 0;
+    }
 
     void get_actions()
     {
-        if (this->depth > 0)
-        {
-            for (int i = 0; i < size; ++i)
-            {
-                this->actions.row_actions[i] = i;
-                this->actions.col_actions[i] = i;
-            }
-            this->actions.rows = size;
-            this->actions.cols = size;
-            this->is_terminal = false;
-        }
-        else
-        {
+        if (this->depth <= 0) {
             this->actions.rows = 0;
             this->actions.cols = 0;
             this->is_terminal = true;
@@ -41,9 +38,6 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action)
     {
-        // For deterministic and unknown prob states, we can be cheeky and use true/false for transtion probs
-        this->transition.prob = true;
-        this->transition.obs = 0;
         --this->depth;
     }
 };
@@ -54,11 +48,6 @@ public:
     struct Types : StateArray<2, int, int, bool>::Types
     {
     };
-
-    // PennyMatching () {
-    //     this->actions.rows = 2;
-    //     this->actions.cols = 2;
-    // }
 
     void get_actions()
     {

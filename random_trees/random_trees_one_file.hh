@@ -1,12 +1,66 @@
-#pragma once
-
-#include <string>
-
-#include "tree/node.hh"
-#include "search/algorithm.hh"
-// #include "model/model.hh"
-
+#include "state/state.hh"
 #include "solvers/enummixed/enummixed.h"
+
+/*
+TreeInfo
+*/
+
+template <int _size>
+class SeedState : public StateArray<_size, int, int, double>
+{
+public:
+    struct Types : StateArray<_size, int, int, double>::Types
+    {
+        static const int size = _size;
+    };
+    int depth_bound = 0;
+    int rows = _size;
+    int cols = _size;
+
+    prng &device;
+
+    SeedState(prng &device, int depth_bound, int rows, int cols) : device(device), depth_bound(depth_bound), rows(rows), cols(cols)
+    {
+        for (int i = 0; i < _size; ++i)
+        {
+            this->actions.row_actions[i] = i;
+            this->actions.col_actions[i] = i;
+        }
+        this->transition.prob = 1;
+        this->transition.obs = 0;
+    }
+
+    void get_actions()
+    {
+        this->actions.rows = rows;
+        this->actions.cols = cols;
+    }
+
+    void apply_actions(int row_action, int col_action)
+    {
+        depth_bound -= 1; //+ this->device.random_int(2);
+        depth_bound *= depth_bound >= 0;
+        if (depth_bound == 0)
+        {
+            this->row_payoff = this->device.random_int(2);
+            this->col_payoff = 1.0 - this->row_payoff;
+            rows = 0;
+            cols = 0;
+            this->is_terminal = true; // TODO where?
+        }
+        else
+        {
+            // More random stuff
+        }
+    }
+
+private:
+    // Functions to improve randomness
+};
+
+/*
+Recursive Grow algorithm
+*/
 
 template <typename Model>
 class Grow : public AbstractAlgorithm<Model>
@@ -34,7 +88,7 @@ public:
 
     prng &device;
     Solver solver;
-    bool require_interior = false;
+    // bool require_interior = false; TODO unused cus no Bandit::
 
     Grow(prng &device) : device(device)
     {
@@ -48,7 +102,7 @@ public:
         {
             return;
         }
-        // forward
+
         state.get_actions();
         const int rows = state.actions.rows;
         const int cols = state.actions.cols;
@@ -70,7 +124,7 @@ public:
             }
         }
 
-        // backward
+        // TODO check that all the tree stats are being updated properly
         if (rows * cols == 0)
         {
             matrix_node->stats.payoff = state.row_payoff;
@@ -130,25 +184,56 @@ private:
         delete game;
     }
 
-        Gambit::Game build_nfg(
-            typename Types::MatrixReal &matrix)
+    Gambit::Game build_nfg(
+        typename Types::MatrixReal &matrix)
+    {
+        Gambit::Array<int> dim(2);
+        dim[1] = matrix.rows;
+        dim[2] = matrix.cols;
+        Gambit::GameRep *nfg = NewTable(dim);
+        Gambit::Game game = nfg;
+        Gambit::StrategyProfileIterator iter(Gambit::StrategySupportProfile(static_cast<Gambit::GameRep *>(nfg)));
+        for (int j = 0; j < matrix.cols; ++j)
         {
-            Gambit::Array<int> dim(2);
-            dim[1] = matrix.rows;
-            dim[2] = matrix.cols;
-            Gambit::GameRep *nfg = NewTable(dim);
-            Gambit::Game game = nfg;
-            Gambit::StrategyProfileIterator iter(Gambit::StrategySupportProfile(static_cast<Gambit::GameRep *>(nfg)));
-            for (int j = 0; j < matrix.cols; ++j)
+            for (int i = 0; i < matrix.rows; ++i)
             {
-                for (int i = 0; i < matrix.rows; ++i)
-                {   
-                    const typename Types::Real x = matrix.data[i][j];
-                    (*iter)->GetOutcome()->SetPayoff(1, std::to_string(x));
-                    (*iter)->GetOutcome()->SetPayoff(2, std::to_string(1 - x));
-                    iter++;
-                }
+                const typename Types::Real x = matrix.data[i][j];
+                (*iter)->GetOutcome()->SetPayoff(1, std::to_string(x));
+                (*iter)->GetOutcome()->SetPayoff(2, std::to_string(1 - x));
+                iter++;
             }
-            return game;
         }
+        return game;
+    }
+};
+
+/*
+Random Tree
+*/
+
+template <int size>
+class TreeState : public SolvedStateArray<size, int, int, double>
+{
+public:
+
+    using SeedStateNode = MatrixNode<Grow<MonteCarloModel<SeedState<size>>>>;
+
+    struct Types : SolvedStateArray<size, int, int, double>::Types
+    {
+    };
+
+    SeedState<size> seed;
+    std::shared_ptr<SeedStateNode> root;
+    SeedStateNode *current;
+    // Trying out make shared to keep copy assignment but also have automatic memory management
+
+    TreeState(prng &device, int depth_bound, int rows, int cols) : seed(SeedState<size>(device, depth_bound, rows, cols))
+    {
+        this->root = std::make_shared<SeedStateNode>();
+        this->current = &*root;
+        Grow<MonteCarloModel<SeedState<size>>> session(device);
+        session.grow(seed, current);
+        this->row_strategy = current->stats.row_strategy;
+        this->col_strategy = current->stats.col_strategy;
+    }
 };
