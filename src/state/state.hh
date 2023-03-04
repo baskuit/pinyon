@@ -107,30 +107,6 @@ public:
 /*
 Handy alias
 */
-// template <int size, typename Action, typename Observation, typename Probability>
-// class StateArray : public State<TypeList<
-//     Action, 
-//     Observation, 
-//     Probability, 
-//     double, 
-//     std::array<Action, size>, 
-//     std::array<double, size>, 
-//     std::array<int, size>, 
-//     Linear::Matrix<double, size>, 
-//     Linear::Matrix<int, size>
-// >> {
-// public:
-//     struct Types : State<TypeList<
-//     Action, 
-//     Observation, 
-//     Probability, 
-//     double, 
-//     std::array<Action, size>, 
-//     std::array<double, size>, 
-//     std::array<int, size>, 
-//     Linear::Matrix<double, size>, 
-//     Linear::Matrix<int, size>>;
-// };
 
 template <int size, typename Action, typename Observation, typename Probability>
 using StateArray = State<TypeList<
@@ -175,3 +151,16 @@ public:
     };
     typename Types::VectorReal row_strategy, col_strategy;
 };
+
+template <int size, typename Action, typename Observation, typename Probability>
+using SolvedStateArray = SolvedState<TypeList<
+    Action, 
+    Observation, 
+    Probability, 
+    double, 
+    std::array<Action, size>, 
+    std::array<double, size>, 
+    std::array<int, size>, 
+    Linear::Matrix<double, size>, 
+    Linear::Matrix<int, size>
+>>;

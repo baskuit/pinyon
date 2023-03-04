@@ -40,8 +40,8 @@ public:
 
     void apply_actions(int row_action, int col_action)
     {
-        depth_bound -= this->device.random_int(2);
-        depth_bound *= depth_bound < 0;
+        depth_bound -= 1; //+ this->device.random_int(2);
+        depth_bound *= depth_bound >= 0;
         if (depth_bound == 0)
         {
             this->row_payoff = this->device.random_int(2);

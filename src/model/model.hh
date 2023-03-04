@@ -42,7 +42,6 @@ public:
 };
 
 template <class State>
-// requires std::derived_from<State, AbstractState>;
 class MonteCarloModel : public DualPolicyValueModel<State>
 {
     static_assert(std::derived_from<State, AbstractState<typename State::Types::TypeList>>);
@@ -96,8 +95,14 @@ MonteCarlo model that uses a priori solutions to simulate expert inference
 
 template <class State>
 class SolvedMonteCarloModel : public DualPolicyValueModel<State>
-{
-    static_assert(std::derived_from<State, SolvedState<typename State::Types::TypeList>>);
+{   
+    // static_assert(State::Types::TypeList);
+    // static_assert(std::derived_from<State, AbstractState<State::Types::TypeList>);
+    //     typename State::Types::Action,
+    //     typename State::Types::Observation,
+    //     typename State::Types::Probability,
+    //     typename State::Types::Action>>
+    // );
 
 public:
     struct Types : DualPolicyValueModel<State>::Types

@@ -1,6 +1,7 @@
 #include "model/model.hh" //TODO this must be first otherwise include error (algo.hh wants model.hh...) fix with cmake!!!
 #include "seed_state.hh"
 #include "grow.hh"
+#include "tree_state.hh"
 
 // #include "search/matrix_ucb.hh"
 
@@ -14,14 +15,14 @@ int main()
     using SeedState = SeedState<size>;
     using MonteCarlo = MonteCarloModel<SeedState>;
     using Grow = Grow<MonteCarlo>;
-
+    using TreeState = TreeState<size>;
     // Initialization now runs the Grow algorithm automatically
     prng device;
-    Grow session(device);
-
-    MatrixNode<Grow> root;
-    SeedState state(device, 4, size, size);
-    session.grow(state, &root);
+    TreeState tree_state(device, 2, size, size);
+    std::cout << tree_state.current->count() << std::endl;
+    tree_state.current->stats.expected_value.print();
+    math::print(tree_state.row_strategy, size);
+    math::print(tree_state.col_strategy, size);
 
     // TreeState tree_state(device, 3, 3, 3);
     // MonteCarlo<TreeState> model(device);

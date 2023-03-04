@@ -15,6 +15,7 @@ template <typename Model>
 class Grow : public AbstractAlgorithm<Model>
 {
     static_assert(std::derived_from<typename Model::Types::State, SeedState<Model::Types::size>>);
+    // Model::State is based on SeedState
 
 public:
     struct MatrixStats;
@@ -101,52 +102,53 @@ private:
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
-        // Gambit::Game game = build_nfg(matrix);
-        // Gambit::shared_ptr<Gambit::Nash::EnumMixedStrategySolution<double>> solution = solver.SolveDetailed(game); // No exceptino handling 8)
-        // Solution cliques = solution->GetCliques();
-        // Gambit::MixedStrategyProfile<double> joint_strategy = cliques[1][1];
-        // double is_interior = 1.0;
-        // for (int i = 0; i < matrix.rows; ++i)
-        // {
-        //     row_strategy[i] = joint_strategy[i + 1];
-        //     is_interior *= 1 - row_strategy[i];
-        // }
-        // for (int j = matrix.rows; j < matrix.rows + matrix.cols; ++j)
-        // {
-        //     col_strategy[j - matrix.rows] = joint_strategy[j + 1];
-        //     is_interior *= 1 - col_strategy[j];
-        // }
+        Gambit::Game game = build_nfg(matrix);
+        Gambit::shared_ptr<Gambit::Nash::EnumMixedStrategySolution<double>> solution = solver.SolveDetailed(game); // No exceptino handling 8)
+        Solution cliques = solution->GetCliques();
+        Gambit::MixedStrategyProfile<double> joint_strategy = cliques[1][1];
+        double is_interior = 1.0;
+        for (int i = 0; i < matrix.rows; ++i)
+        {
+            row_strategy[i] = joint_strategy[i + 1];
+            is_interior *= 1 - row_strategy[i];
+        }
+        for (int j = matrix.rows; j < matrix.rows + matrix.cols; ++j)
+        {
+            col_strategy[j - matrix.rows] = joint_strategy[j + 1];
+            is_interior *= 1 - col_strategy[j];
+        }
 
-        // // if (is_interior == 0 && this->require_interior)
-        // // {
-        // //     Bandit::SolveBimatrix<double, Grow::state_t::_size>(
-        // //         this->device,
-        // //         10000,
-        // //         bimatrix,
-        // //         row_strategy,
-        // //         col_strategy);
-        // // }
-        // delete game;
+        // if (is_interior == 0 && this->require_interior)
+        // {
+        //     Bandit::SolveBimatrix<double, Grow::state_t::_size>(
+        //         this->device,
+        //         10000,
+        //         matrix,
+        //         row_strategy,
+        //         col_strategy);
+        // }
+        delete game;
     }
 
-    //     Gambit::Game build_nfg(
-    //         Linear::Bimatrix2D<double, Grow::state_t::_size> bimatrix)
-    //     {
-    //         Gambit::Array<int> dim(2);
-    //         dim[1] = bimatrix.rows;
-    //         dim[2] = bimatrix.cols;
-    //         Gambit::GameRep *nfg = NewTable(dim);
-    //         Gambit::Game game = nfg;
-    //         Gambit::StrategyProfileIterator iter(Gambit::StrategySupportProfile(static_cast<Gambit::GameRep *>(nfg)));
-    //         for (int j = 0; j < bimatrix.cols; ++j)
-    //         {
-    //             for (int i = 0; i < bimatrix.rows; ++i)
-    //             {
-    //                 (*iter)->GetOutcome()->SetPayoff(1, std::to_string(bimatrix.get0(i, j)));
-    //                 (*iter)->GetOutcome()->SetPayoff(2, std::to_string(bimatrix.get1(i, j)));
-    //                 iter++;
-    //             }
-    //         }
-    //         return game;
-    //     }
+        Gambit::Game build_nfg(
+            typename Types::MatrixReal &matrix)
+        {
+            Gambit::Array<int> dim(2);
+            dim[1] = matrix.rows;
+            dim[2] = matrix.cols;
+            Gambit::GameRep *nfg = NewTable(dim);
+            Gambit::Game game = nfg;
+            Gambit::StrategyProfileIterator iter(Gambit::StrategySupportProfile(static_cast<Gambit::GameRep *>(nfg)));
+            for (int j = 0; j < matrix.cols; ++j)
+            {
+                for (int i = 0; i < matrix.rows; ++i)
+                {   
+                    const typename Types::Real x = matrix.data[i][j];
+                    (*iter)->GetOutcome()->SetPayoff(1, std::to_string(x));
+                    (*iter)->GetOutcome()->SetPayoff(2, std::to_string(1 - x));
+                    iter++;
+                }
+            }
+            return game;
+        }
 };
