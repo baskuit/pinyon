@@ -43,10 +43,18 @@ class Matrix {
 public:
     std::array<std::array<T, size>, size> data;
     int rows, cols;
+    Matrix() {};
     Matrix(int rows, int cols) : rows(rows), cols(cols) {}
     Matrix(T x, int rows, int cols) : data(), rows(rows), cols(cols) {
         for (int i = 0; i < rows; ++i) {
             for (int j = 0; j < cols; ++j) {
+                data[i][j] = x;
+            }
+        }        
+    }
+    Matrix(T x) : data(), rows(rows), cols(cols) {
+        for (int i = 0; i < size; ++i) {
+            for (int j = 0; j < size; ++j) {
                 data[i][j] = x;
             }
         }        
