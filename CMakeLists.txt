@@ -66,9 +66,11 @@ add_library(gambit STATIC ${GAMBIT_SOURCES})
 
 add_executable(rewrite src/main.cc)
 add_executable(random_trees random_trees/random_trees.cc)
+add_executable(thread_test test/thread_test.cc)
 
 target_link_libraries(rewrite gambit)
 set_property(TARGET rewrite PROPERTY CXX_STANDARD 20)  
 set_property(TARGET random_trees PROPERTY CXX_STANDARD 20)  
+set_property(TARGET thread_test PROPERTY CXX_STANDARD 20)  
 
 target_link_libraries(random_trees gambit)
