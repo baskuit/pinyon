@@ -4,20 +4,22 @@
 
 #include "../libsurskit/math.hh"
 
-template <class Model>
-class Exp3p : public BanditAlgorithm<Model>
-{
-    static_assert(std::derived_from<Model, AbstractModel<typename Model::Types::State>>);
+/*
+Exp3p
+*/
 
+template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit>
+class Exp3p : public _TreeBandit<Model, Exp3p<Model, _TreeBandit>>
+{
 public:
     struct MatrixStats;
     struct ChanceStats;
-    struct Types : BanditAlgorithm<Model>::Types
+    struct Types : _TreeBandit<Model, Exp3p<Model, _TreeBandit>>::Types
     {
         using MatrixStats = Exp3p::MatrixStats;
         using ChanceStats = Exp3p::ChanceStats;
     };
-    struct MatrixStats : BanditAlgorithm<Model>::MatrixStats
+    struct MatrixStats : _TreeBandit<Model, Exp3p<Model, _TreeBandit>>::MatrixStats
     {
         int time = 0;
         typename Types::VectorReal row_gains = {0};
@@ -30,20 +32,69 @@ public:
         double col_value_total = 0;
     };
 
-    struct ChanceStats : BanditAlgorithm<Model>::ChanceStats
+    struct ChanceStats : _TreeBandit<Model, Exp3p<Model, _TreeBandit>>::ChanceStats
     {
         int visits = 0;
         double row_value_total = 0;
         double col_value_total = 0;
     };
 
-    prng& device;
+    prng &device;
     typename Types::VectorReal row_forecast;
     typename Types::VectorReal col_forecast;
 
     Exp3p(prng &device) : device(device) {}
 
-    void select(
+    void _init_stats(
+        int playouts,
+        typename Types::State &state,
+        typename Types::Model &model,
+        MatrixNode<Exp3p> *matrix_node)
+    {
+        matrix_node->stats.time = playouts;
+    }
+
+    void _expand(
+        typename Types::State &state,
+        typename Types::Model &model,
+        MatrixNode<Exp3p> *matrix_node)
+    {
+        /*
+        Expand a leaf node, right before we return it.
+        */
+        matrix_node->is_expanded = true;
+        state.get_actions();
+        matrix_node->is_terminal = state.is_terminal;
+        matrix_node->actions = state.actions;
+
+        if (matrix_node->is_terminal)
+        {
+            matrix_node->inference.row_value = state.row_payoff;
+            matrix_node->inference.col_value = state.col_payoff;
+        }
+        else
+        {
+            model.get_inference(state, matrix_node->inference);
+        }
+
+        // Calculate Exp3p's time parameter using parent's.
+        ChanceNode<Exp3p> *chance_parent = matrix_node->parent;
+        if (chance_parent != nullptr)
+        {
+            MatrixNode<Exp3p> *matrix_parent = chance_parent->parent;
+            int row_idx = chance_parent->row_idx;
+            int col_idx = chance_parent->col_idx;
+            double reach_probability =
+                matrix_parent->inference.row_policy[row_idx] *
+                matrix_parent->inference.col_policy[col_idx] *
+                ((double)matrix_node->transition.prob);
+            int time_estimate = matrix_parent->stats.time * reach_probability;
+            time_estimate = time_estimate == 0 ? 1 : time_estimate;
+            matrix_node->stats.time = time_estimate;
+        }
+    }
+
+    void _select(
         MatrixNode<Exp3p> *matrix_node,
         typename Types::Outcome &outcome)
     {
@@ -96,56 +147,8 @@ public:
         outcome.col_mu = col_forecast[col_idx];
     }
 
-    void expand(
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixNode<Exp3p> *matrix_node)
-    {
-        /*
-        Expand a leaf node, right before we return it.
-        */
-        matrix_node->is_expanded = true;
-        state.get_actions();
-        matrix_node->is_terminal = state.is_terminal;
-        matrix_node->actions = state.actions;
-
-        if (matrix_node->is_terminal)
-        {
-            matrix_node->inference.row_value = state.row_payoff;
-            matrix_node->inference.col_value = state.col_payoff;
-        }
-        else
-        {
-            model.get_inference(state, matrix_node->inference);
-        }
-
-        // Calculate Exp3p's time parameter using parent's.
-        ChanceNode<Exp3p> *chance_parent = matrix_node->parent;
-        if (chance_parent != nullptr)
-        {
-            MatrixNode<Exp3p> *matrix_parent = chance_parent->parent;
-            int row_idx = chance_parent->row_idx;
-            int col_idx = chance_parent->col_idx;
-            double reach_probability = 
-                matrix_parent->inference.row_policy[row_idx] * 
-                matrix_parent->inference.col_policy[col_idx] * 
-                ((double)matrix_node->transition.prob);
-            int time_estimate = matrix_parent->stats.time * reach_probability;
-            time_estimate = time_estimate == 0 ? 1 : time_estimate;
-            matrix_node->stats.time = time_estimate;
-        }
-    };
-    // Done:
-    void init_stats(
-        int playouts,
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixNode<Exp3p> *matrix_node)
-    {
-        matrix_node->stats.time = playouts;
-    }
-    void update_matrix_node(
-        MatrixNode<Exp3p> *matrix_node,
+    void _update_matrix_node(
+        MatrixNode<Exp3p> *matrix_node, 
         typename Types::Outcome &outcome)
     {
         matrix_node->stats.row_value_total += outcome.row_value;
@@ -161,7 +164,8 @@ public:
         matrix_node->stats.row_gains[outcome.row_idx] += outcome.row_value / outcome.row_mu + row_beta; // TODO check this lmao
         matrix_node->stats.col_gains[outcome.col_idx] += outcome.col_value / outcome.col_mu + col_beta;
     }
-    void update_chance_node(
+
+    void _update_chance_node(
         ChanceNode<Exp3p> *chance_node,
         typename Types::Outcome &outcome)
     {

@@ -1,6 +1,6 @@
 #include "state/test_states.hh"
 #include "model/model.hh"
-#include "search/algorithm2.hh"
+#include "search/exp3p.hh"
 
 #include <iostream>
 
@@ -25,8 +25,8 @@ int main()
     Sucker game;
     prng device;
     Model model(device);
-    MatrixNode<Exp3p<Model, TreeBandit>> root;
-    Exp3p<Model, TreeBandit> session(device);
+    MatrixNode<Exp3p<Model, TreeBanditThreaded>> root;
+    Exp3p<Model, TreeBanditThreaded> session(device);
     session.run(1000000, game, model, root);
 
     math::print(root.stats.row_visits, 2);
