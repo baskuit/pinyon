@@ -33,14 +33,8 @@ int main()
     Model model(device);
 
     MatrixNode<MatrixUCB> root;
-    // /*
-    // TreeBandit will derive to TreeBanditMultiThreaded(Pool) so we want to accept Algorithm as template param
-    // */
 
     MatrixUCB session(device);
-
-    // // Linear::Matrix<double, 5> x(1, 3, 3);
-    // // (x*x).print();
     
     session.run(
         10, game, model, root

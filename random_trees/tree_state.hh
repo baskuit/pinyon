@@ -31,63 +31,46 @@ public:
         this->row_strategy = current->stats.row_strategy;
         this->col_strategy = current->stats.col_strategy;
 
-        // update_solved_state(current);
+        update_solved_state_payoffs(current);
     }
 
-    // typename TreeState::pair_actions_t get_legal_actions()
-    // {
-    //     typename TreeState::pair_actions_t legal_actions;
-    //     legal_actions.rows = this->current->stats.expected_value.rows;
-    //     legal_actions.cols = this->current->stats.expected_value.cols;
-    //     for (int i = 0; i < legal_actions.rows; ++i)
-    //     {
-    //         legal_actions.actions0[i] = i;
-    //     };
-    //     for (int j = 0; j < legal_actions.cols; ++j)
-    //     {
-    //         legal_actions.actions1[j] = j;
-    //     };
-    //     return legal_actions;
-    // }
+    void get_actions()
+    {
+        this->actions.rows = this->current->stats.expected_value.rows;
+        this->actions.cols = this->current->stats.expected_value.cols;
+        for (int i = 0; i < this->actions.rows; ++i)
+        {
+            this->actions.row_actions[i] = i;
+        };
+        for (int j = 0; j < this->actions.cols; ++j)
+        {
+            this->actions.col_actions[j] = j;
+        };
+    }
 
-    // void get_legal_actions(typename TreeState::pair_actions_t &legal_actions)
-    // {
-    //     legal_actions.rows = this->current->stats.expected_value.rows;
-    //     legal_actions.cols = this->current->stats.expected_value.cols;
-    //     for (int i = 0; i < legal_actions.rows; ++i)
-    //     {
-    //         legal_actions.actions0[i] = i;
-    //     };
-    //     for (int j = 0; j < legal_actions.cols; ++j)
-    //     {
-    //         legal_actions.actions1[j] = j;
-    //     };
-    // }
+    void apply_actions(
+        typename Types::Action row_action, 
+        typename Types::Action col_action)
+    {
+        this->current = this->current->access(row_action, col_action)->access(this->transition);
+        update_solved_state_payoffs(current);
+    }
 
-    // typename TreeState::transition_data_t apply_actions(typename TreeState::action_t action0, typename TreeState::action_t action1)
-    // {
-    //     typename TreeState::transition_data_t transition_data(0, Rational(1));
-    //     this->current = this->current->access(action0, action1)->access(transition_data);
-    //     // updating SolvedState members
-    //     update_solved_state(current);
-    //     return transition_data;
-    // }
-
-    // void update_solved_state(SeedStateNode *current)
-    // {
-    //     this->payoff0 = this->current->stats.payoff;
-    //     this->payoff1 = 1 - this->payoff0;
-    //     this->rows = this->current->legal_actions.rows;
-    //     this->cols = this->current->legal_actions.cols;
-    //     for (int i = 0; i < this->rows; ++i)
-    //     {
-    //         this->strategy0[i] = this->current->stats.strategy0[i];
-    //     }
-    //     for (int j = 0; j < this->cols; ++j)
-    //     {
-    //         this->strategy1[j] = this->current->stats.strategy1[j];
-    //     }
-    // }
+    void update_solved_state_payoffs(SeedStateNode *current)
+    {
+        this->row_payoff = this->current->stats.payoff;
+        this->col_payoff = 1 - this->row_payoff;
+        const int rows = this->current->actions.rows;
+        const int cols = this->current->actions.cols;
+        for (int i = 0; i < rows; ++i)
+        {
+            this->row_strategy[i] = this->current->stats.row_strategy[i];
+        }
+        for (int j = 0; j < cols; ++j)
+        {
+            this->col_strategy[j] = this->current->stats.col_strategy[j];
+        }
+    }
 
     // int count()
     // {
