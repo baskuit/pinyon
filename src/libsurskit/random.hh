@@ -38,21 +38,6 @@ public:
         return int(this->uniform() * n);
     }
 
-    // samples an index from a probability distribution
-    // int sample_pdf(double *input, int k)
-    // {
-    //     double p = this->uniform();
-    //     for (int i = 0; i < k; ++i)
-    //     {
-    //         p -= input[i];
-    //         if (p <= 0)
-    //         {
-    //             return i;
-    //         }
-    //     }
-    //     return 0;
-    // }
-
     template <typename Vector>
     int sample_pdf(Vector &input, int k)
     {

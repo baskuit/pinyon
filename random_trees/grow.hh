@@ -4,7 +4,6 @@
 
 #include "tree/node.hh"
 #include "search/algorithm.hh"
-// #include "model/model.hh"
 
 #include "solvers/enummixed/enummixed.h"
 
