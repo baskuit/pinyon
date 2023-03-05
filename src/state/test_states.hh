@@ -128,3 +128,45 @@ public:
         }
     }
 };
+// TODO test
+template <typename State>
+class OneShotOneSum : public State
+{
+static_assert(std::derived_from<State, DefaultState<typename State::TypeList>>);
+public:
+    struct Types : State::Types
+    {
+        using Action = int;
+    };
+
+    typename Types::MatrixReal &matrix;
+
+    OneShotOneSum (typename Types::MatrixReal &matrix) : matrix(matrix) {}
+
+    void get_actions()
+    {
+        this->actions.rows = matrix.rows;
+        this->actions.cols = matrix.cols;
+        for (int i = 0; i < matrix.rows; ++i)
+        {
+            this->actions.row_actions[i] = i;
+        }
+        for (int j = 0; j < matrix.cols; ++j)
+        {
+            this->actions.col_actions[j] = j;
+        }
+    }
+
+    void apply_actions(
+        typename Types::Action row_action,
+        typename Types::Action col_action
+    )
+    {
+        this->transition.prob = true; // hehe
+        this->transition.obs = 0;
+        this->is_terminal = true;
+        const typename Types::Real u = matrix.data[row_action][col_action];
+        this->row_payoff = u;
+        this->col_payoff = 1 - u;
+    }
+};
