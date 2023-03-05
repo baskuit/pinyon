@@ -71,16 +71,11 @@ public:
         using Actions = State::Actions;
     };
 
-    bool is_terminal = false;
-    typename Types::Real row_payoff, col_payoff;
-
-
     struct Transition : AbstractState<TypeList>::Transition
     {
         typename Types::Observation obs;
         typename Types::Probability prob;
     };
-    Transition transition;
 
     struct Actions : AbstractState<TypeList>::Actions
     {
@@ -105,6 +100,10 @@ public:
             std::cout << std::endl;
         }
     };
+
+    bool is_terminal = false;
+    typename Types::Real row_payoff, col_payoff;
+    Transition transition;
     Actions actions;
 
     void get_actions();
