@@ -1,7 +1,7 @@
 #include "state/test_states.hh"
 #include "model/model.hh"
 #include "search/exp3p.hh"
-
+#include "search/matrix_ucb2.hh"
 #include <iostream>
 
 template <int size>
@@ -25,11 +25,11 @@ int main()
     Sucker game;
     prng device;
     Model model(device);
-    MatrixNode<Exp3p<Model, TreeBanditThreaded>> root;
-    Exp3p<Model, TreeBanditThreaded> session(device);
-    session.run(1000000, game, model, root);
+    MatrixNode<MatrixUCB<Model, TreeBanditThreaded>> root;
+    MatrixUCB<Model, TreeBandit> session(device);
+    // session.run(1000000, game, model, root);
 
-    math::print(root.stats.row_visits, 2);
+    // math::print(root.stats.row_visits, 2);
 
     return 0;
 }
