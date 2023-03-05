@@ -56,7 +56,6 @@ public:
             this->playout(state, model, &matrix_node);
         }
     }
-
     MatrixNode<Algorithm> *playout(
         typename Types::State &state,
         typename Types::Model &model,
@@ -67,7 +66,6 @@ public:
             model,
             matrix_node);
     }
-
     void select(
         MatrixNode<Algorithm> *matrix_node,
         Outcome &outcome)
@@ -76,7 +74,6 @@ public:
             matrix_node,
             outcome);
     }
-
     void init_stats(
         int playouts,
         typename Types::State &state,
@@ -247,8 +244,8 @@ TreeBandit with a mutex pool
 template <class Model, class Algorithm, int pool_size>
 class TreeBanditThreadPool : public TreeBanditBase<Model, Algorithm>
 {
-// static_assert(std::derived_from<TreeBanditThreadPool<Model, Algorithm, pool_size>, Algorithm>,
-// "ThreadBanditThreadPool should be a derived class of its template Algorithm (Bandit) arg");
+    // static_assert(std::derived_from<TreeBanditThreadPool<Model, Algorithm, pool_size>, Algorithm>,
+    // "ThreadBanditThreadPool should be a derived class of its template Algorithm (Bandit) arg");
 public:
     struct MatrixStats;
     struct Types : TreeBanditBase<Model, Algorithm>::Types
@@ -317,51 +314,49 @@ public:
     }
 
 private:
-    
     void get_mutex_index(
         MatrixNode<Algorithm> *matrix_node)
     {
         matrix_node->stats.mutex_index = (this->current_index++) % pool_size;
     }
-    
 };
 
 /*
 TODO: Refer to old code for multithreading
 */
 
-    // void loopPlayout(
-    //     int playouts,
-    //     typename Exp3p::state_t *state,
-    //     MatrixNode<Exp3p> *matrix_node)
-    // {
-    //     prng device_(device.random_int(2147483647));
-    //     typename Exp3p::model_t model(device_);
+// void loopPlayout(
+//     int playouts,
+//     typename Exp3p::state_t *state,
+//     MatrixNode<Exp3p> *matrix_node)
+// {
+//     prng device_(device.random_int(2147483647));
+//     typename Exp3p::model_t model(device_);
 
-    //     for (int playout = 0; playout < playouts; ++playout)
-    //     {
-    //         auto state_ = *state;
-    //         runPlayout(state_, model, matrix_node);
-    //     }
-    // }
+//     for (int playout = 0; playout < playouts; ++playout)
+//     {
+//         auto state_ = *state;
+//         runPlayout(state_, model, matrix_node);
+//     }
+// }
 
-    // // Top level search function
-    // void search(
-    //     int threads,
-    //     int playouts,
-    //     typename Exp3p::state_t &state,
-    //     MatrixNode<Exp3p> *root)
-    // {
-    //     root->stats.t = playouts;
-    //     std::thread thread_pool[threads];
+// // Top level search function
+// void search(
+//     int threads,
+//     int playouts,
+//     typename Exp3p::state_t &state,
+//     MatrixNode<Exp3p> *root)
+// {
+//     root->stats.t = playouts;
+//     std::thread thread_pool[threads];
 
-    //     for (int i = 0; i < threads; ++i)
-    //     {
-    //         const int playouts_thread = playouts / threads;
-    //         thread_pool[i] = std::thread(&Exp3p::loopPlayout, this, playouts_thread, &state, root);
-    //     }
-    //     for (int i = 0; i < threads; ++i)
-    //     {
-    //         thread_pool[i].join();
-    //     }
-    // }
+//     for (int i = 0; i < threads; ++i)
+//     {
+//         const int playouts_thread = playouts / threads;
+//         thread_pool[i] = std::thread(&Exp3p::loopPlayout, this, playouts_thread, &state, root);
+//     }
+//     for (int i = 0; i < threads; ++i)
+//     {
+//         thread_pool[i].join();
+//     }
+// }

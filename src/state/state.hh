@@ -26,8 +26,18 @@ struct TypeList : AbstractTypeList
     using VectorAction = _VectorAction;
     using VectorReal = _VectorReal;
     using VectorInt = _VectorInt;
-    using MatrixReal = _MatrixReal;
-    using MatrixInt = _MatrixInt;
+    // using MatrixReal = _MatrixReal;
+    // using MatrixInt = _MatrixInt;
+    struct MatrixReal : _MatrixReal {
+        _Real& operator()(int i, int j) {
+            return this->data[i][j];
+        }
+    };
+    struct MatrixInt : _MatrixInt {
+        int& operator()(int i, int j) {
+            return this->data[i][j];
+        }
+    };
 };
 
 template <class _TypeList>
@@ -58,7 +68,7 @@ There may be a way to statically guarantee this.
 */
 
 template <class TypeList>
-class State : public AbstractState<TypeList>
+class DefaultState : public AbstractState<TypeList>
 {
     static_assert(std::derived_from<TypeList, AbstractTypeList>);
 
@@ -67,8 +77,8 @@ public:
     struct Actions;
     struct Types : AbstractState<TypeList>::Types
     {
-        using Transition = State::Transition;
-        using Actions = State::Actions;
+        using Transition = DefaultState::Transition;
+        using Actions = DefaultState::Actions;
     };
 
     struct Transition : AbstractState<TypeList>::Transition
@@ -118,7 +128,7 @@ The Real number data type is assumed to be double and Vector, Matrix types are h
 */
 
 template <int size, typename Action, typename Observation, typename Probability>
-using StateArray = State<TypeList<
+using StateArray = DefaultState<TypeList<
     Action,
     Observation,
     Probability,
@@ -130,12 +140,12 @@ using StateArray = State<TypeList<
     Linear::Matrix<int, size>>>;
 
 template <class TypeList>
-class SolvedState : public State<TypeList>
+class SolvedState : public DefaultState<TypeList>
 {
     static_assert(std::derived_from<TypeList, AbstractTypeList>);
 
 public:
-    struct Types : State<TypeList>::Types
+    struct Types : DefaultState<TypeList>::Types
     {
     };
     typename Types::VectorReal row_strategy, col_strategy;
@@ -161,12 +171,12 @@ Currently not used by any Search algorithms, but I have ideas.
 */
 
 template <class TypeList>
-class StateChance : public State<TypeList>
+class StateChance : public DefaultState<TypeList>
 {
     static_assert(std::derived_from<TypeList, AbstractTypeList>);
 
 public:
-    struct Types : State<TypeList>::Types
+    struct Types : DefaultState<TypeList>::Types
     {
     };
     void apply_actions(
