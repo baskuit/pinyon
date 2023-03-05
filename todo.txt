@@ -3,7 +3,7 @@ Port MatrixUCB
 Finish random_trees
 Review Algo and Node rewrite
 docs!!!
-tests!
+tests! (speed test)
 
 
 Things to do for rewrite:

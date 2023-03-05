@@ -74,3 +74,4 @@ set_property(TARGET random_trees PROPERTY CXX_STANDARD 20)
 set_property(TARGET thread_test PROPERTY CXX_STANDARD 20)  
 
 target_link_libraries(random_trees gambit)
+target_link_libraries(thread_test gambit)

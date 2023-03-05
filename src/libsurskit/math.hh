@@ -33,6 +33,12 @@ namespace math
         }
         std::cout << std::endl;
     }
+
+    // template <typename MatrixReal, typename Real>
+    // Real get(MatrixReal matrix, int i, int j) {
+    //     return matrix.data[i][j];
+    // }
+    
 }
 
 namespace Linear
@@ -44,7 +50,7 @@ public:
     std::array<std::array<T, size>, size> data;
     int rows, cols;
     Matrix() {};
-    Matrix(int rows, int cols) : rows(rows), cols(cols) {}
+    // Matrix(bool x, bool y, int rows, int cols) : rows(rows), cols(cols) {}
     Matrix(T x, int rows, int cols) : data(), rows(rows), cols(cols) {
         for (int i = 0; i < rows; ++i) {
             for (int j = 0; j < cols; ++j) {
