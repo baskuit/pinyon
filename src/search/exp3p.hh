@@ -77,7 +77,7 @@ public:
             model.get_inference(state, matrix_node->inference);
         }
 
-        // Calculate Exp3p's time parameter using parent's.
+        // Calculate node's time parameter using parent's.
         ChanceNode<Exp3p> *chance_parent = matrix_node->parent;
         if (chance_parent != nullptr)
         {

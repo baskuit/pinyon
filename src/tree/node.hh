@@ -2,10 +2,6 @@
 
 #include "../libsurskit/math.hh"
 
-// TODO: Consider making these subclasses of "Node"
-// template <typename Algorithm>
-// class Node;
-
 template <class _Algorithm>
 class AbstractNode {
 public:
@@ -17,7 +13,9 @@ public:
 template <typename Algorithm>
 class ChanceNode;
 
-// Matrix Node
+/*
+Matrix Node
+*/
 
 template <typename Algorithm>
 class MatrixNode : public AbstractNode<Algorithm>
@@ -38,7 +36,7 @@ public:
     typename Types::Transition transition;
     typename Types::Actions actions;
     typename Types::Inference inference;
-    typename Types::MatrixStats stats; // cumulative_value, vists now part of stats
+    typename Types::MatrixStats stats;
 
     MatrixNode () {};
     MatrixNode(
