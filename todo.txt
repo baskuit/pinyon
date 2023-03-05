@@ -1,3 +1,11 @@
+IMMEDIATE TODO: (the rest is bs)
+Port MatrixUCB
+Finish random_trees
+Review Algo and Node rewrite
+docs!!!
+tests!
+
+
 Things to do for rewrite:
 
 Make sure Exp3p works correctly before doing anything else.
