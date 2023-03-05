@@ -62,10 +62,10 @@ public:
         /*
         Expand a leaf node, right before we return it.
         */
-        matrix_node->is_expanded = true;
         state.get_actions();
-        matrix_node->is_terminal = state.is_terminal;
         matrix_node->actions = state.actions;
+        matrix_node->is_expanded = true;
+        matrix_node->is_terminal = state.is_terminal;
 
         if (matrix_node->is_terminal)
         {
@@ -140,7 +140,7 @@ public:
             }
         }
         const int row_idx = this->device.sample_pdf(row_forecast, rows);
-        const int col_idx = this->device.sample_pdf(col_forecast, cols); 
+        const int col_idx = this->device.sample_pdf(col_forecast, cols);
         outcome.row_idx = row_idx;
         outcome.col_idx = col_idx;
         outcome.row_mu = row_forecast[row_idx];
@@ -148,7 +148,7 @@ public:
     }
 
     void _update_matrix_node(
-        MatrixNode<Exp3p> *matrix_node, 
+        MatrixNode<Exp3p> *matrix_node,
         typename Types::Outcome &outcome)
     {
         matrix_node->stats.row_value_total += outcome.row_value;
@@ -175,7 +175,6 @@ public:
     }
 
 private:
-
     inline void softmax(
         typename Types::VectorReal &forecast,
         typename Types::VectorReal &gains,

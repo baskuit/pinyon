@@ -2,10 +2,14 @@
 
 #include "../libsurskit/math.hh"
 
+#include <concepts>
+
 template <class _Algorithm>
-class AbstractNode {
+class AbstractNode
+{
 public:
-    struct Types : _Algorithm::Types {
+    struct Types : _Algorithm::Types
+    {
         using Algorithm = _Algorithm;
     };
 };
@@ -24,7 +28,7 @@ public:
     struct Types : AbstractNode<Algorithm>::Types
     {
     };
-    
+
     ChanceNode<Algorithm> *parent = nullptr;
     ChanceNode<Algorithm> *child = nullptr;
     MatrixNode<Algorithm> *prev = nullptr;
@@ -38,7 +42,7 @@ public:
     typename Types::Inference inference;
     typename Types::MatrixStats stats;
 
-    MatrixNode () {};
+    MatrixNode(){};
     MatrixNode(
         ChanceNode<Algorithm> *parent,
         MatrixNode<Algorithm> *prev,

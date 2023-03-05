@@ -13,8 +13,6 @@ const int __size__ = 3;
 int main()
 {
 
-    
-
     using TreeState = TreeState<__size__>;
     using MonteCarlo = MonteCarloModel<TreeState>;
 

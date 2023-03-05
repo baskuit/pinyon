@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../state/state.hh"
+#include "state/state.hh"
 
 template <class _State>
 class AbstractModel
@@ -22,7 +22,7 @@ public:
 };
 
 /*
-Equivalent to `State`, in that virtually all models will be derived from it.
+Similar to `State`, in that virtually all models will be derived from it.
 */
 
 template <class State>

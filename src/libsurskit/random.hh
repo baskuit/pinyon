@@ -2,6 +2,7 @@
 
 #include <random>
 #include <array>
+
 /*
 The only behaviour needing explanation is the copy mechanism.
 We don't override the default copy constructor. That preserves the progress of the generator as well as the seed.

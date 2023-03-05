@@ -10,7 +10,6 @@ template <int size>
 class TreeState : public SolvedStateArray<size, int, int, double>
 {
 public:
-
     using SeedStateNode = MatrixNode<Grow<MonteCarloModel<SeedState<size>>>>;
 
     struct Types : SolvedStateArray<size, int, int, double>::Types
@@ -21,6 +20,7 @@ public:
     std::shared_ptr<SeedStateNode> root;
     SeedStateNode *current;
     // Trying out make shared to keep copy assignment but also have automatic memory management
+    // TODO make sure this works
 
     TreeState(prng &device, int depth_bound, int rows, int cols) : seed(SeedState<size>(device, depth_bound, rows, cols))
     {
@@ -30,7 +30,6 @@ public:
         session.grow(seed, current);
         this->row_strategy = current->stats.row_strategy;
         this->col_strategy = current->stats.col_strategy;
-
         update_solved_state_payoffs(current);
     }
 
@@ -49,7 +48,7 @@ public:
     }
 
     void apply_actions(
-        typename Types::Action row_action, 
+        typename Types::Action row_action,
         typename Types::Action col_action)
     {
         this->current = this->current->access(row_action, col_action)->access(this->transition);
@@ -71,14 +70,4 @@ public:
             this->col_strategy[j] = this->current->stats.col_strategy[j];
         }
     }
-
-    // int count()
-    // {
-    //     return this->current->count();
-    // }
-
-    // Linear::Bimatrix2D<double, size> get_expected_value_matrix()
-    // {
-    //     return this->current->stats.expected_value;
-    // }
 };

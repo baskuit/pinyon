@@ -1,7 +1,8 @@
 IMMEDIATE TODO: (the rest is bs)
-Port MatrixUCB
-Finish random_trees
-Review Algo and Node rewrite
+Port MatrixUCB - done
+Finish random_trees - done
+Review Algo and Node rewrite - uh
+fix messed up matrix initializers
 docs!!!
 tests! (speed test)
 
