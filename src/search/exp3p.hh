@@ -1,182 +1,189 @@
 #pragma once
 
 #include "algorithm.hh"
-#include "tree/node.hh"
 
-template <typename Model>
-class Exp3p : public Algorithm<Model>
+#include "../libsurskit/math.hh"
+
+/*
+Exp3p
+*/
+
+template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit>
+class Exp3p : public _TreeBandit<Model, Exp3p<Model, _TreeBandit>>
 {
 public:
-    struct MatrixStats : Algorithm<Model>::MatrixStats
+    struct MatrixStats;
+    struct ChanceStats;
+    struct Types : _TreeBandit<Model, Exp3p<Model, _TreeBandit>>::Types
     {
-        int t = 0;
-        std::array<double, Exp3p::state_t::_size> gains0 = {0};
-        std::array<double, Exp3p::state_t::_size> gains1 = {0};
-        std::array<int, Exp3p::state_t::_size> visits0 = {0};
-        std::array<int, Exp3p::state_t::_size> visits1 = {0};
+        using MatrixStats = Exp3p::MatrixStats;
+        using ChanceStats = Exp3p::ChanceStats;
+    };
+    struct MatrixStats : _TreeBandit<Model, Exp3p<Model, _TreeBandit>>::MatrixStats
+    {
+        int time = 0;
+        typename Types::VectorReal row_gains = {0};
+        typename Types::VectorReal col_gains = {0};
+        typename Types::VectorInt row_visits = {0};
+        typename Types::VectorInt col_visits = {0};
 
         int visits = 0;
-        double cumulative_value0 = 0;
-        double cumulative_value1 = 0;
+        double row_value_total = 0;
+        double col_value_total = 0;
     };
 
-    struct ChanceStats : Algorithm<Model>::ChanceStats
+    struct ChanceStats : _TreeBandit<Model, Exp3p<Model, _TreeBandit>>::ChanceStats
     {
         int visits = 0;
-        double cumulative_value0 = 0;
-        double cumulative_value1 = 0;
-        double get_expected_value0() { return visits > 0 ? cumulative_value0 / visits : .5; }
-        double get_expected_value1() { return visits > 0 ? cumulative_value1 / visits : .5; }
+        double row_value_total = 0;
+        double col_value_total = 0;
     };
 
     prng &device;
-
-    // Working memory
-    std::array<double, Exp3p::state_t::_size> forecast0;
-    std::array<double, Exp3p::state_t::_size> forecast1;
+    typename Types::VectorReal row_forecast;
+    typename Types::VectorReal col_forecast;
 
     Exp3p(prng &device) : device(device) {}
 
-    void search(
+    void _init_stats(
         int playouts,
-        typename Exp3p::state_t &state,
-        typename Exp3p::model_t &model,
-        MatrixNode<Exp3p> &root)
-    {
-        root.stats.t = playouts;
-        for (int playout = 0; playout < playouts; ++playout)
-        {
-            auto state_ = state;
-            runPlayout(state_, model, &root);
-        }
-        std::cout << "Exp3p root visits" << std::endl;
-        std::cout << "p0: " << root.stats.visits0[0] << ' ' << root.stats.visits0[1] << std::endl;
-        std::cout << "p1: " << root.stats.visits1[0] << ' ' << root.stats.visits1[1] << std::endl;
-        std::cout << "Exp3p root matrix" << std::endl;
-        get_matrix(&root).print();
-
-        std::array<double, Exp3p::state_t::_size> strategy0;
-        std::array<double, Exp3p::state_t::_size> strategy1;
-
-        std::cout << "strategies" << std::endl;
-        math::power_norm<int, double, Exp3p::state_t::_size>(root.stats.visits0, root.legal_actions.rows, 1, strategy0);
-        for (int i = 0; i < root.legal_actions.rows; ++i) {
-            std::cout << strategy0[i] << ' ';   
-        }        
-        std::cout << std::endl;
-        math::power_norm<int, double, Exp3p::state_t::_size>(root.stats.visits1, root.legal_actions.cols, 1, strategy1);
-        for (int j = 0; j < root.legal_actions.cols; ++j) {
-            std::cout << strategy1[j] << ' ';            
-        }
-        std::cout << std::endl;
-    }
-
-private:
-    void expand(
-        typename Exp3p::state_t &state,
-        Model model,
+        typename Types::State &state,
+        typename Types::Model &model,
         MatrixNode<Exp3p> *matrix_node)
     {
+        matrix_node->stats.time = playouts;
+    }
+
+    void _expand(
+        typename Types::State &state,
+        typename Types::Model &model,
+        MatrixNode<Exp3p> *matrix_node)
+    {
+        /*
+        Expand a leaf node, right before we return it.
+        */
+        state.get_actions();
+        matrix_node->actions = state.actions;
         matrix_node->is_expanded = true;
-        state.get_legal_actions(matrix_node->legal_actions);
-        matrix_node->is_terminal = (matrix_node->legal_actions.rows * matrix_node->legal_actions.cols == 0); // (matrix_node->legal_actions.rows*matrix_node->legal_actions.cols == 0);
+        matrix_node->is_terminal = state.is_terminal;
 
         if (matrix_node->is_terminal)
-        { // Makes this model independent
-            matrix_node->inference.value0 = state.payoff0;
-            matrix_node->inference.value1 = state.payoff1;
+        {
+            matrix_node->inference.row_value = state.row_payoff;
+            matrix_node->inference.col_value = state.col_payoff;
         }
         else
         {
-            model.inference(state, matrix_node->legal_actions);
-            matrix_node->inference = model.last_inference; // Inference expects a state, gets T instead...
+            model.get_inference(state, matrix_node->inference);
         }
 
-        // time
-        ChanceNode<Exp3p> *parent = matrix_node->parent;
-        if (parent != nullptr)
+        // Calculate node's time parameter using parent's.
+        ChanceNode<Exp3p> *chance_parent = matrix_node->parent;
+        if (chance_parent != nullptr)
         {
-            MatrixNode<Exp3p> *mparent = parent->parent;
-            int row_idx = parent->row_idx;
-            int col_idx = parent->col_idx;
-            double joint_p = mparent->inference.strategy_prior0[row_idx] * mparent->inference.strategy_prior1[col_idx] * ((double)matrix_node->transition_data.probability);
-            int t_estimate = matrix_node->parent->parent->stats.t * joint_p;
-            t_estimate = t_estimate == 0 ? 1 : t_estimate;
-            matrix_node->stats.t = t_estimate;
+            MatrixNode<Exp3p> *matrix_parent = chance_parent->parent;
+            int row_idx = chance_parent->row_idx;
+            int col_idx = chance_parent->col_idx;
+            double reach_probability =
+                matrix_parent->inference.row_policy[row_idx] *
+                matrix_parent->inference.col_policy[col_idx] *
+                ((double)matrix_node->transition.prob);
+            int time_estimate = matrix_parent->stats.time * reach_probability;
+            time_estimate = time_estimate == 0 ? 1 : time_estimate;
+            matrix_node->stats.time = time_estimate;
         }
     }
 
-    MatrixNode<Exp3p> *runPlayout(
-        typename Exp3p::state_t &state,
-        Model &model,
-        MatrixNode<Exp3p> *matrix_node)
+    void _select(
+        MatrixNode<Exp3p> *matrix_node,
+        typename Types::Outcome &outcome)
     {
-
-        if (matrix_node->is_terminal == true)
+        /*
+        Softmaxing of the gains to produce forecasts/strategies for the row and col players.
+        The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
+        */
+        const int time = matrix_node->stats.time;
+        const int rows = matrix_node->actions.rows;
+        const int cols = matrix_node->actions.cols;
+        if (rows == 1)
         {
-            return matrix_node;
+            this->row_forecast[0] = 1;
         }
         else
         {
-            if (matrix_node->is_expanded == true)
+            const double eta = .95 * sqrt(log(rows) / (time * rows));
+            const double gamma_ = 1.05 * sqrt(rows * log(rows) / time);
+            const double gamma = gamma_ < 1 ? gamma_ : 1;
+            softmax(this->row_forecast, matrix_node->stats.row_gains, rows, eta);
+            for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
-                forecast(matrix_node);
-                int row_idx = device.sample_pdf<double, Exp3p::state_t::_size>(forecast0, matrix_node->legal_actions.rows);
-                int col_idx = device.sample_pdf<double, Exp3p::state_t::_size>(forecast1, matrix_node->legal_actions.cols);
-                double inverse_prob0 = 1 / forecast0[row_idx];
-                double inverse_prob1 = 1 / forecast1[col_idx]; // Forecast is altered by subsequent search calls
-
-                typename Exp3p::action_t action0 = matrix_node->legal_actions.actions0[row_idx];
-                typename Exp3p::action_t action1 = matrix_node->legal_actions.actions1[col_idx];
-                typename Exp3p::transition_data_t transition_data = state.apply_actions(action0, action1);
-
-                ChanceNode<Exp3p> *chance_node = matrix_node->access(row_idx, col_idx);
-                MatrixNode<Exp3p> *matrix_node_next = chance_node->access(transition_data);
-                MatrixNode<Exp3p> *matrix_node_leaf = runPlayout(state, model, matrix_node_next);
-
-                double u0 = matrix_node_leaf->inference.value0;
-                double u1 = matrix_node_leaf->inference.value1;
-                matrix_node->stats.gains0[row_idx] += u0 * inverse_prob0;
-                matrix_node->stats.gains1[col_idx] += u1 * inverse_prob1;
-                update(matrix_node, u0, u1, row_idx, col_idx);
-                update(chance_node, u0, u1);
-                return matrix_node_leaf;
-            }
-            else
-            {
-                expand(state, model, matrix_node);
-                return matrix_node;
+                this->row_forecast[row_idx] =
+                    (1 - gamma) * this->row_forecast[row_idx] +
+                    (gamma)*matrix_node->inference.row_policy[row_idx];
             }
         }
-    };
+        if (cols == 1)
+        {
+            this->col_forecast[0] = 1;
+        }
+        else
+        {
+            const double eta = .95 * sqrt(log(cols) / (time * cols));
+            const double gamma_ = 1.05 * sqrt(cols * log(cols) / time);
+            const double gamma = gamma_ < 1 ? gamma_ : 1;
+            softmax(this->col_forecast, matrix_node->stats.col_gains, cols, eta);
+            for (int col_idx = 0; col_idx < cols; ++col_idx)
+            {
+                this->col_forecast[col_idx] =
+                    (1 - gamma) * this->col_forecast[col_idx] +
+                    (gamma)*matrix_node->inference.col_policy[col_idx];
+            }
+        }
+        const int row_idx = this->device.sample_pdf(row_forecast, rows);
+        const int col_idx = this->device.sample_pdf(col_forecast, cols);
+        outcome.row_idx = row_idx;
+        outcome.col_idx = col_idx;
+        outcome.row_mu = row_forecast[row_idx];
+        outcome.col_mu = col_forecast[col_idx];
+    }
 
-    Linear::Bimatrix2D<double, Exp3p::state_t::_size> get_matrix(MatrixNode<Exp3p> *matrix_node)
+    void _update_matrix_node(
+        MatrixNode<Exp3p> *matrix_node,
+        typename Types::Outcome &outcome)
     {
-        Linear::Bimatrix2D<double, Exp3p::state_t::_size> M(matrix_node->legal_actions.rows, matrix_node->legal_actions.cols);
-        for (int i = 0; i < M.rows; ++i)
-        {
-            for (int j = 0; j < M.cols; ++j)
-            {
-                M.set0(i, j, .5);
-                M.set1(i, j, .5);
-            }
-        }
+        matrix_node->stats.row_value_total += outcome.row_value;
+        matrix_node->stats.col_value_total += outcome.col_value;
+        matrix_node->stats.visits += 1;
+        matrix_node->stats.row_visits[outcome.row_idx] += 1;
+        matrix_node->stats.col_visits[outcome.col_idx] += 1;
+        const double rows = matrix_node->actions.rows;
+        const double cols = matrix_node->actions.cols;
+        const double time = matrix_node->stats.time;
+        const double row_beta = std::sqrt(std::log(rows) / (double)(time * rows));
+        const double col_beta = std::sqrt(std::log(cols) / (double)(time * cols));
+        matrix_node->stats.row_gains[outcome.row_idx] += outcome.row_value / outcome.row_mu + row_beta; // TODO check this lmao
+        matrix_node->stats.col_gains[outcome.col_idx] += outcome.col_value / outcome.col_mu + col_beta;
+    }
 
-        // cur iterates through all chance node children
-        ChanceNode<Exp3p> *cur = matrix_node->child;
-        while (cur != nullptr)
-        {
-            M.set0(cur->row_idx, cur->col_idx, cur->stats.get_expected_value0());
-            M.set1(cur->row_idx, cur->col_idx, cur->stats.get_expected_value1());
-            cur = cur->next;
-        }
-        return M;
+    void _update_chance_node(
+        ChanceNode<Exp3p> *chance_node,
+        typename Types::Outcome &outcome)
+    {
+        chance_node->stats.row_value_total += outcome.row_value;
+        chance_node->stats.col_value_total += outcome.col_value;
+        chance_node->stats.visits += 1;
     }
 
 private:
-    // Softmax and uniform noise
-    void softmax(std::array<double, Exp3p::state_t::_size> &forecast, std::array<double, Exp3p::state_t::_size> &gains, int k, double eta)
+    inline void softmax(
+        typename Types::VectorReal &forecast,
+        typename Types::VectorReal &gains,
+        int k,
+        typename Types::Real eta)
     {
+        /*
+        Softmax helper function with logit scaling and uniform noise.
+        */
         double max = 0;
         for (int i = 0; i < k; ++i)
         {
@@ -200,59 +207,4 @@ private:
             forecast[i] /= sum;
         }
     };
-
-    void forecast(MatrixNode<Exp3p> *matrix_node)
-    {
-        const int time = matrix_node->stats.t;
-        const int rows = matrix_node->legal_actions.rows;
-        const int cols = matrix_node->legal_actions.cols;
-        if (rows == 1)
-        {
-            forecast0[0] = 1;
-        }
-        else
-        {
-            const double eta = .95 * sqrt(log(rows) / (time * rows));
-            const double gamma_ = 1.05 * sqrt(rows * log(rows) / time);
-            const double gamma = gamma_ < 1 ? gamma_ : 1;
-            softmax(forecast0, matrix_node->stats.gains0, rows, eta);
-            for (int row_idx = 0; row_idx < rows; ++row_idx)
-            {
-                double x = (1 - gamma) * forecast0[row_idx] + (gamma)*matrix_node->inference.strategy_prior0[row_idx];
-                forecast0[row_idx] = x;
-            }
-        }
-        if (cols == 1)
-        {
-            forecast1[0] = 1;
-        }
-        else
-        {
-            const double eta = .95 * sqrt(log(cols) / (time * cols));
-            const double gamma_ = 1.05 * sqrt(cols * log(cols) / time);
-            const double gamma = gamma_ < 1 ? gamma_ : 1;
-            softmax(forecast1, matrix_node->stats.gains1, cols, eta);
-            for (int col_idx = 0; col_idx < cols; ++col_idx)
-            {
-                double x = (1 - gamma) * forecast1[col_idx] + (gamma)*matrix_node->inference.strategy_prior1[col_idx];
-                forecast1[col_idx] = x;
-            }
-        }
-    }
-
-    void update(MatrixNode<Exp3p> *matrix_node, double u0, double u1, int row_idx, int col_idx)
-    {
-        matrix_node->stats.cumulative_value0 += u0;
-        matrix_node->stats.cumulative_value1 += u1;
-        matrix_node->stats.visits += 1;
-        matrix_node->stats.visits0[row_idx] += 1;
-        matrix_node->stats.visits1[col_idx] += 1;
-    }
-
-    void update(ChanceNode<Exp3p> *chance_node, double u0, double u1)
-    {
-        chance_node->stats.cumulative_value0 += u0;
-        chance_node->stats.cumulative_value1 += u1;
-        chance_node->stats.visits += 1;
-    }
 };

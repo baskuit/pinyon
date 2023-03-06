@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.1.0)
 project(surskit VERSION 0.1.0)
+
+set (CMAKE_CXX_STANDARD 20)
 
 set(GAMBIT_SOURCES
     gambit/src/core/dvector.cc
@@ -50,13 +52,8 @@ set(GAMBIT_SOURCES
     gambit/src/solvers/lrs/lrsnashlib.c
 )
 
-set(SURSKIT_SOURCES
-    src/main.cc
-    test/gambit_link_test.cc
-)
-
-INCLUDE_DIRECTORIES(
-    src	
+include_directories(
+    src
 	gambit/src
 	gambit/src/core
 	gambit/src/games
@@ -65,14 +62,6 @@ INCLUDE_DIRECTORIES(
 	gambit/src/lrs
 )
 
-add_library(gambit STATIC ${GAMBIT_SOURCES}) # removed headers
+add_library(gambit STATIC ${GAMBIT_SOURCES})
 
-
-
-# add_library(surskit SHARED ${SURSKIT_SOURCES})
-
-add_executable(matrix_ucb src/main.cc)
-add_executable(random_trees random_trees/random_trees.cc)
-
-target_link_libraries(matrix_ucb gambit)
-target_link_libraries(random_trees gambit)
+add_executable(example examples/exp3p_solving_one_shot.cc)

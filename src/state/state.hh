@@ -1,105 +1,191 @@
 #pragma once
 
-#include <string.h>
-
 #include "../libsurskit/math.hh"
 
-// PairActions
-
-template <int size, typename Action>
-struct PairActions
+#include <concepts>
+struct AbstractTypeList
 {
-
-    /*
-    Legal actions for players 0 and 1.
-    Stored in each matrix node, for example
-    Actions a_i player 0 after i=rows are garbage, ditto for cols, player 1.
-    */
-
-    int rows = 0;
-    int cols = 0;
-    std::array<Action, size> actions0;
-    std::array<Action, size> actions1;
-    PairActions() {}
-    PairActions(int rows, int cols) : rows(rows), cols(cols) {}
+};
+// "_Name" so that the Type name does not shadow the template
+template <typename _Action,
+          typename _Observation,
+          typename _Probability,
+          typename _Real,
+          typename _VectorAction,
+          typename _VectorReal,
+          typename _VectorInt,
+          typename _MatrixReal,
+          typename _MatrixInt>
+// TODO requires std::floating_point<_Real>
+struct TypeList : AbstractTypeList
+{
+    using Action = _Action;
+    using Observation = _Observation;
+    using Probability = _Probability;
+    using Real = _Real;
+    using VectorAction = _VectorAction;
+    using VectorReal = _VectorReal;
+    using VectorInt = _VectorInt;
+    // using MatrixReal = _MatrixReal;
+    // using MatrixInt = _MatrixInt;
+    struct MatrixReal : _MatrixReal {
+        _Real& operator()(int i, int j) {
+            return this->data[i][j];
+        }
+    };
+    struct MatrixInt : _MatrixInt {
+        int& operator()(int i, int j) {
+            return this->data[i][j];
+        }
+    };
 };
 
-// TransitionData
-
-template <typename Hash>
-struct TransitionData
-{
-
-    Hash key;
-    Rational probability;
-
-    /*
-    After applying a pair of actions to a matrix node, we stochastically transition to another matrix node
-    and recieve some identifying observation of type Hash.
-    Hash is essentially the type of the chance player's actions.
-    We use rational numbers to quantify the probability of that transition
-    This has nice properties; for example, the sum of probabilities at a chance node
-    equals 1 if and only if all actions of the chace player have been explored.
-    */
-
-    TransitionData() {}
-    TransitionData(Hash key, Rational probability) : key(key), probability(probability) {}
-};
-
-// State
-
-template <int size, typename Action, typename Hash>
-class State
+template <class _TypeList>
+class AbstractState
 {
 public:
-    /*
-    Markov Desicion Process.
-    We assume rewards at each transition are 0 until the end until the last
-    Rewards at the end are called payoffs. In the example code and motivating papers
-    we assume payoff0 + payoff1 = 1.
-    */
-
-    static const int _size = size;
-    using action_t = Action;
-    using hash_t = Hash;
-    using pair_actions_t = PairActions<size, Action>;
-    using transition_data_t = TransitionData<Hash>;
-
-    prng &device;
-    double payoff0 = 0.5f;
-    double payoff1 = 0.5f;
-    // Currently reward type is 'hard'-coded. Float is not accurate enough, and no need for e.g. Rational type.
-    State(prng &device) : device(device) {}
-    State(prng &device, double payoff) : device(device), payoff0(payoff), payoff1(1 - payoff) {}
-    State(prng &device, double payoff0, double payoff1) : device(device), payoff0(payoff0), payoff1(payoff1)
+    struct Types : _TypeList
     {
-    }
-
-    virtual pair_actions_t get_legal_actions() = 0;
-    virtual void get_legal_actions(pair_actions_t &legal_actions) = 0;
-    // transition function mirrors MDP formulation. From a game theory pov, we are returning chance players action with its prob.
-    virtual transition_data_t apply_actions(Action action0, Action action1) = 0;
+        using TypeList = _TypeList;
+    };
+    struct Transition
+    {
+    };
+    struct Actions
+    {
+    };
 };
 
-// Solved State
+/*
+Default State. Pretty much every implementation of anything so far assumes that the State object derives from this.
+This is where our most basic assumptions about a "State" manifest. However, I'm not sure if the rest of Surskit makes assumptions
+about this State being totally observed.
+Indeed, the Node access() methods simply assume that the same chance node must be the same
 
-template <int size, typename Action, typename Hash>
-class SolvedState : public State<size, Action, Hash>
+We assume that calculating actions takes work, so we make it explicit.
+The BanditTree algorithm is safe because it always calls actions before running inference or applying actions.
+There may be a way to statically guarantee this.
+*/
+
+template <class TypeList>
+class DefaultState : public AbstractState<TypeList>
 {
+    static_assert(std::derived_from<TypeList, AbstractTypeList>);
+
 public:
-    /*
-    State where a given Nash equilibrium is known.
-    We then also know the legal actions and terminality too
-    so we store this info as members.
-    */
+    struct Transition;
+    struct Actions;
+    struct Types : AbstractState<TypeList>::Types
+    {
+        using Transition = DefaultState::Transition;
+        using Actions = DefaultState::Actions;
+    };
 
-    bool is_terminal = true;
-    int rows = 0;
-    int cols = 0;
-    std::array<double, size> strategy0;
-    std::array<double, size> strategy1;
+    struct Transition : AbstractState<TypeList>::Transition
+    {
+        typename Types::Observation obs;
+        typename Types::Probability prob;
+    };
 
-    SolvedState(prng &device) : State<size, Action, Hash>(device) {}
-    SolvedState(prng &device, double payoff, int rows, int cols) : State<size, Action, Hash>(device, payoff), is_terminal(rows * cols == 0), rows(rows), cols(cols) {}
-    SolvedState(prng &device, double payoff0, double payoff1, int rows, int cols) : State<size, Action, Hash>(device, payoff0, payoff1), is_terminal(rows * cols == 0), rows(rows), cols(cols) {}
+    struct Actions : AbstractState<TypeList>::Actions
+    {
+        typename Types::VectorAction row_actions;
+        typename Types::VectorAction col_actions;
+        int rows;
+        int cols;
+
+        void print()
+        {
+            std::cout << "row_actions: ";
+            for (int i = 0; i < rows; ++i)
+            {
+                std::cout << row_actions[i] << ", ";
+            }
+            std::cout << std::endl;
+            std::cout << "col_actions: ";
+            for (int j = 0; j < cols; ++j)
+            {
+                std::cout << col_actions[j] << ", ";
+            }
+            std::cout << std::endl;
+        }
+    };
+
+    bool is_terminal = false;
+    typename Types::Real row_payoff, col_payoff;
+    Transition transition;
+    Actions actions;
+
+    void get_actions();
+    void apply_actions(
+        typename Types::Action row_action,
+        typename Types::Action col_action);
 };
+
+/*
+Handy alias.
+The Real number data type is assumed to be double and Vector, Matrix types are handled with Arrays.
+*/
+
+template <int size, typename Action, typename Observation, typename Probability>
+using StateArray = DefaultState<TypeList<
+    Action,
+    Observation,
+    Probability,
+    double,
+    std::array<Action, size>,
+    std::array<double, size>,
+    std::array<int, size>,
+    Linear::Matrix<double, size>,
+    Linear::Matrix<int, size>>>;
+
+template <class TypeList>
+class SolvedState : public DefaultState<TypeList>
+{
+    static_assert(std::derived_from<TypeList, AbstractTypeList>);
+
+public:
+    struct Types : DefaultState<TypeList>::Types
+    {
+    };
+    typename Types::VectorReal row_strategy, col_strategy;
+};
+
+template <int size, typename Action, typename Observation, typename Probability>
+using SolvedStateArray = SolvedState<TypeList<
+    Action,
+    Observation,
+    Probability,
+    double,
+    std::array<Action, size>,
+    std::array<double, size>,
+    std::array<int, size>,
+    Linear::Matrix<double, size>,
+    Linear::Matrix<int, size>>>;
+
+/*
+This represents states that accept input for the chance player.
+Since this uses Obs as chance action, this must be fully observed.
+
+Currently not used by any Search algorithms, but I have ideas.
+*/
+
+template <class TypeList>
+class StateChance : public DefaultState<TypeList>
+{
+    static_assert(std::derived_from<TypeList, AbstractTypeList>);
+
+public:
+    struct Types : DefaultState<TypeList>::Types
+    {
+    };
+    void apply_actions(
+        typename Types::Action row_action,
+        typename Types::Action col_action,
+        typename Types::Observation chance_action);
+};
+
+/*
+Tests:
+Initializing ToyStates with different type lists to make sure std::vector and cheeky bool/rational implementations are working.
+*/

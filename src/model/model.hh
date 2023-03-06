@@ -1,27 +1,145 @@
 #pragma once
 
-#include "../state/state.hh"
+#include "state/state.hh"
 
-template <typename State>
-class Model
+template <class _State>
+class AbstractModel
 {
 public:
-    // This pattern ensures each higher type (Model, Nodes, etc) and their derivations have access to all the lower types.
-    using action_t = typename State::action_t;
-    using hash_t = typename State::hash_t;
-    using pair_actions_t = typename State::pair_actions_t;
-    using transition_data_t = typename State::transition_data_t;
-    using state_t = State;
-
-    struct InferenceData
+    struct Inference;
+    struct Types : _State::Types
     {
-        double value0 = .5;
-        double value1 = .5;
+        using State = _State;
+        using Inference = AbstractModel::Inference;
+    };
+    struct Inference
+    {
     };
 
-    InferenceData last_inference;
+    void get_inference(
+        typename Types::State &state,
+        typename Types::Inference &inference);
+};
 
-    virtual InferenceData &inference(State &state, pair_actions_t &legal_actions) = 0;
-    // Intended that the last_inference member be updated and then returned
-    // *note* perhaps this should be return type void and the arg should have inference_data. Does argument covariance work? dont remember tbh
+/*
+Similar to `State`, in that virtually all models will be derived from it.
+*/
+
+template <class State>
+
+class DualPolicyValueModel : public AbstractModel<State>
+{
+    static_assert(std::derived_from<State, AbstractState<typename State::Types::TypeList>>);
+
+public:
+    struct Inference;
+    struct Types : AbstractModel<State>::Types
+    {
+        using Inference = DualPolicyValueModel::Inference;
+    };
+
+    struct Inference : AbstractModel<State>::Inference
+    {
+        typename Types::Real row_value;
+        typename Types::Real col_value;
+        typename Types::VectorReal row_policy;
+        typename Types::VectorReal col_policy;
+    };
+};
+
+/*
+Universal model.
+*/
+
+template <class State>
+class MonteCarloModel : public DualPolicyValueModel<State>
+{
+    static_assert(std::derived_from<State, AbstractState<typename State::Types::TypeList>>);
+
+public:
+    struct Types : DualPolicyValueModel<State>::Types
+    {
+    };
+
+    prng &device;
+
+    MonteCarloModel(prng &device) : device(device) {}
+
+    void get_inference(
+        typename Types::State &state,
+        typename Types::Inference &inference)
+    {
+        const typename Types::Real row_uniform = 1 / (typename Types::Real)state.actions.rows;
+        for (int i = 0; i < state.actions.rows; ++i)
+        {
+            inference.row_policy[i] = row_uniform;
+        }
+        const typename Types::Real col_uniform = 1 / (typename Types::Real)state.actions.cols;
+        for (int j = 0; j < state.actions.cols; ++j)
+        {
+            inference.col_policy[j] = col_uniform;
+        }
+        this->rollout(state);
+        inference.row_value = state.row_payoff;
+        inference.col_value = state.col_payoff;
+    }
+
+private:
+    void rollout(State &state)
+    {
+        while (!state.is_terminal)
+        {
+            const int row_idx = this->device.random_int(state.actions.rows);
+            const int col_idx = this->device.random_int(state.actions.cols);
+            const typename Types::Action row_action = state.actions.row_actions[row_idx];
+            const typename Types::Action col_action = state.actions.col_actions[col_idx];
+            state.apply_actions(row_action, col_action);
+            state.get_actions();
+        }
+    }
+};
+
+/*
+MonteCarlo model that uses a priori solutions to simulate expert inference
+*/
+
+template <class State>
+class SolvedMonteCarloModel : public DualPolicyValueModel<State>
+{   
+    static_assert(std::derived_from<State, SolvedState<typename State::Types::TypeList>>);
+
+public:
+    struct Types : DualPolicyValueModel<State>::Types
+    {
+    };
+
+    prng &device;
+    typename Types::Real power = 1;
+
+    SolvedMonteCarloModel(prng &device) : device(device) {}
+
+    void get_inference(
+        typename Types::State &state,
+        typename Types::Inference &inference)
+    {
+        math::power_norm(state.row_strategy, state.actions.rows, power, inference.row_strategy);
+        math::power_norm(state.col_strategy, state.actions.cols, power, inference.col_strategy);
+        this->rollout(state);
+        inference.row_value = state.row_payoff;
+        inference.col_value = state.col_payoff;
+    }
+
+private:
+    void rollout(State &state)
+    {
+        while (!state.is_terminal)
+        {
+            const int row_idx = this->device.random_int(state.actions.rows);
+            const int col_idx = this->device.random_int(state.actions.cols);
+            const typename Types::Action row_action = state.actions.row_actions[row_idx];
+            const typename Types::Action col_action = state.actions.col_actions[col_idx];
+            state.apply_actions(row_action, col_action);
+            state.get_actions();
+        }
+    }
 };

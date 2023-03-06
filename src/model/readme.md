@@ -1,0 +1,1 @@
+TODO: Pytorch models, maybe make Gambit be a model that works on 'OneShot' games and just wrap whatever it needs to solve.. maybe slower for basically nothgin tho

@@ -1,47 +1,39 @@
-#include "state/state.hh"
 #include "state/test_states.hh"
 #include "model/model.hh"
 #include "search/exp3p.hh"
 #include "search/matrix_ucb.hh"
-
 #include <iostream>
-#include "tree/node.hh"
+
+const int __size__ = 2;
 
 template <int size>
 using SimpleTypes = TypeList<
-    int,
-    int,
-    double,
-    double,
-    std::array<int, size>,
-    std::array<double, size>,
+    int, 
+    int, 
+    double, 
+    double, 
+    std::array<int, size>, 
+    std::array<double, size>, 
     std::array<int, size>,
     Linear::Matrix<double, size>,
     Linear::Matrix<int, size>>;
 
 int main()
 {
-    using SimpleTypes = SimpleTypes<2>;
-
-    using Model = MonteCarloModel<Sucker>;
+    using MoldState = MoldState<__size__>;
+    using Model = MonteCarloModel<MoldState>;
     using MatrixUCB = MatrixUCB<Model, TreeBandit>;
 
-    Sucker game;
+    MoldState game(10);
     prng device;
     Model model(device);
-
     MatrixNode<MatrixUCB> root;
-
     MatrixUCB session(device);
+    session.run(100, game, model, root);
 
-    session.run(
-        10, game, model, root);
+    math::print(root.stats.row_strategy, __size__);
 
-    root.stats.row_value_matrix.print();
-    root.stats.visit_matrix.print();
-
-    math::print(root.stats.row_strategy, 2);
-    math::print(root.stats.col_strategy, 2);
+    // math::print(root.stats.row_visits, 2);
 
     return 0;
 }

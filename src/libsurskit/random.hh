@@ -3,6 +3,12 @@
 #include <random>
 #include <array>
 
+/*
+The only behaviour needing explanation is the copy mechanism.
+We don't override the default copy constructor. That preserves the progress of the generator as well as the seed.
+`copy()` returns one with the same seed but 'restarted'.
+*/
+
 class prng
 {
     std::mt19937::result_type seed;
@@ -13,8 +19,6 @@ public:
     prng() : seed(std::random_device{}()), engine(std::mt19937{seed}) {}
     prng(std::mt19937::result_type seed) : seed(seed), engine(std::mt19937{seed}) {}
 
-    // Same device and seed, but 'restarted'
-    // Default copy keeps progress
     prng copy()
     {
         return prng(seed);
@@ -35,23 +39,8 @@ public:
         return int(this->uniform() * n);
     }
 
-    // samples an index from a probability distribution
-    int sample_pdf(double *input, int k)
-    {
-        double p = this->uniform();
-        for (int i = 0; i < k; ++i)
-        {
-            p -= input[i];
-            if (p <= 0)
-            {
-                return i;
-            }
-        }
-        return 0;
-    }
-
-    template <typename T, int size>
-    int sample_pdf(std::array<T, size> &input, int k)
+    template <typename Vector>
+    int sample_pdf(Vector &input, int k)
     {
         double p = uniform();
         for (int i = 0; i < k; ++i)
