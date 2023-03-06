@@ -37,8 +37,8 @@ public:
     bool is_terminal = false;
     bool is_expanded = false;
 
-    typename Types::Transition transition;
     typename Types::Actions actions;
+    typename Types::Transition transition;
     typename Types::Inference inference;
     typename Types::MatrixStats stats;
 

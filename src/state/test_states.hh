@@ -13,7 +13,8 @@ public:
     };
     int depth = 1;
 
-    MoldState(int depth) : depth((depth >= 0) * depth) {
+    MoldState(int depth) : depth((depth >= 0) * depth)
+    {
         for (int i = 0; i < size; ++i)
         {
             this->actions.row_actions[i] = i;
@@ -27,7 +28,8 @@ public:
 
     void get_actions()
     {
-        if (this->depth <= 0) {
+        if (this->depth <= 0)
+        {
             this->actions.rows = 0;
             this->actions.cols = 0;
             this->is_terminal = true;
@@ -87,11 +89,6 @@ public:
     {
     };
 
-    // PennyMatching () {
-    //     this->actions.rows = 2;
-    //     this->actions.cols = 2;
-    // }
-
     void get_actions()
     {
         this->actions.rows = 2;
@@ -112,14 +109,16 @@ public:
         this->is_terminal = true;
         if (row_action == col_action)
         {
-            if (row_action == 0) {
-            this->row_payoff = 0.333;
-            this->col_payoff = 0.666;
-            } else {
-            this->row_payoff = 1.0;
-            this->col_payoff = 0.0;
+            if (row_action == 0)
+            {
+                this->row_payoff = 0.333;
+                this->col_payoff = 0.666;
             }
-
+            else
+            {
+                this->row_payoff = 1.0;
+                this->col_payoff = 0.0;
+            }
         }
         else
         {
@@ -132,7 +131,8 @@ public:
 template <typename State>
 class OneShotOneSum : public State
 {
-static_assert(std::derived_from<State, DefaultState<typename State::TypeList>>);
+    static_assert(std::derived_from<State, DefaultState<typename State::TypeList>>);
+
 public:
     struct Types : State::Types
     {
@@ -141,7 +141,7 @@ public:
 
     typename Types::MatrixReal &matrix;
 
-    OneShotOneSum (typename Types::MatrixReal &matrix) : matrix(matrix) {}
+    OneShotOneSum(typename Types::MatrixReal &matrix) : matrix(matrix) {}
 
     void get_actions()
     {
@@ -159,8 +159,7 @@ public:
 
     void apply_actions(
         typename Types::Action row_action,
-        typename Types::Action col_action
-    )
+        typename Types::Action col_action)
     {
         this->transition.prob = true; // hehe
         this->transition.obs = 0;

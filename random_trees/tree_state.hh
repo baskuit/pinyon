@@ -55,6 +55,7 @@ public:
         update_solved_state_payoffs(current);
     }
 
+private:
     void update_solved_state_payoffs(SeedStateNode *current)
     {
         this->row_payoff = this->current->stats.payoff;

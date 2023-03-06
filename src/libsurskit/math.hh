@@ -22,7 +22,7 @@ namespace math
         }
         for (int i = 0; i < length; ++i)
         {
-            output[i] = 10;
+            output[i] = output[i] / sum;
         }
     }
 
