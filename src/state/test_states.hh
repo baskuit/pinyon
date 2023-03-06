@@ -131,7 +131,7 @@ public:
 template <typename State>
 class OneShotOneSum : public State
 {
-    static_assert(std::derived_from<State, DefaultState<typename State::TypeList>>);
+    // static_assert(std::derived_from<State, DefaultState<typename State::TypeList>>);
 
 public:
     struct Types : State::Types
