@@ -10,3 +10,7 @@ A more detailed explanation of the type system is [here](https://github.com/bask
 
 **[Gambit](https://github.com/gambitproject/gambit)** is an open-source collection of tools for doing computation in game theory. 
 The computation of Nash Equilibrium strategies is necessary for the MatrixUCB algorithm.
+
+## Status
+The core of surskit, which is the MatrixUCB/Exp3p algorithm, is implemented with the new design pattern (including multithreaded).
+Feature-wise the next step is Libtorch and replay generation. But I will likely spend some time with documentation and tests.
