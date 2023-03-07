@@ -19,9 +19,9 @@ public:
         {
             this->actions.row_actions[i] = i;
             this->actions.col_actions[i] = i;
-            this->actions.rows = size;
-            this->actions.cols = size;
         }
+        this->actions.rows = size;
+        this->actions.cols = size;
         this->transition.prob = true;
         this->transition.obs = 0;
     }
