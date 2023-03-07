@@ -59,7 +59,8 @@ public:
         init_stats(playouts, state, model, &matrix_node);
         for (int playout = 0; playout < playouts; ++playout)
         {
-            this->playout(state, model, &matrix_node);
+            typename Types::State state_ = state;
+            this->playout(state_, model, &matrix_node);
         }
     }
     MatrixNode<Algorithm> *playout(
