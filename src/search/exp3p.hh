@@ -84,7 +84,7 @@ public:
             MatrixNode<Exp3p> *matrix_parent = chance_parent->parent;
             int row_idx = chance_parent->row_idx;
             int col_idx = chance_parent->col_idx;
-            double reach_probability =
+            double reach_probability = // double to mix Real and Probabilty type..., p much all use cases should have conversion tho
                 matrix_parent->inference.row_policy[row_idx] *
                 matrix_parent->inference.col_policy[col_idx] *
                 ((double)matrix_node->transition.prob);
@@ -117,7 +117,7 @@ public:
             softmax(this->row_forecast, matrix_node->stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
-                this->row_forecast[row_idx] =
+                this->row_forecast[row_idx] = // conversion from double to Real?, TODO TODO
                     (1 - gamma) * this->row_forecast[row_idx] +
                     (gamma)*matrix_node->inference.row_policy[row_idx];
             }
