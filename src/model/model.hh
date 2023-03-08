@@ -27,7 +27,7 @@ Similar to `State`, in that virtually all models will be derived from it.
 
 template <class State>
 
-class DualPolicyValueModel : public AbstractModel<State>
+class DoubleOracleModel : public AbstractModel<State>
 {
     static_assert(std::derived_from<State, AbstractState<typename State::Types::TypeList>>);
 
@@ -35,7 +35,7 @@ public:
     struct Inference;
     struct Types : AbstractModel<State>::Types
     {
-        using Inference = DualPolicyValueModel::Inference;
+        using Inference = DoubleOracleModel::Inference;
     };
 
     struct Inference : AbstractModel<State>::Inference
@@ -52,12 +52,12 @@ Universal model.
 */
 
 template <class State>
-class MonteCarloModel : public DualPolicyValueModel<State>
+class MonteCarloModel : public DoubleOracleModel<State>
 {
     static_assert(std::derived_from<State, AbstractState<typename State::Types::TypeList>>);
 
 public:
-    struct Types : DualPolicyValueModel<State>::Types
+    struct Types : DoubleOracleModel<State>::Types
     {
     };
 
@@ -104,12 +104,12 @@ MonteCarlo model that uses a priori solutions to simulate expert inference
 */
 
 template <class State>
-class SolvedMonteCarloModel : public DualPolicyValueModel<State>
+class SolvedMonteCarloModel : public DoubleOracleModel<State>
 {   
     static_assert(std::derived_from<State, SolvedState<typename State::Types::TypeList>>);
 
 public:
-    struct Types : DualPolicyValueModel<State>::Types
+    struct Types : DoubleOracleModel<State>::Types
     {
     };
 

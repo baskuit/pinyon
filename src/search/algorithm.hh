@@ -29,7 +29,7 @@ public:
 template <class Model, class Algorithm>
 class TreeBanditBase : public AbstractAlgorithm<Model>
 {
-    static_assert(std::derived_from<Model, DualPolicyValueModel<typename Model::Types::State>> == true,
+    static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>> == true,
     "Model parameter for TreeBanditBase must provide a value and policy estimate; Both Exp3p and MatrixUCB have time parameters that need policy to be estimated on expansion");
     // static_assert(std::derived_from<Algorithm, TreeBanditBase<Model, Algorithm>>,
     // "Algorithm parameter for TreeBanditBase must derive from TreeBanditBase, i.e. it must be a bandit algorithm implementation");
