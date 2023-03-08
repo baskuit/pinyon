@@ -64,4 +64,15 @@ include_directories(
 
 add_library(gambit STATIC ${GAMBIT_SOURCES})
 
+# Testing
+file(GLOB TEST_FILES test/*.cc)
+
+foreach(TEST_FILE ${TEST_FILES})
+    get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE) # get name without extension
+    add_executable(${TEST_NAME} ${TEST_FILE})
+    target_link_libraries(${TEST_NAME} gambit)
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+endforeach()
+enable_testing()
+
 add_executable(example examples/exp3p_solving_one_shot.cc)
