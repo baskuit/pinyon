@@ -3,8 +3,7 @@
 #include "../tree/node.hh"
 
 #include <thread>
-#include <mutex>
-#include <atomic>
+#include <chrono>
 
 template <class _Model>
 class AbstractAlgorithm
@@ -63,6 +62,28 @@ public:
             this->playout(state_, model, &matrix_node);
         }
     }
+    void run_for_duration(
+        double duration_ms,
+        typename Types::State &state,
+        typename Types::Model &model,
+        MatrixNode<Algorithm> &matrix_node)
+    {
+        const int playout_estimate = duration_ms * 1000;
+        init_stats(playout_estimate, state, model, &matrix_node);
+        int playouts = 0;
+        for (
+            auto start_time = std::chrono::high_resolution_clock::now();
+            std::chrono::duration_cast<std::chrono::milliseconds>
+                (std::chrono::high_resolution_clock::now() - start_time).count() < duration_ms;
+            ++playouts
+        ) {
+            typename Types::State state_ = state;
+            this->playout(state_, model, &matrix_node);
+        }
+        std::cout << "total playouts for duration: " << duration_ms << " ms: " << playouts << std::endl;
+        std::cout << "playout estimate was : " << playout_estimate << std::endl;
+    }
+
     MatrixNode<Algorithm> *playout(
         typename Types::State &state,
         typename Types::Model &model,

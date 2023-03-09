@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
 project(surskit VERSION 0.1.0)
-
 set (CMAKE_CXX_STANDARD 20)
 
 set(GAMBIT_SOURCES
@@ -64,6 +63,9 @@ include_directories(
 
 add_library(gambit STATIC ${GAMBIT_SOURCES})
 
+add_executable(example examples/exp3p_solving_one_shot.cc)
+target_link_libraries(example gambit)
+
 # Testing
 file(GLOB TEST_FILES test/*.cc)
 
@@ -74,5 +76,3 @@ foreach(TEST_FILE ${TEST_FILES})
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endforeach()
 enable_testing()
-
-add_executable(example examples/exp3p_solving_one_shot.cc)
