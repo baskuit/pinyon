@@ -11,7 +11,7 @@ namespace math
 {
 
     template <typename VectorIn, typename VectorOut>
-    void power_norm(VectorIn& input, int length, double power, VectorOut &output)
+    void power_norm(VectorIn &input, int length, double power, VectorOut &output)
     {
         double sum = 0;
         for (int i = 0; i < length; ++i)
@@ -27,8 +27,10 @@ namespace math
     }
 
     template <typename Vector>
-    void print(Vector& input, int length) {
-        for (int i = 0; i < length; ++i) {
+    void print(Vector &input, int length)
+    {
+        for (int i = 0; i < length; ++i)
+        {
             std::cout << input[i] << ", ";
         }
         std::cout << std::endl;
@@ -38,60 +40,159 @@ namespace math
     // Real get(MatrixReal matrix, int i, int j) {
     //     return matrix.data[i][j];
     // }
-    
+
 }
 
 namespace Linear
 {
 
-template <typename T, int size>
-class Matrix {
-public:
-    std::array<std::array<T, size>, size> data;
-    int rows, cols;
-    Matrix() {};
-    // Matrix(bool x, bool y, int rows, int cols) : rows(rows), cols(cols) {}
-    Matrix(T x, int rows, int cols) : data(), rows(rows), cols(cols) {
-        for (int i = 0; i < rows; ++i) {
-            for (int j = 0; j < cols; ++j) {
-                data[i][j] = x;
-            }
-        }        
-    }
-    Matrix(T x) : data(), rows(rows), cols(cols) {
-        for (int i = 0; i < size; ++i) {
-            for (int j = 0; j < size; ++j) {
-                data[i][j] = x;
-            }
-        }        
-    }
-
-    void print () {
-        for (int i = 0; i < rows; ++i) {
-            for (int j = 0; j < cols; ++j) {
-                std::cout << data[i][j] << ", ";
-            }
-            std::cout << std::endl;
-        }
-    }
-
-    Matrix operator* (Matrix N) {
-        const Matrix& M = *this;
-        assert(M.cols == N.rows);
-        Matrix output(0, M.rows, N.cols);
-        for (int i = 0; i < output.rows; ++i) {
-            for (int j = 0; j < output.cols; ++j) {
-                for (int k = 0; k < M.cols; ++k) {
-                    output.data[i][j] += M.data[i][k] * N.data[k][j];
+    template <typename T, int size>
+    class Matrix
+    {
+    public:
+        std::array<std::array<T, size>, size> data;
+        int rows, cols;
+        Matrix(){};
+        Matrix(Matrix &t)
+        {
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    data[i][j] = t.data[i][j];
                 }
             }
-            std::cout << std::endl;
+            t.rows = rows;
+            t.cols = cols;
         }
-        return output;
-    }
-};
+        Matrix(std::array<T, size> array, int length)
+        {
+            this->data[0] = array;
+            this->rows = length;
+            this->cols = 1;
+        }
 
+        T& get (int i, int j) {
+            return data[i][j];
+        }
+        void print()
+        {
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    std::cout << data[i][j] << ", ";
+                }
+                std::cout << std::endl;
+            }
+        }
+
+        Matrix operator*(Matrix N)
+        {
+            const Matrix &M = *this;
+            assert(M.cols == N.rows);
+            Matrix output;
+            for (int i = 0; i < output.rows; ++i)
+            {
+                for (int j = 0; j < output.cols; ++j)
+                {
+                    output.data[i][j] = 0;
+                    for (int k = 0; k < M.cols; ++k)
+                    {
+                        output.data[i][j] += M.data[i][k] * N.data[k][j];
+                    }
+                }
+                std::cout << std::endl;
+            }
+            return output;
+        }
+        Matrix transpose()
+        {
+            Matrix t = *this;
+            t.rows = cols;
+            t.cols = rows;
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    t.data[j][i] = data[i][j];
+                }
+            }
+            return t;
+        }
+        T max () {
+            T x = data[0][0];
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    x = std::max(data[i][j], x);
+                }
+            }
+            return x;
+        }
+        T min () {
+            T x = data[0][0];
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    x = std::min(data[i][j], x);
+                }
+            }
+            return x;
+        }
+    };
+
+    // TODO optimize
+    template <typename Real, class MatrixReal, class VectorReal>
+    Real exploitability(
+        MatrixReal &matrix,
+        VectorReal &row_strategy,
+        VectorReal &col_strategy)
+    {
+        MatrixReal row_strategy_matrix(row_strategy, matrix.rows);
+        MatrixReal col_strategy_matrix(col_strategy, matrix.cols);
+        row_strategy_matrix = row_strategy_matrix.transpose();
+
+        std::cout << row_strategy_matrix.rows << row_strategy_matrix.cols << std::endl;
+        std::cout << col_strategy_matrix.rows << col_strategy_matrix.cols << std::endl;
+        // return 0;
+
+        MatrixReal row_prod = row_strategy_matrix * matrix;
+        MatrixReal col_prod = matrix * col_strategy_matrix;
+        return 0;
+
+        // Real max_row = row_prod.max();
+        // Real min_col = col_prod.min();
+
+        // return max_row - min_col;
+
+    }
+    // template <typename T, int size>
+    // T exploitability(
+    //     Linear::Matrix<T, size> &M,
+    //     std::array<T, size> &strategy0,
+    //     std::array<T, size> &strategy1)
+    // {
+    //     std::array<T, size> best0 = {Rational(0, 1)};
+    //     std::array<T, size> best1 = {Rational(0, 1)};
+    //     for (int row_idx = 0; row_idx < M.rows; ++row_idx)
+    //     {
+    //         for (int col_idx = 0; col_idx < M.cols; ++col_idx)
+    //         {
+    //             const T u = M.get(row_idx, col_idx);
+    //             best0[row_idx] += u * strategy1[col_idx];
+    //             best1[col_idx] -= u * strategy0[row_idx];
+    //         }
+    //     }
+    //     return *std::max_element(best0.begin(), best0.begin() + M.rows) + *std::max_element(best1.begin(), best1.begin() + M.cols);
+    // }
 }
+
+/*
+End namespace Linear
+*/
 
 // namespace Linear
 // {
@@ -396,25 +497,7 @@ public:
 //         math::power_norm<T, size>(empirical1, M.cols, 1, empirical1);
 //     }
 
-//     template <typename T, int size>
-//     T exploitability(
-//         Linear::Matrix<T, size> &M,
-//         std::array<T, size> &strategy0,
-//         std::array<T, size> &strategy1)
-//     {
-//         std::array<T, size> best0 = {Rational(0, 1)};
-//         std::array<T, size> best1 = {Rational(0, 1)};
-//         for (int row_idx = 0; row_idx < M.rows; ++row_idx)
-//         {
-//             for (int col_idx = 0; col_idx < M.cols; ++col_idx)
-//             {
-//                 const T u = M.get(row_idx, col_idx);
-//                 best0[row_idx] += u * strategy1[col_idx];
-//                 best1[col_idx] -= u * strategy0[row_idx];
-//             }
-//         }
-//         return *std::max_element(best0.begin(), best0.begin() + M.rows) + *std::max_element(best1.begin(), best1.begin() + M.cols);
-//     }
+
 
 //     template <typename T, int size>
 //     T exploitability(

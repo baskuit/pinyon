@@ -26,8 +26,6 @@ public:
         this->current = &*root;
         Grow<MonteCarloModel<SeedState<size>>> session(device);
         session.grow(seed, current);
-        this->row_strategy = current->stats.row_strategy;
-        this->col_strategy = current->stats.col_strategy;
         update_solved_state_payoffs(current);
         this->transition = seed.transition; // total hack
     }
@@ -50,8 +48,11 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action)
     {
-        this->current = this->current->access(row_action, col_action)->access(this->transition);
-        this->is_terminal = this->current->is_terminal || !this->current->stats.grown;
+        typename SeedState<size>::Transition transition;
+        transition.obs = 0;
+        transition.prob = 1;
+        this->current = this->current->access(row_action, col_action)->access(transition);
+        this->is_terminal = this->current->is_terminal; 
         update_solved_state_payoffs(this->current);
     }
 

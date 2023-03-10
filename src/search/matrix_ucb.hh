@@ -163,9 +163,8 @@ public:
         // {
         //     ++this->expl_hits;
 
-        auto& row_strategy = matrix_node->stats.row_strategy;
-        auto& col_strategy = matrix_node->stats.col_strategy;
-
+        typename Types::VectorReal& row_strategy = matrix_node->stats.row_strategy;
+        typename Types::VectorReal& col_strategy = matrix_node->stats.col_strategy;
         solve_bimatrix(
         row_ucb_matrix,
         col_ucb_matrix,
@@ -209,24 +208,24 @@ public:
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                const typename Types::Real u = row_value_matrix(row_idx, col_idx);
-                const typename Types::Real v = col_value_matrix(row_idx, col_idx);
-                int n = visit_matrix(row_idx, col_idx);
+                const typename Types::Real u = row_value_matrix.get(row_idx, col_idx);
+                const typename Types::Real v = col_value_matrix.get(row_idx, col_idx);
+                int n = visit_matrix.get(row_idx, col_idx);
                 n += (n == 0);
                 typename Types::Real a = u / n;
                 typename Types::Real b = v / n;
                 typename Types::Real const eta = this->c_uct * std::sqrt((2 * std::log(t) + std::log(2 * rows * cols)) / n);
                 const typename Types::Real x = a + eta;
                 const typename Types::Real y = b + eta;
-                row_ucb_matrix(row_idx, col_idx) = x;
-                col_ucb_matrix(row_idx, col_idx) = y;
+                row_ucb_matrix.get(row_idx, col_idx) = x;
+                col_ucb_matrix.get(row_idx, col_idx) = y;
             }
         }
     }
 
     void solve_bimatrix(
-        typename Types::MatrixReal row_matrix, //TODO Horrible names!!!
-        typename Types::MatrixReal col_matrix,
+        typename Types::MatrixReal &row_matrix, //TODO Horrible names!!!
+        typename Types::MatrixReal &col_matrix,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
@@ -259,8 +258,8 @@ public:
     }
 
     Gambit::Game build_nfg(
-        typename Types::MatrixReal row_ucb_matrix,
-        typename Types::MatrixReal col_ucb_matrix)
+        typename Types::MatrixReal &row_ucb_matrix,
+        typename Types::MatrixReal &col_ucb_matrix)
     {
         Gambit::Array<int> dim(2);
         dim[1] = row_ucb_matrix.rows;
@@ -272,8 +271,8 @@ public:
         {
             for (int i = 0; i < row_ucb_matrix.rows; ++i)
             {
-                (*iter)->GetOutcome()->SetPayoff(1, std::to_string(row_ucb_matrix(i, j)));
-                (*iter)->GetOutcome()->SetPayoff(2, std::to_string(col_ucb_matrix(i, j)));
+                (*iter)->GetOutcome()->SetPayoff(1, std::to_string(row_ucb_matrix.get(i, j)));
+                (*iter)->GetOutcome()->SetPayoff(2, std::to_string(col_ucb_matrix.get(i, j)));
                 iter++;
             }
         }

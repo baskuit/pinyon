@@ -32,7 +32,7 @@ int main()
     MatrixNode<Exp3p> root;
     Exp3p session(device);
 
-    session.run(1000, state, model, root);
+    session.run(100, state, model, root);
     session.c_uct = 1.718;
     typename TreeState::Types::VectorReal row_strategy = {0};
     typename TreeState::Types::VectorReal col_strategy = {0};
@@ -42,7 +42,11 @@ int main()
     math::print(row_strategy, state.actions.rows);
     math::print(col_strategy, state.actions.cols);
 
-    // double x = Linear::exploitability<double, typename TreeState::Types::MatrixReal, typename TreeState::Types::VectorReal>(state.current->stats.expected_value, row_strategy, col_strategy);
-
+    double x = Linear::exploitability<
+        double, 
+        typename TreeState::Types::MatrixReal, 
+        typename TreeState::Types::VectorReal
+        >(state.current->stats.expected_value, row_strategy, col_strategy);
+    std::cout << x << std::endl;
     return 0;
 }
