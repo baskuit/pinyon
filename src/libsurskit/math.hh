@@ -35,12 +35,6 @@ namespace math
         }
         std::cout << std::endl;
     }
-
-    // template <typename MatrixReal, typename Real>
-    // Real get(MatrixReal matrix, int i, int j) {
-    //     return matrix.data[i][j];
-    // }
-
 }
 
 namespace Linear
@@ -53,26 +47,29 @@ namespace Linear
         std::array<std::array<T, size>, size> data;
         int rows, cols;
         Matrix(){};
-        Matrix(Matrix &t)
+        Matrix(int rows, int cols) : rows(rows), cols(cols) {}
+        Matrix(const Matrix &M)
         {
             for (int i = 0; i < rows; ++i)
             {
                 for (int j = 0; j < cols; ++j)
                 {
-                    data[i][j] = t.data[i][j];
+                    data[i][j] = M.data[i][j];
                 }
             }
-            t.rows = rows;
-            t.cols = cols;
+            rows = M.rows;
+            cols = M.cols;
         }
-        Matrix(std::array<T, size> array, int length)
+        Matrix(const std::array<T, size> array, int length)
         {
+            // gives row matrix
             this->data[0] = array;
-            this->rows = length;
-            this->cols = 1;
+            this->rows = 1;
+            this->cols = length;
         }
 
-        T& get (int i, int j) {
+        T &get(int i, int j)
+        {
             return data[i][j];
         }
         void print()
@@ -87,11 +84,11 @@ namespace Linear
             }
         }
 
-        Matrix operator*(Matrix N)
+        Matrix operator*(Matrix &N)
         {
             const Matrix &M = *this;
             assert(M.cols == N.rows);
-            Matrix output;
+            Matrix output(M.rows, N.cols);
             for (int i = 0; i < output.rows; ++i)
             {
                 for (int j = 0; j < output.cols; ++j)
@@ -102,15 +99,12 @@ namespace Linear
                         output.data[i][j] += M.data[i][k] * N.data[k][j];
                     }
                 }
-                std::cout << std::endl;
             }
             return output;
         }
         Matrix transpose()
         {
-            Matrix t = *this;
-            t.rows = cols;
-            t.cols = rows;
+            Matrix t(cols, rows);
             for (int i = 0; i < rows; ++i)
             {
                 for (int j = 0; j < cols; ++j)
@@ -120,7 +114,8 @@ namespace Linear
             }
             return t;
         }
-        T max () {
+        T max()
+        {
             T x = data[0][0];
             for (int i = 0; i < rows; ++i)
             {
@@ -131,7 +126,8 @@ namespace Linear
             }
             return x;
         }
-        T min () {
+        T min()
+        {
             T x = data[0][0];
             for (int i = 0; i < rows; ++i)
             {
@@ -153,21 +149,12 @@ namespace Linear
     {
         MatrixReal row_strategy_matrix(row_strategy, matrix.rows);
         MatrixReal col_strategy_matrix(col_strategy, matrix.cols);
-        row_strategy_matrix = row_strategy_matrix.transpose();
-
-        std::cout << row_strategy_matrix.rows << row_strategy_matrix.cols << std::endl;
-        std::cout << col_strategy_matrix.rows << col_strategy_matrix.cols << std::endl;
-        // return 0;
-
+        col_strategy_matrix = col_strategy_matrix.transpose();
         MatrixReal row_prod = row_strategy_matrix * matrix;
         MatrixReal col_prod = matrix * col_strategy_matrix;
-        return 0;
-
-        // Real max_row = row_prod.max();
-        // Real min_col = col_prod.min();
-
-        // return max_row - min_col;
-
+        Real min_row = row_prod.min();
+        Real max_col = col_prod.max();
+        return max_col - min_row;
     }
     // template <typename T, int size>
     // T exploitability(
@@ -189,375 +176,3 @@ namespace Linear
     //     return *std::max_element(best0.begin(), best0.begin() + M.rows) + *std::max_element(best1.begin(), best1.begin() + M.cols);
     // }
 }
-
-/*
-End namespace Linear
-*/
-
-// namespace Linear
-// {
-
-//     template <typename T, int size>
-//     struct Vector
-//     {
-//         int length = 0;
-//         std::array<T, size> &data;
-
-//         Vector(std::array<T, size> &data, int length) : data(data), length(length) {}
-
-//         void print()
-//         {
-//             for (int i = 0; i < length; ++i)
-//             {
-//                 std::cout << data[i] << ' ';
-//             }
-//             std::cout << std::endl;
-//         }
-//     };
-
-//     template <typename T, int size>
-//     struct Matrix
-//     {
-//         int rows = 0;
-//         int cols = 0;
-
-//         Matrix() {}
-
-//         Matrix(int rows, int cols) : rows(rows), cols(cols) {}
-
-//         Matrix<T, size> operator*(const Matrix<T, size> &M);
-//         virtual T get(int row_idx, int col_idx) = 0;
-//         virtual void set(int row_idx, int col_idx, T value) = 0;
-//     };
-
-//     template <typename T, int size>
-//     struct Bimatrix
-//     {
-//         int rows = 0;
-//         int cols = 0;
-
-//         Bimatrix() {}
-
-//         Bimatrix(int rows, int cols) : rows(rows), cols(cols) {}
-
-//         virtual T get0(int row_idx, int col_idx) = 0;
-//         virtual T get1(int row_idx, int col_idx) = 0;
-//         virtual void set0(int row_idx, int col_idx, T value) = 0;
-//         virtual void set1(int row_idx, int col_idx, T value) = 0;
-//     };
-
-//     /*
-//     Matrix is a virtual implementation.
-//     Matrix2D is a non-virtual subclass that uses arrays of arrays, exploiting the fact that we still template states with a size ('max_actions') parameter.
-//     I just checked, and we could do away with this, and use vectors instead.
-//     Arrays are used instead of vectors to store "PairActions" as well as all the various things in the algo stats like gains for exp3
-//     But it is somewhat slower even though it probably uses a bit less memory. Overall not worth changing just yet.
-//     The indended use case of all this has size=9, which is totally reasonable.
-//     */
-
-//     template <typename T, int size>
-//     struct Matrix2D : Matrix<T, size>
-//     {
-//         std::array<std::array<T, size>, size> data;
-
-//         Matrix2D() {}
-
-//         Matrix2D(int rows, int cols) : Matrix<T, size>(rows, cols)
-//         {
-//             for (int i = 0; i < rows; ++i)
-//             {
-//                 for (int j = 0; j < cols; ++j)
-//                 {
-//                     data[i][j] = Rational(1, 2);
-//                 }
-//             }
-//         }
-
-//         Matrix2D(int rows, int cols, Rational value) : Matrix<T, size>(rows, cols)
-//         {
-//             for (int i = 0; i < rows; ++i)
-//             {
-//                 for (int j = 0; j < cols; ++j)
-//                 {
-//                     data[i][j] = value;
-//                 }
-//             }
-//         }
-
-//         Matrix2D<T, size> operator*(const Matrix2D<T, size> &M)
-//         {
-//             assert(this->cols = M.rows);
-//             Matrix2D<T, size> product(this->rows, M.cols, Rational(0, 1));
-//             for (int i = 0; i < this->rows; ++i)
-//             {
-//                 for (int j = 0; j < M.cols; ++j)
-//                 {
-//                     for (int k = 0; k < this->cols; ++k)
-//                     {
-//                         product.data[i][j] = product.data[i][j] + (this->data[i][k] * M.data[k][j]);
-//                     }
-//                 }
-//             }
-//             return product;
-//         }
-
-//         T get(int row_idx, int col_idx)
-//         {
-//             return data[row_idx][col_idx];
-//         }
-
-//         void set(int row_idx, int col_idx, T value)
-//         {
-//             data[row_idx][col_idx] = value;
-//         }
-
-//         void print()
-//         {
-//             for (int i = 0; i < this->rows; ++i)
-//             {
-//                 std::cout << "[";
-//                 for (int j = 0; j < this->cols; ++j)
-//                 {
-//                     std::cout << get(i, j) << ", ";
-//                 }
-//                 std::cout << "]" << std::endl;
-//             }
-//         }
-//     };
-
-//     template <typename T, int size>
-//     struct Bimatrix2D : Bimatrix<T, size>
-//     {
-//         std::array<std::array<T, size>, size> data0;
-//         std::array<std::array<T, size>, size> data1;
-
-//         Bimatrix2D() {}
-
-//         Bimatrix2D(int rows, int cols) : Bimatrix<T, size>(rows, cols)
-//         {
-//             for (int i = 0; i < rows; ++i)
-//             {
-//                 for (int j = 0; j < cols; ++j)
-//                 {
-//                     data0[i][j] = Rational(0);
-//                     data1[i][j] = Rational(0);
-//                 }
-//             }
-//         }
-
-//         T get0(int row_idx, int col_idx) { return data0[row_idx][col_idx]; }
-//         T get1(int row_idx, int col_idx) { return data1[row_idx][col_idx]; }
-//         void set0(int row_idx, int col_idx, T value) { data0[row_idx][col_idx] = value; }
-//         void set1(int row_idx, int col_idx, T value) { data1[row_idx][col_idx] = value; }
-
-//         void print()
-//         {
-//             for (int i = 0; i < this->rows; ++i)
-//             {
-//                 std::cout << "[";
-//                 for (int j = 0; j < this->cols; ++j)
-//                 {
-//                     std::cout << get0(i, j) << ", ";
-//                 }
-//                 std::cout << "]" << std::endl;
-//             }
-//             for (int i = 0; i < this->rows; ++i)
-//             {
-//                 std::cout << "[";
-//                 for (int j = 0; j < this->cols; ++j)
-//                 {
-//                     std::cout << get1(i, j) << ", ";
-//                 }
-//                 std::cout << "]" << std::endl;
-//             }
-//         }
-//         // TODO delete this
-//         Bimatrix2D<T, size> operator+(const Matrix2D<int, size> &M)
-//         {
-//             assert(this->cols = M.rows);
-//             Bimatrix2D<T, size> product(this->rows, M.cols);
-//             for (int i = 0; i < this->rows; ++i)
-//             {
-//                 for (int j = 0; j < M.cols; ++j)
-//                 {
-//                     product.data0[i][j] = this->data0[i][j] / M.data[i][j];
-//                     product.data1[i][j] = this->data1[i][j] / M.data[i][j];
-//                 }
-//             }
-//             return product;
-//         }
-//     };
-
-// }; // End namespace Linear
-
-// namespace Bandit
-// {
-
-//     template <typename T, int size>
-//     void softmax(
-//         std::array<T, size> &forecast,
-//         std::array<T, size> &gains,
-//         int k,
-//         double eta)
-//     {
-//         double max = 0;
-//         for (int i = 0; i < k; ++i)
-//         {
-//             double x = gains[i];
-//             if (x > max)
-//             {
-//                 max = x;
-//             }
-//         }
-//         double sum = 0;
-//         for (int i = 0; i < k; ++i)
-//         {
-//             gains[i] -= max;
-//             double x = gains[i];
-//             double y = std::exp(x * eta);
-//             forecast[i] = y;
-//             sum += y;
-//         }
-//         for (int i = 0; i < k; ++i)
-//         {
-//             forecast[i] /= sum;
-//         }
-//     };
-
-//     template <typename T, int size>
-//     void forecast(
-//         int rows,
-//         int cols,
-//         int time,
-//         std::array<T, size> &forecast0,
-//         std::array<T, size> &forecast1,
-//         std::array<T, size> &gains0,
-//         std::array<T, size> &gains1)
-//     {
-//         if (rows == 1)
-//         {
-//             forecast0[0] = Rational(1, 1);
-//         }
-//         else
-//         {
-//             const double eta = .95 * sqrt(log(rows) / (time * rows));
-//             const double gamma_ = 1.05 * sqrt(rows * log(rows) / time);
-//             const double gamma = gamma_ < 1 ? gamma_ : 1;
-//             softmax<T, size>(forecast0, gains0, rows, eta);
-//             for (int row_idx = 0; row_idx < rows; ++row_idx)
-//             {
-//                 double x = (1 - gamma) * forecast0[row_idx] + (gamma) / rows;
-//                 forecast0[row_idx] = x;
-//             }
-//         }
-//         if (cols == 1)
-//         {
-//             forecast1[0] = Rational(1, 1);
-//         }
-//         else
-//         {
-//             const double eta = .95 * sqrt(log(cols) / (time * cols));
-//             const double gamma_ = 1.05 * sqrt(cols * log(cols) / time);
-//             const double gamma = gamma_ < 1 ? gamma_ : 1;
-//             softmax<T, size>(forecast1, gains1, cols, eta);
-//             for (int col_idx = 0; col_idx < cols; ++col_idx)
-//             {
-//                 double x = (1 - gamma) * forecast1[col_idx] + (gamma) / cols;
-//                 forecast1[col_idx] = x;
-//             }
-//         }
-//     }
-
-//     template <typename T, int size>
-//     void SolveMatrix(
-//         prng &device,
-//         int playouts,
-//         Linear::Matrix<T, size> &M,
-//         std::array<T, size> &empirical0,
-//         std::array<T, size> &empirical1)
-//     {
-//         std::array<T, size> forecast0 = {Rational(0, 1)};
-//         std::array<T, size> forecast1 = {Rational(0, 1)};
-//         std::array<T, size> gains0 = {Rational(0, 1)};
-//         std::array<T, size> gains1 = {Rational(0, 1)};
-
-//         for (int playout = 0; playout < playouts; ++playout)
-//         {
-//             forecast<T, size>(M.rows, M.cols, playouts, forecast0, forecast1, gains0, gains1);
-//             int row_idx = device.sample_pdf<T, size>(forecast0, M.rows);
-//             int col_idx = device.sample_pdf<T, size>(forecast1, M.cols);
-//             ++empirical0[row_idx];
-//             ++empirical1[col_idx];
-//             T u = M.get(row_idx, col_idx);
-//             gains0[row_idx] += u / forecast0[row_idx];
-//             gains1[col_idx] += (1 - u) / forecast1[col_idx];
-//         }
-
-//         math::power_norm<T, size>(empirical0, M.rows, 1, empirical0);
-//         math::power_norm<T, size>(empirical1, M.cols, 1, empirical1);
-//     }
-
-
-
-//     template <typename T, int size>
-//     T exploitability(
-//         Linear::Bimatrix<T, size> &M,
-//         std::array<T, size> &strategy0,
-//         std::array<T, size> &strategy1)
-//     {
-//         double earned0 = 0;
-//         double earned1 = 0;
-//         for (int row_idx = 0; row_idx < M.rows; ++row_idx)
-//         {
-//             for (int col_idx = 0; col_idx < M.cols; ++col_idx)
-//             {
-//                 double const pq = strategy0[row_idx] * strategy1[col_idx];
-//                 earned0 += M.get0(row_idx, col_idx) * pq;
-//                 earned1 += M.get1(row_idx, col_idx) * pq;
-//             }
-//         }
-//         std::array<T, size> best0 = {Rational(0, 1)};
-//         std::array<T, size> best1 = {Rational(0, 1)};
-//         for (int row_idx = 0; row_idx < M.rows; ++row_idx)
-//         {
-//             for (int col_idx = 0; col_idx < M.cols; ++col_idx)
-//             {
-//                 const T u = M.get0(row_idx, col_idx);
-//                 const T v = M.get1(row_idx, col_idx);
-//                 best0[row_idx] += u * strategy1[col_idx];
-//                 best1[col_idx] += v * strategy0[row_idx];
-//             }
-//         }
-//         return *std::max_element(best0.begin(), best0.begin() + M.rows) - earned0 + *std::max_element(best1.begin(), best1.begin() + M.cols) - earned1;
-//     }
-
-//     template <typename T, int size>
-//     // no matching function for call to 'SolveBimatrix(prng&, int, Linear::Bimatrix2D<double, 9>&, std::array<double, 9>&, std::array<double, 9>&)'
-//     void SolveBimatrix(
-//         prng &device,
-//         int playouts,
-//         Linear::Bimatrix<T, size> &M,
-//         std::array<T, size> &empirical0,
-//         std::array<T, size> &empirical1)
-//     {
-//         std::array<T, size> forecast0 = {Rational(0, 1)};
-//         std::array<T, size> forecast1 = {Rational(0, 1)};
-//         std::array<T, size> gains0 = {Rational(0, 1)};
-//         std::array<T, size> gains1 = {Rational(0, 1)};
-
-//         for (int playout = 0; playout < playouts; ++playout)
-//         {
-//             forecast<T, size>(M.rows, M.cols, playouts, forecast0, forecast1, gains0, gains1);
-//             int row_idx = device.sample_pdf<T, size>(forecast0, M.rows);
-//             int col_idx = device.sample_pdf<T, size>(forecast1, M.cols);
-//             ++empirical0[row_idx];
-//             ++empirical1[col_idx];
-//             gains0[row_idx] += M.get0(row_idx, col_idx) / forecast0[row_idx];
-//             gains1[col_idx] += M.get1(row_idx, col_idx) / forecast1[col_idx];
-//         }
-
-//         math::power_norm<T, size>(empirical0, M.rows, 1, empirical0);
-//         math::power_norm<T, size>(empirical1, M.cols, 1, empirical1);
-//     }
-
-// }; // End namespace Bandit
