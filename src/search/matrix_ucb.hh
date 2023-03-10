@@ -62,6 +62,15 @@ public:
         matrix_node->stats.time = playouts;
     }
 
+    void _get_strategies(
+        MatrixNode<MatrixUCB> *matrix_node,
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy
+    ) {
+        row_strategy = matrix_node->stats.row_strategy;
+        col_strategy = matrix_node->stats.col_strategy;
+    }
+
     void _expand(
         typename Types::State &state,
         typename Types::Model model,
