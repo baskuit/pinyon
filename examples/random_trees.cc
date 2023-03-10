@@ -17,7 +17,8 @@ int main()
     using MonteCarlo = MonteCarloModel<TreeState>;
 
     prng device;
-    TreeState state(device, 5, __size__, __size__);
+    TreeState state(device, 1, __size__, __size__);
+    state.get_actions();
     // Initialization now runs the Grow algorithm automatically
 
     std::cout << "tree count: " << state.current->stats.count << std::endl;
@@ -28,25 +29,24 @@ int main()
     math::print(state.col_strategy, __size__);
 
     MonteCarlo model(device);
-    using Exp3p = MatrixUCB<MonteCarlo, TreeBandit>;
+    using Exp3p = Exp3p<MonteCarlo, TreeBandit>;
     MatrixNode<Exp3p> root;
     Exp3p session(device);
 
-    session.run(100, state, model, root);
-    session.c_uct = 1.718;
+    session.run(800, state, model, root);
     typename TreeState::Types::VectorReal row_strategy = {0};
     typename TreeState::Types::VectorReal col_strategy = {0};
-    session.get_strategies(&root, row_strategy, col_strategy);
-    state.get_actions();
 
+    session.get_strategies(&root, row_strategy, col_strategy);
+    std::cout << "get_strategies: " << std::endl;
     math::print(row_strategy, state.actions.rows);
     math::print(col_strategy, state.actions.cols);
 
     double x = Linear::exploitability<
-        double, 
-        typename TreeState::Types::MatrixReal, 
-        typename TreeState::Types::VectorReal
-        >(state.current->stats.expected_value, row_strategy, col_strategy);
-    std::cout << x << std::endl;
+        double,
+        typename TreeState::Types::MatrixReal,
+        typename TreeState::Types::VectorReal>
+        (state.current->stats.expected_value, row_strategy, col_strategy);
+    std::cout << "expl: " << x << std::endl;
     return 0;
 }
