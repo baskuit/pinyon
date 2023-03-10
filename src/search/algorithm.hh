@@ -29,7 +29,7 @@ template <class Model, class Algorithm>
 class TreeBanditBase : public AbstractAlgorithm<Model>
 {
     static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>> == true,
-    "Model parameter for TreeBanditBase must provide a value and policy estimate; Both Exp3p and MatrixUCB have time parameters that need policy to be estimated on expansion");
+                  "Model parameter for TreeBanditBase must provide a value and policy estimate; Both Exp3p and MatrixUCB have time parameters that need policy to be estimated on expansion");
     // static_assert(std::derived_from<Algorithm, TreeBanditBase<Model, Algorithm>>,
     // "Algorithm parameter for TreeBanditBase must derive from TreeBanditBase, i.e. it must be a bandit algorithm implementation");
     // The above is not possible since Algorithm is not complete yet.
@@ -62,6 +62,16 @@ public:
             this->playout(state_, model, &matrix_node);
         }
     }
+    void get_strategies(
+        MatrixNode<Algorithm> *matrix_node,
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy)
+    {
+        return static_cast<Algorithm *>(this)->_get_strategies(
+            matrix_node,
+            row_strategy,
+            col_strategy);
+    }
     void run_for_duration(
         double duration_ms,
         typename Types::State &state,
@@ -73,10 +83,9 @@ public:
         int playouts = 0;
         for (
             auto start_time = std::chrono::high_resolution_clock::now();
-            std::chrono::duration_cast<std::chrono::milliseconds>
-                (std::chrono::high_resolution_clock::now() - start_time).count() < duration_ms;
-            ++playouts
-        ) {
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() < duration_ms;
+            ++playouts)
+        {
             typename Types::State state_ = state;
             this->playout(state_, model, &matrix_node);
         }
