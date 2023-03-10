@@ -25,6 +25,7 @@ public:
         typename Types::MatrixReal expected_value;
         typename Types::VectorReal row_strategy = {0};
         typename Types::VectorReal col_strategy = {0};
+        int count = 1;
     };
 
     using Solver = Gambit::Nash::EnumMixedStrategySolver<double>;
@@ -50,7 +51,7 @@ public:
         state.get_actions();
         matrix_node->actions = state.actions;
         matrix_node->is_expanded = true;
-        matrix_node->is_expanded = state.is_terminal;
+        matrix_node->is_terminal = state.is_terminal;
 
         const int rows = state.actions.rows;
         const int cols = state.actions.cols;
@@ -68,6 +69,7 @@ public:
                     MatrixNode<Grow> *matrix_node_next = chance_node->access(state_.transition);
                     grow(state_, matrix_node_next);
                     matrix_node->stats.expected_value.data[i][j] = matrix_node_next->stats.payoff;
+                    matrix_node->stats.count += matrix_node_next->stats.count;
                 }
             }
         }
