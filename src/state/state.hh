@@ -26,18 +26,8 @@ struct TypeList : AbstractTypeList
     using VectorAction = _VectorAction;
     using VectorReal = _VectorReal;
     using VectorInt = _VectorInt;
-    // using MatrixReal = _MatrixReal;
-    // using MatrixInt = _MatrixInt;
-    struct MatrixReal : _MatrixReal {
-        _Real& operator()(int i, int j) {
-            return this->data[i][j];
-        }
-    };
-    struct MatrixInt : _MatrixInt {
-        int& operator()(int i, int j) {
-            return this->data[i][j];
-        }
-    };
+    using MatrixReal = _MatrixReal;
+    using MatrixInt = _MatrixInt;
 };
 
 template <class _TypeList>

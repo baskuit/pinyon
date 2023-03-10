@@ -45,6 +45,25 @@ public:
 
     Exp3p(prng &device) : device(device) {}
 
+    void _get_strategies(
+        MatrixNode<Exp3p> *matrix_node,
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy
+    ) {
+        math::power_norm<typename Types::VectorInt, typename Types::VectorReal>(
+            matrix_node->stats.row_visits,
+            matrix_node->actions.rows,
+            1.0,
+            row_strategy
+        );
+        math::power_norm<typename Types::VectorInt, typename Types::VectorReal>(
+            matrix_node->stats.col_visits,
+            matrix_node->actions.cols,
+            1.0,
+            col_strategy
+        );
+    }
+
     void _init_stats(
         int playouts,
         typename Types::State &state,

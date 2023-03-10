@@ -22,7 +22,23 @@ public:
 
     prng &device;
 
-    SeedState(prng &device, int depth_bound, int rows, int cols) : device(device), depth_bound(depth_bound), rows(rows), cols(cols) {}
+    // SeedState(prng &device, int depth_bound, int rows, int cols) : device(device), depth_bound(depth_bound), rows(rows), cols(cols) {}
+    int (*depth_bound_func)(prng &, int) = nullptr;
+    int (*actions_func)(prng &, int) = nullptr;
+
+    SeedState(prng &device, int depth_bound, int rows, int cols) : device(device), depth_bound(depth_bound), rows(rows), cols(cols)
+    {
+        this->transition.prob = 1;
+        this->transition.obs = 0;
+        if (this->depth_bound_func == nullptr)
+        {
+            this->depth_bound_func = &(SeedState::dbf);
+        }
+        if (this->actions_func == nullptr)
+        {
+            this->actions_func = &(SeedState::af);
+        }
+    }
 
     void get_actions()
     {
@@ -40,17 +56,31 @@ public:
 
     void apply_actions(int row_action, int col_action)
     {
-        depth_bound -= 1; //+ this->device.random_int(2);
+        this->depth_bound = (*depth_bound_func)(this->device, this->depth_bound);
         depth_bound *= depth_bound >= 0;
         if (depth_bound == 0)
         {
             this->row_payoff = this->device.random_int(2);
             this->col_payoff = 1.0 - this->row_payoff;
-            rows = 0;
-            cols = 0;
-            this->is_terminal = true; // TODO where?
+            this->rows = 0;
+            this->cols = 0;
+            this->is_terminal = true;
+        } else {
+            this->rows = (*this->actions_func)(this->device, this->rows);
+            this->cols = (*this->actions_func)(this->device, this->cols);
+            this->is_terminal = false;// TODO remove
         }
-        this->transition.prob = 1;
-        this->transition.obs = 0;
+    }
+
+    /*
+    Defaults
+    */
+    static int dbf(prng &device, int depth)
+    {
+        return (depth - 1) * (depth >= 0);
+    }
+    static int af(prng &device, int n_actions)
+    {
+        return n_actions;
     }
 };

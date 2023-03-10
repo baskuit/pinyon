@@ -19,8 +19,6 @@ public:
     SeedState<size> seed;
     std::shared_ptr<SeedStateNode> root;
     SeedStateNode *current;
-    // Trying out make shared to keep copy assignment but also have automatic memory management
-    // TODO make sure this works
 
     TreeState(prng &device, int depth_bound, int rows, int cols) : seed(SeedState<size>(device, depth_bound, rows, cols))
     {
@@ -28,9 +26,8 @@ public:
         this->current = &*root;
         Grow<MonteCarloModel<SeedState<size>>> session(device);
         session.grow(seed, current);
-        this->row_strategy = current->stats.row_strategy;
-        this->col_strategy = current->stats.col_strategy;
         update_solved_state_payoffs(current);
+        this->transition = seed.transition; // total hack
     }
 
     void get_actions()
@@ -51,8 +48,12 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action)
     {
-        this->current = this->current->access(row_action, col_action)->access(this->transition);
-        update_solved_state_payoffs(current);
+        typename SeedState<size>::Transition transition;
+        transition.obs = 0;
+        transition.prob = 1;
+        this->current = this->current->access(row_action, col_action)->access(transition);
+        this->is_terminal = this->current->is_terminal; 
+        update_solved_state_payoffs(this->current);
     }
 
 private:

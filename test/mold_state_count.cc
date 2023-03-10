@@ -28,7 +28,7 @@ void saturation_test() {
     int tree_size = (std::pow(size*size, (depth+1)) - 1) / (size*size-1);
 
     MoldState state(depth);
-    prng device;
+    prng device(seed);
     Model model(device);
     MatrixNode<Algo> root;
     Algo session(device);

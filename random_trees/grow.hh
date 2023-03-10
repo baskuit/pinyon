@@ -21,11 +21,11 @@ public:
     };
     struct MatrixStats : AbstractAlgorithm<Model>::MatrixStats
     {
-        bool grown = false;
         typename Types::Real payoff = 0;
         typename Types::MatrixReal expected_value;
         typename Types::VectorReal row_strategy = {0};
         typename Types::VectorReal col_strategy = {0};
+        int count = 1;
     };
 
     using Solver = Gambit::Nash::EnumMixedStrategySolver<double>;
@@ -43,12 +43,16 @@ public:
         typename Types::State &state,
         MatrixNode<Grow> *matrix_node)
     {
-        if (matrix_node->stats.grown)
+        if (matrix_node->is_expanded)
         {
             return;
         }
         // forward
         state.get_actions();
+        matrix_node->actions = state.actions;
+        matrix_node->is_expanded = true;
+        matrix_node->is_terminal = state.is_terminal;
+
         const int rows = state.actions.rows;
         const int cols = state.actions.cols;
         matrix_node->stats.expected_value.rows = rows;
@@ -57,14 +61,15 @@ public:
         {
             for (int j = 0; j < cols; ++j)
             {
-                ChanceNode<Grow> *chance_node = matrix_node->access(i, j);
+            ChanceNode<Grow> *chance_node = matrix_node->access(i, j);
                 for (int c = 0; c < 1; ++c)
                 {
                     typename Types::State state_ = state;
                     state_.apply_actions(i, j);
-                    MatrixNode<Grow> *matrix_node_next = chance_node->access(state.transition);
+                    MatrixNode<Grow> *matrix_node_next = chance_node->access(state_.transition);
                     grow(state_, matrix_node_next);
                     matrix_node->stats.expected_value.data[i][j] = matrix_node_next->stats.payoff;
+                    matrix_node->stats.count += matrix_node_next->stats.count;
                 }
             }
         }
@@ -73,7 +78,6 @@ public:
         if (rows * cols == 0)
         {
             matrix_node->stats.payoff = state.row_payoff;
-            matrix_node->is_terminal = true;
         }
         else
         {
@@ -92,7 +96,6 @@ public:
                 }
             }
         }
-        matrix_node->stats.grown = true;
     }
 
 private:
@@ -102,7 +105,7 @@ private:
         typename Types::VectorReal &col_strategy)
     {
         Gambit::Game game = build_nfg(matrix);
-        Gambit::shared_ptr<Gambit::Nash::EnumMixedStrategySolution<double>> solution = solver.SolveDetailed(game); // No exceptino handling 8)
+        Gambit::shared_ptr<Gambit::Nash::EnumMixedStrategySolution<double>> solution = this->solver.SolveDetailed(game);
         Solution cliques = solution->GetCliques();
         Gambit::MixedStrategyProfile<double> joint_strategy = cliques[1][1];
         double is_interior = 1.0;
