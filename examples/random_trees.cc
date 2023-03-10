@@ -1,7 +1,7 @@
 #include "model/model.hh" //TODO this must be first otherwise include error (algo.hh wants model.hh...) fix with cmake!!!
-#include "seed_state.hh"
-#include "grow.hh"
-#include "tree_state.hh"
+#include "../random_trees/seed_state.hh"
+#include "../random_trees/grow.hh"
+#include "../random_trees/tree_state.hh"
 
 #include "search/matrix_ucb.hh"
 #include "search/exp3p.hh"
