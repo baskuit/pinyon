@@ -4,7 +4,7 @@ Surskit attempts to codify search using four types, each 'higher' than the previ
  > state
 model
 algorithm
-node
+tree
 - Each of these types is actually a generic template, e.g. `DefaultState<TypeList>`, `MonteCarloModel<State>`, `MatrixNode<Algorithm>` that accepts a specialization of the lower type.
 	- The motivation for templating is to have a polymorphic interface without incurring the performance penalty of virtual table lookup.
 For a basic example of this, see the 'rollout' method in the implementation of the `MonteCarloModel<State>` below.
@@ -22,7 +22,7 @@ For a basic example of this, see the 'rollout' method in the implementation of t
 				}
 			}
 
-* Each specialization is derived from another of the same generic type, all the way down to a base class for each generic type: `AbstractState<TypeList>`, `AbstractModel<State>`, `AbstractAlgorithm<Model>`, `AbstractNode<Algorithm>`.
+* Each specialization is derived from another of the same generic type, all the way down to a base class for each generic type: `AbstractState<TypeList>`, `AbstractModel<State>`, `AbstractAlgorithm<Model>`, `AbstractTree<Algorithm>`.
 
 	- For example, `MonteCarloModel<MatrixGame<...>>` is derived from `DoubleOracle<MatrixGame<...>>` which is derived from `AbstractModel<MatrixGame<...>>`.
 - Each class has a nested type list called `Types`. This struct inherits from the same type list that belongs the base class. See below:
