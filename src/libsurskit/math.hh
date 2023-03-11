@@ -143,18 +143,19 @@ namespace Linear
     // TODO optimize
     template <typename Real, class MatrixReal, class VectorReal>
     Real exploitability(
-        MatrixReal &matrix,
+        MatrixReal &row_matrix,
+        MatrixReal &col_matrix,
         VectorReal &row_strategy,
         VectorReal &col_strategy)
     {
-        MatrixReal row_strategy_matrix(row_strategy, matrix.rows);
-        MatrixReal col_strategy_matrix(col_strategy, matrix.cols);
+        MatrixReal row_strategy_matrix(row_strategy, row_matrix.rows);
+        MatrixReal col_strategy_matrix(col_strategy, col_matrix.cols);
         col_strategy_matrix = col_strategy_matrix.transpose();
-        MatrixReal row_prod = row_strategy_matrix * matrix;
-        MatrixReal col_prod = matrix * col_strategy_matrix;
-        Real min_row = row_prod.min();
+        MatrixReal row_prod = row_strategy_matrix * col_matrix;
+        MatrixReal col_prod = row_matrix * col_strategy_matrix;
+        Real max_row = row_prod.max();
         Real max_col = col_prod.max();
-        return max_col - min_row;
+        return max_col + max_row;
     }
     // template <typename T, int size>
     // T exploitability(
