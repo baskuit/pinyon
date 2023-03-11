@@ -1,6 +1,9 @@
 #pragma once
 
 #include "state.hh"
+#include "model/model.hh"
+#include "algorithm/exp3p.hh"
+#include "tree/tree.hh"
 
 // Large uniform tree for testing etc. So called because it spreads out until it can't.
 
@@ -128,30 +131,33 @@ public:
     }
 };
 // TODO test
-template <typename State>
-class OneShotOneSum : public State
+template <typename _TypeList>
+class BimatrixGame : public DefaultState<_TypeList>
 {
     // static_assert(std::derived_from<State, DefaultState<typename State::TypeList>>);
 
 public:
-    struct Types : State::Types
+    struct Types : DefaultState<_TypeList>::Types
     {
         using Action = int;
     };
 
-    typename Types::MatrixReal &matrix;
+    typename Types::MatrixReal &row_matrix;
+    typename Types::MatrixReal &col_matrix;
 
-    OneShotOneSum(typename Types::MatrixReal &matrix) : matrix(matrix) {}
+    BimatrixGame(
+        typename Types::MatrixReal &row_matrix,
+        typename Types::MatrixReal &col_matrix) : row_matrix(row_matrix), col_matrix(col_matrix) {}
 
     void get_actions()
     {
-        this->actions.rows = matrix.rows;
-        this->actions.cols = matrix.cols;
-        for (int i = 0; i < matrix.rows; ++i)
+        this->actions.rows = row_matrix.rows;
+        this->actions.cols = row_matrix.cols;
+        for (int i = 0; i < row_matrix.rows; ++i)
         {
             this->actions.row_actions[i] = i;
         }
-        for (int j = 0; j < matrix.cols; ++j)
+        for (int j = 0; j < row_matrix.cols; ++j)
         {
             this->actions.col_actions[j] = j;
         }
@@ -164,8 +170,21 @@ public:
         this->transition.prob = true; // hehe
         this->transition.obs = 0;
         this->is_terminal = true;
-        const typename Types::Real u = matrix.data[row_action][col_action];
-        this->row_payoff = u;
-        this->col_payoff = 1 - u;
+        this->row_payoff = row_matrix.get(row_action, col_action);
+        ;
+        this->col_payoff = col_matrix.get(row_action, col_action);
+        ;
+    }
+
+    void solve(
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy)
+    {
+        prng device;
+        MonteCarloModel<BimatrixGame> model(device);
+        Exp3p<MonteCarloModel<BimatrixGame>, TreeBandit> session(device);
+        MatrixNode<Exp3p<MonteCarloModel<BimatrixGame>, TreeBandit>> root;
+        session.run(10000, *this, model, root);
+        session.get_strategies(&root, row_strategy, col_strategy);
     }
 };
