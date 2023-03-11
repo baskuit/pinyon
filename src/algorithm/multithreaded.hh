@@ -1,7 +1,7 @@
 #pragma once
 
 #include "algorithm.hh"
-#include "tree/node.hh"
+#include "tree/tree.hh"
 
 #include <thread>
 #include <mutex>

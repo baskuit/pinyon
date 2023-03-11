@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../tree/node.hh"
+#include "../tree/tree.hh"
 
 #include <thread>
 #include <chrono>

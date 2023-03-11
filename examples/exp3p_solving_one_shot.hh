@@ -1,7 +1,7 @@
 #include "state/test_states.hh"
 #include "model/model.hh"
-#include "search/exp3p.hh"
-#include "tree/node.hh"
+#include "algorithm/exp3p.hh"
+#include "tree/tree.hh"
 #include "../random_trees/tree_state.hh"
 #include <iostream>
 

@@ -1,7 +1,7 @@
 #include "state/test_states.hh"
 #include "model/model.hh"
-#include "search/exp3p.hh"
-#include "search/matrix_ucb.hh"
+#include "algorithm/exp3p.hh"
+#include "algorithm/matrix_ucb.hh"
 #include <iostream>
 
 const int __size__ = 2;

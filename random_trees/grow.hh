@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "tree/node.hh"
-#include "search/algorithm.hh"
+#include "tree/tree.hh"
+#include "algorithm/algorithm.hh"
 
 #include "solvers/enummixed/enummixed.h"
 
@@ -119,16 +119,6 @@ private:
             col_strategy[j - matrix.rows] = joint_strategy[j + 1];
             is_interior *= 1 - col_strategy[j];
         }
-
-        // if (is_interior == 0 && this->require_interior)
-        // {
-        //     Bandit::SolveBimatrix<double, Grow::state_t::_size>(
-        //         this->device,
-        //         10000,
-        //         matrix,
-        //         row_strategy,
-        //         col_strategy);
-        // }
         delete game;
     }
 
