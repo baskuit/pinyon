@@ -3,8 +3,8 @@
 #include "../random_trees/grow.hh"
 #include "../random_trees/tree_state.hh"
 
-#include "search/matrix_ucb.hh"
-#include "search/exp3p.hh"
+#include "algorithm/matrix_ucb.hh"
+#include "algorithm/exp3p.hh"
 
 #include <iostream>
 
