@@ -1,5 +1,3 @@
-This folder is an example on how to use surskit. Our goal is to implement a class of random matrix tree games, where each node in the tree comes with pre solved strategies and values.
+This folder is an implementation of solved matrix-tree games using Surskit's built in types.
 
-It turns out the Surksits type system facilitate this nicely.
-
-TODO
+It is used as a way to produce somewhat-large games for testing search algorithms.

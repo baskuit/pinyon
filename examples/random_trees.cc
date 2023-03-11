@@ -42,11 +42,11 @@ int main()
     math::print(row_strategy, state.actions.rows);
     math::print(col_strategy, state.actions.cols);
 
-    double x = Linear::exploitability<
-        double,
-        typename TreeState::Types::MatrixReal,
-        typename TreeState::Types::VectorReal>
-        (state.current->stats.expected_value, row_strategy, col_strategy);
-    std::cout << "expl: " << x << std::endl;
+    // double x = Linear::exploitability<
+    //     double,
+    //     typename TreeState::Types::MatrixReal,
+    //     typename TreeState::Types::VectorReal>
+    //     (state.current->stats.expected_value, row_strategy, col_strategy);
+    // std::cout << "expl: " << x << std::endl;
     return 0;
 }
