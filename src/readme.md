@@ -1,6 +1,7 @@
 
 
 
+
 # Types
 Surskit attempts to codify search using four types, each 'higher' than the previous: 
 
@@ -202,12 +203,9 @@ The MatrixUCB and Exp3p algorithms are both instances of a Multi-Armed-Bandit so
 	        typename Types::Model &model,
 	        MatrixNode<Algorithm> *matrix_node)
 	    {
-	        if (!matrix_node->is_terminal)
-	        {
-	            if (matrix_node->is_expanded)
-	            {
+	        if (!matrix_node->is_terminal) {
+	            if (matrix_node->is_expanded) {
 	                typename Types::Outcome outcome;
-
 	                this->select(matrix_node, outcome);
 
 	                typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
@@ -252,20 +250,19 @@ Surskit allows the user to mix and match any bandit algorithm with any single or
 There is currently only one implementation of a search tree, via `MatrixNode` and `ChanceNode`.
 
 	MatrixNode<Algorithm> : AbstractTree<Algorithm>
+
+A matrix node represents a decision point by both players. It contains all the information provided by the model and all the statistics necessary for it's base algorithm to select actions and traverse further down the tree.
+
 	ChanceNode<Algorithm> : AbstractTree<Algorithm>
 
-TODO: Ownership, the nodes own their children. Matirix node carry enough info about the state 'at that point' to make an decisions.
-We have an `Actions` object stored there so we can transition properly.
-We have a `Transition` stored there so the chance node parent can tell what led to that matrix node
-We have a `Inference` object that contains the model's inference when we expanded the node.
-We have a  
+A chance node represents all the possible transition that are possible once a given pair of joint actions has been committed.
+
+See below for a detailed look at these members and functions, starting with the `MatrixNode`.
 	
 	class MatrixNode : public AbstractNode<Algorithm>
 	{
 	public:
-	    struct Types : AbstractNode<Algorithm>::Types
-	    {
-	    };
+	    struct Types : AbstractNode<Algorithm>::Types {};
 
 	    ChanceNode<Algorithm> *parent = nullptr;
 	    ChanceNode<Algorithm> *child = nullptr;
@@ -279,3 +276,126 @@ We have a
 	    typename Types::Transition transition;
 	    typename Types::Inference inference;
 	    typename Types::MatrixStats stats;
+	    
+	    ChanceNode<Algorithm> *access(int row_idx, int col_idx);
+	};
+
+The tree structure is provided by the four pointer members. Rather than storing a vector of pointers that refer to the children of a node, we use a linked list implementation. Only the first child is stored in the parent, and all of the child's siblings are accessible via `next`. More precisely, the children of `matrix_node` would be `matrix_node->child`, `matrix_node->child->next`, `matrix_node->child->next->next` and so on.
+
+Note that the parent and children of a `MatrixNode` are `ChanceNodes`, while the siblings prev and next are of the same type. The same is true for the pointer members of a `ChanceNode`.
+
+As we are traversing the tree, we try to only use information that is stored in the nodes, querying the state only when necessary: to expand a new matrix node. To this end, the member `is_terminal` and `actions` are just copies of their state object counterparts.
+
+We store a `Transition` object (recall this is just an `Observation` key and a `Probability` value) at the matrix node which is used by the chance node parent to navigate transitions.
+
+Lastly, we store a stats object which is defined as a member of the template `Algorithm` parameter.
+
+Now the `ChanceNode.
+
+	template <typename Algorithm>
+	class ChanceNode : public AbstractNode<Algorithm>
+	{
+	public:
+	    struct Types : AbstractNode<Algorithm>::Types {};
+
+	    MatrixNode<Algorithm> *parent = nullptr;
+	    MatrixNode<Algorithm> *child = nullptr;
+	    ChanceNode<Algorithm> *prev = nullptr;
+	    ChanceNode<Algorithm> *next = nullptr;
+
+	    int row_idx;
+	    int col_idx;
+
+	    typename Types::ChanceStats stats;
+
+The chance node stores considerably less data since no decisions are made here. Chance node's function is to point us the the correct matrix node given a state's particular transition. Similarly to how a matrix node will store the transition object that 'led to it', a chance node will also store the indices of the actions of the row and column player that make up the joint action. The use of these identifiers is evident in the implemntations of both the access functions.
+
+    ChanceNode<Algorithm> *access(int row_idx, int col_idx)
+    {
+        if (this->child == nullptr)
+        {
+            this->child = new ChanceNode<Algorithm>(this, nullptr, row_idx, col_idx);
+            return this->child;
+        }
+        ChanceNode<Algorithm> *current = this->child;
+        ChanceNode<Algorithm> *previous = this->child;
+        while (current != nullptr)
+        {
+            previous = current;
+            if (current->row_idx == row_idx && current->col_idx == col_idx)
+            {
+                return current;
+            }
+            current = current->next;
+        }
+        ChanceNode<Algorithm> *child = new ChanceNode<Algorithm>(this, previous, row_idx, col_idx);
+        previous->next = child;
+        return child;
+    };
+and 
+
+    MatrixNode<Algorithm> *access(typename Types::Transition &transition)
+    {
+        if (this->child == nullptr)
+        {
+            MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, nullptr, transition);
+            this->child = child;
+            return child;
+        }
+        MatrixNode<Algorithm> *current = this->child;
+        MatrixNode<Algorithm> *previous = this->child;
+        while (current != nullptr)
+        {
+            previous = current;
+            if (current->transition.obs == transition.obs)
+            {
+                return current;
+            }
+            current = current->next;
+        }
+        MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, previous, transition);
+        previous->next = child;
+        return child;
+    };
+
+The last thing to cover is resource management. A node owns it children but not it's siblings. Destructing a node will thus delete all its children  and remove it from it parents linked list of children.
+
+	template <typename Algorithm>
+	MatrixNode<Algorithm>::~MatrixNode() {
+	    while (this->child != nullptr) {
+	        ChanceNode<Algorithm> *victim = this->child;
+	        this->child = this->child->next;
+	        delete victim;
+	    }
+	    if (this->prev != nullptr) {
+	        this->prev->next = this->next;
+	    }
+	    else if (this->parent != nullptr) {
+	        this->parent->child = this->next;
+	    }
+	}
+
+	template <typename Algorithm>
+	ChanceNode<Algorithm>::~ChanceNode() {
+	    while (this->child != nullptr) {
+	        MatrixNode<Algorithm> *victim = this->child;
+	        this->child = this->child->next;
+	        delete victim;
+	    }
+	    if (this->prev != nullptr) {
+	        this->prev->next = this->next;
+	    }
+	    else if (this->parent != nullptr) {
+	        this->parent->child = this->next;
+	    }
+	};
+
+Thus a simple way to ensure that everything is cleaned up is to instantiate the root node at the stack level, so that it and all of it's children will be destructed when it leaves scope.
+
+	void scoped_search_example () {
+		MatrixNode<Algorithm> root;
+		session.search(10000, state, model, root);
+		// tree will be created and destroyed within the execution of this function.
+	}
+
+The tree does not currently support more advanced memory management like pruning or hash tables.
