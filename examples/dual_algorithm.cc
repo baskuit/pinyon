@@ -2,6 +2,7 @@
 #include "../random_trees/tree_state.hh"
 #include "algorithm/exp3p.hh"
 #include "algorithm/matrix_ucb.hh"
+// #include "algorithm/matrix_ucb_imp.hh"
 #include "tree/tree.hh"
 
 #include <iostream>
@@ -93,20 +94,29 @@ public:
     }
 };
 
+constexpr int size = 3;
+
+int af(prng &device, int actions) {
+    return actions - device.random_int(2) + device.random_int(2);
+}
+
+int dbf(prng &device, int actions) {
+    return actions - device.random_int(2) - 1;
+}
+
 template <class Algorithm1, class Algorithm2>
 double vs_new_tree(prng &device)
 {
-    using TreeState = TreeState<3>;
-    TreeState tree(device, 6, 3, 3);
+    using TreeState = TreeState<size>;
+    TreeState tree(device, 7, size, size, &dbf, &af);
     std::cout << "tree size: " << tree.current->stats.count << std::endl;
     tree.get_actions();
 
     std::cout << "Tree generated" << std::endl;
 
     DualAlgorithm<Algorithm1, Algorithm2> eval(device, device);
-    eval.session1.c_uct = 2;
-    eval.session1.expl_threshold = .001;
-    double result = eval.selfplay_loop(tree, 30, 200);
+    eval.session1.c_ucb = 1.718;
+    double result = eval.selfplay_loop(tree, 30, 800);
     return result;
 }
 
@@ -115,7 +125,7 @@ int main()
     using TreeState = TreeState<3>;
     using Model = MonteCarloModel<TreeState>;
     using Algorithm1 = MatrixUCB<Model, TreeBandit>;
-    using Algorithm2 = Algorithm1;
+    using Algorithm2 = MatrixUCB<Model, TreeBandit>;
 
     prng device(0);
 
