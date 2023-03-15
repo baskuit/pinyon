@@ -62,16 +62,7 @@ public:
             this->playout(state_, model, &matrix_node);
         }
     }
-    void get_strategies(
-        MatrixNode<Algorithm> *matrix_node,
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy)
-    {
-        return static_cast<Algorithm *>(this)->_get_strategies(
-            matrix_node,
-            row_strategy,
-            col_strategy);
-    }
+
     void run_for_duration(
         double duration_ms,
         typename Types::State &state,
@@ -91,6 +82,17 @@ public:
         }
         std::cout << "total playouts for duration: " << duration_ms << " ms: " << playouts << std::endl;
         std::cout << "playout estimate was : " << playout_estimate << std::endl;
+    }
+
+    void get_strategies(
+        MatrixNode<Algorithm> *matrix_node,
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy)
+    {
+        return static_cast<Algorithm *>(this)->_get_strategies(
+            matrix_node,
+            row_strategy,
+            col_strategy);
     }
 
     MatrixNode<Algorithm> *playout(
@@ -152,7 +154,7 @@ public:
     }
 };
 
-/*
+/*  
 Tree Bandit (single threaded)
 */
 
