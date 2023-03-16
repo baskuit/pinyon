@@ -8,6 +8,11 @@
 Exp3p
 */
 
+/*
+NOTE: I'm not sure how Exp3p is supposed to be thread safe if the one session (Algorithm) has only one helper forecast Vector.
+*/
+
+
 template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit>
 class Exp3p : public _TreeBandit<Model, Exp3p<Model, _TreeBandit>>
 {

@@ -20,7 +20,8 @@ public:
     std::shared_ptr<SeedStateNode> root;
     SeedStateNode *current;
 
-    TreeState(prng &device, int depth_bound, int rows, int cols) : seed(SeedState<size>(device, depth_bound, rows, cols))
+    TreeState(prng &device, int depth_bound, int rows, int cols, int (*depth_bound_func)(prng &, int), int (*actions_func)(prng &, int)) : 
+        seed(SeedState<size>(device, depth_bound, rows, cols, depth_bound_func, actions_func))
     {
         this->root = std::make_shared<SeedStateNode>();
         this->current = &*root;

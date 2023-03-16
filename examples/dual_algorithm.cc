@@ -2,7 +2,7 @@
 #include "../random_trees/tree_state.hh"
 #include "algorithm/exp3p.hh"
 #include "algorithm/matrix_ucb.hh"
-// #include "algorithm/matrix_ucb_imp.hh"
+#include "algorithm/matrix_pucb.hh"
 #include "tree/tree.hh"
 
 #include <iostream>
@@ -115,7 +115,7 @@ double vs_new_tree(prng &device)
     std::cout << "Tree generated" << std::endl;
 
     DualAlgorithm<Algorithm1, Algorithm2> eval(device, device);
-    eval.session1.c_ucb = 1.718;
+    eval.session1.c_uct = 1.718;
     double result = eval.selfplay_loop(tree, 30, 800);
     return result;
 }

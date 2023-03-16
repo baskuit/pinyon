@@ -17,7 +17,7 @@ int main()
     using MonteCarlo = MonteCarloModel<TreeState>;
 
     prng device;
-    TreeState state(device, 1, __size__, __size__);
+    TreeState state(device, 1, __size__, __size__, nullptr, nullptr);
     state.get_actions();
     // Initialization now runs the Grow algorithm automatically
 
