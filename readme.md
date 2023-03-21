@@ -24,5 +24,4 @@ A more detailed explanation of the implementation is [here](https://github.com/b
 The fast computation of Nash Equilibrium strategies is necessary for the MatrixUCB algorithm.
 
 ## Status
-The code is largely untested and unbenchmarked. Next steps are to correct this and then to create tools for evaluating the relative performance of search schemes and generating replay data for model training and fine-tuning.
-Otherwise, much of my development on Surskit will be used for my pet case, and thus likely won't be added to the repo.
+The core features of Surskit, namely the single/multi-threaded bandit search, have been implemented. Documentation has been written to convey the motivation for design choices and how to use the program. Tests and benchmarks are the priority now.
