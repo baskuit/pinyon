@@ -122,8 +122,8 @@ public:
         typename Types::State &state,
         typename Types::Inference &inference)
     {
-        math::power_norm(state.row_strategy, state.actions.rows, power, inference.row_strategy);
-        math::power_norm(state.col_strategy, state.actions.cols, power, inference.col_strategy);
+        math::power_norm(state.row_strategy, state.actions.rows, power, inference.row_policy);
+        math::power_norm(state.col_strategy, state.actions.cols, power, inference.col_policy);
         this->rollout(state);
         inference.row_value = state.row_payoff;
         inference.col_value = state.col_payoff;
