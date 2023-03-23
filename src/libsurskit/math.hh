@@ -102,6 +102,32 @@ namespace Linear
             }
             return output;
         }
+        Matrix operator*(T t)
+        {
+            const Matrix &M = *this;
+            Matrix output(M.rows, M.cols);
+            for (int i = 0; i < output.rows; ++i)
+            {
+                for (int j = 0; j < output.cols; ++j)
+                {
+                    output.data[i][j] = M.data[i][j] * t;
+                }
+            }
+            return output;
+        }
+        Matrix operator+(T t)
+        {
+            const Matrix &M = *this;
+            Matrix output(M.rows, M.cols);
+            for (int i = 0; i < output.rows; ++i)
+            {
+                for (int j = 0; j < output.cols; ++j)
+                {
+                    output.data[i][j] = M.data[i][j] + t;
+                }
+            }
+            return output;
+        }
         Matrix transpose()
         {
             Matrix t(cols, rows);
