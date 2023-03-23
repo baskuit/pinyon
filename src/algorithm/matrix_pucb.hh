@@ -15,8 +15,8 @@ MatrixPUCB
 
 template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit>
 class MatrixPUCB : public _TreeBandit<Model, MatrixPUCB<Model, _TreeBandit>>
-// static_assert(std::derived_from<Model, MontelCarloSolved<typename Model::Types::State>>());
 {
+static_assert(std::derived_from<Model, SolvedMonteCarloModel<typename Model::Types::State>>);
 public:
     struct MatrixStats;
     struct ChanceStats;
@@ -157,17 +157,17 @@ public:
             col_ucb_matrix);
         typename Types::VectorReal &row_strategy = matrix_node->stats.row_strategy;
         typename Types::VectorReal &col_strategy = matrix_node->stats.col_strategy;
-
         typename Types::Real u = Linear::exploitability<
             typename Types::Real,
             typename Types::MatrixReal,
             typename Types::VectorReal>(row_ucb_matrix, col_ucb_matrix, row_strategy, col_strategy);
-        if (u > expl_threshold) {
+        if (u > expl_threshold)
+        {
             LibGambit::solve_bimatrix<Types>(
                 row_ucb_matrix,
                 col_ucb_matrix,
                 row_strategy,
-                col_strategy);            
+                col_strategy);
         }
         const int row_idx = this->device.sample_pdf(row_strategy, row_ucb_matrix.rows);
         const int col_idx = this->device.sample_pdf(col_strategy, row_ucb_matrix.cols);
@@ -193,13 +193,13 @@ public:
     }
 
     void get_ucb_matrix(
-        MatrixNode<MatrixPUCB> *matrix_node, // in
+        MatrixNode<MatrixPUCB> *matrix_node,        // in
         typename Types::MatrixReal &row_ucb_matrix, // out
         typename Types::MatrixReal &col_ucb_matrix)
     {
-        const typename Types::MatrixReal row_value_matrix = matrix_node->stats.row_value_matrix;
-        const typename Types::MatrixReal col_value_matrix = matrix_node->stats.col_value_matrix;
-        const typename Types::MatrixReal visit_matrix = matrix_node->stats.visit_matrix;
+        typename Types::MatrixReal &row_value_matrix = matrix_node->stats.row_value_matrix;
+        typename Types::MatrixReal &col_value_matrix = matrix_node->stats.col_value_matrix;
+        typename Types::MatrixInt &visit_matrix = matrix_node->stats.visit_matrix;
         const int time = matrix_node->stats.time;
         const int rows = visit_matrix.rows;
         const int cols = visit_matrix.cols;
