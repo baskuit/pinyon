@@ -97,34 +97,36 @@ public:
 constexpr int size = 3;
 
 int af(prng &device, int actions) {
-    return actions - device.random_int(2) + device.random_int(2);
+    const int raw = actions - device.random_int(2) + device.random_int(2);
+    return std::max(std::min(raw, size), 1);
 }
 
-int dbf(prng &device, int actions) {
-    return actions - device.random_int(2) - 1;
+int dbf(prng &device, int depth_bound) {
+    const int raw = depth_bound - device.random_int(2) - 1;
+    return std::max(std::min(raw, depth_bound), 0);
 }
 
 template <class Algorithm1, class Algorithm2>
 double vs_new_tree(prng &device)
 {
     using TreeState = TreeState<size>;
-    TreeState tree(device, 7, size, size, &dbf, &af);
+    TreeState tree(device, 12, size, size, &dbf, &af);
     std::cout << "tree size: " << tree.current->stats.count << std::endl;
     tree.get_actions();
 
     std::cout << "Tree generated" << std::endl;
 
     DualAlgorithm<Algorithm1, Algorithm2> eval(device, device);
-    eval.session1.c_uct = 1.718;
-    double result = eval.selfplay_loop(tree, 30, 800);
+    // eval.session1.c_uct = 1.718;
+    double result = eval.selfplay_loop(tree, 30, 200);
     return result;
 }
 
 int main()
 {
     using TreeState = TreeState<3>;
-    using Model = MonteCarloModel<TreeState>;
-    using Algorithm1 = MatrixUCB<Model, TreeBandit>;
+    using Model = SolvedMonteCarloModel<TreeState>;
+    using Algorithm1 = MatrixPUCB<Model, TreeBandit>;
     using Algorithm2 = MatrixUCB<Model, TreeBandit>;
 
     prng device(0);
