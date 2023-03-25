@@ -5,7 +5,9 @@
 #include "algorithm/exp3p.hh"
 #include "tree/tree.hh"
 
-// Large uniform tree for testing etc. So called because it spreads out until it can't.
+/*
+ Large uniform tree for testing etc. So called because it grows until it can't.
+*/
 
 template <int size>
 class MoldState : public StateArray<size, int, int, bool>
@@ -66,7 +68,7 @@ public:
     }
     void apply_actions(
         typename Types::Action row_action,
-        typename Types::Action col_action // PennyMatching has a fixed Action type, but nevertheless we can pretend it doesn't too see how to handle things when they get less clear.
+        typename Types::Action col_action
     )
     {
         this->transition.prob = true;
@@ -84,6 +86,10 @@ public:
         }
     }
 };
+
+/*
+"Sucker Punch" game from Into-To-Pokemon, with PP=3
+*/
 
 class Sucker : public StateArray<2, int, int, bool>
 {
@@ -130,34 +136,38 @@ public:
         }
     }
 };
-// TODO test
-template <typename _TypeList>
-class BimatrixGame : public DefaultState<_TypeList>
+
+/*
+One shot matrix game from row and column player payoff matrices
+*/
+
+template <typename TypeList>
+class BimatrixGame : public DefaultState<TypeList>
 {
-    // static_assert(std::derived_from<State, DefaultState<typename State::TypeList>>);
+    static_assert(std::derived_from<TypeList, AbstractTypeList>);
 
 public:
-    struct Types : DefaultState<_TypeList>::Types
+    struct Types : DefaultState<TypeList>::Types
     {
         using Action = int;
     };
 
-    typename Types::MatrixReal &row_matrix;
-    typename Types::MatrixReal &col_matrix;
+    typename Types::MatrixReal &row_payoff_matrix;
+    typename Types::MatrixReal &col_payoff_matrix;
 
     BimatrixGame(
-        typename Types::MatrixReal &row_matrix,
-        typename Types::MatrixReal &col_matrix) : row_matrix(row_matrix), col_matrix(col_matrix) {}
+        typename Types::MatrixReal &row_payoff_matrix,
+        typename Types::MatrixReal &col_matrix) : row_payoff_matrix(row_payoff_matrix), col_payoff_matrix(col_payoff_matrix) {}
 
     void get_actions()
     {
-        this->actions.rows = row_matrix.rows;
-        this->actions.cols = row_matrix.cols;
-        for (int i = 0; i < row_matrix.rows; ++i)
+        this->actions.rows = row_payoff_matrix.rows;
+        this->actions.cols = col_payoff_matrix.cols;
+        for (int i = 0; i < row_payoff_matrix.rows; ++i)
         {
             this->actions.row_actions[i] = i;
         }
-        for (int j = 0; j < row_matrix.cols; ++j)
+        for (int j = 0; j < col_payoff_matrix.cols; ++j)
         {
             this->actions.col_actions[j] = j;
         }
@@ -170,10 +180,8 @@ public:
         this->transition.prob = true; // hehe
         this->transition.obs = 0;
         this->is_terminal = true;
-        this->row_payoff = row_matrix.get(row_action, col_action);
-        ;
-        this->col_payoff = col_matrix.get(row_action, col_action);
-        ;
+        this->row_payoff = row_payoff_matrix.get(row_action, col_action);
+        this->col_payoff = col_payoff_matrix.get(row_action, col_action);
     }
 
     void solve(
