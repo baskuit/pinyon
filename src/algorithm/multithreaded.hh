@@ -35,6 +35,38 @@ public:
         std::mutex mtx;
     };
 
+    int threads = 1;
+
+    // Override the TreeBanditBase run for threads
+    // void run(
+    //     int playouts,
+    //     typename Types::State &state,
+    //     typename Types::Model &model,
+    //     MatrixNode<Algorithm> &matrix_node)
+    // {
+    //     this->_initialize_stats(playouts, state, model, &matrix_node);
+    //     for (int playout = 0; playout < playouts; ++playout)
+    //     {
+    //         typename Types::State state_ = state;
+    //         this->_playout(state_, model, &matrix_node);
+    //     }
+    // }
+
+    // void runThread(
+    //     int playouts,
+    //     typename Exp3p::state_t *state,
+    //     MatrixNode<Exp3p> *matrix_node)
+    // {
+    //     prng device_(device.random_int(2147483647));
+    //     typename Exp3p::model_t model(device_);
+
+    //     for (int playout = 0; playout < playouts; ++playout)
+    //     {
+    //         auto state_ = *state;
+    //         runPlayout(state_, model, matrix_node);
+    //     }
+    // }
+
     MatrixNode<Algorithm> *playout(
         typename Types::State &state,
         typename Types::Model &model,
