@@ -10,9 +10,11 @@
 
 Generate matrices of various sizes, solve using LibGambit, and test that expl is basically zero.
 
+Passes with size = 7, device seed = 0, n_matrices  = 10000
+However that takes several minutes, so we will reduce the size of the test.
 */
 
-constexpr int size = 7;
+constexpr int size = 5;
 
 using Types = TypeList<
     int, 
@@ -58,7 +60,7 @@ int main () {
 
     for (int rows = 1; rows <= size; ++rows) {
         for (int cols = 1; cols <= size; ++cols) {
-            random_matrices(device, rows, cols, 10000, 0.001);
+            random_matrices(device, rows, cols, 1000, 0.001);
         }
     }
 
