@@ -38,34 +38,38 @@ public:
     int threads = 1;
 
     // Override the TreeBanditBase run for threads
-    // void run(
-    //     int playouts,
-    //     typename Types::State &state,
-    //     typename Types::Model &model,
-    //     MatrixNode<Algorithm> &matrix_node)
-    // {
-    //     this->_initialize_stats(playouts, state, model, &matrix_node);
-    //     for (int playout = 0; playout < playouts; ++playout)
-    //     {
-    //         typename Types::State state_ = state;
-    //         this->_playout(state_, model, &matrix_node);
-    //     }
-    // }
+    // TODO currently not thread safe since all threads will use shared prng devices!!!
+    void run(
+        int playouts,
+        typename Types::State &state,
+        typename Types::Model &model,
+        MatrixNode<Algorithm> &matrix_node)
+    {
+        this->_initialize_stats(playouts, state, model, &matrix_node);
+        std::thread thread_pool[threads];
+        const int playouts_per_thread = playouts / threads;
+        for (int i = 0; i < threads; ++i)
+        {
+            thread_pool[i] = std::thread(&TreeBanditThreaded::runThread, this, playouts_per_thread, &state, &model, &matrix_node);
+        }
+        for (int i = 0; i < threads; ++i)
+        {
+            thread_pool[i].join();
+        }
+    }
 
-    // void runThread(
-    //     int playouts,
-    //     typename Exp3p::state_t *state,
-    //     MatrixNode<Exp3p> *matrix_node)
-    // {
-    //     prng device_(device.random_int(2147483647));
-    //     typename Exp3p::model_t model(device_);
-
-    //     for (int playout = 0; playout < playouts; ++playout)
-    //     {
-    //         auto state_ = *state;
-    //         runPlayout(state_, model, matrix_node);
-    //     }
-    // }
+    void runThread(
+        int playouts,
+        typename Types::State *state,
+        typename Types::Model *model,
+        MatrixNode<Algorithm> *matrix_node)
+    {
+        for (int playout = 0; playout < playouts; ++playout)
+        {
+            typename Types::State state_copy = *state;
+            this->_playout(state_copy, *model, matrix_node);
+        }
+    }
 
     MatrixNode<Algorithm> *playout(
         typename Types::State &state,
@@ -200,43 +204,3 @@ private:
         matrix_node->stats.mutex_index = (this->current_index++) % pool_size;
     }
 };
-
-/*
-TODO: Refer to old code for multithreading
-*/
-
-// void loopPlayout(
-//     int playouts,
-//     typename Exp3p::state_t *state,
-//     MatrixNode<Exp3p> *matrix_node)
-// {
-//     prng device_(device.random_int(2147483647));
-//     typename Exp3p::model_t model(device_);
-
-//     for (int playout = 0; playout < playouts; ++playout)
-//     {
-//         auto state_ = *state;
-//         runPlayout(state_, model, matrix_node);
-//     }
-// }
-
-// // Top level search function
-// void search(
-//     int threads,
-//     int playouts,
-//     typename Exp3p::state_t &state,
-//     MatrixNode<Exp3p> *root)
-// {
-//     root->stats.t = playouts;
-//     std::thread thread_pool[threads];
-
-//     for (int i = 0; i < threads; ++i)
-//     {
-//         const int playouts_thread = playouts / threads;
-//         thread_pool[i] = std::thread(&Exp3p::loopPlayout, this, playouts_thread, &state, root);
-//     }
-//     for (int i = 0; i < threads; ++i)
-//     {
-//         thread_pool[i].join();
-//     }
-// }

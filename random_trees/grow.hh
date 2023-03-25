@@ -59,10 +59,10 @@ public:
             ChanceNode<Grow> *chance_node = matrix_node->access(i, j);
                 for (int c = 0; c < 1; ++c)
                 {
-                    typename Types::State state_ = state;
-                    state_.apply_actions(i, j);
-                    MatrixNode<Grow> *matrix_node_next = chance_node->access(state_.transition);
-                    grow(state_, matrix_node_next);
+                    typename Types::State state_copy = state;
+                    state_copy.apply_actions(i, j);
+                    MatrixNode<Grow> *matrix_node_next = chance_node->access(state_copy.transition);
+                    grow(state_copy, matrix_node_next);
                     matrix_node->stats.expected_value.data[i][j] = matrix_node_next->stats.payoff;
                     matrix_node->stats.count += matrix_node_next->stats.count;
                 }

@@ -57,8 +57,8 @@ public:
         this->_initialize_stats(playouts, state, model, &matrix_node);
         for (int playout = 0; playout < playouts; ++playout)
         {
-            typename Types::State state_ = state;
-            this->_playout(state_, model, &matrix_node);
+            typename Types::State state_copy = state;
+            this->_playout(state_copy, model, &matrix_node);
         }
     }
 
@@ -76,8 +76,8 @@ public:
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() < duration_ms;
             ++playouts)
         {
-            typename Types::State state_ = state;
-            this->_playout(state_, model, &matrix_node);
+            typename Types::State state_copy = state;
+            this->_playout(state_copy, model, &matrix_node);
         }
         std::cout << "total playouts for duration: " << duration_ms << " ms: " << playouts << std::endl;
         std::cout << "playout estimate was : " << playout_estimate << std::endl;
