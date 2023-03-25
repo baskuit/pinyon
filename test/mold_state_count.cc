@@ -13,6 +13,7 @@
 /*
 Although templated, this currently only works with Bandit algorithms that intialize with just a prng device.
 */
+
 template <
     template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit> class Algorithm,
     int size,
@@ -33,7 +34,7 @@ void saturation_test() {
     MatrixNode<Algo> root;
     Algo session(device);
     session.run(playouts, state, model, root);
-    int root_count = root.count();
+    const int root_count = root.count();
     std::cout << root_count << std::endl;
     assert(root_count == tree_size);
 }
