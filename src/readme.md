@@ -230,7 +230,7 @@ Each of these templates accepts a model specialization, of course, but also an A
  See the single threaded playout function below:
 
 
-	    MatrixNode<Algorithm> *_playout(
+	    MatrixNode<Algorithm> *playout(
 	        typename Types::State &state,
 	        typename Types::Model &model,
 	        MatrixNode<Algorithm> *matrix_node
@@ -247,7 +247,7 @@ Each of these templates accepts a model specialization, of course, but also an A
 	                ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
 	                MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
 
-	                MatrixNode<Algorithm> *matrix_node_leaf = this->_playout(state, model, matrix_node_next);
+	                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(state, model, matrix_node_next);
 
 	                outcome.row_value = matrix_node_leaf->inference.row_value;
 	                outcome.col_value = matrix_node_leaf->inference.col_value;

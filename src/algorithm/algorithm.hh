@@ -28,14 +28,13 @@ public:
 template <class Model, class Algorithm>
 class TreeBanditBase : public AbstractAlgorithm<Model>
 {
-    static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>> == true,
+    static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
                   "Model parameter for TreeBanditBase must provide a value and policy estimate; Both Exp3p and MatrixUCB have time parameters that need policy to be estimated on expansion");
     // static_assert(std::derived_from<Algorithm, TreeBanditBase<Model, Algorithm>>,
-    // "Algorithm parameter for TreeBanditBase must derive from TreeBanditBase, i.e. it must be a bandit algorithm implementation");
-    // The above is not possible since Algorithm is not complete yet.
+    //     "Algorithm parameter for TreeBanditBase must derive from TreeBanditBase, i.e. it must be a bandit algorithm implementation");
+        // The above is not possible since Algorithm is not complete yet.
 public:
-    // Would have to pass Outcome type as template parameter if you wanted to specialize it.
-    // Have to pass Model since Algorithm is incomplete.
+    // Would have to pass Outcome type as template parameter if you wanted to specialize it. Have to pass Model since Algorithm is incomplete.
     struct Outcome;
     struct Types : AbstractAlgorithm<Model>::Types
     {
@@ -187,7 +186,7 @@ public:
                 ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
 
-                MatrixNode<Algorithm> *matrix_node_leaf = this->_playout(state, model, matrix_node_next);
+                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(state, model, matrix_node_next);
 
                 outcome.row_value = matrix_node_leaf->inference.row_value;
                 outcome.col_value = matrix_node_leaf->inference.col_value;
