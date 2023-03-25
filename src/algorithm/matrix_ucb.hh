@@ -164,10 +164,7 @@ public:
         typename Types::VectorReal &row_strategy = matrix_node->stats.row_strategy;
         typename Types::VectorReal &col_strategy = matrix_node->stats.col_strategy;
 
-        typename Types::Real u = Linear::exploitability<
-            typename Types::Real,
-            typename Types::MatrixReal,
-            typename Types::VectorReal>(row_ucb_matrix, col_ucb_matrix, row_strategy, col_strategy);
+        typename Types::Real u = Linear::exploitability<Types>(row_ucb_matrix, col_ucb_matrix, row_strategy, col_strategy);
         if (u > expl_threshold) {
             solve_bimatrix(
                 row_ucb_matrix,
