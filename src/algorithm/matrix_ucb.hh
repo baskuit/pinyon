@@ -27,7 +27,7 @@ public:
         using MatrixStats = MatrixUCB::MatrixStats;
         using ChanceStats = MatrixUCB::ChanceStats;
     };
-    using Solver = Gambit::Nash::EnumMixedStrategySolver<typename Types::Real>;
+    using Solver = Gambit::Nash::EnumMixedStrategySolver<typename Types::Real>; //TODO
     struct MatrixStats : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>::MatrixStats
     {
         int time = 0;
@@ -53,7 +53,7 @@ public:
     typename Types::Real expl_threshold = .05;
     bool require_interior = false;
 
-    void _init_stats(
+    void initialize_stats(
         int playouts,
         typename Types::State &state,
         typename Types::Model &model,
@@ -62,7 +62,7 @@ public:
         matrix_node->stats.time = playouts;
     }
 
-    void _get_strategies(
+    void get_strategies(
         MatrixNode<MatrixUCB> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
@@ -82,7 +82,7 @@ public:
             col_strategy);
     }
 
-    void _expand(
+    void expand(
         typename Types::State &state,
         typename Types::Model model,
         MatrixNode<MatrixUCB> *matrix_node)
@@ -148,7 +148,7 @@ public:
         }
     }
 
-    void _select(
+    void select(
         MatrixNode<MatrixUCB> *matrix_node,
         typename Types::Outcome &outcome)
     {
@@ -180,7 +180,7 @@ public:
         outcome.col_mu = col_strategy[col_idx];
     }
 
-    void _update_matrix_node(
+    void update_matrix_node(
         MatrixNode<MatrixUCB> *matrix_node,
         typename Types::Outcome &outcome)
     {
@@ -189,11 +189,13 @@ public:
         matrix_node->stats.visit_matrix.data[outcome.row_idx][outcome.col_idx] += 1;
     }
 
-    void _update_chance_node(
+    void update_chance_node(
         ChanceNode<MatrixUCB> *chance_node,
         typename Types::Outcome &outcome)
     {
     }
+
+private:
 
     void get_ucb_matrix(
         typename Types::MatrixReal &row_value_matrix,

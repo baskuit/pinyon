@@ -35,7 +35,7 @@ public:
         std::mutex mtx;
     };
 
-    MatrixNode<Algorithm> *_playout(
+    MatrixNode<Algorithm> *playout(
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
@@ -50,7 +50,7 @@ public:
                 typename Types::Outcome outcome;
 
                 mtx.lock();
-                this->select(matrix_node, outcome);
+                this->_select(matrix_node, outcome);
                 mtx.unlock();
 
                 typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
@@ -60,20 +60,20 @@ public:
                 ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
 
-                MatrixNode<Algorithm> *matrix_node_leaf = this->_playout(state, model, matrix_node_next);
+                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(state, model, matrix_node_next);
 
                 outcome.row_value = matrix_node_leaf->inference.row_value;
                 outcome.col_value = matrix_node_leaf->inference.col_value;
                 mtx.lock();
-                this->update_matrix_node(matrix_node, outcome);
-                this->update_chance_node(chance_node, outcome);
+                this->_update_matrix_node(matrix_node, outcome);
+                this->_update_chance_node(chance_node, outcome);
                 mtx.unlock();
                 return matrix_node_leaf;
             }
             else
             {
                 mtx.lock();
-                this->expand(state, model, matrix_node);
+                this->_expand(state, model, matrix_node);
                 mtx.unlock();
                 return matrix_node;
             }
@@ -111,7 +111,7 @@ public:
     // we simply let this overflow or w/e
     // TODO test overflow behaviour
 
-    MatrixNode<Algorithm> *_playout(
+    MatrixNode<Algorithm> *playout(
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
@@ -126,7 +126,7 @@ public:
                 typename Types::Outcome outcome;
 
                 mtx.lock();
-                this->select(matrix_node, outcome);
+                this->_select(matrix_node, outcome);
                 mtx.unlock();
 
                 typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
@@ -136,20 +136,20 @@ public:
                 ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
 
-                MatrixNode<Algorithm> *matrix_node_leaf = this->_playout(state, model, matrix_node_next);
+                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(state, model, matrix_node_next);
 
                 outcome.row_value = matrix_node_leaf->inference.row_value;
                 outcome.col_value = matrix_node_leaf->inference.col_value;
                 mtx.lock();
-                this->update_matrix_node(matrix_node, outcome);
-                this->update_chance_node(chance_node, outcome);
+                this->_update_matrix_node(matrix_node, outcome);
+                this->_update_chance_node(chance_node, outcome);
                 mtx.unlock();
                 return matrix_node_leaf;
             }
             else
             {
                 mtx.lock();
-                this->expand(state, model, matrix_node);
+                this->_expand(state, model, matrix_node);
                 this->get_mutex_index(matrix_node);
                 mtx.unlock();
                 return matrix_node;

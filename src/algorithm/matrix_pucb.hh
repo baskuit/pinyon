@@ -16,7 +16,8 @@ MatrixPUCB
 template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit>
 class MatrixPUCB : public _TreeBandit<Model, MatrixPUCB<Model, _TreeBandit>>
 {
-static_assert(std::derived_from<Model, SolvedMonteCarloModel<typename Model::Types::State>>);
+    static_assert(std::derived_from<Model, SolvedMonteCarloModel<typename Model::Types::State>>);
+
 public:
     struct MatrixStats;
     struct ChanceStats;
@@ -25,6 +26,7 @@ public:
         using MatrixStats = MatrixPUCB::MatrixStats;
         using ChanceStats = MatrixPUCB::ChanceStats;
     };
+
     struct MatrixStats : _TreeBandit<Model, MatrixPUCB<Model, _TreeBandit>>::MatrixStats
     {
         int time = 0;
@@ -35,6 +37,7 @@ public:
         typename Types::VectorReal row_strategy;
         typename Types::VectorReal col_strategy;
     };
+
     struct ChanceStats : _TreeBandit<Model, MatrixPUCB<Model, _TreeBandit>>::ChanceStats
     {
         int visits = 0;
@@ -50,7 +53,7 @@ public:
     typename Types::Real expl_threshold = .05;
     bool require_interior = false;
 
-    void _init_stats(
+    void initialize_stats(
         int playouts,
         typename Types::State &state,
         typename Types::Model &model,
@@ -59,7 +62,7 @@ public:
         matrix_node->stats.time = playouts;
     }
 
-    void _get_strategies(
+    void get_strategies(
         MatrixNode<MatrixPUCB> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
@@ -79,7 +82,7 @@ public:
             col_strategy);
     }
 
-    void _expand(
+    void expand(
         typename Types::State &state,
         typename Types::Model model,
         MatrixNode<MatrixPUCB> *matrix_node)
@@ -145,7 +148,7 @@ public:
         }
     }
 
-    void _select(
+    void select(
         MatrixNode<MatrixPUCB> *matrix_node,
         typename Types::Outcome &outcome)
     {
@@ -174,7 +177,7 @@ public:
         outcome.col_mu = col_strategy[col_idx];
     }
 
-    void _update_matrix_node(
+    void update_matrix_node(
         MatrixNode<MatrixPUCB> *matrix_node,
         typename Types::Outcome &outcome)
     {
@@ -183,7 +186,7 @@ public:
         matrix_node->stats.visit_matrix.data[outcome.row_idx][outcome.col_idx] += 1;
     }
 
-    void _update_chance_node(
+    void update_chance_node(
         ChanceNode<MatrixPUCB> *chance_node,
         typename Types::Outcome &outcome)
     {

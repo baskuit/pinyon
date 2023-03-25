@@ -55,11 +55,11 @@ public:
         typename Types::Model &model,
         MatrixNode<Algorithm> &matrix_node)
     {
-        init_stats(playouts, state, model, &matrix_node);
+        this->_initialize_stats(playouts, state, model, &matrix_node);
         for (int playout = 0; playout < playouts; ++playout)
         {
             typename Types::State state_ = state;
-            this->playout(state_, model, &matrix_node);
+            this->_playout(state_, model, &matrix_node);
         }
     }
 
@@ -70,7 +70,7 @@ public:
         MatrixNode<Algorithm> &matrix_node)
     {
         const int playout_estimate = duration_ms * 1000;
-        init_stats(playout_estimate, state, model, &matrix_node);
+        this->_initialize_stats(playout_estimate, state, model, &matrix_node);
         int playouts = 0;
         for (
             auto start_time = std::chrono::high_resolution_clock::now();
@@ -78,83 +78,84 @@ public:
             ++playouts)
         {
             typename Types::State state_ = state;
-            this->playout(state_, model, &matrix_node);
+            this->_playout(state_, model, &matrix_node);
         }
         std::cout << "total playouts for duration: " << duration_ms << " ms: " << playouts << std::endl;
         std::cout << "playout estimate was : " << playout_estimate << std::endl;
     }
 
-    void get_strategies(
+protected:
+    void _get_strategies(
         MatrixNode<Algorithm> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
-        return static_cast<Algorithm *>(this)->_get_strategies(
+        return static_cast<Algorithm *>(this)->get_strategies(
             matrix_node,
             row_strategy,
             col_strategy);
     }
 
-    MatrixNode<Algorithm> *playout(
+    MatrixNode<Algorithm> *_playout(
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
     {
-        return static_cast<Algorithm *>(this)->_playout(
+        return static_cast<Algorithm *>(this)->playout(
             state,
             model,
             matrix_node);
     }
-    void select(
+    void _select(
         MatrixNode<Algorithm> *matrix_node,
         Outcome &outcome)
     {
-        return static_cast<Algorithm *>(this)->_select(
+        return static_cast<Algorithm *>(this)->select(
             matrix_node,
             outcome);
     }
-    void init_stats(
+    void _initialize_stats(
         int playouts,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *root)
     {
-        return static_cast<Algorithm *>(this)->_init_stats(
+        return static_cast<Algorithm *>(this)->initialize_stats(
             playouts,
             state,
             model,
             root);
     }
-    void expand(
+    void _expand(
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
     {
-        return static_cast<Algorithm *>(this)->_expand(
+        return static_cast<Algorithm *>(this)->expand(
             state,
             model,
             matrix_node);
     }
-    void update_matrix_node(
+    void _update_matrix_node(
         MatrixNode<Algorithm> *matrix_node,
         Outcome &outcome)
     {
-        return static_cast<Algorithm *>(this)->_update_matrix_node(
+        return static_cast<Algorithm *>(this)->update_matrix_node(
             matrix_node,
             outcome);
     }
 
-    void update_chance_node(
+    void _update_chance_node(
         ChanceNode<Algorithm> *chance_node,
         Outcome &outcome)
     {
-        return static_cast<Algorithm *>(this)->_update_chance_node(
+        return static_cast<Algorithm *>(this)->update_chance_node(
             chance_node,
             outcome);
     }
 };
 
-/*  
+/*
 Tree Bandit (single threaded)
 */
 
@@ -166,7 +167,7 @@ public:
     {
     };
 
-    MatrixNode<Algorithm> *_playout(
+    MatrixNode<Algorithm> *playout(
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
@@ -177,7 +178,7 @@ public:
             {
                 typename Types::Outcome outcome;
 
-                this->select(matrix_node, outcome);
+                this->_select(matrix_node, outcome);
 
                 typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
                 typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
@@ -190,13 +191,13 @@ public:
 
                 outcome.row_value = matrix_node_leaf->inference.row_value;
                 outcome.col_value = matrix_node_leaf->inference.col_value;
-                this->update_matrix_node(matrix_node, outcome);
-                this->update_chance_node(chance_node, outcome);
+                this->_update_matrix_node(matrix_node, outcome);
+                this->_update_chance_node(chance_node, outcome);
                 return matrix_node_leaf;
             }
             else
             {
-                this->expand(state, model, matrix_node);
+                this->_expand(state, model, matrix_node);
                 return matrix_node;
             }
         }

@@ -50,7 +50,7 @@ public:
 
     Exp3p(prng &device) : device(device) {}
 
-    void _get_strategies(
+    void get_strategies(
         MatrixNode<Exp3p> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy
@@ -69,7 +69,7 @@ public:
         );
     }
 
-    void _init_stats(
+    void initialize_stats(
         int playouts,
         typename Types::State &state,
         typename Types::Model &model,
@@ -78,7 +78,7 @@ public:
         matrix_node->stats.time = playouts;
     }
 
-    void _expand(
+    void expand(
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Exp3p> *matrix_node)
@@ -118,7 +118,7 @@ public:
         }
     }
 
-    void _select(
+    void select(
         MatrixNode<Exp3p> *matrix_node,
         typename Types::Outcome &outcome)
     {
@@ -171,7 +171,7 @@ public:
         outcome.col_mu = col_forecast[col_idx];
     }
 
-    void _update_matrix_node(
+    void update_matrix_node(
         MatrixNode<Exp3p> *matrix_node,
         typename Types::Outcome &outcome)
     {
@@ -189,7 +189,7 @@ public:
         matrix_node->stats.col_gains[outcome.col_idx] += outcome.col_value / outcome.col_mu + col_beta;
     }
 
-    void _update_chance_node(
+    void update_chance_node(
         ChanceNode<Exp3p> *chance_node,
         typename Types::Outcome &outcome)
     {
