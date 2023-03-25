@@ -1,28 +1,17 @@
 #include "state/test_states.hh"
 #include "model/model.hh"
+#include "algorithm/multithreaded.hh"
 #include "algorithm/exp3p.hh"
 #include "algorithm/matrix_ucb.hh"
 #include <iostream>
 
-const int __size__ = 2;
-
-template <int size>
-using SimpleTypes = TypeList<
-    int, 
-    int, 
-    double, 
-    double, 
-    std::array<int, size>, 
-    std::array<double, size>, 
-    std::array<int, size>,
-    Linear::Matrix<double, size>,
-    Linear::Matrix<int, size>>;
+const int size = 2;
 
 int main()
 {
-    using MoldState = MoldState<__size__>;
+    using MoldState = MoldState<size>;
     using Model = MonteCarloModel<MoldState>;
-    using MatrixUCB = MatrixUCB<Model, TreeBandit>;
+    using MatrixUCB = MatrixUCB<Model, TreeBanditThreaded>;
 
     MoldState game(10);
     prng device;
@@ -31,7 +20,7 @@ int main()
     MatrixUCB session(device);
     session.run(100, game, model, root);
 
-    math::print(root.stats.row_strategy, __size__);
+    math::print(root.stats.row_strategy, size);
 
     // math::print(root.stats.row_visits, 2);
 
