@@ -4,6 +4,7 @@
 
 #include "libsurskit/random.hh"
 #include "libsurskit/math.hh"
+#include "libsurskit/gambit.hh"
 #include "state/test_states.hh"
 #include "algorithm.hh"
 #include "tree/tree.hh"
@@ -27,7 +28,7 @@ public:
         using MatrixStats = MatrixUCB::MatrixStats;
         using ChanceStats = MatrixUCB::ChanceStats;
     };
-    using Solver = Gambit::Nash::EnumMixedStrategySolver<typename Types::Real>; //TODO
+
     struct MatrixStats : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>::MatrixStats
     {
         int time = 0;
@@ -38,6 +39,7 @@ public:
         typename Types::VectorReal row_strategy;
         typename Types::VectorReal col_strategy;
     };
+
     struct ChanceStats : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>::ChanceStats
     {
         int visits = 0;
@@ -45,9 +47,9 @@ public:
         typename Types::Real col_value_total = 0;
     };
 
-    prng &device;
+    prng device;
 
-    MatrixUCB(prng &device) : device(device) {}
+    MatrixUCB(prng &device) : device(device.get_seed()) {}
 
     typename Types::Real c_uct = 2;
     typename Types::Real expl_threshold = .05;
@@ -75,7 +77,7 @@ public:
             matrix_node->stats.visit_matrix,
             row_ev_matrix,
             col_ev_matrix);
-        solve_bimatrix(
+        LibGambit::solve_bimatrix<Types>(
             row_ev_matrix,
             col_ev_matrix,
             row_strategy,
@@ -166,7 +168,7 @@ public:
 
         typename Types::Real u = Linear::exploitability<Types>(row_ucb_matrix, col_ucb_matrix, row_strategy, col_strategy);
         if (u > expl_threshold) {
-            solve_bimatrix(
+            LibGambit::solve_bimatrix<Types>(
                 row_ucb_matrix,
                 col_ucb_matrix,
                 row_strategy,
@@ -249,60 +251,5 @@ private:
                 col_ev_matrix.get(row_idx, col_idx) = b;
             }
         }
-    }
-
-    void solve_bimatrix(
-        typename Types::MatrixReal &row_matrix, // TODO Horrible names!!!
-        typename Types::MatrixReal &col_matrix,
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy)
-    {
-        Solver solver;
-        Gambit::Game game = build_nfg(row_matrix, col_matrix);
-        Gambit::shared_ptr<Gambit::Nash::EnumMixedStrategySolution<typename Types::Real>> solution = solver.SolveDetailed(game); // No exceptino handling 8)
-        try
-        {
-            Gambit::List<Gambit::List<Gambit::MixedStrategyProfile<typename Types::Real>>> cliques = solution->GetCliques();
-            Gambit::MixedStrategyProfile<typename Types::Real> joint_strategy = cliques[1][1];
-            typename Types::Real is_interior = 1.0;
-            for (int i = 0; i < row_matrix.rows; ++i)
-            {
-                row_strategy[i] = joint_strategy[i + 1];
-                is_interior *= 1 - row_strategy[i];
-            }
-            for (int j = row_matrix.rows; j < row_matrix.rows + row_matrix.cols; ++j)
-            {
-                col_strategy[j - row_matrix.rows] = joint_strategy[j + 1];
-                is_interior *= 1 - col_strategy[j];
-            }
-        }
-        catch (Gambit::IndexException)
-        {
-            BimatrixGame<Types> matrix_game(row_matrix, col_matrix);
-            matrix_game.solve(row_strategy, col_strategy);
-        }
-        delete game;
-    }
-
-    Gambit::Game build_nfg(
-        typename Types::MatrixReal &row_ucb_matrix,
-        typename Types::MatrixReal &col_ucb_matrix)
-    {
-        Gambit::Array<int> dim(2);
-        dim[1] = row_ucb_matrix.rows;
-        dim[2] = row_ucb_matrix.cols;
-        Gambit::GameRep *nfg = NewTable(dim);
-        Gambit::Game game = nfg;
-        Gambit::StrategyProfileIterator iter(Gambit::StrategySupportProfile(static_cast<Gambit::GameRep *>(nfg)));
-        for (int j = 0; j < row_ucb_matrix.cols; ++j)
-        {
-            for (int i = 0; i < row_ucb_matrix.rows; ++i)
-            {
-                (*iter)->GetOutcome()->SetPayoff(1, std::to_string(row_ucb_matrix.get(i, j)));
-                (*iter)->GetOutcome()->SetPayoff(2, std::to_string(col_ucb_matrix.get(i, j)));
-                iter++;
-            }
-        }
-        return game;
     }
 };

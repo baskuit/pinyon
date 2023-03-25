@@ -45,9 +45,9 @@ public:
         typename Types::Real col_value_total = 0;
     };
 
-    prng &device;
+    prng device;
 
-    MatrixPUCB(prng &device) : device(device) {}
+    MatrixPUCB(prng &device) : device(device.get_seed()) {}
 
     typename Types::Real c_uct = 2;
     typename Types::Real expl_threshold = .05;

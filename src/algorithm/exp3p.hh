@@ -44,11 +44,11 @@ public:
         double col_value_total = 0;
     };
 
-    prng &device;
+    prng device;
     typename Types::VectorReal row_forecast;
     typename Types::VectorReal col_forecast;
 
-    Exp3p(prng &device) : device(device) {}
+    Exp3p(prng &device) : device(device.get_seed()) {}
 
     void get_strategies(
         MatrixNode<Exp3p> *matrix_node,
