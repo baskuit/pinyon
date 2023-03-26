@@ -1,3 +1,0 @@
-benchmarking:
-How fast is engine? Extremely fast! Almost 1M turns in 100ms. That's about an order of magniture faster than Exp3p doing rollouts on a matrix game...
-therefore the bottleneck will be in search and inference.

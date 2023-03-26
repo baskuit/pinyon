@@ -38,7 +38,6 @@ public:
     int threads = 1;
 
     // Override the TreeBanditBase run for threads
-    // TODO currently not thread safe since all threads will use shared prng devices!!!
     void run(
         int playouts,
         prng &device,
@@ -151,6 +150,42 @@ public:
     std::atomic<int> current_index{};
     // we simply let this overflow or w/e
     // TODO test overflow behaviour
+
+    // void run(
+    //     int playouts,
+    //     prng &device,
+    //     typename Types::State &state,
+    //     typename Types::Model &model,
+    //     MatrixNode<Algorithm> &matrix_node)
+    // {
+    //     this->_initialize_stats(playouts, state, model, &matrix_node);
+    //     std::thread thread_pool[threads];
+    //     const int playouts_per_thread = playouts / threads;
+    //     for (int i = 0; i < threads; ++i)
+    //     {
+    //         thread_pool[i] = std::thread(&TreeBanditThreaded::runThread, this, playouts_per_thread, &device, &state, &model, &matrix_node);
+    //     }
+    //     for (int i = 0; i < threads; ++i)
+    //     {
+    //         thread_pool[i].join();
+    //     }
+    // }
+
+    // void runThread(
+    //     int playouts,
+    //     prng *device,
+    //     typename Types::State *state,
+    //     typename Types::Model *model,
+    //     MatrixNode<Algorithm> *matrix_node)
+    // {
+    //     prng device_thread(device->get_seed());
+    //     typename Types::Model model_thread = *model;
+    //     for (int playout = 0; playout < playouts; ++playout)
+    //     {
+    //         typename Types::State state_copy = *state;
+    //         this->_playout(*device, state_copy, *model, matrix_node);
+    //     }
+    // }
 
     MatrixNode<Algorithm> *playout(
         prng &device,
