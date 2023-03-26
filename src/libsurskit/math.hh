@@ -166,21 +166,59 @@ namespace Linear
         }
     };
 
+    // template <class TypeList>
+    // typename TypeList::Real exploitability(
+    //     typename TypeList::MatrixReal &row_payoff_matrix,
+    //     typename TypeList::MatrixReal &col_payoff_matrix,
+    //     typename TypeList::VectorReal &row_strategy,
+    //     typename TypeList::VectorReal &col_strategy,
+    //     typename TypeList::Real payoff_sum = 1)
+    // {
+    //     typename TypeList::MatrixReal row_strategy_matrix(row_strategy, row_payoff_matrix.rows);
+    //     typename TypeList::MatrixReal col_strategy_matrix(col_strategy, col_payoff_matrix.cols);
+    //     col_strategy_matrix = col_strategy_matrix.transpose();
+    //     typename TypeList::MatrixReal row_best_response = row_payoff_matrix * col_strategy_matrix;
+    //     typename TypeList::MatrixReal col_best_response = row_strategy_matrix * col_payoff_matrix;
+    //     typename TypeList::Real max_row = row_best_response.max();
+    //     typename TypeList::Real max_col = col_best_response.max();
+    //     return max_row + max_col - payoff_sum;
+    // }
+
     template <class TypeList>
     typename TypeList::Real exploitability(
         typename TypeList::MatrixReal &row_payoff_matrix,
         typename TypeList::MatrixReal &col_payoff_matrix,
         typename TypeList::VectorReal &row_strategy,
-        typename TypeList::VectorReal &col_strategy,
-        typename TypeList::Real payoff_sum = 1)
+        typename TypeList::VectorReal &col_strategy)
     {
-        typename TypeList::MatrixReal row_strategy_matrix(row_strategy, row_payoff_matrix.rows);
-        typename TypeList::MatrixReal col_strategy_matrix(col_strategy, col_payoff_matrix.cols);
-        col_strategy_matrix = col_strategy_matrix.transpose();
-        typename TypeList::MatrixReal row_best_response = row_payoff_matrix * col_strategy_matrix;
-        typename TypeList::MatrixReal col_best_response = row_strategy_matrix * col_payoff_matrix;
-        typename TypeList::Real max_row = row_best_response.max();
-        typename TypeList::Real max_col = col_best_response.max();
-        return max_row + max_col - payoff_sum;
+        const int rows = row_payoff_matrix.rows;
+        const int cols = row_payoff_matrix.cols;
+
+        typename TypeList::Real row_payoff = 0, col_payoff = 0;
+        typename TypeList::VectorReal row_response = {0}, col_response = {0};
+        for (int row_idx = 0; row_idx < rows; ++row_idx) {
+            for (int col_idx = 0; col_idx < cols; ++col_idx) {
+                const typename TypeList::Real u = row_payoff_matrix.get(row_idx, col_idx) * col_strategy[col_idx];
+                const typename TypeList::Real v = col_payoff_matrix.get(row_idx, col_idx) * row_strategy[row_idx];
+                row_payoff += u * row_strategy[row_idx];
+                col_payoff += v * col_strategy[col_idx];
+                row_response[row_idx] += u;
+                col_response[col_idx] += v;
+            }
+        }
+
+        typename TypeList::Real row_best_response = row_response[0], col_best_response = col_response[0];
+        for (int row_idx = 1; row_idx < rows; ++row_idx) {
+            if (row_response[row_idx] > row_best_response) {
+                row_best_response = row_response[row_idx];
+            }
+        }
+        for (int col_idx = 1; col_idx < cols; ++col_idx) {
+            if (col_response[col_idx] > col_best_response) {
+                col_best_response = col_response[col_idx];
+            }
+        }
+
+        return (row_best_response - row_payoff) + (col_best_response - col_payoff);
     }
 }
