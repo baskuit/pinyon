@@ -102,6 +102,32 @@ namespace Linear
             }
             return output;
         }
+        Matrix operator*(T t)
+        {
+            const Matrix &M = *this;
+            Matrix output(M.rows, M.cols);
+            for (int i = 0; i < output.rows; ++i)
+            {
+                for (int j = 0; j < output.cols; ++j)
+                {
+                    output.data[i][j] = M.data[i][j] * t;
+                }
+            }
+            return output;
+        }
+        Matrix operator+(T t)
+        {
+            const Matrix &M = *this;
+            Matrix output(M.rows, M.cols);
+            for (int i = 0; i < output.rows; ++i)
+            {
+                for (int j = 0; j < output.cols; ++j)
+                {
+                    output.data[i][j] = M.data[i][j] + t;
+                }
+            }
+            return output;
+        }
         Matrix transpose()
         {
             Matrix t(cols, rows);
@@ -140,40 +166,59 @@ namespace Linear
         }
     };
 
-    // TODO optimize
-    template <typename Real, class MatrixReal, class VectorReal>
-    Real exploitability(
-        MatrixReal &row_matrix,
-        MatrixReal &col_matrix,
-        VectorReal &row_strategy,
-        VectorReal &col_strategy)
-    {
-        MatrixReal row_strategy_matrix(row_strategy, row_matrix.rows);
-        MatrixReal col_strategy_matrix(col_strategy, col_matrix.cols);
-        col_strategy_matrix = col_strategy_matrix.transpose();
-        MatrixReal row_prod = row_strategy_matrix * col_matrix;
-        MatrixReal col_prod = row_matrix * col_strategy_matrix;
-        Real max_row = row_prod.max();
-        Real max_col = col_prod.max();
-        return max_col + max_row;
-    }
-    // template <typename T, int size>
-    // T exploitability(
-    //     Linear::Matrix<T, size> &M,
-    //     std::array<T, size> &strategy0,
-    //     std::array<T, size> &strategy1)
+    // template <class TypeList>
+    // typename TypeList::Real exploitability(
+    //     typename TypeList::MatrixReal &row_payoff_matrix,
+    //     typename TypeList::MatrixReal &col_payoff_matrix,
+    //     typename TypeList::VectorReal &row_strategy,
+    //     typename TypeList::VectorReal &col_strategy,
+    //     typename TypeList::Real payoff_sum = 1)
     // {
-    //     std::array<T, size> best0 = {Rational(0, 1)};
-    //     std::array<T, size> best1 = {Rational(0, 1)};
-    //     for (int row_idx = 0; row_idx < M.rows; ++row_idx)
-    //     {
-    //         for (int col_idx = 0; col_idx < M.cols; ++col_idx)
-    //         {
-    //             const T u = M.get(row_idx, col_idx);
-    //             best0[row_idx] += u * strategy1[col_idx];
-    //             best1[col_idx] -= u * strategy0[row_idx];
-    //         }
-    //     }
-    //     return *std::max_element(best0.begin(), best0.begin() + M.rows) + *std::max_element(best1.begin(), best1.begin() + M.cols);
+    //     typename TypeList::MatrixReal row_strategy_matrix(row_strategy, row_payoff_matrix.rows);
+    //     typename TypeList::MatrixReal col_strategy_matrix(col_strategy, col_payoff_matrix.cols);
+    //     col_strategy_matrix = col_strategy_matrix.transpose();
+    //     typename TypeList::MatrixReal row_best_response = row_payoff_matrix * col_strategy_matrix;
+    //     typename TypeList::MatrixReal col_best_response = row_strategy_matrix * col_payoff_matrix;
+    //     typename TypeList::Real max_row = row_best_response.max();
+    //     typename TypeList::Real max_col = col_best_response.max();
+    //     return max_row + max_col - payoff_sum;
     // }
+
+    template <class TypeList>
+    typename TypeList::Real exploitability(
+        typename TypeList::MatrixReal &row_payoff_matrix,
+        typename TypeList::MatrixReal &col_payoff_matrix,
+        typename TypeList::VectorReal &row_strategy,
+        typename TypeList::VectorReal &col_strategy)
+    {
+        const int rows = row_payoff_matrix.rows;
+        const int cols = row_payoff_matrix.cols;
+
+        typename TypeList::Real row_payoff = 0, col_payoff = 0;
+        typename TypeList::VectorReal row_response = {0}, col_response = {0};
+        for (int row_idx = 0; row_idx < rows; ++row_idx) {
+            for (int col_idx = 0; col_idx < cols; ++col_idx) {
+                const typename TypeList::Real u = row_payoff_matrix.get(row_idx, col_idx) * col_strategy[col_idx];
+                const typename TypeList::Real v = col_payoff_matrix.get(row_idx, col_idx) * row_strategy[row_idx];
+                row_payoff += u * row_strategy[row_idx];
+                col_payoff += v * col_strategy[col_idx];
+                row_response[row_idx] += u;
+                col_response[col_idx] += v;
+            }
+        }
+
+        typename TypeList::Real row_best_response = row_response[0], col_best_response = col_response[0];
+        for (int row_idx = 1; row_idx < rows; ++row_idx) {
+            if (row_response[row_idx] > row_best_response) {
+                row_best_response = row_response[row_idx];
+            }
+        }
+        for (int col_idx = 1; col_idx < cols; ++col_idx) {
+            if (col_response[col_idx] > col_best_response) {
+                col_best_response = col_response[col_idx];
+            }
+        }
+
+        return (row_best_response - row_payoff) + (col_best_response - col_payoff);
+    }
 }

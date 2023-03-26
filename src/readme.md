@@ -230,38 +230,42 @@ Each of these templates accepts a model specialization, of course, but also an A
  See the single threaded playout function below:
 
 
-	    MatrixNode<Algorithm> *_playout(
-	        typename Types::State &state,
-	        typename Types::Model &model,
-	        MatrixNode<Algorithm> *matrix_node
-	    ) {
-	        if (!matrix_node->is_terminal) {
-	            if (matrix_node->is_expanded) {
-	                typename Types::Outcome outcome;
-	                this->select(matrix_node, outcome);
+    MatrixNode<Algorithm> *playout(
+        prng &device,
+        typename Types::State &state,
+        typename Types::Model &model,
+        MatrixNode<Algorithm> *matrix_node) 
+	{
+        if (!matrix_node->is_terminal) {
+            if (matrix_node->is_expanded) {
+                typename Types::Outcome outcome;
 
-	                typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
-	                typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
-	                state.apply_actions(row_action, col_action);
+                this->_select(device, matrix_node, outcome);
 
-	                ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-	                MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
+                typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
+                typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
+                state.apply_actions(row_action, col_action);
 
-	                MatrixNode<Algorithm> *matrix_node_leaf = this->_playout(state, model, matrix_node_next);
+                ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
 
-	                outcome.row_value = matrix_node_leaf->inference.row_value;
-	                outcome.col_value = matrix_node_leaf->inference.col_value;
-	                this->update_matrix_node(matrix_node, outcome);
-	                this->update_chance_node(chance_node, outcome);
-	                return matrix_node_leaf;
-	            } else {
-	                this->expand(state, model, matrix_node);
-	                return matrix_node;
-	            }
-	        } else {
-	            return matrix_node;
-	        }
-	    }
+                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(device, state, model, matrix_node_next);
+
+                outcome.row_value = matrix_node_leaf->inference.row_value;
+                outcome.col_value = matrix_node_leaf->inference.col_value;
+                this->_update_matrix_node(matrix_node, outcome);
+                this->_update_chance_node(chance_node, outcome);
+                return matrix_node_leaf;
+            }
+            else {
+                this->_expand(state, model, matrix_node);
+                return matrix_node;
+            }
+        }
+        else {
+            return matrix_node;
+        }
+    }
 
 The methods `expand`, `update_matrix_node`, `update_chance_node`, and `select` are members of  the `TreeBanditBase` class, but `TreeBanditBase` is actually a *CRTP base class*. The methods are implemented in the particular bandit algorithm class like so:
 

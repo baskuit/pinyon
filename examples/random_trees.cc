@@ -17,7 +17,7 @@ int main()
     using MonteCarlo = MonteCarloModel<TreeState>;
 
     prng device;
-    TreeState state(device, 1, __size__, __size__);
+    TreeState state(device, 1, __size__, __size__, nullptr, nullptr);
     state.get_actions();
     // Initialization now runs the Grow algorithm automatically
 
@@ -31,9 +31,9 @@ int main()
     MonteCarlo model(device);
     using Exp3p = Exp3p<MonteCarlo, TreeBandit>;
     MatrixNode<Exp3p> root;
-    Exp3p session(device);
+    Exp3p session;
 
-    session.run(800, state, model, root);
+    session.run(800, device, state, model, root);
     typename TreeState::Types::VectorReal row_strategy = {0};
     typename TreeState::Types::VectorReal col_strategy = {0};
 

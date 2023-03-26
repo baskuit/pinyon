@@ -22,11 +22,11 @@ public:
 
     prng &device;
 
-    // SeedState(prng &device, int depth_bound, int rows, int cols) : device(device), depth_bound(depth_bound), rows(rows), cols(cols) {}
     int (*depth_bound_func)(prng &, int) = nullptr;
     int (*actions_func)(prng &, int) = nullptr;
 
-    SeedState(prng &device, int depth_bound, int rows, int cols) : device(device), depth_bound(depth_bound), rows(rows), cols(cols)
+    SeedState(prng &device, int depth_bound, int rows, int cols, int (*depth_bound_func)(prng &, int), int (*actions_func)(prng &, int) ) : 
+        device(device), depth_bound(depth_bound), rows(rows), cols(cols), depth_bound_func(depth_bound_func), actions_func(actions_func)
     {
         this->transition.prob = 1;
         this->transition.obs = 0;

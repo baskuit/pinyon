@@ -2,7 +2,7 @@
 #include "../random_trees/tree_state.hh"
 #include "algorithm/exp3p.hh"
 #include "algorithm/matrix_ucb.hh"
-// #include "algorithm/matrix_ucb_imp.hh"
+#include "algorithm/matrix_pucb.hh"
 #include "tree/tree.hh"
 
 #include <iostream>
@@ -23,8 +23,8 @@ public:
     Model1 model1 = Model1(device1);
     Model2 model2 = Model2(device2);
 
-    Algorithm1 session1 = Algorithm1(device1);
-    Algorithm2 session2 = Algorithm2(device2);
+    Algorithm1 session1;
+    Algorithm2 session2;
 
     DualAlgorithm(prng &device1, prng &device2) : device1(device1), device2(device2) {}
 
@@ -36,8 +36,8 @@ public:
             MatrixNode<Algorithm1> root1;
             MatrixNode<Algorithm2> root2;
 
-            session1.run(playouts, state, model1, root1);
-            session2.run(playouts, state, model2, root2);
+            session1.run(playouts, device1, state, model1, root1);
+            session2.run(playouts, device2, state, model2, root2);
 
             typename State::Types::VectorReal row_strategy;
             typename State::Types::VectorReal col_strategy;
@@ -62,8 +62,8 @@ public:
             MatrixNode<Algorithm1> root1;
             MatrixNode<Algorithm2> root2;
 
-            session1.run(playouts, state, model1, root1);
-            session2.run(playouts, state, model2, root2);
+            session1.run(playouts, device1, state, model1, root1);
+            session2.run(playouts, device2, state, model2, root2);
 
             typename State::Types::VectorReal row_strategy;
             typename State::Types::VectorReal col_strategy;
@@ -97,34 +97,36 @@ public:
 constexpr int size = 3;
 
 int af(prng &device, int actions) {
-    return actions - device.random_int(2) + device.random_int(2);
+    const int raw = actions - device.random_int(2) + device.random_int(2);
+    return std::max(std::min(raw, size), 1);
 }
 
-int dbf(prng &device, int actions) {
-    return actions - device.random_int(2) - 1;
+int dbf(prng &device, int depth_bound) {
+    const int raw = depth_bound - device.random_int(2) - 1;
+    return std::max(std::min(raw, depth_bound), 0);
 }
 
 template <class Algorithm1, class Algorithm2>
 double vs_new_tree(prng &device)
 {
     using TreeState = TreeState<size>;
-    TreeState tree(device, 7, size, size, &dbf, &af);
+    TreeState tree(device, 8, size, size, &dbf, &af);
     std::cout << "tree size: " << tree.current->stats.count << std::endl;
     tree.get_actions();
 
     std::cout << "Tree generated" << std::endl;
 
     DualAlgorithm<Algorithm1, Algorithm2> eval(device, device);
-    eval.session1.c_ucb = 1.718;
-    double result = eval.selfplay_loop(tree, 30, 800);
+    // eval.session1.c_uct = 1.718;
+    double result = eval.selfplay_loop(tree, 30, 200);
     return result;
 }
 
 int main()
 {
     using TreeState = TreeState<3>;
-    using Model = MonteCarloModel<TreeState>;
-    using Algorithm1 = MatrixUCB<Model, TreeBandit>;
+    using Model = SolvedMonteCarloModel<TreeState>;
+    using Algorithm1 = MatrixPUCB<Model, TreeBandit>;
     using Algorithm2 = MatrixUCB<Model, TreeBandit>;
 
     prng device(0);

@@ -35,7 +35,7 @@ int main()
     MatrixUCB session(device);
 
     session.run(
-        10, game, model, root);
+        10, device, game, model, root);
 
     root.stats.row_value_matrix.print();
     root.stats.visit_matrix.print();

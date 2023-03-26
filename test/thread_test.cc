@@ -1,39 +1,36 @@
 #include "state/test_states.hh"
 #include "model/model.hh"
+#include "algorithm/multithreaded.hh"
 #include "algorithm/exp3p.hh"
 #include "algorithm/matrix_ucb.hh"
 #include <iostream>
 
-const int __size__ = 2;
-
-template <int size>
-using SimpleTypes = TypeList<
-    int, 
-    int, 
-    double, 
-    double, 
-    std::array<int, size>, 
-    std::array<double, size>, 
-    std::array<int, size>,
-    Linear::Matrix<double, size>,
-    Linear::Matrix<int, size>>;
+const int size = 2;
 
 int main()
 {
-    using MoldState = MoldState<__size__>;
+    using MoldState = MoldState<size>;
     using Model = MonteCarloModel<MoldState>;
-    using MatrixUCB = MatrixUCB<Model, TreeBandit>;
+    using Exp3p = Exp3p<Model, TreeBanditThreaded>;
+    using MatrixUCB = MatrixUCB<Model, TreeBanditThreaded>;
 
-    MoldState game(10);
-    prng device;
+    const int depth = 10;
+    MoldState game(depth);
+    prng device(0);
     Model model(device);
     MatrixNode<MatrixUCB> root;
-    MatrixUCB session(device);
-    session.run(100, game, model, root);
+    MatrixUCB session;
+    session.threads = 2;
+    const int playouts = 1000000;
 
-    math::print(root.stats.row_strategy, __size__);
+    std::cout << "Threaded speed test with threads=" << session.threads << ", playouts = " << playouts << ", depth = " << depth << std::endl;
 
-    // math::print(root.stats.row_visits, 2);
+    session.run(playouts, device, game, model, root);
+
+    typename Model::Types::VectorReal row_strategy, col_strategy;
+    session.get_strategies(&root, row_strategy, col_strategy);
+    math::print(row_strategy, size);
+    math::print(col_strategy, size);
 
     return 0;
 }

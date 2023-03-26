@@ -8,6 +8,11 @@
 Exp3p
 */
 
+/*
+NOTE: I'm not sure how Exp3p is supposed to be thread safe if the one session (Algorithm) has only one helper forecast Vector.
+*/
+
+
 template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit>
 class Exp3p : public _TreeBandit<Model, Exp3p<Model, _TreeBandit>>
 {
@@ -39,13 +44,9 @@ public:
         double col_value_total = 0;
     };
 
-    prng &device;
-    typename Types::VectorReal row_forecast;
-    typename Types::VectorReal col_forecast;
+    Exp3p () {}
 
-    Exp3p(prng &device) : device(device) {}
-
-    void _get_strategies(
+    void get_strategies(
         MatrixNode<Exp3p> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy
@@ -64,7 +65,7 @@ public:
         );
     }
 
-    void _init_stats(
+    void initialize_stats(
         int playouts,
         typename Types::State &state,
         typename Types::Model &model,
@@ -73,7 +74,7 @@ public:
         matrix_node->stats.time = playouts;
     }
 
-    void _expand(
+    void expand(
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Exp3p> *matrix_node)
@@ -113,7 +114,8 @@ public:
         }
     }
 
-    void _select(
+    void select(
+        prng &device,
         MatrixNode<Exp3p> *matrix_node,
         typename Types::Outcome &outcome)
     {
@@ -121,52 +123,54 @@ public:
         Softmaxing of the gains to produce forecasts/strategies for the row and col players.
         The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
         */
+        typename Types::VectorReal row_forecast;
+        typename Types::VectorReal col_forecast;
         const int time = matrix_node->stats.time;
         const int rows = matrix_node->actions.rows;
         const int cols = matrix_node->actions.cols;
         if (rows == 1)
         {
-            this->row_forecast[0] = 1;
+            row_forecast[0] = 1;
         }
         else
         {
             const double eta = .95 * sqrt(log(rows) / (time * rows));
             const double gamma_ = 1.05 * sqrt(rows * log(rows) / time);
             const double gamma = gamma_ < 1 ? gamma_ : 1;
-            softmax(this->row_forecast, matrix_node->stats.row_gains, rows, eta);
+            softmax(row_forecast, matrix_node->stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
-                this->row_forecast[row_idx] = // conversion from double to Real?, TODO TODO
-                    (1 - gamma) * this->row_forecast[row_idx] +
+                row_forecast[row_idx] = // conversion from double to Real?, TODO TODO
+                    (1 - gamma) * row_forecast[row_idx] +
                     (gamma)*matrix_node->inference.row_policy[row_idx];
             }
         }
         if (cols == 1)
         {
-            this->col_forecast[0] = 1;
+            col_forecast[0] = 1;
         }
         else
         {
             const double eta = .95 * sqrt(log(cols) / (time * cols));
             const double gamma_ = 1.05 * sqrt(cols * log(cols) / time);
             const double gamma = gamma_ < 1 ? gamma_ : 1;
-            softmax(this->col_forecast, matrix_node->stats.col_gains, cols, eta);
+            softmax(col_forecast, matrix_node->stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                this->col_forecast[col_idx] =
-                    (1 - gamma) * this->col_forecast[col_idx] +
+                col_forecast[col_idx] =
+                    (1 - gamma) * col_forecast[col_idx] +
                     (gamma)*matrix_node->inference.col_policy[col_idx];
             }
         }
-        const int row_idx = this->device.sample_pdf(row_forecast, rows);
-        const int col_idx = this->device.sample_pdf(col_forecast, cols);
+        const int row_idx = device.sample_pdf(row_forecast, rows);
+        const int col_idx = device.sample_pdf(col_forecast, cols);
         outcome.row_idx = row_idx;
         outcome.col_idx = col_idx;
         outcome.row_mu = row_forecast[row_idx];
         outcome.col_mu = col_forecast[col_idx];
     }
 
-    void _update_matrix_node(
+    void update_matrix_node(
         MatrixNode<Exp3p> *matrix_node,
         typename Types::Outcome &outcome)
     {
@@ -184,7 +188,7 @@ public:
         matrix_node->stats.col_gains[outcome.col_idx] += outcome.col_value / outcome.col_mu + col_beta;
     }
 
-    void _update_chance_node(
+    void update_chance_node(
         ChanceNode<Exp3p> *chance_node,
         typename Types::Outcome &outcome)
     {
