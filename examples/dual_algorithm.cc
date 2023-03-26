@@ -110,7 +110,7 @@ template <class Algorithm1, class Algorithm2>
 double vs_new_tree(prng &device)
 {
     using TreeState = TreeState<size>;
-    TreeState tree(device, 12, size, size, &dbf, &af);
+    TreeState tree(device, 8, size, size, &dbf, &af);
     std::cout << "tree size: " << tree.current->stats.count << std::endl;
     tree.get_actions();
 
