@@ -9,8 +9,8 @@
 template <typename Model>
 class Grow : public AbstractAlgorithm<Model>
 {
-    static_assert(std::derived_from<typename Model::Types::State, SeedState<Model::Types::size>>);
-    // Model::State is based on SeedState
+    static_assert(std::derived_from<typename Model::Types::State, SeedState<Model::Types::size>>,
+        "Grow is only intended to run on a SeedState");
 
 public:
     struct MatrixStats;

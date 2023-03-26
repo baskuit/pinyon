@@ -43,6 +43,7 @@ int main()
     MatrixNode<Exp3p> root;
     session.run(
         3000,
+        device,
         game,
         model,
         root);

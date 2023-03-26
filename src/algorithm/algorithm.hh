@@ -50,6 +50,7 @@ public:
 
     void run(
         int playouts,
+        prng &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> &matrix_node)
@@ -58,30 +59,31 @@ public:
         for (int playout = 0; playout < playouts; ++playout)
         {
             typename Types::State state_copy = state;
-            this->_playout(state_copy, model, &matrix_node);
+            this->_playout(device, state_copy, model, &matrix_node);
         }
     }
 
-    void run_for_duration(
-        double duration_ms,
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixNode<Algorithm> &matrix_node)
-    {
-        const int playout_estimate = duration_ms * 1000;
-        this->_initialize_stats(playout_estimate, state, model, &matrix_node);
-        int playouts = 0;
-        for (
-            auto start_time = std::chrono::high_resolution_clock::now();
-            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() < duration_ms;
-            ++playouts)
-        {
-            typename Types::State state_copy = state;
-            this->_playout(state_copy, model, &matrix_node);
-        }
-        std::cout << "total playouts for duration: " << duration_ms << " ms: " << playouts << std::endl;
-        std::cout << "playout estimate was : " << playout_estimate << std::endl;
-    }
+    // void run_for_duration(
+    //     double duration_ms,
+
+    //     typename Types::State &state,
+    //     typename Types::Model &model,
+    //     MatrixNode<Algorithm> &matrix_node)
+    // {
+    //     const int playout_estimate = duration_ms * 1000;
+    //     this->_initialize_stats(playout_estimate, state, model, &matrix_node);
+    //     int playouts = 0;
+    //     for (
+    //         auto start_time = std::chrono::high_resolution_clock::now();
+    //         std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() < duration_ms;
+    //         ++playouts)
+    //     {
+    //         typename Types::State state_copy = state;
+    //         this->_playout(state_copy, model, &matrix_node);
+    //     }
+    //     std::cout << "total playouts for duration: " << duration_ms << " ms: " << playouts << std::endl;
+    //     std::cout << "playout estimate was : " << playout_estimate << std::endl;
+    // }
 
 protected:
     void _get_strategies(
@@ -96,20 +98,24 @@ protected:
     }
 
     MatrixNode<Algorithm> *_playout(
+        prng &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
     {
         return static_cast<Algorithm *>(this)->playout(
+            device,
             state,
             model,
             matrix_node);
     }
     void _select(
+        prng &device,
         MatrixNode<Algorithm> *matrix_node,
         Outcome &outcome)
     {
         return static_cast<Algorithm *>(this)->select(
+            device,
             matrix_node,
             outcome);
     }
@@ -167,6 +173,7 @@ public:
     };
 
     MatrixNode<Algorithm> *playout(
+        prng &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
@@ -177,7 +184,7 @@ public:
             {
                 typename Types::Outcome outcome;
 
-                this->_select(matrix_node, outcome);
+                this->_select(device, matrix_node, outcome);
 
                 typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
                 typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
@@ -186,7 +193,7 @@ public:
                 ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
 
-                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(state, model, matrix_node_next);
+                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(device, state, model, matrix_node_next);
 
                 outcome.row_value = matrix_node_leaf->inference.row_value;
                 outcome.col_value = matrix_node_leaf->inference.col_value;

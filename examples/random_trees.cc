@@ -33,7 +33,7 @@ int main()
     MatrixNode<Exp3p> root;
     Exp3p session(device);
 
-    session.run(800, state, model, root);
+    session.run(800, device, state, model, root);
     typename TreeState::Types::VectorReal row_strategy = {0};
     typename TreeState::Types::VectorReal col_strategy = {0};
 

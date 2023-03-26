@@ -33,7 +33,7 @@ void saturation_test() {
     Model model(device);
     MatrixNode<Algo> root;
     Algo session(device);
-    session.run(playouts, state, model, root);
+    session.run(playouts, device, state, model, root);
     const int root_count = root.count();
     std::cout << root_count << std::endl;
     assert(root_count == tree_size);
@@ -61,7 +61,7 @@ void embedding_test() {
     Model model(device);
     MatrixNode<Algo> root;
     Algo session(device);
-    session.run(playouts, state, model, root);
+    session.run(playouts, device, state, model, root);
     int root_count = root.count();
     std::cout << root_count << ' ' << playouts << std::endl;
     assert(root_count == playouts);

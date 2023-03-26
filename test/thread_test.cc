@@ -11,16 +11,25 @@ int main()
 {
     using MoldState = MoldState<size>;
     using Model = MonteCarloModel<MoldState>;
-    using MatrixUCB = MatrixUCB<Model, TreeBanditThreaded>;
+    using Exp3p = Exp3p<Model, TreeBanditThreaded>;
 
-    MoldState game(10);
+    MoldState game(20);
     prng device;
     Model model(device);
-    MatrixNode<MatrixUCB> root;
-    MatrixUCB session(device);
-    session.run(100, game, model, root);
+    MatrixNode<Exp3p> root;
+    Exp3p session(device);
+    session.threads = 4;
+    session.run(10000000, device, game, model, root);
 
-    math::print(root.stats.row_strategy, size);
+    typename Exp3p::Types::VectorReal row_strategy, col_strategy;
+
+    session.get_strategies(&root, row_strategy, col_strategy);
+
+    math::print(row_strategy, size);
+    math::print(col_strategy, size);
+
+
+    // math::print(root.stats, size);
 
     // math::print(root.stats.row_visits, 2);
 

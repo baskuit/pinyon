@@ -41,6 +41,7 @@ public:
     // TODO currently not thread safe since all threads will use shared prng devices!!!
     void run(
         int playouts,
+        prng &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> &matrix_node)
@@ -50,7 +51,7 @@ public:
         const int playouts_per_thread = playouts / threads;
         for (int i = 0; i < threads; ++i)
         {
-            thread_pool[i] = std::thread(&TreeBanditThreaded::runThread, this, playouts_per_thread, &state, &model, &matrix_node);
+            thread_pool[i] = std::thread(&TreeBanditThreaded::runThread, this, playouts_per_thread, &device, &state, &model, &matrix_node);
         }
         for (int i = 0; i < threads; ++i)
         {
@@ -60,18 +61,22 @@ public:
 
     void runThread(
         int playouts,
+        prng *device,
         typename Types::State *state,
         typename Types::Model *model,
         MatrixNode<Algorithm> *matrix_node)
     {
+        prng device_thread(device->get_seed());
+        typename Types::Model model_thread = *model;
         for (int playout = 0; playout < playouts; ++playout)
         {
             typename Types::State state_copy = *state;
-            this->_playout(state_copy, *model, matrix_node);
+            this->_playout(*device, state_copy, *model, matrix_node);
         }
     }
 
     MatrixNode<Algorithm> *playout(
+        prng &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
@@ -86,7 +91,7 @@ public:
                 typename Types::Outcome outcome;
 
                 mtx.lock();
-                this->_select(matrix_node, outcome);
+                this->_select(device, matrix_node, outcome);
                 mtx.unlock();
 
                 typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
@@ -96,7 +101,7 @@ public:
                 ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
 
-                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(state, model, matrix_node_next);
+                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(device, state, model, matrix_node_next);
 
                 outcome.row_value = matrix_node_leaf->inference.row_value;
                 outcome.col_value = matrix_node_leaf->inference.col_value;
@@ -148,6 +153,7 @@ public:
     // TODO test overflow behaviour
 
     MatrixNode<Algorithm> *playout(
+        prng &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
@@ -162,7 +168,7 @@ public:
                 typename Types::Outcome outcome;
 
                 mtx.lock();
-                this->_select(matrix_node, outcome);
+                this->_select(device, matrix_node, outcome);
                 mtx.unlock();
 
                 typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
@@ -172,14 +178,16 @@ public:
                 ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
 
-                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(state, model, matrix_node_next);
+                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(device, state, model, matrix_node_next);
 
                 outcome.row_value = matrix_node_leaf->inference.row_value;
                 outcome.col_value = matrix_node_leaf->inference.col_value;
+
                 mtx.lock();
                 this->_update_matrix_node(matrix_node, outcome);
                 this->_update_chance_node(chance_node, outcome);
                 mtx.unlock();
+
                 return matrix_node_leaf;
             }
             else
@@ -188,6 +196,7 @@ public:
                 this->_expand(state, model, matrix_node);
                 this->get_mutex_index(matrix_node);
                 mtx.unlock();
+
                 return matrix_node;
             }
         }

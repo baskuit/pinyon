@@ -192,7 +192,7 @@ public:
         MonteCarloModel<BimatrixGame> model(device);
         Exp3p<MonteCarloModel<BimatrixGame>, TreeBandit> session(device);
         MatrixNode<Exp3p<MonteCarloModel<BimatrixGame>, TreeBandit>> root;
-        session.run(10000, *this, model, root);
+        session.run(10000, device, *this, model, root);
         session.get_strategies(&root, row_strategy, col_strategy);
     }
 };

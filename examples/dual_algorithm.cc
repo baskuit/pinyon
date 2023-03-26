@@ -36,8 +36,8 @@ public:
             MatrixNode<Algorithm1> root1;
             MatrixNode<Algorithm2> root2;
 
-            session1.run(playouts, state, model1, root1);
-            session2.run(playouts, state, model2, root2);
+            session1.run(playouts, device1, state, model1, root1);
+            session2.run(playouts, device2, state, model2, root2);
 
             typename State::Types::VectorReal row_strategy;
             typename State::Types::VectorReal col_strategy;
@@ -62,8 +62,8 @@ public:
             MatrixNode<Algorithm1> root1;
             MatrixNode<Algorithm2> root2;
 
-            session1.run(playouts, state, model1, root1);
-            session2.run(playouts, state, model2, root2);
+            session1.run(playouts, device1, state, model1, root1);
+            session2.run(playouts, device2, state, model2, root2);
 
             typename State::Types::VectorReal row_strategy;
             typename State::Types::VectorReal col_strategy;

@@ -149,6 +149,7 @@ public:
     }
 
     void select(
+        prng &device,
         MatrixNode<MatrixPUCB> *matrix_node,
         typename Types::Outcome &outcome)
     {
@@ -169,8 +170,8 @@ public:
                 row_strategy,
                 col_strategy);
         }
-        const int row_idx = this->device.sample_pdf(row_strategy, row_ucb_matrix.rows);
-        const int col_idx = this->device.sample_pdf(col_strategy, row_ucb_matrix.cols);
+        const int row_idx = device.sample_pdf(row_strategy, row_ucb_matrix.rows);
+        const int col_idx = device.sample_pdf(col_strategy, row_ucb_matrix.cols);
         outcome.row_idx = row_idx;
         outcome.col_idx = col_idx;
         outcome.row_mu = row_strategy[row_idx];
@@ -192,9 +193,10 @@ public:
     {
     }
 
+private:
     void get_ucb_matrix(
-        MatrixNode<MatrixPUCB> *matrix_node,        // in
-        typename Types::MatrixReal &row_ucb_matrix, // out
+        MatrixNode<MatrixPUCB> *matrix_node,
+        typename Types::MatrixReal &row_ucb_matrix,
         typename Types::MatrixReal &col_ucb_matrix)
     {
         typename Types::MatrixReal &row_value_matrix = matrix_node->stats.row_value_matrix;
