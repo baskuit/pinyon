@@ -65,7 +65,7 @@ public:
         typename Types::Model *model,
         MatrixNode<Algorithm> *matrix_node)
     {
-        prng device_thread(device->get_seed());
+        prng device_thread; // TODO deterministically provide new seed
         typename Types::Model model_thread = *model;
         for (int playout = 0; playout < playouts; ++playout)
         {
