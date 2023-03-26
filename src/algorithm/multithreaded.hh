@@ -126,6 +126,12 @@ public:
 };
 
 /*
+
+Currently doesn't even compile because of the extra pool_size template parameter... TODO TODO TODO
+
+*/
+
+/*
 TreeBandit with a mutex pool
 */
 
@@ -147,7 +153,7 @@ public:
     };
 
     static const std::array<std::mutex, pool_size> mutex_pool;
-    std::atomic<int> current_index{};
+    std::atomic<int> current_index{0};
     // we simply let this overflow or w/e
     // TODO test overflow behaviour
 
