@@ -23,8 +23,8 @@ public:
     Model1 model1 = Model1(device1);
     Model2 model2 = Model2(device2);
 
-    Algorithm1 session1 = Algorithm1(device1);
-    Algorithm2 session2 = Algorithm2(device2);
+    Algorithm1 session1;
+    Algorithm2 session2;
 
     DualAlgorithm(prng &device1, prng &device2) : device1(device1), device2(device2) {}
 

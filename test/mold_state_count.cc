@@ -32,7 +32,7 @@ void saturation_test() {
     prng device(seed);
     Model model(device);
     MatrixNode<Algo> root;
-    Algo session(device);
+    Algo session;
     session.run(playouts, device, state, model, root);
     const int root_count = root.count();
     std::cout << root_count << std::endl;
@@ -60,7 +60,7 @@ void embedding_test() {
     prng device;
     Model model(device);
     MatrixNode<Algo> root;
-    Algo session(device);
+    Algo session;
     session.run(playouts, device, state, model, root);
     int root_count = root.count();
     std::cout << root_count << ' ' << playouts << std::endl;

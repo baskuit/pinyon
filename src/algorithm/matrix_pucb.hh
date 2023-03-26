@@ -45,13 +45,13 @@ public:
         typename Types::Real col_value_total = 0;
     };
 
-    prng device;
+    MatrixPUCB () {}
 
-    MatrixPUCB(prng &device) : device(device.get_seed()) {}
+    MatrixPUCB(typename Types::Real c_uct, typename Types::Real expl_threshold) : c_uct(c_uct), expl_threshold(expl_threshold) {}
 
     typename Types::Real c_uct = 2;
     typename Types::Real expl_threshold = .05;
-    bool require_interior = false;
+    // bool require_interior = false;
 
     void initialize_stats(
         int playouts,

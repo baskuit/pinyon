@@ -19,8 +19,8 @@ int main()
     prng device(0);
     Model model(device);
     MatrixNode<MatrixUCB> root;
-    MatrixUCB session(device);
-    session.threads = 1;
+    MatrixUCB session;
+    session.threads = 2;
     const int playouts = 1000000;
 
     std::cout << "Threaded speed test with threads=" << session.threads << ", playouts = " << playouts << ", depth = " << depth << std::endl;

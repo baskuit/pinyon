@@ -44,9 +44,7 @@ public:
         double col_value_total = 0;
     };
 
-    prng device;
-
-    Exp3p(prng &device) : device(device.get_seed()) {}
+    Exp3p () {}
 
     void get_strategies(
         MatrixNode<Exp3p> *matrix_node,

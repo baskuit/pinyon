@@ -31,7 +31,7 @@ int main()
     MonteCarlo model(device);
     using Exp3p = Exp3p<MonteCarlo, TreeBandit>;
     MatrixNode<Exp3p> root;
-    Exp3p session(device);
+    Exp3p session;
 
     session.run(800, device, state, model, root);
     typename TreeState::Types::VectorReal row_strategy = {0};

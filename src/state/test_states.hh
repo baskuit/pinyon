@@ -190,7 +190,7 @@ public:
     {
         prng device;
         MonteCarloModel<BimatrixGame> model(device);
-        Exp3p<MonteCarloModel<BimatrixGame>, TreeBandit> session(device);
+        Exp3p<MonteCarloModel<BimatrixGame>, TreeBandit> session;
         MatrixNode<Exp3p<MonteCarloModel<BimatrixGame>, TreeBandit>> root;
         session.run(10000, device, *this, model, root);
         session.get_strategies(&root, row_strategy, col_strategy);

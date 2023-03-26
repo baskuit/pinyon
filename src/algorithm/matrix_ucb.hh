@@ -47,12 +47,12 @@ public:
         typename Types::Real col_value_total = 0;
     };
 
-    prng device;
+    MatrixUCB () {}
 
-    MatrixUCB(prng &device) : device(device.get_seed()) {}
+    MatrixUCB(typename Types::Real c_uct, typename Types::Real expl_threshold) : c_uct(c_uct), expl_threshold(expl_threshold) {}
 
     typename Types::Real c_uct = 2;
-    typename Types::Real expl_threshold = .05;
+    typename Types::Real expl_threshold = .005;
     bool require_interior = false;
 
     void initialize_stats(
