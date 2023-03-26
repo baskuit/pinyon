@@ -161,8 +161,8 @@ public:
             col_ucb_matrix);
         typename Types::VectorReal &row_strategy = matrix_node->stats.row_strategy;
         typename Types::VectorReal &col_strategy = matrix_node->stats.col_strategy;
-        typename Types::Real u = Linear::exploitability<Types>(row_ucb_matrix, col_ucb_matrix, row_strategy, col_strategy);
-        if (u > expl_threshold)
+        typename Types::Real expl = Linear::exploitability<Types>(row_ucb_matrix, col_ucb_matrix, row_strategy, col_strategy);
+        if (expl > expl_threshold)
         {
             LibGambit::solve_bimatrix<Types>(
                 row_ucb_matrix,
