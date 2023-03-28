@@ -126,20 +126,17 @@ public:
 };
 
 /*
-
 Currently doesn't even compile because of the extra pool_size template parameter... TODO TODO TODO
-
+Fixed, mostly. I just made it fixed lol. It's about as fast as BanditThreaded only not having millions of extra mutexes in the use-case.
 */
 
 /*
 TreeBandit with a mutex pool
 */
 
-template <class Model, class Algorithm, int pool_size>
+template <class Model, class Algorithm>
 class TreeBanditThreadPool : public TreeBanditBase<Model, Algorithm>
 {
-    // static_assert(std::derived_from<TreeBanditThreadPool<Model, Algorithm, pool_size>, Algorithm>,
-    // "ThreadBanditThreadPool should be a derived class of its template Algorithm (Bandit) arg");
 public:
     struct MatrixStats;
     struct Types : TreeBanditBase<Model, Algorithm>::Types
@@ -152,46 +149,48 @@ public:
         int mutex_index = 0;
     };
 
-    static const std::array<std::mutex, pool_size> mutex_pool;
+    static constexpr int pool_size = 128;
+    int threads = 1;
+    std::array<std::mutex, pool_size> mutex_pool;
     std::atomic<int> current_index{0};
     // we simply let this overflow or w/e
     // TODO test overflow behaviour
 
-    // void run(
-    //     int playouts,
-    //     prng &device,
-    //     typename Types::State &state,
-    //     typename Types::Model &model,
-    //     MatrixNode<Algorithm> &matrix_node)
-    // {
-    //     this->_initialize_stats(playouts, state, model, &matrix_node);
-    //     std::thread thread_pool[threads];
-    //     const int playouts_per_thread = playouts / threads;
-    //     for (int i = 0; i < threads; ++i)
-    //     {
-    //         thread_pool[i] = std::thread(&TreeBanditThreaded::runThread, this, playouts_per_thread, &device, &state, &model, &matrix_node);
-    //     }
-    //     for (int i = 0; i < threads; ++i)
-    //     {
-    //         thread_pool[i].join();
-    //     }
-    // }
+    void run(
+        int playouts,
+        prng &device,
+        typename Types::State &state,
+        typename Types::Model &model,
+        MatrixNode<Algorithm> &matrix_node)
+    {
+        this->_initialize_stats(playouts, state, model, &matrix_node);
+        std::thread thread_pool[threads];
+        const int playouts_per_thread = playouts / threads;
+        for (int i = 0; i < threads; ++i)
+        {
+            thread_pool[i] = std::thread(&TreeBanditThreadPool::runThread, this, playouts_per_thread, &device, &state, &model, &matrix_node);
+        }
+        for (int i = 0; i < threads; ++i)
+        {
+            thread_pool[i].join();
+        }
+    }
 
-    // void runThread(
-    //     int playouts,
-    //     prng *device,
-    //     typename Types::State *state,
-    //     typename Types::Model *model,
-    //     MatrixNode<Algorithm> *matrix_node)
-    // {
-    //     prng device_thread(device->get_seed());
-    //     typename Types::Model model_thread = *model;
-    //     for (int playout = 0; playout < playouts; ++playout)
-    //     {
-    //         typename Types::State state_copy = *state;
-    //         this->_playout(*device, state_copy, *model, matrix_node);
-    //     }
-    // }
+    void runThread(
+        int playouts,
+        prng *device,
+        typename Types::State *state,
+        typename Types::Model *model,
+        MatrixNode<Algorithm> *matrix_node)
+    {
+        prng device_thread(device->get_seed());
+        typename Types::Model model_thread = *model;
+        for (int playout = 0; playout < playouts; ++playout)
+        {
+            typename Types::State state_copy = *state;
+            this->_playout(*device, state_copy, *model, matrix_node);
+        }
+    }
 
     MatrixNode<Algorithm> *playout(
         prng &device,
@@ -200,7 +199,7 @@ public:
         MatrixNode<Algorithm> *matrix_node)
     {
 
-        std::mutex &mtx = mutex_pool[matrix_node->stats.mutex_idx];
+        std::mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
 
         if (!matrix_node->is_terminal)
         {
