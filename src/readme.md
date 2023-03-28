@@ -172,7 +172,7 @@ Conventional models like heuristic-based value estimation, monte carlo, and neur
 
 A universal model that is able to provide unbiased estimates for any perfect-information state. Its value estimates are the payoff of a state after a random rollout and its policy estimates are the uniform distribution over legal actions.
 
-### `SolvedMonteCarloModel<State> : DoubleOracleModel<State>`
+### `SolvedMonteCarloModel<State> : MonteCarloModel<State>`
 
 The state template class must be derived from `SolvedState`. That is because this model works just like a normal Monte Carlo model, only that it simulates a strong policy estimate by modifying the de facto solutions via the Lp norm. This model is intended to test the use of policy priors in search algorithms.
 
@@ -314,8 +314,6 @@ A chance node represents all the possible transition that are possible once a gi
 
 ### `MatrixNode : public AbstractNode<Algorithm>`
 
-Lorem ipsum
-	
 	class MatrixNode : public AbstractNode<Algorithm> {
 	public:
 	    struct Types : AbstractNode<Algorithm>::Types {};
