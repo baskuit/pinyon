@@ -18,8 +18,8 @@ int main()
     MoldState game(depth);
     prng device(0);
     Model model(device);
-    MatrixNode<MatrixUCB> root;
-    MatrixUCB session;
+    MatrixNode<Exp3p> root;
+    Exp3p session;
     session.threads = 4;
     const int playouts = 10000000;
 
