@@ -21,16 +21,16 @@ using Types = TypeList<
     int, 
     double, 
     double, 
-    std::array<int, size>, 
-    std::array<double, size>, 
-    std::array<int, size>,
+    Array<int, size>, 
+    Array<double, size>, 
+    Array<int, size>,
     Linear::Matrix<double, size>,
     Linear::Matrix<int, size>>;
 
 void random_matrices (prng &device, int rows, int cols, int n_matrices, double epsilon) {
 
-    std::array<double, size> row_strategy;
-    std::array<double, size> col_strategy;
+    Array<double, size> row_strategy;
+    Array<double, size> col_strategy;
 
     for (int i = 0; i < n_matrices; ++i) {
 
