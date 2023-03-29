@@ -14,14 +14,14 @@ int main()
     using Exp3p = Exp3p<Model, TreeBanditThreaded>;
     using MatrixUCB = MatrixUCB<Model, TreeBanditThreaded>;
 
-    const int depth = 10;
+    const int depth = 20;
     MoldState game(depth);
     prng device(0);
     Model model(device);
     MatrixNode<MatrixUCB> root;
     MatrixUCB session;
-    session.threads = 2;
-    const int playouts = 1000000;
+    session.threads = 4;
+    const int playouts = 10000000;
 
     std::cout << "Threaded speed test with threads=" << session.threads << ", playouts = " << playouts << ", depth = " << depth << std::endl;
 
