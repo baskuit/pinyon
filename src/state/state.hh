@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../libsurskit/math.hh"
+#include "libsurskit/math.hh"
+#include "libsurskit/vector.hh"
 
 #include <concepts>
 struct AbstractTypeList
@@ -123,9 +124,21 @@ using StateArray = DefaultState<TypeList<
     Observation,
     Probability,
     double,
-    std::array<Action, size>,
-    std::array<double, size>,
-    std::array<int, size>,
+    Array<Action, size>,
+    Array<double, size>,
+    Array<int, size>,
+    Linear::Matrix<double, size>,
+    Linear::Matrix<int, size>>>;
+
+template <int size, typename Action, typename Observation, typename Probability>
+using StateVector = DefaultState<TypeList<
+    Action,
+    Observation,
+    Probability,
+    double,
+    Vector<Action>,
+    Vector<double>,
+    Vector<int>,
     Linear::Matrix<double, size>,
     Linear::Matrix<int, size>>>;
 
@@ -147,9 +160,9 @@ using SolvedStateArray = SolvedState<TypeList<
     Observation,
     Probability,
     double,
-    std::array<Action, size>,
-    std::array<double, size>,
-    std::array<int, size>,
+    Array<Action, size>,
+    Array<double, size>,
+    Array<int, size>,
     Linear::Matrix<double, size>,
     Linear::Matrix<int, size>>>;
 
