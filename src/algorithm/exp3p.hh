@@ -27,10 +27,10 @@ public:
     struct MatrixStats : _TreeBandit<Model, Exp3p<Model, _TreeBandit>>::MatrixStats
     {
         int time = 0;
-        typename Types::VectorReal row_gains = {0};
-        typename Types::VectorReal col_gains = {0};
-        typename Types::VectorInt row_visits = {0};
-        typename Types::VectorInt col_visits = {0};
+        typename Types::VectorReal row_gains;
+        typename Types::VectorReal col_gains;
+        typename Types::VectorInt row_visits;
+        typename Types::VectorInt col_visits;
 
         int visits = 0;
         double row_value_total = 0;
@@ -87,6 +87,11 @@ public:
         matrix_node->is_expanded = true;
         matrix_node->is_terminal = state.is_terminal;
 
+        matrix_node->stats.row_visits.fill(state.actions.rows, 0);
+        matrix_node->stats.col_visits.fill(state.actions.cols, 0);
+        matrix_node->stats.row_gains.fill(state.actions.rows, 0);
+        matrix_node->stats.col_gains.fill(state.actions.cols, 0);
+
         if (matrix_node->is_terminal)
         {
             matrix_node->inference.row_value = state.row_payoff;
@@ -123,11 +128,11 @@ public:
         Softmaxing of the gains to produce forecasts/strategies for the row and col players.
         The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
         */
-        typename Types::VectorReal row_forecast;
-        typename Types::VectorReal col_forecast;
         const int time = matrix_node->stats.time;
         const int rows = matrix_node->actions.rows;
         const int cols = matrix_node->actions.cols;
+        typename Types::VectorReal row_forecast(rows);
+        typename Types::VectorReal col_forecast(cols);
         if (rows == 1)
         {
             row_forecast[0] = 1;
