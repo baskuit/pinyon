@@ -19,6 +19,11 @@ struct Vector : std::vector<T>
         this->resize(n);
         std::fill(this->begin(), this->begin() + n, value);
     }
+
+    void fill(int n)
+    {
+        this->resize(n);
+    }
 };
 
 template <typename T, size_t size>
@@ -34,5 +39,8 @@ struct Array : std::array<T, size>
     void fill(int n, T value)
     {
         std::fill(this->begin(), this->begin() + n, value);
+    }
+    void fill(int n)
+    {
     }
 };
