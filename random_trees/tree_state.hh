@@ -25,8 +25,8 @@ public:
     {
         this->root = std::make_shared<SeedStateNode>();
         this->current = &*root;
-        Grow<MonteCarloModel<SeedState<size>>> session(device);
-        session.grow(seed, current);
+        Grow<MonteCarloModel<SeedState<size>>> session;
+        session.grow(device, seed, current);
         update_solved_state_payoffs(current);
         this->transition = seed.transition; // total hack
     }
