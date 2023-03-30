@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdexcept>
 #include <algorithm>
+#include <vector>
 
 #include "random.hh"
 #include "rational.hh"
@@ -166,6 +167,117 @@ namespace Linear
         }
     };
 
+    template <typename T>
+    class MatrixVector
+    {
+    public:
+        std::vector<std::vector<T>> data;
+        int rows, cols;
+
+        MatrixVector(){};
+        MatrixVector(int rows, int cols) : data(rows, std::vector<T>(cols)), rows(rows), cols(cols)
+        {
+        }
+
+        T &get(int i, int j)
+        {
+            return data[i][j];
+        }
+
+        void print()
+        {
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    std::cout << data[i][j] << ", ";
+                }
+                std::cout << std::endl;
+            }
+        }
+
+        MatrixVector operator*(MatrixVector &N)
+        {
+            const MatrixVector &M = *this;
+            assert(M.cols == N.rows);
+            MatrixVector output(M.rows, N.cols);
+            for (int i = 0; i < output.rows; ++i)
+            {
+                for (int j = 0; j < output.cols; ++j)
+                {
+                    output.data[i][j] = 0;
+                    for (int k = 0; k < M.cols; ++k)
+                    {
+                        output.data[i][j] += M.data[i][k] * N.data[k][j];
+                    }
+                }
+            }
+            return output;
+        }
+        MatrixVector operator*(T t)
+        {
+            const MatrixVector &M = *this;
+            MatrixVector output(M.rows, M.cols);
+            for (int i = 0; i < output.rows; ++i)
+            {
+                for (int j = 0; j < output.cols; ++j)
+                {
+                    output.data[i][j] = M.data[i][j] * t;
+                }
+            }
+            return output;
+        }
+        MatrixVector operator+(T t)
+        {
+            const MatrixVector &M = *this;
+            MatrixVector output(M.rows, M.cols);
+            for (int i = 0; i < output.rows; ++i)
+            {
+                for (int j = 0; j < output.cols; ++j)
+                {
+                    output.data[i][j] = M.data[i][j] + t;
+                }
+            }
+            return output;
+        }
+        MatrixVector transpose()
+        {
+            MatrixVector t(cols, rows);
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    t.data[j][i] = data[i][j];
+                }
+            }
+            return t;
+        }
+        T max()
+        {
+            T x = data[0][0];
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    x = std::max(data[i][j], x);
+                }
+            }
+            return x;
+        }
+        T min()
+        {
+            T x = data[0][0];
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    x = std::min(data[i][j], x);
+                }
+            }
+            return x;
+        }
+    };
+
     template <class TypeList>
     typename TypeList::Real exploitability(
         typename TypeList::MatrixReal &row_payoff_matrix,
@@ -178,8 +290,10 @@ namespace Linear
 
         typename TypeList::Real row_payoff = 0, col_payoff = 0;
         typename TypeList::VectorReal row_response = {0}, col_response = {0};
-        for (int row_idx = 0; row_idx < rows; ++row_idx) {
-            for (int col_idx = 0; col_idx < cols; ++col_idx) {
+        for (int row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            for (int col_idx = 0; col_idx < cols; ++col_idx)
+            {
                 const typename TypeList::Real u = row_payoff_matrix.get(row_idx, col_idx) * col_strategy[col_idx];
                 const typename TypeList::Real v = col_payoff_matrix.get(row_idx, col_idx) * row_strategy[row_idx];
                 row_payoff += u * row_strategy[row_idx];
@@ -190,13 +304,17 @@ namespace Linear
         }
 
         typename TypeList::Real row_best_response = row_response[0], col_best_response = col_response[0];
-        for (int row_idx = 1; row_idx < rows; ++row_idx) {
-            if (row_response[row_idx] > row_best_response) {
+        for (int row_idx = 1; row_idx < rows; ++row_idx)
+        {
+            if (row_response[row_idx] > row_best_response)
+            {
                 row_best_response = row_response[row_idx];
             }
         }
-        for (int col_idx = 1; col_idx < cols; ++col_idx) {
-            if (col_response[col_idx] > col_best_response) {
+        for (int col_idx = 1; col_idx < cols; ++col_idx)
+        {
+            if (col_response[col_idx] > col_best_response)
+            {
                 col_best_response = col_response[col_idx];
             }
         }
