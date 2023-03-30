@@ -130,7 +130,7 @@ using StateArray = DefaultState<TypeList<
     Linear::Matrix<double, size>,
     Linear::Matrix<int, size>>>;
 
-template <int size, typename Action, typename Observation, typename Probability>
+template <typename Action, typename Observation, typename Probability>
 using StateVector = DefaultState<TypeList<
     Action,
     Observation,
@@ -139,8 +139,8 @@ using StateVector = DefaultState<TypeList<
     Vector<Action>,
     Vector<double>,
     Vector<int>,
-    Linear::Matrix<double, size>,
-    Linear::Matrix<int, size>>>;
+    Linear::MatrixVector<double>,
+    Linear::MatrixVector<int>>>;
 
 template <class TypeList>
 class SolvedState : public DefaultState<TypeList>

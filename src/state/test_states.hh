@@ -201,10 +201,10 @@ public:
 Vector version of Sucker for testing
 */
 
-class SuckerVector : public StateVector<2, int, int, bool>
+class SuckerVector : public StateVector<int, int, bool>
 {
 public:
-    struct Types : StateVector<2, int, int, bool>::Types
+    struct Types : StateVector<int, int, bool>::Types
     {
     };
 
@@ -250,10 +250,10 @@ public:
 };
 
 template <int size>
-class MoldStateVector : public StateVector<size, int, int, bool>
+class MoldStateVector : public StateVector<int, int, bool>
 {
 public:
-    struct Types : StateVector<size, int, int, bool>::Types
+    struct Types : StateVector<int, int, bool>::Types
     {
     };
     int depth = 1;
