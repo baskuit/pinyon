@@ -27,20 +27,22 @@ public:
         typename Types::VectorInt col_visits;
 
         int visits = 0;
-        double row_value_total = 0;
-        double col_value_total = 0;
+        typename Types::Real row_value_total = 0;
+        typename Types::Real col_value_total = 0;
     };
 
     struct ChanceStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>>::ChanceStats
     {
         int visits = 0;
-        double row_value_total = 0;
-        double col_value_total = 0;
+        typename Types::Real row_value_total = 0;
+        typename Types::Real col_value_total = 0;
     };
 
     typename Types::Real gamma = .01;
 
     Exp3() {}
+
+    Exp3(typename Types::Real gamma) : gamma(gamma) {}
 
     void get_strategies(
         MatrixNode<Exp3> *matrix_node,
