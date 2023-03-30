@@ -166,6 +166,18 @@ using SolvedStateArray = SolvedState<TypeList<
     Linear::Matrix<double, size>,
     Linear::Matrix<int, size>>>;
 
+template <typename Action, typename Observation, typename Probability>
+using SolvedStateVector = SolvedState<TypeList<
+    Action,
+    Observation,
+    Probability,
+    double,
+    Vector<Action>,
+    Vector<double>,
+    Vector<int>,
+    Linear::MatrixVector<double>,
+    Linear::MatrixVector<int>>>;
+
 /*
 This represents states that accept input for the chance player.
 Since this uses Obs as chance action, this must be fully observed.
