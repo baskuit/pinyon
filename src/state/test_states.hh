@@ -157,7 +157,7 @@ public:
 
     BimatrixGame(
         typename Types::MatrixReal &row_payoff_matrix,
-        typename Types::MatrixReal &col_matrix) : row_payoff_matrix(row_payoff_matrix), col_payoff_matrix(col_payoff_matrix) {}
+        typename Types::MatrixReal &col_payoff_matrix) : row_payoff_matrix(row_payoff_matrix), col_payoff_matrix(col_payoff_matrix) {}
 
     void get_actions()
     {
