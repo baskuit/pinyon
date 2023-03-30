@@ -5,10 +5,10 @@
 #include "libsurskit/random.hh"
 #include "libsurskit/math.hh"
 #include "libsurskit/gambit.hh"
-
 #include "state/test_states.hh"
 #include "algorithm.hh"
 #include "tree/tree.hh"
+
 /*
 MatrixPUCB
 */
@@ -16,8 +16,6 @@ MatrixPUCB
 template <class Model, template <class _Model, class _BanditAlgorithm> class _TreeBandit>
 class MatrixPUCB : public _TreeBandit<Model, MatrixPUCB<Model, _TreeBandit>>
 {
-    static_assert(std::derived_from<Model, SolvedMonteCarloModel<typename Model::Types::State>>);
-
 public:
     struct MatrixStats;
     struct ChanceStats;
@@ -50,7 +48,7 @@ public:
     MatrixPUCB(typename Types::Real c_uct, typename Types::Real expl_threshold) : c_uct(c_uct), expl_threshold(expl_threshold) {}
 
     typename Types::Real c_uct = 2;
-    typename Types::Real expl_threshold = .05;
+    typename Types::Real expl_threshold = .005;
     // bool require_interior = false;
 
     void initialize_stats(
@@ -103,7 +101,7 @@ public:
         {
             model.get_inference(state, matrix_node->inference);
         }
-
+        
         matrix_node->stats.row_value_matrix.rows = rows;
         matrix_node->stats.row_value_matrix.cols = cols;
         matrix_node->stats.col_value_matrix.rows = rows;
@@ -111,15 +109,9 @@ public:
         matrix_node->stats.visit_matrix.rows = rows;
         matrix_node->stats.visit_matrix.cols = cols;
 
-        for (int row_idx = 0; row_idx < rows; ++row_idx)
-        {
-            for (int col_idx = 0; col_idx < cols; ++col_idx)
-            {
-                matrix_node->stats.row_value_matrix.data[row_idx][col_idx] = 0;
-                matrix_node->stats.col_value_matrix.data[row_idx][col_idx] = 0;
-                matrix_node->stats.visit_matrix.data[row_idx][col_idx] = 0;
-            }
-        }
+        matrix_node->stats.row_value_matrix.fill(rows, cols, 0);
+        matrix_node->stats.col_value_matrix.fill(rows, cols, 0);
+        matrix_node->stats.visit_matrix.fill(rows, cols, 0);
 
         // Uniform initialization of stats.strategies
         matrix_node->stats.row_strategy.fill(rows, 1 / static_cast<typename Types::Real>(rows));
