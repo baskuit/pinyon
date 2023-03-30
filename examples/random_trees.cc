@@ -11,11 +11,6 @@
 
 const int size = 3;
 
-/*
-Currently Broken!!!!
-MatrixUCB seems to be solving it just fine but the TreeStates strategies are wrong...
-*/
-
 int main()
 {
 
