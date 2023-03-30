@@ -122,14 +122,8 @@ public:
         }
 
         // Uniform initialization of stats.strategies
-        for (int row_idx = 0; row_idx < rows; ++row_idx)
-        {
-            matrix_node->stats.row_strategy[row_idx] = 1 / (float)matrix_node->actions.rows;
-        }
-        for (int col_idx = 0; col_idx < cols; ++col_idx)
-        {
-            matrix_node->stats.col_strategy[col_idx] = 1 / (float)matrix_node->actions.cols;
-        }
+        matrix_node->stats.row_strategy.fill(rows, 1 / static_cast<typename Types::Real>(rows));
+        matrix_node->stats.col_strategy.fill(cols, 1 / static_cast<typename Types::Real>(cols));
 
         // Calculate node's time parameter using parent's.
         ChanceNode<MatrixPUCB> *chance_parent = matrix_node->parent;
@@ -174,8 +168,6 @@ public:
         const int col_idx = device.sample_pdf(col_strategy, row_ucb_matrix.cols);
         outcome.row_idx = row_idx;
         outcome.col_idx = col_idx;
-        outcome.row_mu = row_strategy[row_idx];
-        outcome.col_mu = col_strategy[col_idx];
     }
 
     void update_matrix_node(
