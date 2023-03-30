@@ -10,10 +10,6 @@
 
 #include <assert.h>
 
-/*
-Although templated, this currently only works with Bandit algorithms that intialize with just a prng device.
-*/
-
 template <
     template <class Model, template <class _Model, class _BanditAlgorithm> class _TreeBandit> class Algorithm,
     int size,
@@ -22,7 +18,7 @@ template <
     int playouts
 >
 void saturation_test() {
-    using MoldState = MoldState<size>;
+    using MoldState = MoldStateVector<size>;
     using Model = MonteCarloModel<MoldState>;
     using Algo = Algorithm<Model, TreeBandit>;
 
@@ -50,7 +46,7 @@ template <
     int playouts
 >
 void embedding_test() {
-    using MoldState = MoldState<size>;
+    using MoldState = MoldStateVector<size>;
     using Model = MonteCarloModel<MoldState>;
     using Algo = Algorithm<Model, TreeBandit>;
 
