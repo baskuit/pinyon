@@ -13,7 +13,7 @@
 MatrixPUCB
 */
 
-template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit>
+template <class Model, template <class _Model, class _BanditAlgorithm> class _TreeBandit>
 class MatrixPUCB : public _TreeBandit<Model, MatrixPUCB<Model, _TreeBandit>>
 {
     static_assert(std::derived_from<Model, SolvedMonteCarloModel<typename Model::Types::State>>);

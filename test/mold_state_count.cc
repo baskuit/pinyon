@@ -15,7 +15,7 @@ Although templated, this currently only works with Bandit algorithms that intial
 */
 
 template <
-    template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit> class Algorithm,
+    template <class Model, template <class _Model, class _BanditAlgorithm> class _TreeBandit> class Algorithm,
     int size,
     int seed,
     int depth,
@@ -43,7 +43,7 @@ void saturation_test() {
 Search in a very large tree (no revisits) should have the same number of nodes as playouts
 */
 template <
-    template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit> class Algorithm,
+    template <class Model, template <class _Model, class _BanditAlgorithm> class _TreeBandit> class Algorithm,
     int size,
     int seed,
     int depth,

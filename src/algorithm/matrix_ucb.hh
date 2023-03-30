@@ -17,7 +17,7 @@ MatrixUCB
 
 // TODO MAKE THREAD SAFE (how?)
 
-template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit>
+template <class Model, template <class _Model, class _BanditAlgorithm> class _TreeBandit>
 class MatrixUCB : public _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>
 {
 public:
