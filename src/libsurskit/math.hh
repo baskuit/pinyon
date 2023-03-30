@@ -7,6 +7,7 @@
 
 #include "random.hh"
 #include "rational.hh"
+#include "vector.hh"
 
 namespace math
 {
@@ -45,125 +46,33 @@ namespace Linear
     class Matrix
     {
     public:
-        std::array<std::array<T, size>, size> data;
+        std::array<T, size * size> data;
         int rows, cols;
         Matrix(){};
         Matrix(int rows, int cols) : rows(rows), cols(cols) {}
-        Matrix(const Matrix &M)
-        {
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    data[i][j] = M.data[i][j];
-                }
-            }
-            rows = M.rows;
-            cols = M.cols;
-        }
-        Matrix(const std::array<T, size> array, int length)
-        {
-            // gives row matrix
-            this->data[0] = array;
-            this->rows = 1;
-            this->cols = length;
-        }
 
         T &get(int i, int j)
         {
-            return data[i][j];
+            return data[i * cols + j];
         }
+
         void print()
         {
             for (int i = 0; i < rows; ++i)
             {
                 for (int j = 0; j < cols; ++j)
                 {
-                    std::cout << data[i][j] << ", ";
+                    std::cout << get(i, j) << ", ";
                 }
                 std::cout << std::endl;
             }
         }
 
-        Matrix operator*(Matrix &N)
+        void fill(int rows, int cols) {}
+
+        void fill(int rows, int cols, T value)
         {
-            const Matrix &M = *this;
-            assert(M.cols == N.rows);
-            Matrix output(M.rows, N.cols);
-            for (int i = 0; i < output.rows; ++i)
-            {
-                for (int j = 0; j < output.cols; ++j)
-                {
-                    output.data[i][j] = 0;
-                    for (int k = 0; k < M.cols; ++k)
-                    {
-                        output.data[i][j] += M.data[i][k] * N.data[k][j];
-                    }
-                }
-            }
-            return output;
-        }
-        Matrix operator*(T t)
-        {
-            const Matrix &M = *this;
-            Matrix output(M.rows, M.cols);
-            for (int i = 0; i < output.rows; ++i)
-            {
-                for (int j = 0; j < output.cols; ++j)
-                {
-                    output.data[i][j] = M.data[i][j] * t;
-                }
-            }
-            return output;
-        }
-        Matrix operator+(T t)
-        {
-            const Matrix &M = *this;
-            Matrix output(M.rows, M.cols);
-            for (int i = 0; i < output.rows; ++i)
-            {
-                for (int j = 0; j < output.cols; ++j)
-                {
-                    output.data[i][j] = M.data[i][j] + t;
-                }
-            }
-            return output;
-        }
-        Matrix transpose()
-        {
-            Matrix t(cols, rows);
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    t.data[j][i] = data[i][j];
-                }
-            }
-            return t;
-        }
-        T max()
-        {
-            T x = data[0][0];
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    x = std::max(data[i][j], x);
-                }
-            }
-            return x;
-        }
-        T min()
-        {
-            T x = data[0][0];
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    x = std::min(data[i][j], x);
-                }
-            }
-            return x;
+            std::fill(data.begin(), data.begin() + rows * cols, value);
         }
     };
 
@@ -171,17 +80,17 @@ namespace Linear
     class MatrixVector
     {
     public:
-        std::vector<std::vector<T>> data;
+        std::vector<T> data;
         int rows, cols;
 
         MatrixVector(){};
-        MatrixVector(int rows, int cols) : data(rows, std::vector<T>(cols)), rows(rows), cols(cols)
+        MatrixVector(int rows, int cols) : data(std::vector<T>(rows * cols)), rows(rows), cols(cols)
         {
         }
 
         T &get(int i, int j)
         {
-            return data[i][j];
+            return data[i * cols + j];
         }
 
         void print()
@@ -196,85 +105,15 @@ namespace Linear
             }
         }
 
-        MatrixVector operator*(MatrixVector &N)
-        {
-            const MatrixVector &M = *this;
-            assert(M.cols == N.rows);
-            MatrixVector output(M.rows, N.cols);
-            for (int i = 0; i < output.rows; ++i)
-            {
-                for (int j = 0; j < output.cols; ++j)
-                {
-                    output.data[i][j] = 0;
-                    for (int k = 0; k < M.cols; ++k)
-                    {
-                        output.data[i][j] += M.data[i][k] * N.data[k][j];
-                    }
-                }
-            }
-            return output;
+        void fill(int rows, int cols) {
+            data.resize(rows * cols);
         }
-        MatrixVector operator*(T t)
+
+        void fill(int rows, int cols, T value)
         {
-            const MatrixVector &M = *this;
-            MatrixVector output(M.rows, M.cols);
-            for (int i = 0; i < output.rows; ++i)
-            {
-                for (int j = 0; j < output.cols; ++j)
-                {
-                    output.data[i][j] = M.data[i][j] * t;
-                }
-            }
-            return output;
-        }
-        MatrixVector operator+(T t)
-        {
-            const MatrixVector &M = *this;
-            MatrixVector output(M.rows, M.cols);
-            for (int i = 0; i < output.rows; ++i)
-            {
-                for (int j = 0; j < output.cols; ++j)
-                {
-                    output.data[i][j] = M.data[i][j] + t;
-                }
-            }
-            return output;
-        }
-        MatrixVector transpose()
-        {
-            MatrixVector t(cols, rows);
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    t.data[j][i] = data[i][j];
-                }
-            }
-            return t;
-        }
-        T max()
-        {
-            T x = data[0][0];
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    x = std::max(data[i][j], x);
-                }
-            }
-            return x;
-        }
-        T min()
-        {
-            T x = data[0][0];
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    x = std::min(data[i][j], x);
-                }
-            }
-            return x;
+            const int n = rows * cols;
+            data.resize(n);
+            std::fill(data.begin(), data.begin() + n, value);
         }
     };
 
