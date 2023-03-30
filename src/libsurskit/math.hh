@@ -166,24 +166,6 @@ namespace Linear
         }
     };
 
-    // template <class TypeList>
-    // typename TypeList::Real exploitability(
-    //     typename TypeList::MatrixReal &row_payoff_matrix,
-    //     typename TypeList::MatrixReal &col_payoff_matrix,
-    //     typename TypeList::VectorReal &row_strategy,
-    //     typename TypeList::VectorReal &col_strategy,
-    //     typename TypeList::Real payoff_sum = 1)
-    // {
-    //     typename TypeList::MatrixReal row_strategy_matrix(row_strategy, row_payoff_matrix.rows);
-    //     typename TypeList::MatrixReal col_strategy_matrix(col_strategy, col_payoff_matrix.cols);
-    //     col_strategy_matrix = col_strategy_matrix.transpose();
-    //     typename TypeList::MatrixReal row_best_response = row_payoff_matrix * col_strategy_matrix;
-    //     typename TypeList::MatrixReal col_best_response = row_strategy_matrix * col_payoff_matrix;
-    //     typename TypeList::Real max_row = row_best_response.max();
-    //     typename TypeList::Real max_col = col_best_response.max();
-    //     return max_row + max_col - payoff_sum;
-    // }
-
     template <class TypeList>
     typename TypeList::Real exploitability(
         typename TypeList::MatrixReal &row_payoff_matrix,
