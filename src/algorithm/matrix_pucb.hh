@@ -174,9 +174,9 @@ public:
         MatrixNode<MatrixPUCB> *matrix_node,
         typename Types::Outcome &outcome)
     {
-        matrix_node->stats.row_value_matrix.data[outcome.row_idx][outcome.col_idx] += outcome.row_value;
-        matrix_node->stats.col_value_matrix.data[outcome.row_idx][outcome.col_idx] += outcome.col_value;
-        matrix_node->stats.visit_matrix.data[outcome.row_idx][outcome.col_idx] += 1;
+        matrix_node->stats.row_value_matrix.get(outcome.row_idx, outcome.col_idx) += outcome.row_value;
+        matrix_node->stats.col_value_matrix.get(outcome.row_idx, outcome.col_idx) += outcome.col_value;
+        matrix_node->stats.visit_matrix.get(outcome.row_idx, outcome.col_idx) += 1;
     }
 
     void update_chance_node(
