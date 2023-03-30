@@ -44,6 +44,8 @@ public:
     {
         this->actions.rows = rows;
         this->actions.cols = cols;
+        this->actions.row_actions.fill(rows);
+        this->actions.col_actions.fill(cols);
         for (int i = 0; i < rows; ++i)
         {
             this->actions.row_actions[i] = i;

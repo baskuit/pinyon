@@ -46,11 +46,11 @@ public:
 
         const int rows = state.actions.rows;
         const int cols = state.actions.cols;
-        // matrix_node->stats.row_strategy.fill(rows);
-        // matrix_node->stats.col_strategy.fill(cols);
+        matrix_node->stats.row_strategy.fill(rows);
+        matrix_node->stats.col_strategy.fill(cols);
         matrix_node->stats.expected_value.rows = rows;
         matrix_node->stats.expected_value.cols = cols;
-        // matrix_node->stats.expected_value.fill(rows, cols);
+        matrix_node->stats.expected_value.fill(rows, cols);
         for (int i = 0; i < rows; ++i)
         {
             for (int j = 0; j < cols; ++j)
