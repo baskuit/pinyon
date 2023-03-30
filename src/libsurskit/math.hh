@@ -289,7 +289,9 @@ namespace Linear
         const int cols = row_payoff_matrix.cols;
 
         typename TypeList::Real row_payoff = 0, col_payoff = 0;
-        typename TypeList::VectorReal row_response = {0}, col_response = {0};
+        typename TypeList::VectorReal row_response, col_response;
+        row_response.fill(rows, 0);
+        col_response.fill(cols, 0); // TODO maybe replace this with just a constructor
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)
