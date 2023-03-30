@@ -44,6 +44,12 @@ public:
 
     Exp3(typename Types::Real gamma) : gamma(gamma) {}
 
+    std::ostream &operator<<(std::ostream &os, const Exp3 &session)
+    {
+        os << "Exp3p; gamma: " << session.gamma;
+        return os;
+    }
+
     void get_strategies(
         MatrixNode<Exp3> *matrix_node,
         typename Types::VectorReal &row_strategy,

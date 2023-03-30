@@ -47,6 +47,12 @@ public:
 
     MatrixUCB(typename Types::Real c_uct, typename Types::Real expl_threshold) : c_uct(c_uct), expl_threshold(expl_threshold) {}
 
+    std::ostream &operator<<(std::ostream &os, const MatrixUCB &session)
+    {
+        os << "MatrixUCB; c_uct: " << session.c_uct << ", expl_threshold: " << session.expl_threshold;
+        return os;
+    }
+
     typename Types::Real c_uct = 2;
     typename Types::Real expl_threshold = .005;
     // bool require_interior = false;
