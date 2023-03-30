@@ -135,7 +135,7 @@ public:
             typename Types::Real reach_probability =
                 matrix_parent->inference.row_policy[row_idx] *
                 matrix_parent->inference.col_policy[col_idx] *
-                ((typename Types::Real)matrix_node->transition.prob);
+                (static_cast<typename Types::Real>(matrix_node->transition.prob));
             int time_estimate = matrix_parent->stats.time * reach_probability;
             time_estimate = time_estimate == 0 ? 1 : time_estimate;
             matrix_node->stats.time = time_estimate;
