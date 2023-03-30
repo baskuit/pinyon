@@ -51,9 +51,38 @@ namespace Linear
         Matrix(){};
         Matrix(int rows, int cols) : rows(rows), cols(cols) {}
 
+        void fill(int rows, int cols) {}
+
+        void fill(int rows, int cols, T value)
+        {
+            std::fill(data.begin(), data.begin() + rows * cols, value);
+        }
+
         T &get(int i, int j)
         {
             return data[i * cols + j];
+        }
+
+        Matrix operator*(T t)
+        {
+            const Matrix &M = *this;
+            Matrix output(M.rows, M.cols);
+            for (int i = 0; i < rows * cols; ++i)
+            {
+                output.data[i] = M.data[i] * t;
+            }
+            return output;
+        }
+
+        Matrix operator+(T t)
+        {
+            const Matrix &M = *this;
+            Matrix output(M.rows, M.cols);
+            for (int i = 0; i < rows * cols; ++i)
+            {
+                output.data[i] = M.data[i] + t;
+            }
+            return output;
         }
 
         void print()
@@ -66,13 +95,6 @@ namespace Linear
                 }
                 std::cout << std::endl;
             }
-        }
-
-        void fill(int rows, int cols) {}
-
-        void fill(int rows, int cols, T value)
-        {
-            std::fill(data.begin(), data.begin() + rows * cols, value);
         }
     };
 
@@ -88,24 +110,8 @@ namespace Linear
         {
         }
 
-        T &get(int i, int j)
+        void fill(int rows, int cols)
         {
-            return data[i * cols + j];
-        }
-
-        void print()
-        {
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    std::cout << data[i][j] << ", ";
-                }
-                std::cout << std::endl;
-            }
-        }
-
-        void fill(int rows, int cols) {
             data.resize(rows * cols);
         }
 
@@ -114,6 +120,44 @@ namespace Linear
             const int n = rows * cols;
             data.resize(n);
             std::fill(data.begin(), data.begin() + n, value);
+        }
+
+        T &get(int i, int j)
+        {
+            return data[i * cols + j];
+        }
+
+        MatrixVector operator*(T t)
+        {
+            const MatrixVector &M = *this;
+            MatrixVector output(M.rows, M.cols);
+            for (int i = 0; i < rows * cols; ++i)
+            {
+                output.data[i] = M.data[i] * t;
+            }
+            return output;
+        }
+        MatrixVector operator+(T t)
+        {
+            const MatrixVector &M = *this;
+            MatrixVector output(M.rows, M.cols);
+            for (int i = 0; i < rows * cols; ++i)
+            {
+                output.data[i] = M.data[i] + t;
+            }
+            return output;
+        }
+
+        void print()
+        {
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    std::cout << get(i, j) << ", ";
+                }
+                std::cout << std::endl;
+            }
         }
     };
 
