@@ -5,19 +5,17 @@
 #include "libsurskit/random.hh"
 #include "libsurskit/math.hh"
 #include "libsurskit/gambit.hh"
-
 #include "state/test_states.hh"
 #include "algorithm.hh"
 #include "tree/tree.hh"
+
 /*
 MatrixPUCB
 */
 
-template <class Model, template <class _Model, class _BanditAlgorithm_> class _TreeBandit>
+template <class Model, template <class _Model, class _BanditAlgorithm> class _TreeBandit>
 class MatrixPUCB : public _TreeBandit<Model, MatrixPUCB<Model, _TreeBandit>>
 {
-    static_assert(std::derived_from<Model, SolvedMonteCarloModel<typename Model::Types::State>>);
-
 public:
     struct MatrixStats;
     struct ChanceStats;
@@ -49,8 +47,14 @@ public:
 
     MatrixPUCB(typename Types::Real c_uct, typename Types::Real expl_threshold) : c_uct(c_uct), expl_threshold(expl_threshold) {}
 
+    // std::ostream &operator<<(std::ostream &os, const MatrixPUCB &session)
+    // {
+    //     os << "MatrixPUCB; c_uct: " << session.c_uct << ", expl_threshold: " << session.expl_threshold;
+    //     return os;
+    // }
+
     typename Types::Real c_uct = 2;
-    typename Types::Real expl_threshold = .05;
+    typename Types::Real expl_threshold = .005;
     // bool require_interior = false;
 
     void initialize_stats(
@@ -103,7 +107,7 @@ public:
         {
             model.get_inference(state, matrix_node->inference);
         }
-
+        
         matrix_node->stats.row_value_matrix.rows = rows;
         matrix_node->stats.row_value_matrix.cols = cols;
         matrix_node->stats.col_value_matrix.rows = rows;
@@ -111,25 +115,13 @@ public:
         matrix_node->stats.visit_matrix.rows = rows;
         matrix_node->stats.visit_matrix.cols = cols;
 
-        for (int row_idx = 0; row_idx < rows; ++row_idx)
-        {
-            for (int col_idx = 0; col_idx < cols; ++col_idx)
-            {
-                matrix_node->stats.row_value_matrix.data[row_idx][col_idx] = 0;
-                matrix_node->stats.col_value_matrix.data[row_idx][col_idx] = 0;
-                matrix_node->stats.visit_matrix.data[row_idx][col_idx] = 0;
-            }
-        }
+        matrix_node->stats.row_value_matrix.fill(rows, cols, 0);
+        matrix_node->stats.col_value_matrix.fill(rows, cols, 0);
+        matrix_node->stats.visit_matrix.fill(rows, cols, 0);
 
         // Uniform initialization of stats.strategies
-        for (int row_idx = 0; row_idx < rows; ++row_idx)
-        {
-            matrix_node->stats.row_strategy[row_idx] = 1 / (float)matrix_node->actions.rows;
-        }
-        for (int col_idx = 0; col_idx < cols; ++col_idx)
-        {
-            matrix_node->stats.col_strategy[col_idx] = 1 / (float)matrix_node->actions.cols;
-        }
+        matrix_node->stats.row_strategy.fill(rows, 1 / static_cast<typename Types::Real>(rows));
+        matrix_node->stats.col_strategy.fill(cols, 1 / static_cast<typename Types::Real>(cols));
 
         // Calculate node's time parameter using parent's.
         ChanceNode<MatrixPUCB> *chance_parent = matrix_node->parent;
@@ -141,7 +133,7 @@ public:
             typename Types::Real reach_probability =
                 matrix_parent->inference.row_policy[row_idx] *
                 matrix_parent->inference.col_policy[col_idx] *
-                ((typename Types::Real)matrix_node->transition.prob);
+                (static_cast<typename Types::Real>(matrix_node->transition.prob));
             int time_estimate = matrix_parent->stats.time * reach_probability;
             time_estimate = time_estimate == 0 ? 1 : time_estimate;
             matrix_node->stats.time = time_estimate;
@@ -174,17 +166,15 @@ public:
         const int col_idx = device.sample_pdf(col_strategy, row_ucb_matrix.cols);
         outcome.row_idx = row_idx;
         outcome.col_idx = col_idx;
-        outcome.row_mu = row_strategy[row_idx];
-        outcome.col_mu = col_strategy[col_idx];
     }
 
     void update_matrix_node(
         MatrixNode<MatrixPUCB> *matrix_node,
         typename Types::Outcome &outcome)
     {
-        matrix_node->stats.row_value_matrix.data[outcome.row_idx][outcome.col_idx] += outcome.row_value;
-        matrix_node->stats.col_value_matrix.data[outcome.row_idx][outcome.col_idx] += outcome.col_value;
-        matrix_node->stats.visit_matrix.data[outcome.row_idx][outcome.col_idx] += 1;
+        matrix_node->stats.row_value_matrix.get(outcome.row_idx, outcome.col_idx) += outcome.row_value;
+        matrix_node->stats.col_value_matrix.get(outcome.row_idx, outcome.col_idx) += outcome.col_value;
+        matrix_node->stats.visit_matrix.get(outcome.row_idx, outcome.col_idx) += 1;
     }
 
     void update_chance_node(

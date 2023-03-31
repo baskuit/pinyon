@@ -70,15 +70,10 @@ public:
         typename Types::Inference &inference)
     {
         const typename Types::Real row_uniform = 1 / (typename Types::Real)state.actions.rows;
-        for (int i = 0; i < state.actions.rows; ++i)
-        {
-            inference.row_policy[i] = row_uniform;
-        }
+        inference.row_policy.fill(state.actions.rows, row_uniform);
         const typename Types::Real col_uniform = 1 / (typename Types::Real)state.actions.cols;
-        for (int j = 0; j < state.actions.cols; ++j)
-        {
-            inference.col_policy[j] = col_uniform;
-        }
+        inference.col_policy.fill(state.actions.cols, col_uniform);
+
         this->rollout(state);
         inference.row_value = state.row_payoff;
         inference.col_value = state.col_payoff;

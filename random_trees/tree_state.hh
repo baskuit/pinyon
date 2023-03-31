@@ -25,8 +25,8 @@ public:
     {
         this->root = std::make_shared<SeedStateNode>();
         this->current = &*root;
-        Grow<MonteCarloModel<SeedState<size>>> session(device);
-        session.grow(seed, current);
+        Grow<MonteCarloModel<SeedState<size>>> session;
+        session.grow(device, seed, current);
         update_solved_state_payoffs(current);
         this->transition = seed.transition; // total hack
     }
@@ -35,6 +35,8 @@ public:
     {
         this->actions.rows = this->current->stats.expected_value.rows;
         this->actions.cols = this->current->stats.expected_value.cols;
+        this->actions.row_actions.fill(this->actions.rows);
+        this->actions.col_actions.fill(this->actions.cols);
         for (int i = 0; i < this->actions.rows; ++i)
         {
             this->actions.row_actions[i] = i;
@@ -64,6 +66,8 @@ private:
         this->col_payoff = 1 - this->row_payoff;
         const int rows = this->current->actions.rows;
         const int cols = this->current->actions.cols;
+        this->row_strategy.fill(rows);
+        this->col_strategy.fill(cols);
         for (int i = 0; i < rows; ++i)
         {
             this->row_strategy[i] = this->current->stats.row_strategy[i];

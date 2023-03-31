@@ -20,11 +20,11 @@ using Types = TypeList<
     int,
     double,
     double,
-    Array<int, size>,
-    Array<double, size>,
-    Array<int, size>,
-    Linear::Matrix<double, size>,
-    Linear::Matrix<int, size>>;
+    Vector<int>,
+    Vector<double>,
+    Vector<int>,
+    Linear::MatrixVector<double>,
+    Linear::MatrixVector<int>>;
 
 void random_matrices(prng &device, int rows, int cols, int n_matrices, Types::Real epsilon)
 {

@@ -10,7 +10,7 @@ template <typename Model>
 class Grow : public AbstractAlgorithm<Model>
 {
     static_assert(std::derived_from<typename Model::Types::State, SeedState<Model::Types::size>>,
-        "Grow is only intended to run on a SeedState");
+                  "Grow is only intended to run on a SeedState");
 
 public:
     struct MatrixStats;
@@ -22,19 +22,15 @@ public:
     {
         typename Types::Real payoff = 0;
         typename Types::MatrixReal expected_value;
-        typename Types::VectorReal row_strategy = {0};
-        typename Types::VectorReal col_strategy = {0};
+        typename Types::VectorReal row_strategy;
+        typename Types::VectorReal col_strategy;
         int count = 1;
     };
 
-    prng &device;
-    bool require_interior = false;
-
-    Grow(prng &device) : device(device)
-    {
-    }
+    Grow() {}
 
     void grow(
+        prng &device,
         typename Types::State &state,
         MatrixNode<Grow> *matrix_node)
     {
@@ -50,20 +46,23 @@ public:
 
         const int rows = state.actions.rows;
         const int cols = state.actions.cols;
+        matrix_node->stats.row_strategy.fill(rows);
+        matrix_node->stats.col_strategy.fill(cols);
         matrix_node->stats.expected_value.rows = rows;
         matrix_node->stats.expected_value.cols = cols;
+        matrix_node->stats.expected_value.fill(rows, cols);
         for (int i = 0; i < rows; ++i)
         {
             for (int j = 0; j < cols; ++j)
             {
-            ChanceNode<Grow> *chance_node = matrix_node->access(i, j);
+                ChanceNode<Grow> *chance_node = matrix_node->access(i, j);
                 for (int c = 0; c < 1; ++c)
                 {
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(i, j);
                     MatrixNode<Grow> *matrix_node_next = chance_node->access(state_copy.transition);
-                    grow(state_copy, matrix_node_next);
-                    matrix_node->stats.expected_value.data[i][j] = matrix_node_next->stats.payoff;
+                    grow(device, state_copy, matrix_node_next);
+                    matrix_node->stats.expected_value.get(i, j) = matrix_node_next->stats.payoff;
                     matrix_node->stats.count += matrix_node_next->stats.count;
                 }
             }
@@ -87,7 +86,7 @@ public:
                     matrix_node->stats.payoff +=
                         matrix_node->stats.row_strategy[i] *
                         matrix_node->stats.col_strategy[j] *
-                        matrix_node->stats.expected_value.data[i][j];
+                        matrix_node->stats.expected_value.get(i, j);
                 }
             }
         }

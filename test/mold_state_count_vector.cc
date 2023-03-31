@@ -18,7 +18,7 @@ template <
     int playouts
 >
 void saturation_test() {
-    using MoldState = MoldState<size>;
+    using MoldState = MoldStateVector<size>;
     using Model = MonteCarloModel<MoldState>;
     using Algo = Algorithm<Model, TreeBandit>;
 
@@ -46,7 +46,7 @@ template <
     int playouts
 >
 void embedding_test() {
-    using MoldState = MoldState<size>;
+    using MoldState = MoldStateVector<size>;
     using Model = MonteCarloModel<MoldState>;
     using Algo = Algorithm<Model, TreeBandit>;
 
