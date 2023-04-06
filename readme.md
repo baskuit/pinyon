@@ -18,6 +18,8 @@ A more detailed explanation of the implementation is [here](https://github.com/b
     cmake ..
     make
 
+Windows is currently not supported
+
 ## Gambit
 
 **[Gambit](https://github.com/gambitproject/gambit)** is an open-source collection of tools for doing computation in game theory. 
