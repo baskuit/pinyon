@@ -3,87 +3,47 @@ project(surskit VERSION 0.1.0)
 set (CMAKE_CXX_STANDARD 20)
 
 set(GAMBIT_SOURCES
-    gambit/src/core/dvector.cc
-    gambit/src/core/function.cc
-    gambit/src/core/integer.cc
     gambit/src/core/matrix.cc
-    gambit/src/core/pvector.cc
-    gambit/src/core/rational.cc
-    gambit/src/core/sqmatrix.cc
-    gambit/src/core/tinyxml.cc
-    gambit/src/core/tinyxmlerror.cc
-    gambit/src/core/tinyxmlparser.cc
     gambit/src/core/vector.cc
 
-    gambit/src/games/behav.cc
-    gambit/src/games/behavitr.cc
-    gambit/src/games/behavspt.cc
-    gambit/src/games/file.cc
-    gambit/src/games/game.cc
-    gambit/src/games/gameagg.cc
-    gambit/src/games/gamebagg.cc
-    gambit/src/games/gametable.cc
-    gambit/src/games/gametree.cc
-    gambit/src/games/mixed.cc
-    gambit/src/games/nash.cc
-    gambit/src/games/stratitr.cc
-    gambit/src/games/stratspt.cc
-    gambit/src/games/writer.cc
-
-    gambit/src/games/agg/agg.cc
-    gambit/src/games/agg/bagg.cc
-
-    gambit/src/solvers/linalg/basis.cc
-    gambit/src/solvers/linalg/btableau.cc
-    gambit/src/solvers/linalg/lemketab.cc
-    gambit/src/solvers/linalg/lhtab.cc
-    gambit/src/solvers/linalg/lpsolve.cc
-    gambit/src/solvers/linalg/lptab.cc
-    gambit/src/solvers/linalg/ludecomp.cc
-    gambit/src/solvers/linalg/tableau.cc
-
-    gambit/src/solvers/enummixed/clique.cc
-    gambit/src/solvers/enummixed/lrsenum.cc
-    gambit/src/solvers/enummixed/enummixed.cc
-
-    gambit/src/solvers/lrs/lrslib.c
-    gambit/src/solvers/lrs/lrsmp.c
-    gambit/src/solvers/lrs/lrsnashlib.c
+    gambit/src/linalg/basis.cc
+    gambit/src/linalg/btableau.cc
+    gambit/src/linalg/lpsolve.cc
+    gambit/src/linalg/lptab.cc
+    gambit/src/linalg/ludecomp.cc
+    gambit/src/linalg/tableau.cc
 )
 
 include_directories(
     src
 	gambit/src
 	gambit/src/core
-	gambit/src/games
-	gambit/src/games/agg
-	gambit/src/solvers
-	gambit/src/lrs
+	gambit/src/linalg
 )
 
 add_library(gambit STATIC ${GAMBIT_SOURCES})
 
-# Examples
-file(GLOB EXAMPLES examples/*.cc)
+# # Examples
+# file(GLOB EXAMPLES examples/*.cc)
 
-foreach(EXAMPLE ${EXAMPLES})
-    get_filename_component(TEST_NAME ${EXAMPLE} NAME_WE) # get name without extension
-    add_executable(${TEST_NAME} ${EXAMPLE})
-    target_link_libraries(${TEST_NAME} gambit)
-    set_target_properties(${TEST_NAME} PROPERTIES
-                      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples)
-endforeach()
+# foreach(EXAMPLE ${EXAMPLES})
+#     get_filename_component(TEST_NAME ${EXAMPLE} NAME_WE) # get name without extension
+#     add_executable(${TEST_NAME} ${EXAMPLE})
+#     target_link_libraries(${TEST_NAME} gambit)
+#     set_target_properties(${TEST_NAME} PROPERTIES
+#                       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples)
+# endforeach()
 
-# Benchmarks
-file(GLOB BENCHMARKS benchmark/*.cc)
+# # Benchmarks
+# file(GLOB BENCHMARKS benchmark/*.cc)
 
-foreach(BENCHMARK ${BENCHMARKS})
-    get_filename_component(TEST_NAME ${BENCHMARKS} NAME_WE) # get name without extension
-    add_executable(${TEST_NAME} ${BENCHMARKS})
-    target_link_libraries(${TEST_NAME} gambit)
-    set_target_properties(${TEST_NAME} PROPERTIES
-                      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/benchmark)
-endforeach()
+# foreach(BENCHMARK ${BENCHMARKS})
+#     get_filename_component(TEST_NAME ${BENCHMARKS} NAME_WE) # get name without extension
+#     add_executable(${TEST_NAME} ${BENCHMARKS})
+#     target_link_libraries(${TEST_NAME} gambit)
+#     set_target_properties(${TEST_NAME} PROPERTIES
+#                       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/benchmark)
+# endforeach()
 
 # Testing
 file(GLOB TEST_FILES test/*.cc)
