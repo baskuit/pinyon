@@ -171,10 +171,11 @@ namespace LibGambit
     }
 
     template <class TypeList>
-    void solve_bimatrix(
+    void solve_matrix(
         typename TypeList::MatrixReal &row_payoff_matrix,
-        typename TypeList::MatrixReal &col_payoff_matrix,
-        typename TypeList::VectorReal &row_strategy const typename TypeList::Real payoff_sum = 1)
+        typename TypeList::VectorReal &row_strategy,
+        typename TypeList::VectorReal &col_strategy,
+        const typename TypeList::Real payoff_sum = 1)
     {
         const int rows = row_payoff_matrix.rows;
         const int cols = row_payoff_matrix.cols;
@@ -188,8 +189,10 @@ namespace LibGambit
         Gambit::Matrix<double> A2(1, cols,
                                   1, rows);
 
-        double max = std::max(row_payoff_matrix.max(), col_payoff_matrix.max());
-        double min = std::min(row_payoff_matrix.min(), col_payoff_matrix.min());
+        const double row_payoff_max = row_payoff_matrix.max();
+        const double row_payoff_min = row_payoff_matrix.min();
+        double max = std::max(row_payoff_max, payoff_sum - row_payoff_max);
+        double min = std::min(row_payoff_min, payoff_sum - row_payoff_min);
 
         if (min > 0)
         {
