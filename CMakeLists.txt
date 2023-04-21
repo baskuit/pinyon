@@ -23,16 +23,16 @@ include_directories(
 
 add_library(gambit STATIC ${GAMBIT_SOURCES})
 
-# # Examples
-# file(GLOB EXAMPLES examples/*.cc)
+# Examples
+file(GLOB EXAMPLES examples/*.cc)
 
-# foreach(EXAMPLE ${EXAMPLES})
-#     get_filename_component(TEST_NAME ${EXAMPLE} NAME_WE) # get name without extension
-#     add_executable(${TEST_NAME} ${EXAMPLE})
-#     target_link_libraries(${TEST_NAME} gambit)
-#     set_target_properties(${TEST_NAME} PROPERTIES
-#                       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples)
-# endforeach()
+foreach(EXAMPLE ${EXAMPLES})
+    get_filename_component(TEST_NAME ${EXAMPLE} NAME_WE) # get name without extension
+    add_executable(${TEST_NAME} ${EXAMPLE})
+    target_link_libraries(${TEST_NAME} gambit)
+    set_target_properties(${TEST_NAME} PROPERTIES
+                      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples)
+endforeach()
 
 # # Benchmarks
 # file(GLOB BENCHMARKS benchmark/*.cc)
