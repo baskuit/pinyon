@@ -46,7 +46,7 @@ add_library(gambit STATIC ${GAMBIT_SOURCES})
 # endforeach()
 
 # Testing
-file(GLOB TEST_FILES test/*.cc)
+file(GLOB TEST_FILES tests/*.cc)
 
 foreach(TEST_FILE ${TEST_FILES})
     get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
