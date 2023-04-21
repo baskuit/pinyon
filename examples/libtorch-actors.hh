@@ -5,6 +5,16 @@
 #include <condition_variable>
 #include <iostream>
 
+/*
+
+TODO
+
+Although I probably won't get around to deeper networks until pkmn/engine.
+
+I could reproduce R-NaD (one of my other repos) here...
+
+*/
+
 using namespace std::chrono_literals;
 
 class TensorActor
