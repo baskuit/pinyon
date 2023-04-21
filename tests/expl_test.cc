@@ -64,7 +64,7 @@ int main()
     {
         for (int cols = 1; cols <= size; ++cols)
         {
-            random_matrices(device, rows, cols, 1000, 0.001);
+            random_matrices(device, rows, cols, 10000, 0.001);
         }
     }
 

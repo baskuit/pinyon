@@ -35,12 +35,17 @@ namespace LibGambit
         Gambit::Matrix<double> A2(1, cols,
                                   1, rows);
 
-        const double max = std::max(row_payoff_matrix.max(), col_payoff_matrix.max());
-        const double min = std::min(row_payoff_matrix.min(), col_payoff_matrix.min());
-        if (max == min)
-        {
-            return;
+        double max = std::max(row_payoff_matrix.max(), col_payoff_matrix.max());
+        double min = std::min(row_payoff_matrix.min(), col_payoff_matrix.min());
+
+        if (min > 0) {
+            min = 0;
         }
+        min -= 1;
+        if (max < 0) {
+            max = 0;
+        }
+
         const double fac = 1 / (max - min);
 
         for (size_t i = 1; i <= rows; i++)
