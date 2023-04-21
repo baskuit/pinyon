@@ -4,7 +4,7 @@
 #include "seed_state.hh"
 #include "grow.hh"
 
-#include "shared_ptr.h"
+#include <memory>
 
 template <int size>
 class TreeState : public SolvedStateArray<size, int, int, double>
