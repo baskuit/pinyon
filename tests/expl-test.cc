@@ -13,7 +13,8 @@ Passes with size = 7, device seed = 0, n_matrices  = 10000
 However that takes several minutes, so we will reduce the size of the test.
 */
 
-constexpr int size = 5;
+constexpr int min_dim = 6;
+constexpr int size = 9;
 
 using Types = TypeList<
     int,
@@ -26,10 +27,12 @@ using Types = TypeList<
     Linear::Matrix<double, size>,
     Linear::Matrix<int, size>>;
 
-void random_matrices(prng &device, int rows, int cols, int n_matrices, Types::Real epsilon)
+void random_matrices(prng &device, int rows, int cols, int n_matrices, Types::Real epsilon, double &avg_expl, double &max_expl)
 {
     Types::VectorReal row_strategy(rows);
     Types::VectorReal col_strategy(cols);
+
+    double total_expl = 0;
 
     for (int i = 0; i < n_matrices; ++i)
     {
@@ -51,20 +54,27 @@ void random_matrices(prng &device, int rows, int cols, int n_matrices, Types::Re
 
         const Types::Real expl = Linear::exploitability<Types>(row_payoff_matrix, col_payoff_matrix, row_strategy, col_strategy);
         assert(expl < epsilon);
+        total_expl += expl;
+        if (expl > max_expl) {
+            max_expl = expl;
+        }
     }
-    return;
+
+    avg_expl = total_expl / n_matrices;
 }
 
 int main()
 {
 
     prng device(0);
-
-    for (int rows = 1; rows <= size; ++rows)
+    for (int rows = min_dim; rows <= size; ++rows)
     {
-        for (int cols = 1; cols <= size; ++cols)
+        for (int cols = min_dim; cols <= size; ++cols)
         {
-            random_matrices(device, rows, cols, 10000, 0.001);
+            double avg_expl = 0;
+            double max_expl = 0;
+            random_matrices(device, rows, cols, 1000, 0.001, avg_expl, max_expl);
+            std::cout << "n: " << rows << ", m: " << cols << "| avg_expl=" << avg_expl << ", max_expl=" << max_expl << std::endl;
         }
     }
 
