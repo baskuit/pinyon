@@ -34,16 +34,16 @@ foreach(EXAMPLE ${EXAMPLES})
                       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples)
 endforeach()
 
-# # Benchmarks
-# file(GLOB BENCHMARKS benchmark/*.cc)
+# Benchmarks
+file(GLOB BENCHMARKS benchmark/*.cc)
 
-# foreach(BENCHMARK ${BENCHMARKS})
-#     get_filename_component(TEST_NAME ${BENCHMARKS} NAME_WE) # get name without extension
-#     add_executable(${TEST_NAME} ${BENCHMARKS})
-#     target_link_libraries(${TEST_NAME} gambit)
-#     set_target_properties(${TEST_NAME} PROPERTIES
-#                       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/benchmark)
-# endforeach()
+foreach(BENCHMARK ${BENCHMARKS})
+    get_filename_component(TEST_NAME ${BENCHMARKS} NAME_WE) # get name without extension
+    add_executable(${TEST_NAME} ${BENCHMARKS})
+    target_link_libraries(${TEST_NAME} gambit)
+    set_target_properties(${TEST_NAME} PROPERTIES
+                      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/benchmark)
+endforeach()
 
 # Testing
 file(GLOB TEST_FILES tests/*.cc)
