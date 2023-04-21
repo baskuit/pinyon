@@ -1,3 +1,3 @@
 [submodule "gambit"]
 	path = gambit
-	url = https://www.github.com/baskuit/gambit
+	url = https://github.com/baskuit/gambit

@@ -96,6 +96,18 @@ namespace Linear
                 std::cout << std::endl;
             }
         }
+        
+        T max()
+        {
+            const int entries = rows * cols;
+            return *std::max_element(data.begin(), data.begin() + entries);
+        }
+
+        T min()
+        {
+            const int entries = rows * cols;
+            return *std::min_element(data.begin(), data.begin() + entries);
+        }
     };
 
     template <typename T>
@@ -158,6 +170,18 @@ namespace Linear
                 }
                 std::cout << std::endl;
             }
+        }
+
+        T max()
+        {
+            const int entries = rows * cols;
+            return *std::max_element(data.begin(), data.begin() + entries);
+        }
+
+        T min()
+        {
+            const int entries = rows * cols;
+            return *std::min_element(data.begin(), data.begin() + entries);
         }
     };
 
