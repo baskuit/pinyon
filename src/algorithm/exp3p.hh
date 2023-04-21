@@ -41,11 +41,11 @@ public:
 
     Exp3p () {}
 
-    // std::ostream &operator<<(std::ostream &os, const Exp3p &session)
-    // {
-    //     os << "Exp3p";
-    //     return os;
-    // }
+    friend std::ostream &operator<<(std::ostream &os, const Exp3p &session)
+    {
+        os << "Exp3p";
+        return os;
+    }
 
     void get_strategies(
         MatrixNode<Exp3p> *matrix_node,
