@@ -14,6 +14,7 @@ class prng
     std::mt19937::result_type seed;
     std::mt19937 engine;
     std::uniform_real_distribution<double> uniform_;
+    std::uniform_int_distribution<uint32_t> uniform_32_;
 
 public:
     prng() : seed(std::random_device{}()), engine(std::mt19937{seed}) {}
@@ -37,6 +38,10 @@ public:
     int random_int(int n)
     {
         return int(this->uniform() * n);
+    }
+
+    uint64_t uniform_64() {
+        return static_cast<uint64_t>(uniform_32_(engine)) << 32 | uniform_32_(engine);
     }
 
     template <typename Vector>
