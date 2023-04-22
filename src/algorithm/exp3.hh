@@ -120,7 +120,7 @@ public:
         }
         else
         {
-            const typename ::Types::Real eta = gamma / rows;
+            const typename Types::Real eta = gamma / rows;
             softmax(row_forecast, matrix_node->stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
@@ -133,7 +133,7 @@ public:
         }
         else
         {
-            const typename ::Types::Real eta = gamma / cols;
+            const typename Types::Real eta = gamma / cols;
             softmax(col_forecast, matrix_node->stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
