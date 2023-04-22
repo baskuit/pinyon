@@ -47,14 +47,14 @@ public:
 
     MatrixPUCB(typename Types::Real c_uct, typename Types::Real expl_threshold) : c_uct(c_uct), expl_threshold(expl_threshold) {}
 
-    // std::ostream &operator<<(std::ostream &os, const MatrixPUCB &session)
-    // {
-    //     os << "MatrixPUCB; c_uct: " << session.c_uct << ", expl_threshold: " << session.expl_threshold;
-    //     return os;
-    // }
+    friend std::ostream &operator<<(std::ostream &os, const MatrixPUCB &session)
+    {
+        os << "MatrixPUCB; c_uct: " << session.c_uct << ", expl_threshold: " << session.expl_threshold;
+        return os;
+    }
 
-    typename Types::Real c_uct = 2;
-    typename Types::Real expl_threshold = .005;
+    const typename Types::Real c_uct = 1;
+    const typename Types::Real expl_threshold = .005;
     // bool require_interior = false;
 
     void initialize_stats(
@@ -185,7 +185,7 @@ public:
 
 private:
     void get_ucb_matrix(
-        MatrixNode<MatrixPUCB> *matrix_node,
+        MatrixNode<MatrixUCB> *matrix_node,
         typename Types::MatrixReal &row_ucb_matrix,
         typename Types::MatrixReal &col_ucb_matrix)
     {
@@ -195,6 +195,7 @@ private:
         const int time = matrix_node->stats.time;
         const int rows = visit_matrix.rows;
         const int cols = visit_matrix.cols;
+        const typename Types::Real num = 2 * std::log(time) + std::log(2 * rows * cols);
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)
@@ -206,7 +207,7 @@ private:
                 typename Types::Real a = u / n;
                 typename Types::Real b = v / n;
                 typename Types::Real const joint_prior = matrix_node->inference.row_policy[row_idx] * matrix_node->inference.col_policy[col_idx];
-                typename Types::Real const eta = this->c_uct * joint_prior * std::sqrt((2 * std::log(time) + std::log(2 * rows * cols)) / n);
+                typename Types::Real const eta = this->c_uct * joint_prior * std::sqrt(num / n);
                 const typename Types::Real x = a + eta;
                 const typename Types::Real y = b + eta;
                 row_ucb_matrix.get(row_idx, col_idx) = x;
@@ -216,12 +217,13 @@ private:
     }
 
     void get_ev_matrix(
-        typename Types::MatrixReal &row_value_matrix,
-        typename Types::MatrixReal &col_value_matrix,
-        typename Types::MatrixInt &visit_matrix,
+        MatrixNode<MatrixUCB> *matrix_node,
         typename Types::MatrixReal &row_ev_matrix,
         typename Types::MatrixReal &col_ev_matrix)
     {
+        typename Types::MatrixReal &row_value_matrix = matrix_node->stats.row_value_matrix;
+        typename Types::MatrixReal &col_value_matrix = matrix_node->stats.col_value_matrix;
+        typename Types::MatrixInt &visit_matrix = matrix_node->stats.visit_matrix;
         const int rows = visit_matrix.rows;
         const int cols = visit_matrix.cols;
         for (int row_idx = 0; row_idx < rows; ++row_idx)
