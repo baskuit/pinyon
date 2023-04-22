@@ -72,11 +72,11 @@ Aka `double`. More precision may be desired.
 * `VectorInt` 
 These vectors are only expected to range over the legal actions at a given matrix node. 
 As such the primary state implementation uses `std::array<Action, MAX_ACTIONS>` etc.
- Some games may have a large upper bound on the number of actions, and storing them in standard array may not be feasible. 
- **Warning**: Use of vectors is not yet supported.
+ Some games may have a large upper bound on the number of actions, and storing them in standard array may not be feasible.  In this case, the use of `std::vector<Action>` is encouraged. This is especially true if using MatrixUCB or a variant, since then the use of arrays would require `MAX_ACTIONS * MAX_ACTIONS` elements.
+
 * `MatrixInt` 
 * `MatrixReal`
-The 'math' header contains a simple implementation of matrices as two dimensional standard arrays. It is really only necessary that this type hold search statistics and assist in computation with a multiplication overload.
+The 'math' header contains a simple implementation of matrices via standard arrays and standard vectors.
 
 ## State
 	template <class _TypeList>
@@ -420,32 +420,24 @@ A node owns its children but not its siblings.
 Destructing a node will thus delete all its children  and remove it from it parents linked list of children. See below:
 
 	template <typename Algorithm>
-	MatrixNode<Algorithm>::~MatrixNode() {
-	    while (this->child != nullptr) {
+	MatrixNode<Algorithm>::~MatrixNode()
+	{
+	    while (this->child != nullptr)
+	    {
 	        ChanceNode<Algorithm> *victim = this->child;
 	        this->child = this->child->next;
 	        delete victim;
 	    }
-	    if (this->prev != nullptr) {
-	        this->prev->next = this->next;
-	    }
-	    else if (this->parent != nullptr) {
-	        this->parent->child = this->next;
-	    }
 	}
 
 	template <typename Algorithm>
-	ChanceNode<Algorithm>::~ChanceNode() {
-	    while (this->child != nullptr) {
+	ChanceNode<Algorithm>::~ChanceNode()
+	{
+	    while (this->child != nullptr)
+	    {
 	        MatrixNode<Algorithm> *victim = this->child;
 	        this->child = this->child->next;
 	        delete victim;
-	    }
-	    if (this->prev != nullptr) {
-	        this->prev->next = this->next;
-	    }
-	    else if (this->parent != nullptr) {
-	        this->parent->child = this->next;
 	    }
 	};
 
@@ -458,3 +450,4 @@ Thus a simple way to ensure that everything is cleaned up is to instantiate the 
 	}
 
 The tree does not currently support more advanced memory management like pruning or hash tables.
+
