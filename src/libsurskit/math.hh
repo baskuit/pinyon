@@ -37,6 +37,11 @@ namespace math
         }
         std::cout << std::endl;
     }
+
+    template <typename Real>
+    Real sigmoid (Real x) {
+        return 1 / (1 + exp(x));
+    }
 }
 
 namespace Linear
