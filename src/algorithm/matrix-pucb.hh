@@ -5,27 +5,27 @@
 #include "libsurskit/random.hh"
 #include "libsurskit/math.hh"
 #include "libsurskit/gambit.hh"
-#include "state/test_states.hh"
+#include "state/test-states.hh"
 #include "algorithm.hh"
 #include "tree/tree.hh"
 
 /*
-MatrixUCB
+MatrixPUCB
 */
 
 template <class Model, template <class _Model, class _BanditAlgorithm> class _TreeBandit>
-class MatrixUCB : public _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>
+class MatrixPUCB : public _TreeBandit<Model, MatrixPUCB<Model, _TreeBandit>>
 {
 public:
     struct MatrixStats;
     struct ChanceStats;
-    struct Types : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>::Types
+    struct Types : _TreeBandit<Model, MatrixPUCB<Model, _TreeBandit>>::Types
     {
-        using MatrixStats = MatrixUCB::MatrixStats;
-        using ChanceStats = MatrixUCB::ChanceStats;
+        using MatrixStats = MatrixPUCB::MatrixStats;
+        using ChanceStats = MatrixPUCB::ChanceStats;
     };
 
-    struct MatrixStats : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>::MatrixStats
+    struct MatrixStats : _TreeBandit<Model, MatrixPUCB<Model, _TreeBandit>>::MatrixStats
     {
         int time = 0;
         typename Types::MatrixReal row_value_matrix;
@@ -36,20 +36,20 @@ public:
         typename Types::VectorReal col_strategy;
     };
 
-    struct ChanceStats : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>::ChanceStats
+    struct ChanceStats : _TreeBandit<Model, MatrixPUCB<Model, _TreeBandit>>::ChanceStats
     {
-        // int visits = 0;
-        // typename Types::Real row_value_total = 0;
-        // typename Types::Real col_value_total = 0;
+        int visits = 0;
+        typename Types::Real row_value_total = 0;
+        typename Types::Real col_value_total = 0;
     };
 
-    MatrixUCB () {}
+    MatrixPUCB () {}
 
-    MatrixUCB(typename Types::Real c_uct, typename Types::Real expl_threshold) : c_uct(c_uct), expl_threshold(expl_threshold) {}
+    MatrixPUCB(typename Types::Real c_uct, typename Types::Real expl_threshold) : c_uct(c_uct), expl_threshold(expl_threshold) {}
 
-    friend std::ostream &operator<<(std::ostream &os, const MatrixUCB &session)
+    friend std::ostream &operator<<(std::ostream &os, const MatrixPUCB &session)
     {
-        os << "MatrixUCB; c_uct: " << session.c_uct << ", expl_threshold: " << session.expl_threshold;
+        os << "MatrixPUCB; c_uct: " << session.c_uct << ", expl_threshold: " << session.expl_threshold;
         return os;
     }
 
@@ -61,20 +61,22 @@ public:
         int playouts,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<MatrixUCB> *matrix_node)
+        MatrixNode<MatrixPUCB> *matrix_node)
     {
         matrix_node->stats.time = playouts;
     }
 
     void get_strategies(
-        MatrixNode<MatrixUCB> *matrix_node,
+        MatrixNode<MatrixPUCB> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
         typename Types::MatrixReal row_ev_matrix(matrix_node->actions.rows, matrix_node->actions.cols);
         typename Types::MatrixReal col_ev_matrix(matrix_node->actions.rows, matrix_node->actions.cols);
         get_ev_matrix(
-            matrix_node,
+            matrix_node->stats.row_value_matrix,
+            matrix_node->stats.col_value_matrix,
+            matrix_node->stats.visit_matrix,
             row_ev_matrix,
             col_ev_matrix);
         LibGambit::solve_bimatrix<Types>(
@@ -87,7 +89,7 @@ public:
     void expand(
         typename Types::State &state,
         typename Types::Model model,
-        MatrixNode<MatrixUCB> *matrix_node)
+        MatrixNode<MatrixPUCB> *matrix_node)
     {
         matrix_node->is_expanded = true;
         state.get_actions();
@@ -122,10 +124,10 @@ public:
         matrix_node->stats.col_strategy.fill(cols, 1 / static_cast<typename Types::Real>(cols));
 
         // Calculate node's time parameter using parent's.
-        ChanceNode<MatrixUCB> *chance_parent = matrix_node->parent;
+        ChanceNode<MatrixPUCB> *chance_parent = matrix_node->parent;
         if (chance_parent != nullptr)
         {
-            MatrixNode<MatrixUCB> *matrix_parent = chance_parent->parent;
+            MatrixNode<MatrixPUCB> *matrix_parent = chance_parent->parent;
             int row_idx = chance_parent->row_idx;
             int col_idx = chance_parent->col_idx;
             typename Types::Real reach_probability =
@@ -140,7 +142,7 @@ public:
 
     void select(
         prng &device,
-        MatrixNode<MatrixUCB> *matrix_node,
+        MatrixNode<MatrixPUCB> *matrix_node,
         typename Types::Outcome &outcome)
     {
         typename Types::MatrixReal row_ucb_matrix(matrix_node->actions.rows, matrix_node->actions.cols);
@@ -167,7 +169,7 @@ public:
     }
 
     void update_matrix_node(
-        MatrixNode<MatrixUCB> *matrix_node,
+        MatrixNode<MatrixPUCB> *matrix_node,
         typename Types::Outcome &outcome)
     {
         matrix_node->stats.row_value_matrix.get(outcome.row_idx, outcome.col_idx) += outcome.row_value;
@@ -176,15 +178,12 @@ public:
     }
 
     void update_chance_node(
-        ChanceNode<MatrixUCB> *chance_node,
+        ChanceNode<MatrixPUCB> *chance_node,
         typename Types::Outcome &outcome)
     {
-        // chance_node->stats.row_value_total += outcome.row_value;
-        // chance_node->stats.col_value_total += outcome.col_value;
-        // ++chance_node->stats.visits;
     }
 
-// private:
+private:
     void get_ucb_matrix(
         MatrixNode<MatrixUCB> *matrix_node,
         typename Types::MatrixReal &row_ucb_matrix,
@@ -207,7 +206,8 @@ public:
                 n += (n == 0);
                 typename Types::Real a = u / n;
                 typename Types::Real b = v / n;
-                typename Types::Real const eta = this->c_uct * std::sqrt(num / n);
+                typename Types::Real const joint_prior = matrix_node->inference.row_policy[row_idx] * matrix_node->inference.col_policy[col_idx];
+                typename Types::Real const eta = this->c_uct * joint_prior * std::sqrt(num / n);
                 const typename Types::Real x = a + eta;
                 const typename Types::Real y = b + eta;
                 row_ucb_matrix.get(row_idx, col_idx) = x;

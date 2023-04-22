@@ -5,7 +5,7 @@
 #include "libsurskit/random.hh"
 #include "libsurskit/math.hh"
 #include "libsurskit/gambit.hh"
-#include "state/test_states.hh"
+#include "state/test-states.hh"
 #include "algorithm.hh"
 #include "tree/tree.hh"
 

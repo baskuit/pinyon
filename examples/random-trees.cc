@@ -1,10 +1,10 @@
 #include "model/model.hh" //TODO this must be first otherwise include error (algo.hh wants model.hh...) fix with cmake!!!
-#include "../random_trees/seed_state.hh"
+#include "../random_trees/seed-state.hh"
 #include "../random_trees/grow.hh"
-#include "../random_trees/tree_state.hh"
+#include "../random_trees/tree-state.hh"
 
 #include "libsurskit/math.hh"
-#include "algorithm/matrix_ucb.hh"
+#include "algorithm/matrix-ucb.hh"
 #include "algorithm/exp3p.hh"
 
 #include <iostream>

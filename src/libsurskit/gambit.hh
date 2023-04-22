@@ -3,7 +3,7 @@
 #include "math.hh"
 #include "gambit.h"
 #include "linalg/vertenum.imp"
-#include "state/test_states.hh"
+#include "state/test-states.hh"
 
 /*
 TODO:

@@ -163,6 +163,8 @@ public:
     {
         this->actions.rows = row_payoff_matrix.rows;
         this->actions.cols = col_payoff_matrix.cols;
+        this->actions.row_actions.fill(this->actions.rows);
+        this->actions.col_actions.fill(this->actions.cols);
         for (int i = 0; i < row_payoff_matrix.rows; ++i)
         {
             this->actions.row_actions[i] = i;
@@ -177,8 +179,8 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action)
     {
-        this->transition.prob = true; // hehe
-        this->transition.obs = 0;
+        // this->transition.prob = true; // hehe
+        // this->transition.obs = 0;
         this->is_terminal = true;
         this->row_payoff = row_payoff_matrix.get(row_action, col_action);
         this->col_payoff = col_payoff_matrix.get(row_action, col_action);

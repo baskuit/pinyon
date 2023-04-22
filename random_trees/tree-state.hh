@@ -1,7 +1,7 @@
 #pragma once
 
 #include "model/model.hh"
-#include "seed_state.hh"
+#include "seed-state.hh"
 #include "grow.hh"
 
 #include <memory>

@@ -1,8 +1,8 @@
-#include "state/test_states.hh"
+#include "state/test-states.hh"
 #include "model/model.hh"
 #include "algorithm/multithreaded.hh"
 #include "algorithm/exp3p.hh"
-#include "algorithm/matrix_ucb.hh"
+#include "algorithm/matrix-ucb.hh"
 #include <iostream>
 
 const int size = 2;

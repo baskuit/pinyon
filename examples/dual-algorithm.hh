@@ -1,8 +1,8 @@
 #include "libsurskit/random.hh"
 #include "../random_trees/tree_state.hh"
 #include "algorithm/exp3p.hh"
-#include "algorithm/matrix_ucb.hh"
-#include "algorithm/matrix_pucb.hh"
+#include "algorithm/matrix-ucb.hh"
+#include "algorithm/matrix-pucb.hh"
 #include "tree/tree.hh"
 
 #include <iostream>

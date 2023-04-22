@@ -1,9 +1,9 @@
-#include "state/test_states.hh"
+#include "state/test-states.hh"
 #include "model/model.hh"
 #include "algorithm/multithreaded.hh"
 #include "algorithm/exp3p.hh"
-#include "algorithm/matrix_ucb.hh"
-#include "algorithm/matrix_pucb.hh"
+#include "algorithm/matrix-ucb.hh"
+#include "algorithm/matrix-pucb.hh"
 
 #include <chrono>
 #include <fstream>

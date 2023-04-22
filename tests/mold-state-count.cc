@@ -2,10 +2,10 @@
 #include <assert.h>
 #include <iostream>
 
-#include "state/test_states.hh"
+#include "state/test-states.hh"
 #include "model/model.hh"
 #include "algorithm/exp3p.hh"
-#include "algorithm/matrix_ucb.hh"
+#include "algorithm/matrix-ucb.hh"
 #include "tree/tree.hh"
 
 #include <assert.h>
@@ -18,7 +18,7 @@ template <
     int playouts
 >
 void saturation_test() {
-    using MoldState = MoldStateVector<size>;
+    using MoldState = MoldState<size>;
     using Model = MonteCarloModel<MoldState>;
     using Algo = Algorithm<Model, TreeBandit>;
 
@@ -46,7 +46,7 @@ template <
     int playouts
 >
 void embedding_test() {
-    using MoldState = MoldStateVector<size>;
+    using MoldState = MoldState<size>;
     using Model = MonteCarloModel<MoldState>;
     using Algo = Algorithm<Model, TreeBandit>;
 
