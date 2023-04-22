@@ -13,8 +13,8 @@ Passes with size = 7, device seed = 0, n_matrices  = 10000
 However that takes several minutes, so we will reduce the size of the test.
 */
 
-constexpr int min_dim = 6;
-constexpr int size = 9;
+constexpr int min_dim = 1;
+constexpr int size = 6;
 
 using Types = TypeList<
     int,
