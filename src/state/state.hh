@@ -113,9 +113,20 @@ public:
         typename Types::Action col_action);
 };
 
+template <class TypeList>
+class SolvedState : public DefaultState<TypeList>
+{
+    static_assert(std::derived_from<TypeList, AbstractTypeList>);
+
+public:
+    struct Types : DefaultState<TypeList>::Types
+    {
+    };
+    typename Types::VectorReal row_strategy, col_strategy;
+};
+
 /*
-Handy alias.
-The Real number data type is assumed to be double and Vector, Matrix types are handled with Arrays.
+Handy aliases.
 */
 
 template <int size, typename Action, typename Observation, typename Probability>
@@ -141,18 +152,6 @@ using StateVector = DefaultState<TypeList<
     Vector<int>,
     Linear::MatrixVector<double>,
     Linear::MatrixVector<int>>>;
-
-template <class TypeList>
-class SolvedState : public DefaultState<TypeList>
-{
-    static_assert(std::derived_from<TypeList, AbstractTypeList>);
-
-public:
-    struct Types : DefaultState<TypeList>::Types
-    {
-    };
-    typename Types::VectorReal row_strategy, col_strategy;
-};
 
 template <int size, typename Action, typename Observation, typename Probability>
 using SolvedStateArray = SolvedState<TypeList<
