@@ -81,16 +81,38 @@ public:
     //     is_terminal = true;
     // }
 
-    int count()
+    int count_siblings()
+    {
+        int c = 0;
+        MatrixNode<Algorithm> *current = this->next;
+        while (current != nullptr)
+        {
+            ++c;
+            current = current->next;
+        }
+        return c;
+    }
+
+    int count_matrix_nodes()
     {
         int c = 1;
         ChanceNode<Algorithm> *current = this->child;
         while (current != nullptr)
         {
-            c += current->count();
+            c += current->count_matrix_nodes();
             current = current->next;
         }
         return c;
+    }
+
+    void spot_delete () {
+        if (this->prev != nullptr) {
+            this->prev->next = this->next;
+        }
+        else if (this->parent != nullptr) {
+            this->parent->child = this->next;
+        }
+        delete this;
     }
 };
 
@@ -144,13 +166,25 @@ public:
         return child;
     };
 
-    int count()
+    int count_matrix_nodes()
     {
         int c = 0;
         MatrixNode<Algorithm> *current = this->child;
         while (current != nullptr)
         {
-            c += current->count();
+            c += current->count_matrix_nodes();
+            current = current->next;
+        }
+        return c;
+    }
+
+    int count_siblings()
+    {
+        int c = 0;
+        ChanceNode<Algorithm> *current = this->next;
+        while (current != nullptr)
+        {
+            ++c;
             current = current->next;
         }
         return c;
@@ -167,6 +201,16 @@ public:
         }
         return total;
     }
+
+    void spot_delete () {
+        if (this->prev != nullptr) {
+            this->prev->next = this->next;
+        }
+        else if (this->parent != nullptr) {
+            this->parent->child = this->next;
+        }
+        delete this;
+    }
 };
 
 // We have to hold off on destructor definitions until here
@@ -174,20 +218,11 @@ public:
 template <typename Algorithm>
 MatrixNode<Algorithm>::~MatrixNode()
 {
-
     while (this->child != nullptr)
     {
         ChanceNode<Algorithm> *victim = this->child;
         this->child = this->child->next;
         delete victim;
-    }
-    if (this->prev != nullptr)
-    {
-        this->prev->next = this->next;
-    }
-    else if (this->parent != nullptr)
-    {
-        this->parent->child = this->next;
     }
 }
 
@@ -199,13 +234,5 @@ ChanceNode<Algorithm>::~ChanceNode()
         MatrixNode<Algorithm> *victim = this->child;
         this->child = this->child->next;
         delete victim;
-    }
-    if (this->prev != nullptr)
-    {
-        this->prev->next = this->next;
-    }
-    else if (this->parent != nullptr)
-    {
-        this->parent->child = this->next;
     }
 };
