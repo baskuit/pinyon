@@ -185,7 +185,7 @@ public:
 
 private:
     void get_ucb_matrix(
-        MatrixNode<MatrixUCB> *matrix_node,
+        MatrixNode<MatrixPUCB> *matrix_node,
         typename Types::MatrixReal &row_ucb_matrix,
         typename Types::MatrixReal &col_ucb_matrix)
     {
@@ -217,7 +217,7 @@ private:
     }
 
     void get_ev_matrix(
-        MatrixNode<MatrixUCB> *matrix_node,
+        MatrixNode<MatrixPUCB> *matrix_node,
         typename Types::MatrixReal &row_ev_matrix,
         typename Types::MatrixReal &col_ev_matrix)
     {
