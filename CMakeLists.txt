@@ -2,26 +2,11 @@ cmake_minimum_required(VERSION 3.1.0)
 project(surskit VERSION 0.1.0)
 set (CMAKE_CXX_STANDARD 20)
 
-set(GAMBIT_SOURCES
-    gambit/src/core/matrix.cc
-    gambit/src/core/vector.cc
-
-    gambit/src/linalg/basis.cc
-    gambit/src/linalg/btableau.cc
-    gambit/src/linalg/lpsolve.cc
-    gambit/src/linalg/lptab.cc
-    gambit/src/linalg/ludecomp.cc
-    gambit/src/linalg/tableau.cc
-)
-
 include_directories(
     src
-	gambit/src
-	gambit/src/core
-	gambit/src/linalg
 )
 
-add_library(gambit STATIC ${GAMBIT_SOURCES})
+add_subdirectory(gambit) # creats static library 'gambit'
 
 # Examples
 file(GLOB EXAMPLES examples/*.cc)
