@@ -5,7 +5,8 @@
 
 #include <iostream>
 
-int main () {
+int main()
+{
 
     const int MaxActions = 3;
     const int MaxTransitions = 2;
@@ -28,13 +29,15 @@ int main () {
     session2.grow(state, model, &root2);
     root2.stats.nash_payoff_matrix.print();
 
-    for (int j = 0; j < 3; ++j) {
-    for (int i = 0; i < 3; ++i) {
-        auto state_copy = state;
-        state_copy.get_actions();
-        state_copy.apply_actions(j, i);
-        std::cout << state_copy.row_payoff << '\n';
-    }
+    for (int j = 0; j < 3; ++j)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            auto state_copy = state;
+            state_copy.get_actions();
+            state_copy.apply_actions(j, i, 0);
+            std::cout << state_copy.row_payoff << '\n';
+        }
     } // Clearly shows what's wrong!
 
     return 0;

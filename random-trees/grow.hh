@@ -36,8 +36,8 @@ public:
     };
     struct ChanceStats : AbstractAlgorithm<Model>::ChanceStats
     {
-        std::vector<typename Types::Observation> chance_actions;
-        std::vector<typename Types::Real> transition_probs;
+        std::vector<typename Types::Observation> chance_actions; // we use vector here since this is general
+        std::vector<typename Types::Probability> transition_probs;
     };
 
     int max_depth = -1;
@@ -97,12 +97,11 @@ public:
 
                     grow(state_copy, model, matrix_node_next);
 
-                    matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx) = matrix_node_next->inference.row_value;
+                    matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx) += matrix_node_next->inference.row_value * matrix_node_next->transition.prob;
                     matrix_node->stats.matrix_node_count += matrix_node_next->stats.matrix_node_count;
                 }
             }
         }
-
 
         LibGambit::solve_matrix<Types>(
             matrix_node->stats.nash_payoff_matrix,
@@ -116,6 +115,7 @@ public:
                     matrix_node->inference.row_policy[row_idx] *
                     matrix_node->inference.col_policy[col_idx] *
                     matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx);
+                matrix_node->inference.col_value = 1 - matrix_node->inference.row_value;
             }
         }
         return;
