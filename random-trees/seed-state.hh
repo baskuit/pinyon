@@ -26,16 +26,21 @@ public:
     int rows = MaxActions;
     int cols = MaxActions;
     int payoff_bias = 0;
-    std::vector<typename Types::Probablity> transition_probs;
-    typename Types::Probability transition_threshold = 1 / MaxActions;
+    std::array<typename Types::Probability, MaxTransitions> transition_probs;
+    typename Types::Probability transition_threshold = Rational(1, MaxTransitions);
 
     int (*depth_bound_func)(prng &, int) = nullptr;
     int (*actions_func)(prng &, int) = nullptr;
 
-    SeedState(prng &device, int depth_bound, int rows, int cols, int (*depth_bound_func)(prng &, int), int (*actions_func)(prng &, int) ) : 
-        device(device), depth_bound(depth_bound), rows(rows), cols(cols), depth_bound_func(depth_bound_func), actions_func(actions_func)
+    SeedState(
+        prng &device, 
+        int depth_bound, 
+        int rows, 
+        int cols, 
+        int (*depth_bound_func)(prng &, int), 
+        int (*actions_func)(prng &, int))
+            : device(device), depth_bound(depth_bound), rows(rows), cols(cols), depth_bound_func(depth_bound_func), actions_func(actions_func)
     {
-        transition_probs.fill(MaxTransitions);
         if (this->depth_bound_func == nullptr)
         {
             this->depth_bound_func = &(SeedState::dbf);
@@ -44,6 +49,7 @@ public:
         {
             this->actions_func = &(SeedState::af);
         }
+        get_transition_probs(device, transition_probs);
     }
 
     void get_actions()
@@ -92,17 +98,17 @@ public:
         } else {
             rows = (*this->actions_func)(device, rows);
             cols = (*this->actions_func)(device, cols);
-            payoff_bias += device.randint(3) - 1; // adds -1, 0, or 1
+            payoff_bias += device.random_int(3) - 1; // adds -1, 0, or 1
             get_transition_probs(device, transition_probs);
         }
     }
 
     // SeedState is only used to generate a TreeState, and the grow algorithm only calls the other apply_actions
-    // void apply_actions(int row_action, int col_action)
-    // {
-    //     int obs = device.sample_pdf(transition_probs, MaxTransitions);
-    //     apply_actions(row_action, col_action, obs);
-    // }
+    void apply_actions(int row_action, int col_action)
+    {
+        int obs = device.sample_pdf(transition_probs, MaxTransitions);
+        apply_actions(row_action, col_action, obs);
+    }
 
     /*
     Defaults
@@ -116,7 +122,9 @@ public:
     {
         return n_actions;
     }
-    static void get_transition_probs (prng &device, typename Types::VectorReal &output) {
+
+// private:
+    void get_transition_probs (prng &device, std::array<typename Types::Probability, MaxTransitions> &output) {
         typename Types::Real prob_sum = 0;
         for (int i = 0; i < MaxTransitions; ++i) { // does static function play well with Template param?
             const typename Types::Real p = device.uniform();
