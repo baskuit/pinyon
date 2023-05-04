@@ -199,7 +199,26 @@ public:
         typename Types::Observation chance_action);
 };
 
-/*
-Tests:
-Initializing ToyStates with different type lists to make sure std::vector and cheeky bool/rational implementations are working.
-*/
+template <typename Action, typename Observation, typename Probability>
+using StateChanceArray = StateChance<TypeList<
+    Action,
+    Observation,
+    Probability,
+    double,
+    Array<Action, size>,
+    Array<double, size>,
+    Array<int, size>,
+    Linear::Matrix<double, size>,
+    Linear::Matrix<int, size>>>;
+
+template <typename Action, typename Observation, typename Probability>
+using StateChanceVector = StateChance<TypeList<
+    Action,
+    Observation,
+    Probability,
+    double,
+    Vector<Action>,
+    Vector<double>,
+    Vector<int>,
+    Linear::MatrixVector<double>,
+    Linear::MatrixVector<int>>>;
