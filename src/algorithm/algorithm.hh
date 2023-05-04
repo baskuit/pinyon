@@ -139,7 +139,7 @@ protected:
         return static_cast<Algorithm *>(this)->expand(
             state,
             model,
-            matrix_node);
+            matrix_node); // TODO consider adding inference code here. It's all the same
     }
     void _update_matrix_node(
         MatrixNode<Algorithm> *matrix_node,
