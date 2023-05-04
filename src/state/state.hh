@@ -113,6 +113,10 @@ public:
         typename Types::Action col_action);
 };
 
+/*
+State with known a Nash equilibrium. Payoffs are assumed to be defined and Nash as well.
+*/
+
 template <class TypeList>
 class SolvedState : public DefaultState<TypeList>
 {
@@ -123,6 +127,32 @@ public:
     {
     };
     typename Types::VectorReal row_strategy, col_strategy;
+};
+
+/*
+This represents states that accept input for the chance player.
+Since this uses Obs as chance action, this must be fully observed.
+
+Currently not used by any Search algorithms, but I have ideas.
+*/
+
+template <class TypeList>
+class StateChance : public DefaultState<TypeList>
+{
+    static_assert(std::derived_from<TypeList, AbstractTypeList>);
+
+public:
+    struct Types : DefaultState<TypeList>::Types
+    {
+    };
+    void get_chance_actions(
+        std::vector<typename Types::Observation> &chance_actions,
+        typename Types::Action row_action,
+        typename Types::Action col_action);
+    void apply_actions(
+        typename Types::Action row_action,
+        typename Types::Action col_action,
+        typename Types::Observation chance_action);
 };
 
 /*
@@ -177,29 +207,7 @@ using SolvedStateVector = SolvedState<TypeList<
     Linear::MatrixVector<double>,
     Linear::MatrixVector<int>>>;
 
-/*
-This represents states that accept input for the chance player.
-Since this uses Obs as chance action, this must be fully observed.
-
-Currently not used by any Search algorithms, but I have ideas.
-*/
-
-template <class TypeList>
-class StateChance : public DefaultState<TypeList>
-{
-    static_assert(std::derived_from<TypeList, AbstractTypeList>);
-
-public:
-    struct Types : DefaultState<TypeList>::Types
-    {
-    };
-    void apply_actions(
-        typename Types::Action row_action,
-        typename Types::Action col_action,
-        typename Types::Observation chance_action);
-};
-
-template <typename Action, typename Observation, typename Probability>
+template <int size, typename Action, typename Observation, typename Probability>
 using StateChanceArray = StateChance<TypeList<
     Action,
     Observation,
