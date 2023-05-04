@@ -1,6 +1,7 @@
 #include "seed-state.hh"
 #include "model/model.hh"
 #include "algorithm/exp3p.hh"
+#include "grow.hh"
 
 #include <iostream>
 
@@ -20,7 +21,11 @@ int main () {
     Algorithm session;
     MatrixNode<Algorithm> root;
 
-    session.run(1000, device, state, model, root);
+    // session.run(1000000, device, state, model, root);
 
+    Grow<Model> session2;
+    MatrixNode<Grow<Model>> root2;
+    session2.grow(state, model, &root2);
+root2.stats.nash_payoff_matrix.print();
     return 0;
 }

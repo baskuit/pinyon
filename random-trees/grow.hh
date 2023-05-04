@@ -93,7 +93,7 @@ public:
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, chance_action);
                     MatrixNode<Grow> *matrix_node_next = chance_node->access(state_copy.transition); // TODO make sure seed state is getting transition object updated
-                    matrix_node_next->stats = matrix_node->stats + 1;
+                    matrix_node_next->stats.depth = matrix_node->stats.depth + 1;
 
                     grow(state_copy, model, matrix_node_next);
 
@@ -106,15 +106,15 @@ public:
 
         LibGambit::solve_matrix<Types>(
             matrix_node->stats.nash_payoff_matrix,
-            matrix_node->stats.row_solution,
-            matrix_node->stats.col_solution);
+            matrix_node->inference.row_policy,
+            matrix_node->inference.col_policy);
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                matrix_node->stats.nash_payoff +=
-                    matrix_node->stats.row_solution[row_idx] *
-                    matrix_node->stats.col_solution[col_idx] *
+                matrix_node->inference.row_value +=
+                    matrix_node->inference.row_policy[row_idx] *
+                    matrix_node->inference.col_policy[col_idx] *
                     matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx);
             }
         }

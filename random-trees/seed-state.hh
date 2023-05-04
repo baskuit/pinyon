@@ -86,6 +86,7 @@ public:
         device.discard(obs); // advance the prng
         depth_bound = (*depth_bound_func)(this->device, this->depth_bound);
         depth_bound *= depth_bound >= 0;
+        payoff_bias += device.random_int(3) - 1; // adds -1, 0, or 1
         if (depth_bound == 0)
         {
             this->is_terminal = true;
@@ -98,7 +99,6 @@ public:
         } else {
             rows = (*this->actions_func)(device, rows);
             cols = (*this->actions_func)(device, cols);
-            payoff_bias += device.random_int(3) - 1; // adds -1, 0, or 1
             get_transition_probs(device, transition_probs);
         }
     }
