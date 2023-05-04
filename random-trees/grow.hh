@@ -22,15 +22,22 @@ class Grow : public AbstractAlgorithm<Model>
 
 public:
     struct MatrixStats;
+    struct ChanceStats;
     struct Types : AbstractAlgorithm<Model>::Types
     {
         using MatrixStats = Grow::MatrixStats;
+        using ChanceStats = Grow::ChanceStats;
     };
     struct MatrixStats : AbstractAlgorithm<Model>::MatrixStats
     {
         typename Types::MatrixReal nash_payoff_matrix;
         int matrix_node_count = 1;
         int depth = 0;
+    };
+    struct ChanceStats : AbstractAlgorithm<Model>::ChanceStats
+    {
+        std::vector<typename Types::Observation> chance_actions;
+        std::vector<typename Types::Real> transition_probs;
     };
 
     int max_depth = -1;
@@ -67,7 +74,7 @@ public:
 
         matrix_node->stats.nash_payoff_matrix.rows = rows;
         matrix_node->stats.nash_payoff_matrix.cols = cols;
-        matrix_node->stats.nash_payoff_matrix.fill(rows, cols);
+        matrix_node->stats.nash_payoff_matrix.fill(rows, cols); // TODO change matrix fill methods to change rows, cols automatically.
 
         // recurse
         for (int row_idx = 0; row_idx < rows; ++row_idx)
@@ -96,27 +103,22 @@ public:
             }
         }
 
-        // solve
-        if (matrix_node->is_terminal)
+
+        LibGambit::solve_matrix<Types>(
+            matrix_node->stats.nash_payoff_matrix,
+            matrix_node->stats.row_solution,
+            matrix_node->stats.col_solution);
+        for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            matrix_node->stats.nash_payoff = state.row_payoff;
-        }
-        else
-        {
-            LibGambit::solve_matrix<Types>(
-                matrix_node->stats.nash_payoff_matrix,
-                matrix_node->stats.row_solution,
-                matrix_node->stats.col_solution);
-            for (int row_idx = 0; row_idx < rows; ++row_idx)
+            for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                for (int col_idx = 0; col_idx < cols; ++col_idx)
-                {
-                    matrix_node->stats.nash_payoff +=
-                        matrix_node->stats.row_solution[row_idx] *
-                        matrix_node->stats.col_solution[col_idx] *
-                        matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx);
-                }
+                matrix_node->stats.nash_payoff +=
+                    matrix_node->stats.row_solution[row_idx] *
+                    matrix_node->stats.col_solution[col_idx] *
+                    matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx);
             }
         }
+        return;
     }
+
 };
