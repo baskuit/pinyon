@@ -31,6 +31,7 @@ public:
 
     int (*depth_bound_func)(prng &, int) = nullptr;
     int (*actions_func)(prng &, int) = nullptr;
+    int (*payoff_bias_func)(prng &, int) = nullptr;
 
     SeedState(
         prng &device, 
@@ -38,8 +39,9 @@ public:
         int rows, 
         int cols, 
         int (*depth_bound_func)(prng &, int), 
-        int (*actions_func)(prng &, int))
-            : device(device), depth_bound(depth_bound), rows(rows), cols(cols), depth_bound_func(depth_bound_func), actions_func(actions_func)
+        int (*actions_func)(prng &, int),
+        int (*payoff_bias_func)(prng &, int))
+            : device(device), depth_bound(depth_bound), rows(rows), cols(cols), depth_bound_func(depth_bound_func), actions_func(actions_func), payoff_bias_func(payoff_bias_func)
     {
         if (this->depth_bound_func == nullptr)
         {
@@ -48,6 +50,10 @@ public:
         if (this->actions_func == nullptr)
         {
             this->actions_func = &(SeedState::af);
+        }
+        if (this->payoff_bias_func == nullptr)
+        {
+            this->payoff_bias_func = &(SeedState::pbf);
         }
         get_transition_probs(device, transition_probs);
     }
@@ -83,10 +89,13 @@ public:
 
     void apply_actions(int row_action, int col_action, int obs) // now a StateChance object
     {
-        device.discard(obs); // advance the prng
+        const int simulated_rng_steps = obs * rows * cols + row_action * cols + col_action;
+        device.discard(simulated_rng_steps); // advance the prng so that different player/chance actions have different outcomes.
+
         depth_bound = (*depth_bound_func)(this->device, this->depth_bound);
         depth_bound *= depth_bound >= 0;
-        payoff_bias += device.random_int(3) - 1; // adds -1, 0, or 1
+        payoff_bias = (*payoff_bias_func)(this->device, this->payoff_bias); // by default, adds -1, 0, or 1
+
         if (depth_bound == 0)
         {
             this->is_terminal = true;
@@ -121,6 +130,10 @@ public:
     static int af(prng &device, int n_actions)
     {
         return n_actions;
+    }
+    static int pbf(prng &device, int payoff_bias)
+    {
+        return payoff_bias + device.random_int(3) - 1;
     }
 
 // private:
