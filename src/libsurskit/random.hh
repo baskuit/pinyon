@@ -30,11 +30,13 @@ public:
         return seed;
     }
 
+    // Uniform random in (0, 1)
     double uniform()
     {
         return uniform_(engine);
     }
 
+    // Random integer in [0, n]
     int random_int(int n)
     {
         return int(this->uniform() * n);
