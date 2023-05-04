@@ -60,4 +60,8 @@ public:
         }
         return 0;
     }
+
+    void discard (int n) {
+        engine.discard(n);
+    }
 };
