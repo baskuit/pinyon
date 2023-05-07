@@ -4,6 +4,7 @@
 #include "libsurskit/random.hh"
 
 #include <vector>
+#include <span>
 
 /*
 SeedState contains just enough info to pseudo-randomly expand to a recursively solved game tree.
@@ -26,7 +27,9 @@ public:
     int rows = MaxActions;
     int cols = MaxActions;
     int payoff_bias = 0;
-    std::array<typename Types::Probability, MaxTransitions> transition_probs;
+    std::vector<typename Types::Probability> transition_strategies;
+    std::array<typename Types::Probability, MaxTransitions> transition_strategy;
+    
     typename Types::Probability transition_threshold = Rational(1, MaxTransitions);
 
     int (*depth_bound_func)(prng &, int) = nullptr;
@@ -55,8 +58,26 @@ public:
         {
             this->payoff_bias_func = &(SeedState::pbf);
         }
-        get_transition_probs(device, transition_probs);
+        get_transition_strategies(device, transition_strategies);
     }
+
+    // SeedState(
+    //     prng &device, 
+    //     int depth_bound, 
+    //     int rows, 
+    //     int cols, 
+    //     int (*depth_bound_func)(prng &, int)=nullptr, 
+    //     int (*actions_func)(prng &, int)=nullptr,
+    //     int (*payoff_bias_func)(prng &, int)=nullptr) :
+    //         device(device), 
+    //         depth_bound(depth_bound), 
+    //         rows(rows), 
+    //         cols(cols), 
+    //         depth_bound_func(depth_bound_func), 
+    //         actions_func(actions_func), 
+    //         payoff_bias_func(payoff_bias_func)
+    // {
+    // }
 
     void get_actions()
     {
@@ -80,17 +101,21 @@ public:
         typename Types::Action col_action) 
     {
         chance_actions.clear();
+        const int transition_idx = get_transition_idx(row_action, col_action, 0);
         for (int chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx) {
-            if (transition_probs[chance_idx] > 0) {
+            if (transition_strategies[transition_idx + chance_idx] > 0) {
                 chance_actions.push_back(chance_idx);
             }
         }
     }
 
-    void apply_actions(int row_action, int col_action, int obs) // now a StateChance object
+    void apply_actions(int row_action, int col_action, int chance_action) // now a StateChance object
     {
-        const int simulated_rng_steps = obs * rows * cols + row_action * cols + col_action;
-        device.discard(simulated_rng_steps); // advance the prng so that different player/chance actions have different outcomes.
+        const int transition_idx = get_transition_idx(row_action, col_action, chance_action);
+        device.discard(transition_idx); // advance the prng so that different player/chance actions have different outcomes.
+
+        this->transition.obs = chance_action;
+        this->transition.prob = transition_strategies[transition_idx];
 
         depth_bound = (*depth_bound_func)(this->device, this->depth_bound);
         depth_bound *= depth_bound >= 0;
@@ -99,24 +124,26 @@ public:
         if (depth_bound == 0)
         {
             this->is_terminal = true;
-            const double sigsum_bias = (payoff_bias > 0) - (payoff_bias < 0);
+            const typename Types::Real sigsum_bias = (payoff_bias > 0) - (payoff_bias < 0);
             this->row_payoff = (sigsum_bias + 1) / 2;
             this->col_payoff = 1.0 - this->row_payoff;
-            rows = 0;
-            cols = 0;
-            // change device based on obs
         } else {
             rows = (*this->actions_func)(device, rows);
             cols = (*this->actions_func)(device, cols);
-            get_transition_probs(device, transition_probs);
+            get_transition_strategies(device, transition_strategies);
         }
     }
 
     // SeedState is only used to generate a TreeState, and the grow algorithm only calls the other apply_actions
     void apply_actions(int row_action, int col_action)
     {
-        int obs = device.sample_pdf(transition_probs, MaxTransitions);
-        apply_actions(row_action, col_action, obs);
+        const int transition_idx = get_transition_idx(row_action, col_action, 0);
+        std::copy_n(
+            transition_strategies.begin() + transition_idx, 
+            MaxTransitions,
+            transition_strategy.begin());
+        int chance_action = device.sample_pdf(transition_strategy, MaxTransitions);
+        apply_actions(row_action, col_action, chance_action);
     }
 
     /*
@@ -137,24 +164,40 @@ public:
     }
 
 // private:
-    void get_transition_probs (prng &device, std::array<typename Types::Probability, MaxTransitions> &output) {
-        typename Types::Real prob_sum = 0;
-        for (int i = 0; i < MaxTransitions; ++i) { // does static function play well with Template param?
-            const typename Types::Real p = device.uniform();
-            output[i] = p;
-            prob_sum += p;
-        }
-        typename Types::Real new_prob_sum = 0;
-        for (int i = 0; i < MaxTransitions; ++i) {
-            typename Types::Real &p = output[i];
-            p /= prob_sum;
-            if (p < transition_threshold) {
-                p = 0;
+    void get_transition_strategies (prng &device, std::vector<typename Types::Probability> &output) {
+
+        output.clear();
+        std::array<typename Types::Probability, MaxTransitions> chance_strategy; 
+
+        for (int joint_idx = 0; joint_idx < rows * cols; ++joint_idx) {
+
+            // get unnormalized distro
+            typename Types::Probability prob_sum = 0;
+            for (int i = 0; i < MaxTransitions; ++i) { 
+                const typename Types::Probability p = device.uniform(); // double to rational conversion?
+                chance_strategy[i] = p;
+                prob_sum += p;
             }
-            new_prob_sum += p;
+            
+            // clip and compute new norm
+            typename Types::Probability new_prob_sum = 0;
+            for (int i = 0; i < MaxTransitions; ++i) {
+                typename Types::Probability &p = chance_strategy[i];
+                p /= prob_sum;
+                if (p < transition_threshold) {
+                    p = 0;
+                }
+                new_prob_sum += p;
+            }
+
+            // append final renormalized strategy
+            for (int i = 0; i < MaxTransitions; ++i) {
+                output.push_back(chance_strategy[i] / new_prob_sum);
+            }
         }
-        for (int i = 0; i < MaxTransitions; ++i) {
-            output[i] /= new_prob_sum;
-        }
+    }
+
+    inline int get_transition_idx (int row_idx, int col_idx, int chance_idx) {
+        return row_idx * cols * MaxTransitions + col_idx * (MaxTransitions) + chance_idx;
     }
 };
