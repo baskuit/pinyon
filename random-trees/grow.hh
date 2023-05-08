@@ -77,7 +77,7 @@ public:
 
         matrix_node->stats.nash_payoff_matrix.rows = rows;
         matrix_node->stats.nash_payoff_matrix.cols = cols;
-        matrix_node->stats.nash_payoff_matrix.fill(rows, cols); // TODO change matrix fill methods to change rows, cols automatically.
+        matrix_node->stats.nash_payoff_matrix.fill(rows, cols, 0); // TODO change matrix fill methods to change rows, cols automatically.
 
         // recurse
         for (int row_idx = 0; row_idx < rows; ++row_idx)
@@ -110,6 +110,7 @@ public:
             matrix_node->stats.nash_payoff_matrix,
             matrix_node->inference.row_policy,
             matrix_node->inference.col_policy);
+        matrix_node->inference.row_value = 0;
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)
