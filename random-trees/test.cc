@@ -28,8 +28,8 @@ void print_matrix (MatrixNode<Algorithm> *matrix_node) {
 int main()
 {
 
-    const int MaxActions = 3;
-    const int MaxTransitions = 2;
+    const int MaxActions = 2;
+    const int MaxTransitions = 1;
 
     using SeedState = SeedState<MaxActions, MaxTransitions>;
     using Model = MonteCarloModel<SeedState>;
@@ -38,10 +38,10 @@ int main()
     using Algorithm = MatrixUCB;
 
     prng init_device;
-    int seed = 76874;//init_device.random_int(100000);
+    int seed = 0;//init_device.random_int(100000);
     prng device(seed);
 
-    SeedState state(device, 2, 3, 3, nullptr, nullptr, nullptr);
+    SeedState state(device, 1, MaxActions, MaxActions, nullptr, nullptr, nullptr);
     Model model(device);
 
     // Algorithm session;
@@ -69,14 +69,13 @@ int main()
     auto row_solution = grow_root.inference.row_policy;
     auto col_solution = grow_root.inference.col_policy;
 
-    std::cout << "node count: " << grow_root.stats.matrix_node_count << '\n';
     std::cout << "row payoff matrix:\n";
     SeedState::Types::MatrixReal row_payoff_matrix = grow_root.stats.nash_payoff_matrix;
     SeedState::Types::MatrixReal col_payoff_matrix = row_payoff_matrix * -1 + 1;
     row_payoff_matrix.print();
     std::cout << "solutions:\n";
-    math::print(row_solution, 3);
-    math::print(col_solution, 3);
+    math::print(row_solution, MaxActions);
+    math::print(col_solution, MaxActions);
 
     
 
@@ -85,13 +84,7 @@ int main()
     //     col_payoff_matrix, 
     //     row_strategy, 
     //     col_strategy);
-    std::cout << "session expl: " << expl << '\n';
-
-    for (auto c :state.transition_strategies) {
-        std::cout << c << ' ';
-    }
-    std::cout << std::endl;
-    std::cout << "seed: " << seed << std::endl;
+    // std::cout << "session expl: " << expl << '\n';
 
     
 

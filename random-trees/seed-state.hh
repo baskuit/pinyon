@@ -36,6 +36,12 @@ public:
     int (*actions_func)(prng &, int) = nullptr;
     int (*payoff_bias_func)(prng &, int) = nullptr;
 
+    double device_uniform () {
+        double x = this->device.uniform();
+        // std::cout << '!' << x << std::endl;
+        return x;
+    }
+
     SeedState(
         prng &device, 
         int depth_bound, 
@@ -46,38 +52,20 @@ public:
         int (*payoff_bias_func)(prng &, int))
             : device(device), depth_bound(depth_bound), rows(rows), cols(cols), depth_bound_func(depth_bound_func), actions_func(actions_func), payoff_bias_func(payoff_bias_func)
     {
-        if (this->depth_bound_func == nullptr)
+        if (depth_bound_func == nullptr)
         {
-            this->depth_bound_func = &(SeedState::dbf);
+           this->depth_bound_func = &(SeedState::dbf);
         }
-        if (this->actions_func == nullptr)
+        if (actions_func == nullptr)
         {
             this->actions_func = &(SeedState::af);
         }
-        if (this->payoff_bias_func == nullptr)
+        if (payoff_bias_func == nullptr)
         {
             this->payoff_bias_func = &(SeedState::pbf);
         }
         get_transition_strategies(device, transition_strategies);
     }
-
-    // SeedState(
-    //     prng &device, 
-    //     int depth_bound, 
-    //     int rows, 
-    //     int cols, 
-    //     int (*depth_bound_func)(prng &, int)=nullptr, 
-    //     int (*actions_func)(prng &, int)=nullptr,
-    //     int (*payoff_bias_func)(prng &, int)=nullptr) :
-    //         device(device), 
-    //         depth_bound(depth_bound), 
-    //         rows(rows), 
-    //         cols(cols), 
-    //         depth_bound_func(depth_bound_func), 
-    //         actions_func(actions_func), 
-    //         payoff_bias_func(payoff_bias_func)
-    // {
-    // }
 
     void get_actions()
     {
@@ -160,7 +148,10 @@ public:
     }
     static int pbf(prng &device, int payoff_bias)
     {
-        return payoff_bias + device.random_int(3) - 1;
+        // std::cout << '#' << device.engine() << std::endl;
+        int bias_inc = device.random_int(3) - 1;
+        std::cout << '@' << bias_inc << std::endl;
+        return payoff_bias + bias_inc;
     }
 
 // private:
@@ -174,7 +165,7 @@ public:
             // get unnormalized distro
             typename Types::Probability prob_sum = 0;
             for (int i = 0; i < MaxTransitions; ++i) { 
-                const typename Types::Probability p = device.uniform(); // double to rational conversion?
+                const typename Types::Probability p = device.uniform();
                 chance_strategy[i] = p;
                 prob_sum += p;
             }
