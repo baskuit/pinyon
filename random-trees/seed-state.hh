@@ -142,7 +142,7 @@ public:
             transition_strategies.begin() + transition_idx, 
             MaxTransitions,
             transition_strategy.begin());
-        int chance_action = device.sample_pdf(transition_strategy, MaxTransitions);
+        int chance_action = 0; // device.sample_pdf(transition_strategy, MaxTransitions);
         apply_actions(row_action, col_action, chance_action);
     }
 
