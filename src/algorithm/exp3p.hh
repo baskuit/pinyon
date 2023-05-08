@@ -207,6 +207,25 @@ public:
         chance_node->stats.visits += 1;
     }
 
+    void get_ev_matrix(
+        MatrixNode<Exp3p> *matrix_node,
+        typename Types::MatrixReal &row_ev_matrix,
+        typename Types::MatrixReal &col_ev_matrix)
+    {
+        ChanceNode<Exp3p> *chance_node = matrix_node->root;
+        while (chance_node != nullptr) {
+            const int row_idx = chance_node->row_idx;
+            const int col_idx = chance_node->col_idx;
+
+            int visits = chance_node->stats.visits;
+            if (visits > 0) {
+                row_ev_matrix.get(row_idx, col_idx) = chance_node->stats.row_value_total / visits;
+                col_ev_matrix.get(row_idx, col_idx) = chance_node->stats.col_value_total / visits;
+            }
+            chance_node = chance_node->next;
+        }
+    }
+
 private:
     inline void softmax(
         typename Types::VectorReal &forecast,
