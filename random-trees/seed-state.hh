@@ -38,7 +38,6 @@ public:
 
     double device_uniform () {
         double x = this->device.uniform();
-        // std::cout << '!' << x << std::endl;
         return x;
     }
 
@@ -64,7 +63,7 @@ public:
         {
             this->payoff_bias_func = &(SeedState::pbf);
         }
-        get_transition_strategies(device, transition_strategies);
+        get_transition_strategies(this->device, transition_strategies);
     }
 
     void get_actions()
@@ -100,7 +99,7 @@ public:
     void apply_actions(int row_action, int col_action, int chance_action) // now a StateChance object
     {
         const int transition_idx = get_transition_idx(row_action, col_action, chance_action);
-        device.discard(transition_idx); // advance the prng so that different player/chance actions have different outcomes.
+        this->device.discard(transition_idx); // advance the prng so that different player/chance actions have different outcomes.
 
         this->transition.obs = chance_action;
         this->transition.prob = transition_strategies[transition_idx];
@@ -116,9 +115,9 @@ public:
             this->row_payoff = (sigsum_bias + 1) / 2;
             this->col_payoff = 1.0 - this->row_payoff;
         } else {
-            rows = (*this->actions_func)(device, rows);
-            cols = (*this->actions_func)(device, cols);
-            get_transition_strategies(device, transition_strategies);
+            rows = (*this->actions_func)(this->device, rows);
+            cols = (*this->actions_func)(this->device, cols);
+            get_transition_strategies(this->device, transition_strategies);
         }
     }
 
