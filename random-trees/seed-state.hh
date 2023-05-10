@@ -27,29 +27,29 @@ public:
     int rows = MaxActions;
     int cols = MaxActions;
     int payoff_bias = 0;
-    std::vector<typename Types::Probability> transition_strategies;
-    std::array<typename Types::Probability, MaxTransitions> transition_strategy;
-    
-    typename Types::Probability transition_threshold = Rational(1, MaxTransitions);
+    std::array<typename Types::Probability, MaxActions * MaxActions * MaxTransitions> chance_strategies;
+    std::array<typename Types::Probability, MaxTransitions> chance_strategy;
+    typename Types::Probability chance_threshold = Rational(1, MaxTransitions);
 
     int (*depth_bound_func)(prng &, int) = nullptr;
     int (*actions_func)(prng &, int) = nullptr;
     int (*payoff_bias_func)(prng &, int) = nullptr;
 
-    double device_uniform () {
-        double x = this->device.uniform();
-        return x;
-    }
-
     SeedState(
-        prng &device, 
+        const prng &device, 
         int depth_bound, 
         int rows, 
         int cols, 
         int (*depth_bound_func)(prng &, int), 
         int (*actions_func)(prng &, int),
-        int (*payoff_bias_func)(prng &, int))
-            : device(device), depth_bound(depth_bound), rows(rows), cols(cols), depth_bound_func(depth_bound_func), actions_func(actions_func), payoff_bias_func(payoff_bias_func)
+        int (*payoff_bias_func)(prng &, int)) : 
+            device(device), 
+            depth_bound(depth_bound), 
+            rows(rows), 
+            cols(cols), 
+            depth_bound_func(depth_bound_func), 
+            actions_func(actions_func), 
+            payoff_bias_func(payoff_bias_func)
     {
         if (depth_bound_func == nullptr)
         {
@@ -63,7 +63,7 @@ public:
         {
             this->payoff_bias_func = &(SeedState::pbf);
         }
-        get_transition_strategies(this->device, transition_strategies);
+        get_chance_strategies();
     }
 
     void get_actions()
@@ -88,25 +88,26 @@ public:
         typename Types::Action col_action) 
     {
         chance_actions.clear();
-        const int transition_idx = get_transition_idx(row_action, col_action, 0);
+        const int start_idx = get_transition_idx(row_action, col_action, 0);
         for (int chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx) {
-            if (transition_strategies[transition_idx + chance_idx] > 0) {
+            if (chance_strategies[start_idx + chance_idx] > 0) {
                 chance_actions.push_back(chance_idx);
             }
         }
     }
 
-    void apply_actions(int row_action, int col_action, int chance_action) // now a StateChance object
+    void apply_actions(int row_action, int col_action, int chance_action)
     {
         const int transition_idx = get_transition_idx(row_action, col_action, chance_action);
-        this->device.discard(transition_idx); // advance the prng so that different player/chance actions have different outcomes.
+        device.discard(transition_idx); 
+        // advance the prng so that different player/chance actions have different outcomes
 
         this->transition.obs = chance_action;
-        this->transition.prob = transition_strategies[transition_idx];
+        this->transition.prob = chance_strategies[transition_idx];
 
-        depth_bound = (*depth_bound_func)(this->device, this->depth_bound);
+        depth_bound = (*depth_bound_func)(device, depth_bound);
         depth_bound *= depth_bound >= 0;
-        payoff_bias = (*payoff_bias_func)(this->device, this->payoff_bias); // by default, adds -1, 0, or 1
+        payoff_bias = (*payoff_bias_func)(device, payoff_bias);
 
         if (depth_bound == 0)
         {
@@ -115,9 +116,9 @@ public:
             this->row_payoff = (sigsum_bias + 1) / 2;
             this->col_payoff = 1.0 - this->row_payoff;
         } else {
-            rows = (*this->actions_func)(this->device, rows);
-            cols = (*this->actions_func)(this->device, cols);
-            get_transition_strategies(this->device, transition_strategies);
+            rows = (*actions_func)(device, rows);
+            cols = (*actions_func)(device, cols);
+            get_chance_strategies();
         }
     }
 
@@ -126,10 +127,10 @@ public:
     {
         const int transition_idx = get_transition_idx(row_action, col_action, 0);
         std::copy_n(
-            transition_strategies.begin() + transition_idx, 
+            chance_strategies.begin() + transition_idx, 
             MaxTransitions,
-            transition_strategy.begin());
-        int chance_action = 0; // device.sample_pdf(transition_strategy, MaxTransitions);
+            chance_strategy.begin());
+        int chance_action = 0; // device.sample_pdf(chance_strategy, MaxTransitions);
         apply_actions(row_action, col_action, chance_action);
     }
 
@@ -147,47 +148,47 @@ public:
     }
     static int pbf(prng &device, int payoff_bias)
     {
-        // std::cout << '#' << device.engine() << std::endl;
-        int bias_inc = device.random_int(3) - 1;
-        std::cout << '@' << bias_inc << std::endl;
-        return payoff_bias + bias_inc;
+        return payoff_bias + device.random_int(3) - 1;
     }
 
-// private:
-    void get_transition_strategies (prng &device, std::vector<typename Types::Probability> &output) {
-
-        output.clear();
-        std::array<typename Types::Probability, MaxTransitions> chance_strategy; 
-
-        for (int joint_idx = 0; joint_idx < rows * cols; ++joint_idx) {
-
-            // get unnormalized distro
-            typename Types::Probability prob_sum = 0;
-            for (int i = 0; i < MaxTransitions; ++i) { 
-                const typename Types::Probability p = device.uniform();
-                chance_strategy[i] = p;
-                prob_sum += p;
-            }
-            
-            // clip and compute new norm
-            typename Types::Probability new_prob_sum = 0;
-            for (int i = 0; i < MaxTransitions; ++i) {
-                typename Types::Probability &p = chance_strategy[i];
-                p /= prob_sum;
-                if (p < transition_threshold) {
-                    p = 0;
-                }
-                new_prob_sum += p;
-            }
-
-            // append final renormalized strategy
-            for (int i = 0; i < MaxTransitions; ++i) {
-                output.push_back(chance_strategy[i] / new_prob_sum);
-            }
-        }
-    }
+private:
 
     inline int get_transition_idx (int row_idx, int col_idx, int chance_idx) {
-        return row_idx * cols * MaxTransitions + col_idx * (MaxTransitions) + chance_idx;
+        return row_idx * MaxActions * MaxTransitions + col_idx * MaxTransitions + chance_idx;
+    }
+
+    void get_chance_strategies () {
+        
+        for (int row_idx = 0; row_idx < rows; ++row_idx) {
+
+            for (int col_idx = 0; col_idx < cols; ++col_idx) {
+
+                int start_idx = row_idx * MaxActions * MaxTransitions + col_idx * MaxTransitions;
+
+                // get unnormalized distro
+                typename Types::Probability prob_sum = 0;
+                for (int i = 0; i < MaxTransitions; ++i) { 
+                    const typename Types::Probability p = device.uniform();
+                    chance_strategies[start_idx + i] = p;
+                    prob_sum += p;
+                }
+                
+                // clip and compute new norm
+                typename Types::Probability new_prob_sum = 0;
+                for (int i = 0; i < MaxTransitions; ++i) {
+                    typename Types::Probability &p = chance_strategies[start_idx + i];
+                    p /= prob_sum;
+                    if (p < chance_threshold) {
+                        p = 0;
+                    }
+                    new_prob_sum += p;
+                }
+
+                // append final renormalized strategy
+                for (int i = 0; i < MaxTransitions; ++i) {
+                    chance_strategies[start_idx + i] /= new_prob_sum;
+                }
+            }
+        }
     }
 };
