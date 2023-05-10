@@ -3,6 +3,7 @@
 #include "model/model.hh"
 #include "seed-state.hh"
 #include "grow.hh"
+#include "tree/tree.hh"
 
 #include <memory>
 
@@ -15,47 +16,52 @@ What should template type be? Just model?
 */
 
 template <class Model>
-class TreeState : public SolvedState<Model::Types::TypeList>
+class TreeState : public SolvedState<typename Model::Types::TypeList>
 {
-    static_assert(std::derived_from<Model::Types::State, StateChance<Model::Types::TypeList>>,
+    static_assert(std::derived_from<typename Model::Types::State, StateChance<typename Model::Types::TypeList>>,
         "TreeState must be based on State type derived from StateChance");
-    static_assert(std::derived_from<Model, DoubleOracleModel>,
+    static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
         "Grow algorithm requires Model must be derived from DoubleOracleModel");
 
 public:
-    using Node = MatrixNode<Grow<Model>>;
-
     struct Types : Model::Types
     {
     };
 
-    std::shared_ptr<Node> tree;
-    Node *current;
+    prng device;
+    std::shared_ptr<MatrixNode<Grow<Model>>> tree;
+    MatrixNode<Grow<Model>> *current_node;
+    typename Types::State::Transition transition;
 
     TreeState(
         typename Types::State &state,
         Model &model,
-        int max_depth)
+        int max_depth=-1) :
+            device(state.device)
     {
-        this->tree = std::make_shared<Node>();
-        this->current = &*tree;
+        this->tree = std::make_shared<MatrixNode<Grow<Model>>>();
+        this->current_node = &*tree;
         Grow<Model> session;
         session.max_depth = max_depth;
-        session.grow(state, model, current);
-        update_solved_state_info(current);
+        session.grow(state, model, current_node);
+        update_solved_state_info();
     }
 
     void get_actions()
     {
-        this->actions = current->actions;
+        this->actions = current_node->actions;
     }
 
     void apply_actions(
         typename Types::Action row_action,
         typename Types::Action col_action)
     {
-        this->current = this->current->access(row_action, col_action)->access(transition); // TODO how to make transition like the OG state without a state?
-        update_solved_state_info(this->current);
+        ChanceNode<Grow<Model>> *chance_node = current_node->access(row_action, col_action);
+        const int chance_idx = device.sample_pdf(chance_node->stats.chance_strategy);
+        typename Types::Observation chance_action = chance_node->stats.chance_actions[chance_idx];
+        transition.obs = chance_action;
+        current_node = chance_node.access(transition);
+        update_solved_state_info();
     }
 
     void apply_actions(
@@ -63,28 +69,26 @@ public:
         typename Types::Action col_action,
         typename Types::Observation chance_action)
     {
-        this->transition.obs = chance_action;
-        this->current = this->current->access(row_action, col_action)->access(this->transition);
-        update_solved_state_info(this->current);
+        transition.obs = chance_action;
+        current_node = current_node->access(row_action, col_action)->access(transition);
+        update_solved_state_info();
+    }
+
+    void get_payoff_matrix(
+        typename Types::MatrixReal &row_payoff_matrix,
+        typename Types::MatrixReal &col_payoff_matrix
+    ) {
+        row_payoff_matrix = current_node->stats.nash_payoff_matrix;
+        col_payoff_matrix = row_payoff_matrix * -1 + 1;
     }
 
 private:
-    void update_solved_state_info(Node *current)
+    void update_solved_state_info()
     {
-        this->is_terminal = this->current->is_terminal; 
-        // this->row_payoff = this->current->stats.payoff;
-        // this->col_payoff = 1 - this->row_payoff;
-        // const int rows = this->current->actions.rows;
-        // const int cols = this->current->actions.cols;
-        // this->row_strategy.fill(rows);
-        // this->col_strategy.fill(cols);
-        // for (int i = 0; i < rows; ++i)
-        // {
-        //     this->row_strategy[i] = this->current->stats.row_strategy[i];
-        // }
-        // for (int j = 0; j < cols; ++j)
-        // {
-        //     this->col_strategy[j] = this->current->stats.col_strategy[j];
-        // }
+        this->is_terminal = current_node->is_terminal; 
+        this->row_payoff = current_node->stats.row_payoff;
+        this->col_payoff = 1 - this->row_payoff;
+        this->row_strategy = current_node->stats.row_solution;
+        this->col_strategy = current_node->stats.col_solution; // wasteful for arrays
     }
 };
