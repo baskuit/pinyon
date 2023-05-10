@@ -33,6 +33,8 @@ public:
     };
     struct MatrixStats : AbstractAlgorithm<Model>::MatrixStats
     {
+        typename Types::Real row_payoff, col_payoff;
+        typename Types::VectorReal row_solution, col_solution;
         typename Types::MatrixReal nash_payoff_matrix;
         int matrix_node_count = 1;
         int depth = 0;
@@ -60,8 +62,8 @@ public:
 
         if (state.is_terminal)
         {
-            matrix_node->inference.row_value = state.row_payoff;
-            matrix_node->inference.col_value = state.col_payoff;
+            matrix_node->stats.row_payoff = state.row_payoff;
+            matrix_node->stats.col_payoff = state.col_payoff;
             matrix_node->is_terminal = true;
             return;
         }
@@ -108,18 +110,18 @@ public:
 
         LibGambit::solve_matrix<Types>(
             matrix_node->stats.nash_payoff_matrix,
-            matrix_node->inference.row_policy,
-            matrix_node->inference.col_policy);
-        matrix_node->inference.row_value = 0;
+            matrix_node->stats.row_solution,
+            matrix_node->stats.col_solution);
+        matrix_node->stats.row_solution = 0;
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                matrix_node->inference.row_value +=
-                    matrix_node->inference.row_policy[row_idx] *
-                    matrix_node->inference.col_policy[col_idx] *
+                matrix_node->stats.row_payoff +=
+                    matrix_node->stats.row_solution[row_idx] *
+                    matrix_node->stats.col_solution[col_idx] *
                     matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx);
-                matrix_node->inference.col_value = 1 - matrix_node->inference.row_value;
+                matrix_node->stats.col_payoff = 1 - matrix_node->stats.row_payoff
             }
         }
         return;
