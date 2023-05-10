@@ -31,9 +31,22 @@ public:
     std::array<typename Types::Probability, MaxTransitions> chance_strategy;
     typename Types::Probability chance_threshold = Rational(1, MaxTransitions);
 
-    int (*depth_bound_func)(prng &, int) = nullptr;
-    int (*actions_func)(prng &, int) = nullptr;
-    int (*payoff_bias_func)(prng &, int) = nullptr;
+    int (*depth_bound_func)(prng &, int) = &(SeedState::dbf);
+    int (*actions_func)(prng &, int) = &(SeedState::af);
+    int (*payoff_bias_func)(prng &, int) = &(SeedState::pbf);
+
+    SeedState(
+        const prng &device, 
+        int depth_bound, 
+        int rows, 
+        int cols) : 
+            device(device), 
+            depth_bound(depth_bound), 
+            rows(rows), 
+            cols(cols) 
+    {
+        get_chance_strategies();
+    }
 
     SeedState(
         const prng &device, 
@@ -51,18 +64,6 @@ public:
             actions_func(actions_func), 
             payoff_bias_func(payoff_bias_func)
     {
-        if (depth_bound_func == nullptr)
-        {
-           this->depth_bound_func = &(SeedState::dbf);
-        }
-        if (actions_func == nullptr)
-        {
-            this->actions_func = &(SeedState::af);
-        }
-        if (payoff_bias_func == nullptr)
-        {
-            this->payoff_bias_func = &(SeedState::pbf);
-        }
         get_chance_strategies();
     }
 
@@ -96,8 +97,11 @@ public:
         }
     }
 
-    void apply_actions(int row_action, int col_action, int chance_action)
+    void apply_actions(int row_action, int col_action, int chance_action, bool extra_prng_call = true)
     {
+        if (extra_prng_call) {
+            device.uniform(); // to mirror sampling from chance actions
+        }
         const int transition_idx = get_transition_idx(row_action, col_action, chance_action);
         device.discard(transition_idx); 
         // advance the prng so that different player/chance actions have different outcomes
@@ -130,8 +134,8 @@ public:
             chance_strategies.begin() + transition_idx, 
             MaxTransitions,
             chance_strategy.begin());
-        int chance_action = 0; // device.sample_pdf(chance_strategy, MaxTransitions);
-        apply_actions(row_action, col_action, chance_action);
+        int chance_action = device.sample_pdf(chance_strategy, MaxTransitions);
+        apply_actions(row_action, col_action, chance_action, false);
     }
 
     /*
