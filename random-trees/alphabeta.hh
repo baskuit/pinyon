@@ -3,7 +3,7 @@
 #include "algorithm/algorithm.hh"
 
 // #include <algorithm
-#include <set>
+#include <ranges>
 /*
 
 An implementation of Simultaneous Move Alpha Beta
@@ -153,50 +153,73 @@ public:
         typename Types::Real alpha,
         typename Types::VectorReal &col_strategy)
     {
-    //     typename Types::MatrixReal &p = matrix_node->stats.p;
-    //     typename Types::MatrixReal &q = matrix_node->stats.q;
-    //     typename Types::VectorInt &I = matrix_node->stats.I;
-    //     typename Types::VectorInt &J = matrix_node->stats.J;
+        typename Types::MatrixReal &p = matrix_node->stats.p;
+        typename Types::MatrixReal &o = matrix_node->stats.o;
+        std::vector<int> &I = matrix_node->stats.I;
+        std::vector<int> &J = matrix_node->stats.J;
 
         int new_action_idx = -1;
         typename Types::Real best_response_row = alpha;
 
-    //     for (int row_idx = 0; row_idx < state.actions.rows; ++row_idx) {
-    //         bool cont = false;
+        for (int row_idx = 0; row_idx < state.actions.rows; ++row_idx) {
+            bool cont = false;
             
-    //         typename Types::Real expected_row_payoff = 0;
-    //         for (const auto& [col_idx, y] : std::zip(matrix_node->stats.I, col_strategy)) {
-    //             expected_row_payoff += y * matrix_node->stats.o.get(row_idx, col_idx);
-    //         }
+            // not returned
+            typename Types::Real expected_row_payoff = 0;
+            for (const auto& [col_idx, y] : std::views::zip(matrix_node->stats.J, col_strategy)) {
+                expected_row_payoff += y * matrix_node->stats.o.get(row_idx, col_idx);
+            }
 
-    //         for (const auto& [col_idx, y] : std::zip(matrix_node->stats.I, col_strategy)) {
-    //             typename Types::Real &p_ij = p.get(row_idx, col_idx);
-    //             typename Types::Real &o_ij = o.get(row_idx, col_idx);
+            for (const auto& [col_idx, y] : std::views::zip(matrix_node->stats.J, col_strategy)) {
+                typename Types::Real &p_ij = p.get(row_idx, col_idx);
+                typename Types::Real &o_ij = o.get(row_idx, col_idx);
 
-    //             if (y > 0 && p_ij < o_ij) {
-    //                 typename Types::Real p__ij = std::max(
-    //                     p_ij, best_response_value - expected_row_payoff - matrix_node->stats.o.get(row_idx, col_idx));
+                if (y > 0 && p_ij < o_ij) {
+                    typename Types::Real p__ij = std::max(
+                        p_ij, best_response_row - expected_row_payoff + y * o_ij);
                 
-    //                 if (p__ij > matrix_node->stats.o.get(row_idx, col_idx)) {
-    //                     cont = true;
-    //                     break;
-    //                 } else {
-    //                     auto state_copy = state;
-    //                     matrix_node->
-    //                 }
-    //             }
-                
+                    if (p__ij > o_ij) {
+                        cont = true;
+                        break;
+                    } else {
 
-    //         }
-    //         if (cont) {
-    //             continue
-    //         }
+                        // u(s_ij) = double_oracle (s_ij, p_ij, o_ij)
+                        typename Types::Real u_ij = 0;
+                        ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
+                        
+                        const typename Types::Action row_action = state.actions.row_actions[row_idx];
+                        const typename Types::Action col_action = state.actions.col_actions[col_idx];
 
+                        std::vector<typename Types::Observation> chance_actions;
+                        state.get_chance_actions(chance_actions, row_action, col_action);
+                        for (const auto chance_action : chance_actions) {
+                            auto state_copy = state;
+                            state_copy.apply_actions(row_action, col_action, chance_action);
+                            MatrixNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.transition);
+                            u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.transition.prob;
+                        }
 
-    //     }
+                        p_ij = u_ij;
+                        o_ij = u_ij;
+                    }
+                }
+            }
+
+            if (cont) {
+                continue;
+            }
+
+            typename Types::Real expected_row_payoff_real = 0;
+            for (const auto& [col_idx, y] : std::views::zip(matrix_node->stats.J, col_strategy)) {
+                expected_row_payoff_real += y * matrix_node->stats.o.get(row_idx, col_idx);
+            }
+            if (expected_row_payoff_real > best_response_row) {
+                new_action_idx = row_idx;
+                best_response_row = expected_row_payoff_real;
+            }
+        }
 
         std::pair<int, double> pair{new_action_idx, best_response_row};
-
         return pair;
     }
 
