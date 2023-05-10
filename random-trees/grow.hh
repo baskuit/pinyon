@@ -121,7 +121,7 @@ public:
                     matrix_node->stats.row_solution[row_idx] *
                     matrix_node->stats.col_solution[col_idx] *
                     matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx);
-                matrix_node->stats.col_payoff = 1 - matrix_node->stats.row_payoff
+                matrix_node->stats.col_payoff = 1 - matrix_node->stats.row_payoff;
             }
         }
         return;

@@ -28,8 +28,8 @@ void print_matrix (MatrixNode<Algorithm> *matrix_node) {
 int main()
 {
 
-    const int MaxActions = 5;
-    const int MaxTransitions = 1;
+    const int MaxActions = 4;
+    const int MaxTransitions = 2;
     const int depth_bound = 1;
     const double chance_threshold = 1 / (double) 3; 
 
@@ -65,8 +65,8 @@ int main()
                     MatrixNode<Grow<Model>> grow_root;
                     grow.grow(state, model, &grow_root);
 
-                    auto row_solution = grow_root.inference.row_policy;
-                    auto col_solution = grow_root.inference.col_policy;
+                    auto row_solution = grow_root.stats.row_solution;
+                    auto col_solution = grow_root.stats.col_solution;
 
 
                     SeedState::Types::MatrixReal row_payoff_matrix = grow_root.stats.nash_payoff_matrix;
