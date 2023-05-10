@@ -34,6 +34,8 @@ public:
 
     Rational(double x)
     {
+        // Rational y = 3.14 gives:
+        // 1342177/-524288 TODO
         p = 0;
         q = 1;
         if (x != 0.0) {
