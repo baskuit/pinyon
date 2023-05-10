@@ -77,9 +77,7 @@ public:
         const int rows = state.actions.rows;
         const int cols = state.actions.cols;
 
-        matrix_node->stats.nash_payoff_matrix.rows = rows;
-        matrix_node->stats.nash_payoff_matrix.cols = cols;
-        matrix_node->stats.nash_payoff_matrix.fill(rows, cols, 0); // TODO change matrix fill methods to change rows, cols automatically.
+        matrix_node->stats.nash_payoff_matrix.fill(rows, cols, 0);
 
         // recurse
         for (int row_idx = 0; row_idx < rows; ++row_idx)

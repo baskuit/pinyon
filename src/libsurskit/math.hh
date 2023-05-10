@@ -56,10 +56,15 @@ namespace Linear
         Matrix(){};
         Matrix(int rows, int cols) : rows(rows), cols(cols) {}
 
-        void fill(int rows, int cols) {}
+        void fill(int rows, int cols) {
+            this->rows = rows;
+            this->cols = cols;
+        }
 
         void fill(int rows, int cols, T value)
         {
+            this->rows = rows;
+            this->cols = cols;
             std::fill(data.begin(), data.begin() + rows * cols, value);
         }
 
@@ -129,11 +134,15 @@ namespace Linear
 
         void fill(int rows, int cols)
         {
+            this->rows = rows;
+            this->cols = cols;
             data.resize(rows * cols);
         }
 
         void fill(int rows, int cols, T value)
         {
+            this->rows = rows;
+            this->cols = cols;
             const int n = rows * cols;
             data.resize(n);
             std::fill(data.begin(), data.begin() + n, value);

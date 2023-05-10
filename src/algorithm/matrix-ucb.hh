@@ -106,13 +106,6 @@ public:
             model.get_inference(state, matrix_node->inference);
         }
         
-        matrix_node->stats.row_value_matrix.rows = rows;
-        matrix_node->stats.row_value_matrix.cols = cols;
-        matrix_node->stats.col_value_matrix.rows = rows;
-        matrix_node->stats.col_value_matrix.cols = cols;
-        matrix_node->stats.visit_matrix.rows = rows;
-        matrix_node->stats.visit_matrix.cols = cols;
-
         matrix_node->stats.row_value_matrix.fill(rows, cols, 0);
         matrix_node->stats.col_value_matrix.fill(rows, cols, 0);
         matrix_node->stats.visit_matrix.fill(rows, cols, 0);
