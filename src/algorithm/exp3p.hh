@@ -212,7 +212,7 @@ public:
         typename Types::MatrixReal &row_ev_matrix,
         typename Types::MatrixReal &col_ev_matrix)
     {
-        ChanceNode<Exp3p> *chance_node = matrix_node->root;
+        ChanceNode<Exp3p> *chance_node = matrix_node->child;
         while (chance_node != nullptr) {
             const int row_idx = chance_node->row_idx;
             const int col_idx = chance_node->col_idx;

@@ -28,65 +28,89 @@ void print_matrix (MatrixNode<Algorithm> *matrix_node) {
 int main()
 {
 
-    const int MaxActions = 2;
+    const int MaxActions = 5;
     const int MaxTransitions = 1;
+    const int depth_bound = 1;
+    const double chance_threshold = 1 / (double) 3; 
 
     using SeedState = SeedState<MaxActions, MaxTransitions>;
     using Model = MonteCarloModel<SeedState>;
     using MatrixUCB = MatrixUCB<Model, TreeBandit>;
     using Exp3p = Exp3p<Model, TreeBandit>;
-    using Algorithm = MatrixUCB;
+    using Algorithm = Exp3p;
+
+    SeedState::Types::VectorReal row_strategy(MaxActions), col_strategy(MaxActions);
+    SeedState::Types::MatrixReal row_value_matrix(MaxActions, MaxActions), col_value_matrix(MaxActions, MaxActions);
 
     prng init_device;
-    int seed = 0;//init_device.random_int(100000);
+    int seed = 0;//init_device.uniform_64();
+    std::cout << "seed: " << seed << std::endl;
     prng device(seed);
+    int games = 20;
 
-    SeedState state(device, 1, MaxActions, MaxActions, nullptr, nullptr, nullptr);
-    Model model(device);
+    for (int iterations = 100; iterations <= 1000000; iterations *= 10) {
+        for (int actions = 2; actions <= MaxActions; ++actions) {
+            for (int depth_bound = 1; depth_bound < 4; ++depth_bound) {
 
-    // Algorithm session;
-    // MatrixNode<Algorithm> root;
-    // session.run(1000, device, state, model, root);
 
-    // SeedState::Types::MatrixReal row_value_matrix(3, 3), col_value_matrix(3, 3);
-    // session.get_ev_matrix(&root, row_value_matrix, col_value_matrix);
-    // std::cout << "expected value matrix:\n";
-    // row_value_matrix.print();
+                double total_exp3p_expl = 0;
+                double total_matrix_ucb_expl = 0;
 
-    // SeedState::Types::VectorReal row_strategy(3), col_strategy(3);
-    // session.get_strategies(&root, row_strategy, col_strategy);
-    // std::cout << "strategies:\n";
-    // math::print(row_strategy, 3);
-    // math::print(col_strategy, 3);
+                for (int game = 0; game < games; ++game) {
 
-    /*
-    */
+                    SeedState state(device, depth_bound, MaxActions, MaxActions, chance_threshold);
+                    Model model(device);
 
-    Grow<Model> grow;
-    MatrixNode<Grow<Model>> grow_root;
-    grow.grow(state, model, &grow_root);
+                    Grow<Model> grow;
+                    MatrixNode<Grow<Model>> grow_root;
+                    grow.grow(state, model, &grow_root);
 
-    auto row_solution = grow_root.inference.row_policy;
-    auto col_solution = grow_root.inference.col_policy;
+                    auto row_solution = grow_root.inference.row_policy;
+                    auto col_solution = grow_root.inference.col_policy;
 
-    std::cout << "row payoff matrix:\n";
-    SeedState::Types::MatrixReal row_payoff_matrix = grow_root.stats.nash_payoff_matrix;
-    SeedState::Types::MatrixReal col_payoff_matrix = row_payoff_matrix * -1 + 1;
-    row_payoff_matrix.print();
-    std::cout << "solutions:\n";
-    math::print(row_solution, MaxActions);
-    math::print(col_solution, MaxActions);
 
-    
+                    SeedState::Types::MatrixReal row_payoff_matrix = grow_root.stats.nash_payoff_matrix;
+                    SeedState::Types::MatrixReal col_payoff_matrix = row_payoff_matrix * -1 + 1;
 
-    // double expl = Linear::exploitability<SeedState::Types::TypeList>(
-    //     row_payoff_matrix, 
-    //     col_payoff_matrix, 
-    //     row_strategy, 
-    //     col_strategy);
-    // std::cout << "session expl: " << expl << '\n';
 
-    
+                    Exp3p exp3p_session;
+                    MatrixNode<Exp3p> exp3p_root;
+                    exp3p_session.run(iterations, device, state, model, exp3p_root);
+                    exp3p_session.get_ev_matrix(&exp3p_root, row_value_matrix, col_value_matrix);
+                    exp3p_session.get_strategies(&exp3p_root, row_strategy, col_strategy);
 
+
+                    double exp3p_expl = Linear::exploitability<SeedState::Types::TypeList>(
+                        row_payoff_matrix, 
+                        col_payoff_matrix, 
+                        row_strategy, 
+                        col_strategy);
+
+
+
+                    MatrixUCB matrix_ucb_session;
+                    MatrixNode<MatrixUCB> matrix_ucb_root;
+                    matrix_ucb_session.run(iterations, device, state, model, matrix_ucb_root);
+                    matrix_ucb_session.get_ev_matrix(&matrix_ucb_root, row_value_matrix, col_value_matrix);
+                    matrix_ucb_session.get_strategies(&matrix_ucb_root, row_strategy, col_strategy);
+
+                    double matrix_ucb_expl = Linear::exploitability<SeedState::Types::TypeList>(
+                        row_payoff_matrix, 
+                        col_payoff_matrix, 
+                        row_strategy, 
+                        col_strategy);
+
+                        total_exp3p_expl += exp3p_expl;
+                        total_matrix_ucb_expl += matrix_ucb_expl;
+                }
+
+                std::cout << "iter: " << iterations << " actions: " << actions << " depth_bound: " << depth_bound << std::endl;
+                std::cout << "mean expl exp3p: " << total_exp3p_expl / games << std::endl;
+                std::cout << "mean expl matrix_ucb: " << total_matrix_ucb_expl / games << std::endl;
+
+
+            }
+        }
+    }
     return 0;
 }

@@ -11,6 +11,8 @@ SeedState contains just enough info to pseudo-randomly expand to a recursively s
 
 The actual state representing the solved tree will be the TreeState object,
 which is simply a wrapper the MatrixNode/ChanceNode tree created by the Grow algorithm on the SeedState.
+
+Probabilty type can be changed to Rational once coversion from double is finished (TODO)
 */
 
 template <size_t MaxActions, size_t MaxTransitions>
@@ -39,11 +41,13 @@ public:
         const prng &device, 
         int depth_bound, 
         int rows, 
-        int cols) : 
+        int cols,
+        typename Types::Probability chance_threshold) : 
             device(device), 
             depth_bound(depth_bound), 
             rows(rows), 
-            cols(cols) 
+            cols(cols),
+            chance_threshold(chance_threshold)
     {
         get_chance_strategies();
     }
@@ -152,7 +156,8 @@ public:
     }
     static int pbf(prng &device, int payoff_bias)
     {
-        return payoff_bias + device.random_int(3) - 1;
+        const int bias = 1;
+        return payoff_bias + device.random_int(2 * bias + 1) - bias;
     }
 
 private:
