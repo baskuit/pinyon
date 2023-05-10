@@ -65,6 +65,7 @@ int main()
                     TreeState<Model> tree_state(state, model);
 
                     AlphaBeta<Model> alpha_beta_session(0, 1);
+                    alpha_beta_session.run(state, model);
 
 
                 //     SeedState::Types::MatrixReal row_payoff_matrix;

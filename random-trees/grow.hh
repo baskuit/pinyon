@@ -95,7 +95,7 @@ public:
                 {
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, chance_action);
-                    MatrixNode<Grow> *matrix_node_next = chance_node->access(state_copy.transition); // TODO make sure seed state is getting transition object updated
+                    MatrixNode<Grow> *matrix_node_next = chance_node->access(state_copy.transition);
                     matrix_node_next->stats.depth = matrix_node->stats.depth + 1;
 
                     grow(state_copy, model, matrix_node_next);
