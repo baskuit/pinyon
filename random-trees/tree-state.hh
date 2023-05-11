@@ -60,7 +60,7 @@ public:
         const int chance_idx = device.sample_pdf(chance_node->stats.chance_strategy);
         typename Types::Observation chance_action = chance_node->stats.chance_actions[chance_idx];
         transition.obs = chance_action;
-        current_node = chance_node.access(transition);
+        current_node = chance_node->access(transition);
         update_solved_state_info();
     }
 
