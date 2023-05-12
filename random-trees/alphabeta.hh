@@ -51,8 +51,9 @@ public:
         typename Types::State &state,
         Model &model
     ) {
-        MatrixNode<AlphaBeta> *root;
-        double_oracle(state, model, root, min_val, max_val);
+        MatrixNode<AlphaBeta> root;
+        double_oracle(state, model, &root, min_val, max_val);
+        std::cout << "AlphaBeta value: " << root.stats.value << '\n';
     }
 
     typename Types::Real double_oracle(
@@ -91,7 +92,7 @@ public:
         // 8: oI,J ← alpha-betaMax (sI,J , minval, maxval)
         o.fill(state.actions.rows, state.actions.cols, max_val);
         // Note: this implementation does not use serialized alpha beta
-
+        // Just seems like too much tree traversal?
         // 9: repeat, 23: until α = β
         while (alpha < beta) {
 
@@ -186,12 +187,12 @@ public:
             // Furthermore, I'm not sure what this step does that lines 7, 8 in double_oracle don't
 
             typename Types::Real expected_o_payoff = 0;
-            for (int j = 0; j < col_strategy.size(); ++j) {
+            for (int j = 0; j < J.size(); ++j) {
                 expected_o_payoff += col_strategy[j] * o.get(row_idx, J[j]);
             }
 
             // 6: for j ∈ J; y j > 0 ∧ pi, j < oi, j do
-            for (int j = 0; j < col_strategy.size(); ++j) {
+            for (int j = 0; j < J.size(); ++j) {
                 int col_idx = J[j];
                 typename Types::Real y = col_strategy[j];
 
@@ -238,7 +239,7 @@ public:
 
             // 13 - 14
             typename Types::Real expected_row_payoff = 0;
-            for (int j = 0; j < col_strategy.size(); ++j) {
+            for (int j = 0; j < J.size(); ++j) {
                 expected_row_payoff += col_strategy[j] * o.get(row_idx, J[j]);
             } // o_ij = u_ij by now
             if (expected_row_payoff > best_response_row) {
@@ -270,11 +271,11 @@ public:
             bool cont = false;
 
             typename Types::Real expected_p_payoff = 0;
-            for (int i = 0; i < row_strategy.size(); ++i) {
+            for (int i = 0; i < I.size(); ++i) {
                 expected_p_payoff += row_strategy[i] * p.get(I[i], col_idx);
             }
 
-            for (int i = 0; i < row_strategy.size(); ++i) {
+            for (int i = 0; i < I.size(); ++i) {
                 int row_idx = I[i];
                 typename Types::Real x = row_strategy[i];
 
@@ -315,7 +316,7 @@ public:
             }
 
             typename Types::Real expected_col_payoff = 0;
-            for (int i = 0; i < row_strategy.size(); ++i) {
+            for (int i = 0; i < I.size(); ++i) {
                 expected_col_payoff += row_strategy[i] * p.get(I[i], col_idx);
             }
             if (expected_col_payoff < best_response_col) {
@@ -337,6 +338,8 @@ private:
     {
         typename Types::MatrixReal M;
         M.fill(matrix_node->stats.I.size(), matrix_node->stats.J.size());
+        row_strategy.fill(M.rows);
+        col_strategy.fill(M.cols);
         int entry_idx = 0;
         for (const int row_idx : matrix_node->stats.I) {
             for (const int col_idx : matrix_node->stats.J) {
