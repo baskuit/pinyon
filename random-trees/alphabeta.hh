@@ -34,10 +34,14 @@ public:
         std::vector<int> I{}, J{}; 
         // vector of row_idx, col_idx in the substage
         int depth = 0;
+        MatrixNode<Grow<Model>> *teacher = nullptr;
+        typename Types::VectorReal row_strategy, col_strategy;
+        int row_br_idx, col_br_idx;
+        bool ok = true;
     }; 
     struct ChanceStats
     {
-        typename Types::Probability explored = Rational(0, 1);
+        typename Types::Probability explored = Rational(0);
     };
 
     const typename Types::Real min_val = 0;
@@ -49,9 +53,11 @@ public:
 
     void run (
         typename Types::State &state,
-        Model &model
+        Model &model,
+        MatrixNode<Grow<Model>> *teacher
     ) {
         MatrixNode<AlphaBeta> root;
+        root.stats.teacher = teacher;
         double_oracle(state, model, &root, min_val, max_val);
         std::cout << "AlphaBeta value: " << root.stats.value << '\n';
     }
@@ -70,12 +76,14 @@ public:
         if (state.is_terminal) {
             matrix_node->is_terminal = true;
             matrix_node->stats.value = state.row_payoff;
+            teacher_check(matrix_node);
             return state.row_payoff;
         }
         if (max_depth > 0 && matrix_node->stats.depth >= max_depth) {
             matrix_node->is_terminal = true;
             model.get_inference(state, matrix_node->inference);
             matrix_node->stats.value = matrix_node->inference.row_value;
+            teacher_check(matrix_node);
             return matrix_node->inference.row_value;
         }
 
@@ -94,19 +102,21 @@ public:
         // Note: this implementation does not use serialized alpha beta
         // Just seems like too much tree traversal?
         // 9: repeat, 23: until α = β
-        while (alpha < beta) {
+        const double epsilon = 1e-7;
+        while (std::abs(alpha - beta) > epsilon) {
 
             // 10: for i ∈ I, j ∈ J do
             for (int row_idx : matrix_node->stats.I) {
                 for (int col_idx : matrix_node->stats.J) {
 
-                    auto p_ij = p.get(row_idx, col_idx);
-                    auto o_ij = o.get(row_idx, col_idx);
+                    typename Types::Real &p_ij = p.get(row_idx, col_idx);
+                    typename Types::Real &o_ij = o.get(row_idx, col_idx);
                     // 11: if pi, j < oi, j then
                     if (p_ij < o_ij) {
                         // 12: u(si, j ) ← double-oracle(si, j , pi, j, oi, j )
                         typename Types::Real u_ij = 0;
                         ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
+                        ChanceNode<Grow<Model>> *chance_node_teacher = matrix_node->stats.teacher->access(row_idx, col_idx);
 
                         const typename Types::Action row_action = state.actions.row_actions[row_idx];
                         const typename Types::Action col_action = state.actions.col_actions[col_idx];
@@ -118,7 +128,10 @@ public:
                             auto state_copy = state;
                             state_copy.apply_actions(row_action, col_action, chance_action);
                             MatrixNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.transition);
+                            matrix_node_next->stats.teacher = chance_node_teacher->access(state_copy.transition);
+
                             u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.transition.prob;
+                            // u_ij is the value of chance node, i.e. expected score over all child matrix nodes
 
                         }
                         // 13: pi, j ← u(si, j ); oi, j ← u(si, j )
@@ -129,18 +142,28 @@ public:
             }
 
             // 14: <u(s), (x,y)> ← ComputeNE(I, J)
+            typename Types::MatrixReal matrix;
             typename Types::VectorReal row_strategy, col_strategy;
-            matrix_node->stats.value = solve_submatrix(matrix_node, row_strategy, col_strategy);
+            matrix_node->stats.value = solve_submatrix(matrix, matrix_node, row_strategy, col_strategy);
             // 15: hi0, vMaxi ← BRMax (s, α, y)
             auto iv = best_response_row(state, model, matrix_node, alpha, col_strategy);
             // 16: h j0 , vMini ← BRMin(s, β, x)
             auto jv = best_response_col(state, model, matrix_node, beta,  row_strategy);
+                matrix_node->stats.row_br_idx = iv.first;
+                matrix_node->stats.col_br_idx = jv.first;
+                matrix_node->stats.row_strategy = row_strategy;
+                matrix_node->stats.col_strategy = col_strategy;
+
 
             // 17 - 20
-            if (iv.first < 0) {
+            if (iv.first == -1) {
+                matrix_node->stats.value = min_val;
+                teacher_check(matrix_node);
                 return min_val;
             }
-            if (jv.first < 0) {
+            if (jv.first == -1) {
+                matrix_node->stats.value = max_val;
+                teacher_check(matrix_node);
                 return max_val;
             }
             // 21: α ← max(α, vMin); β ← min(β, v Max )
@@ -154,10 +177,38 @@ public:
             if (std::find(J.begin(), J.end(), jv.first) == J.end()) {
                 J.push_back(jv.first);
             }
-
+            matrix_node->stats.value = alpha;
         }
-
+        teacher_check(matrix_node);
         return matrix_node->stats.value;
+    }
+
+    void teacher_check(MatrixNode<AlphaBeta> *matrix_node) {
+        const double epsilon = 1e-7;
+        if (std::abs(matrix_node->stats.value - matrix_node->stats.teacher->stats.row_payoff) > epsilon) {
+            std::cout << "p:\n";
+            matrix_node->stats.p.print();
+            std::cout << "o:\n";
+            matrix_node->stats.o.print();
+            std::cout << "I:\n";
+            math::print(matrix_node->stats.I, matrix_node->stats.I.size());
+            std::cout << "J:\n";
+            math::print(matrix_node->stats.J, matrix_node->stats.J.size());
+            std::cout << "row_strategy:\n";
+            math::print(matrix_node->stats.row_strategy, matrix_node->stats.I.size());
+            std::cout << "col_strategy:\n";
+            math::print(matrix_node->stats.col_strategy, matrix_node->stats.J.size());
+            std::cout << "nash_payoff_matrix:\n";
+            auto npm = matrix_node->stats.teacher->stats.nash_payoff_matrix;
+            npm.print();
+            std::cout << "row_solution:\n";
+            math::print(matrix_node->stats.teacher->stats.row_solution, npm.rows);
+            std::cout << "col_solution:\n";
+            math::print(matrix_node->stats.teacher->stats.col_solution, npm.cols);
+
+
+            matrix_node->stats.ok = false;
+        }
     }
 
     std::pair<int, typename Types::Real> best_response_row(
@@ -212,6 +263,7 @@ public:
                         // 11: u(s_ij) = double_oracle (s_ij, p_ij, o_ij)
                         typename Types::Real u_ij = 0;
                         ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
+                        ChanceNode<Grow<Model>> *chance_node_teacher = matrix_node->stats.teacher->access(row_idx, col_idx);
                         
                         const typename Types::Action row_action = state.actions.row_actions[row_idx];
                         const typename Types::Action col_action = state.actions.col_actions[col_idx];
@@ -222,6 +274,7 @@ public:
                             auto state_copy = state;
                             state_copy.apply_actions(row_action, col_action, chance_action);
                             MatrixNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.transition);
+                            matrix_node_next->stats.teacher = chance_node_teacher->access(state_copy.transition);
                             u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.transition.prob;
                         }
 
@@ -242,7 +295,8 @@ public:
             for (int j = 0; j < J.size(); ++j) {
                 expected_row_payoff += col_strategy[j] * o.get(row_idx, J[j]);
             } // o_ij = u_ij by now
-            if (expected_row_payoff > best_response_row) {
+            const double epsilon = 1e-7;
+            if (expected_row_payoff >= best_response_row || (new_action_idx == -1 && std::abs(expected_row_payoff-best_response_row) < epsilon)) {
                 new_action_idx = row_idx;
                 best_response_row = expected_row_payoff;
             }
@@ -285,13 +339,14 @@ public:
                 if (x > 0 && p_ij < o_ij) {
                     typename Types::Real o__ij = std::min(o_ij, best_response_col - expected_p_payoff + x * p_ij);
                 
-                    if (o__ij < o_ij) {
+                    if (o__ij < p_ij) {
                         cont = true;
                         break;
                     } else {
                         typename Types::Real u_ij = 0;
                         ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-                        
+                        ChanceNode<Grow<Model>> *chance_node_teacher = matrix_node->stats.teacher->access(row_idx, col_idx);
+
                         const typename Types::Action row_action = state.actions.row_actions[row_idx];
                         const typename Types::Action col_action = state.actions.col_actions[col_idx];
 
@@ -301,6 +356,7 @@ public:
                             auto state_copy = state;
                             state_copy.apply_actions(row_action, col_action, chance_action);
                             MatrixNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.transition);
+                            matrix_node_next->stats.teacher = chance_node_teacher->access(state_copy.transition);
                             u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.transition.prob;
                         }
 
@@ -319,7 +375,8 @@ public:
             for (int i = 0; i < I.size(); ++i) {
                 expected_col_payoff += row_strategy[i] * p.get(I[i], col_idx);
             }
-            if (expected_col_payoff < best_response_col) {
+            const double epsilon = 1e-7;
+            if (expected_col_payoff <= best_response_col || (new_action_idx == -1 && std::abs(expected_col_payoff-best_response_col) < epsilon)) {
                 new_action_idx = col_idx;
                 best_response_col = expected_col_payoff;
             }
@@ -332,11 +389,11 @@ public:
 private:
 
     typename Types::Real solve_submatrix(
+        typename Types::MatrixReal &M,
         MatrixNode<AlphaBeta> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy) 
     {
-        typename Types::MatrixReal M;
         M.fill(matrix_node->stats.I.size(), matrix_node->stats.J.size());
         row_strategy.fill(M.rows);
         col_strategy.fill(M.cols);
@@ -344,6 +401,7 @@ private:
         for (const int row_idx : matrix_node->stats.I) {
             for (const int col_idx : matrix_node->stats.J) {
                 M.data[entry_idx++] = matrix_node->stats.p.get(row_idx, col_idx);
+                assert(matrix_node->stats.p.get(row_idx, col_idx) == matrix_node->stats.o.get(row_idx, col_idx));
                 // we can use either p or q here since the substage is solved
             }
         }
@@ -356,4 +414,15 @@ private:
         }
         return value;
     }
+
+    typename Types::Real row_alpha_beta(
+        typename Types::State &state,
+        Model &model,
+        MatrixNode<AlphaBeta> *matrix_node,
+        typename Types::Real alpha,
+        typename Types::Real beta)
+    {
+        return 0;
+    }
+
 };
