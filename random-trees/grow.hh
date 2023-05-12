@@ -70,6 +70,8 @@ public:
         if (max_depth > 0 && matrix_node->stats.depth >= max_depth) 
         {
             model.get_inference(state, matrix_node->inference);
+            matrix_node->stats.row_payoff = matrix_node->inference.row_value;
+            matrix_node->stats.col_payoff = matrix_node->inference.col_value;
             matrix_node->is_terminal = true;
             return;
         }
@@ -100,7 +102,7 @@ public:
 
                     grow(state_copy, model, matrix_node_next);
 
-                    matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx) += matrix_node_next->inference.row_value * matrix_node_next->transition.prob;
+                    matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx) += matrix_node_next->stats.row_payoff * matrix_node_next->transition.prob;
                     matrix_node->stats.matrix_node_count += matrix_node_next->stats.matrix_node_count;
                 }
             }
@@ -110,7 +112,7 @@ public:
             matrix_node->stats.nash_payoff_matrix,
             matrix_node->stats.row_solution,
             matrix_node->stats.col_solution);
-        matrix_node->stats.row_solution = 0;
+        matrix_node->stats.row_payoff = 0;
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)
