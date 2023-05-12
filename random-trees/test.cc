@@ -45,28 +45,33 @@ int main()
 
     prng init_device;
     int seed = 100;//init_device.uniform_64();
+    // int seed = init_device.uniform_64();
+
     std::cout << "seed: " << seed << std::endl;
     prng device(seed);
-    int games = 10;
+    int games = 1;
 
 
-    for (int actions = 2; actions <= MaxActions; ++actions) {
-        for (int depth_bound = 1; depth_bound < 2; ++depth_bound) {
-
+    for (int actions = 4; actions <= MaxActions; ++actions) {
+        for (int depth_bound = 2; depth_bound < 3; ++depth_bound) {
 
             double total_exp3p_expl = 0;
             double total_matrix_ucb_expl = 0;
 
             for (int game = 0; game < games; ++game) {
-
-                SeedState state(device, depth_bound, actions, actions, chance_threshold);
-                Model model(device);
+                // const uint64_t seed = device.uniform_64(); //10641954317717599816;
+                const uint64_t seed = 10641954317717599816;
+                prng new_device(seed);
+                std::cout << seed << std::endl;
+                SeedState state(new_device, depth_bound, actions, actions, chance_threshold);
+                Model model(new_device);
                 TreeState<Model> tree_state(state, model);
-
-                AlphaBeta<Model> alpha_beta_session(0, 1);
-                alpha_beta_session.run(state, model);
+                std::cout << actions << depth_bound << std::endl;
                 std::cout << "TreeState value: " << tree_state.current_node->stats.row_payoff << '\n';
-                return 0;
+                AlphaBeta<Model> alpha_beta_session(0, 1);
+                alpha_beta_session.run(state, model, tree_state.current_node);
+                
+
             }
 
         }
