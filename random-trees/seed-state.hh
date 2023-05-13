@@ -209,7 +209,6 @@ class SeedStateVector : public StateChanceVector<int, int, double>
 public:
     struct Types : StateChanceVector<int, int, double>::Types
     {
-        static const int size = MaxActions;
     };
 
     prng device;
@@ -218,7 +217,7 @@ public:
     int cols = 0;
     int payoff_bias = 0;
     std::vector<typename Types::Probability> chance_strategies;
-    std::<typename Types::Probability, MaxTransitions> chance_strategy;
+    std::array<typename Types::Probability, MaxTransitions> chance_strategy;
     typename Types::Probability chance_threshold = Rational(1, MaxTransitions);
 
     int (*depth_bound_func)(SeedStateVector *, int) = &(SeedStateVector::dbf);
