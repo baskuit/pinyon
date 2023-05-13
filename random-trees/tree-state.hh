@@ -6,6 +6,7 @@
 #include "tree/tree.hh"
 
 #include <memory>
+#include <numeric>
 
 /*
 
@@ -49,15 +50,30 @@ public:
 
     void get_actions()
     {
+        // return actions in order of quality for alphabeta testing
         this->actions = current_node->actions;
+        sort_actions();
+    }
+
+    void get_chance_actions (
+        std::vector<typename Types::Observation> &chance_actions,
+        typename Types::Action row_action,
+        typename Types::Action col_action) 
+    {
+        int row_idx = std::find(this->actions.row_actions.begin(), this->actions.row_actions.end(), row_action) - this->actions.row_actions.begin();
+        int col_idx = std::find(this->actions.col_actions.begin(), this->actions.col_actions.end(), col_action) - this->actions.col_actions.begin();
+        ChanceNode<Grow<Model>> *chance_node = current_node->access(row_idx, col_idx);
+        chance_actions = chance_node->stats.chance_actions;
     }
 
     void apply_actions(
         typename Types::Action row_action,
         typename Types::Action col_action)
     {
-        ChanceNode<Grow<Model>> *chance_node = current_node->access(row_action, col_action);
-        const int chance_idx = device.sample_pdf(chance_node->stats.chance_strategy);
+        int row_idx = std::find(this->actions.row_actions.begin(), this->actions.row_actions.end(), row_action) - this->actions.row_actions.begin();
+        int col_idx = std::find(this->actions.col_actions.begin(), this->actions.col_actions.end(), col_action) - this->actions.col_actions.begin();
+        ChanceNode<Grow<Model>> *chance_node = current_node->access(row_idx, col_idx);
+        const int chance_idx = device.sample_pdf(chance_node->stats.chance_strategy, chance_node->stats.chance_strategy.size());
         typename Types::Observation chance_action = chance_node->stats.chance_actions[chance_idx];
         transition.obs = chance_action;
         current_node = chance_node->access(transition);
@@ -89,6 +105,30 @@ private:
         this->row_payoff = current_node->stats.row_payoff;
         this->col_payoff = 1 - this->row_payoff;
         this->row_strategy = current_node->stats.row_solution;
-        this->col_strategy = current_node->stats.col_solution; // wasteful for arrays
+        this->col_strategy = current_node->stats.col_solution; // wasteful for arrays TODO
+    }
+
+    void sort_actions()
+    {
+        typename Types::VectorAction actions;
+        typename Types::VectorInt indices;
+
+        std::iota(indices.begin(), indices.begin() + this->actions.rows, 1);
+        std::sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
+            return this->row_strategy[a] > this->row_strategy[b];
+        });
+        std::transform(indices.begin(), indices.end(), actions.begin(), [&](size_t i) {
+            return this->actions.row_actions[i];
+        });
+        this->actions.row_actions = actions;
+
+        std::iota(indices.begin(), indices.begin() + this->actions.cols, 1);
+        std::sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
+            return this->col_strategy[a] > this->col_strategy[b];
+        });
+        std::transform(indices.begin(), indices.end(), actions.begin(), [&](size_t i) {
+            return this->actions.col_actions[i];
+        });
+        this->actions.col_actions = actions; // TODO could be optimized
     }
 };
