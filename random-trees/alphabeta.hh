@@ -30,8 +30,7 @@ public:
         // value for the maximizing/row player.
         typename Types::MatrixReal p;
         typename Types::MatrixReal o;
-        typename Types::MatrixInt function_calls;
-        int total_calls = 0;
+
         // matrices of pessimistic/optimisitic values. always over full actions
         std::vector<int> I{}, J{}; 
         // vector of row_idx, col_idx in the substage
@@ -40,6 +39,8 @@ public:
         typename Types::VectorReal row_strategy, col_strategy;
         int row_br_idx, col_br_idx;
         bool ok = true;
+        typename Types::MatrixInt function_calls;
+        int total_calls = 0;
     }; 
     struct ChanceStats
     {
@@ -49,7 +50,7 @@ public:
     const typename Types::Real min_val = 0;
     const typename Types::Real max_val = 1;
     int max_depth = -1;
-    typename Types::Real epsilon = 1e-7;
+    typename Types::Real epsilon = Rational(1, 1 << 24);
 
     AlphaBeta(typename Types::Real min_val, typename Types::Real max_val) : 
         min_val(min_val), max_val(max_val) {}
@@ -60,15 +61,10 @@ public:
         MatrixNode<AlphaBeta> *root,
         MatrixNode<Grow<Model>> *teacher
     ) {
-        
         root->stats.teacher = teacher;
         double_oracle(state, model, root, min_val, max_val);
     }
 
-    template <typename T>
-    bool equals (T x, T y) {
-        return std::abs(x - y) < epsilon;
-    }
 
     typename Types::Real double_oracle(
         typename Types::State &state,
@@ -310,8 +306,7 @@ public:
             for (int j = 0; j < J.size(); ++j) {
                 expected_row_payoff += col_strategy[j] * o.get(row_idx, J[j]);
             } // o_ij = u_ij by now
-            const double epsilon = 1e-7;
-            if (expected_row_payoff >= best_response_row || (new_action_idx == -1 && std::abs(expected_row_payoff-best_response_row) < epsilon)) {
+            if (expected_row_payoff >= best_response_row || (new_action_idx == -1 && equals(expected_row_payoff, best_response_row))) {
                 new_action_idx = row_idx;
                 best_response_row = expected_row_payoff;
             }
@@ -373,6 +368,7 @@ public:
                             MatrixNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.transition);
                             matrix_node_next->stats.teacher = chance_node_teacher->access(state_copy.transition);
                             u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.transition.prob;
+                            chance_node->stats.explored += state_copy.transition.prob;
                         }
 
                         // 12: pi, j ← u(si, j ); oi, j ← u(si, j)
@@ -390,8 +386,7 @@ public:
             for (int i = 0; i < I.size(); ++i) {
                 expected_col_payoff += row_strategy[i] * p.get(I[i], col_idx);
             }
-            const double epsilon = 1e-7;
-            if (expected_col_payoff <= best_response_col || (new_action_idx == -1 && std::abs(expected_col_payoff-best_response_col) < epsilon)) {
+            if (expected_col_payoff <= best_response_col || (new_action_idx == -1 && equals(expected_col_payoff, best_response_col))) {
                 new_action_idx = col_idx;
                 best_response_col = expected_col_payoff;
             }
@@ -402,6 +397,11 @@ public:
     }
 
 private:
+
+    template <typename T>
+    bool equals (T x, T y) {
+        return std::abs(x - y) < epsilon;
+    }
 
     typename Types::Real solve_submatrix(
         typename Types::MatrixReal &M,
@@ -437,7 +437,18 @@ private:
         typename Types::Real alpha,
         typename Types::Real beta)
     {
-        return 0;
+        return max_val;
     }
+
+    typename Types::Real col_alpha_beta(
+        typename Types::State &state,
+        Model &model,
+        MatrixNode<AlphaBeta> *matrix_node,
+        typename Types::Real alpha,
+        typename Types::Real beta)
+    {
+        return min_val;
+    }
+    // Serialized AlphaBeta, TODO
 
 };
