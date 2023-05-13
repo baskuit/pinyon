@@ -29,6 +29,7 @@ void print_matrix (MatrixNode<Algorithm> *matrix_node) {
 
 template <size_t MaxActions, size_t MaxTransitions>
 void alpha_beta_test (
+    const int min_actions, const int max_actions,
     const int min_depth, const int max_depth,
     const int games, const uint64_t seed = 0) 
 {
@@ -41,15 +42,13 @@ void alpha_beta_test (
     prng device(seed);
     Rational chance_threshold = Rational(0);
 
-    for (int actions = 2; actions <= MaxActions; ++actions) {
+    for (int actions = min_actions; actions <= max_actions; ++actions) {
         for (int depth_bound = min_depth; depth_bound <= max_depth; ++depth_bound) {
 
-            double total_exp3p_expl = 0;
-            double total_matrix_ucb_expl = 0;
+            double total_proportion = 0;
 
             for (int game = 0; game < games; ++game) {
                 const uint64_t new_seed = device.uniform_64();
-                // const uint64_t seed = 10641954317717599816;
                 prng new_device(new_seed);
                 SeedState state(new_device, depth_bound, actions, actions, chance_threshold);
                 Model model(new_device);
@@ -59,10 +58,14 @@ void alpha_beta_test (
                 alpha_beta_session.run(state, model, &alpha_beta_root, tree_state.current_node);
                 auto a = alpha_beta_root.stats.value;
                 auto b = tree_state.current_node->stats.row_payoff;
-                std::cout << a << ' ' << b << std::endl;
-                // assert(alpha_beta_session.equals(a, b));
+                const int alpha_beta_count = alpha_beta_root.count_matrix_nodes();
+                total_proportion += alpha_beta_count / (double) tree_state.current_node->stats.matrix_node_count;
+
+                assert(alpha_beta_session.equals(a, b));
 
             }
+
+            std::cout << "average tree size ratio for actions, depth_bound: " << actions << ' ' << depth_bound << " = " << total_proportion / games << std::endl;
 
         }
     }
@@ -72,7 +75,7 @@ void alpha_beta_test (
 int main()
 {
 
-    alpha_beta_test<5, 1>(1, 5, 100);
+    alpha_beta_test<7, 1>(5, 7, 4, 5, 10);
 
     return 0;
 }
