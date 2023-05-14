@@ -27,6 +27,12 @@ void print_matrix (MatrixNode<Algorithm> *matrix_node) {
     }
 }
 
+template <class State>
+void alpha_beta_test (State &state) {
+    using Model = MonteCarloModel<State>;
+    TreeState<Model> tree_state(state)
+}
+
 template <size_t MaxActions, size_t MaxTransitions>
 void alpha_beta_test (
     const int min_actions, const int max_actions,

@@ -4,19 +4,22 @@
 #include "libsurskit/vector.hh"
 
 #include <concepts>
+
 struct AbstractTypeList
 {
 };
 // "_Name" so that the Type name does not shadow the template
-template <typename _Action,
-          typename _Observation,
-          typename _Probability,
-          typename _Real,
-          typename _VectorAction,
-          typename _VectorReal,
-          typename _VectorInt,
-          typename _MatrixReal,
-          typename _MatrixInt>
+template <
+    typename _Action,
+    typename _Observation,
+    typename _Probability,
+    typename _Real,
+    typename _VectorAction,
+    typename _VectorReal,
+    typename _VectorInt,
+    typename _MatrixReal,
+    typename _MatrixInt
+>
 // TODO requires std::floating_point<_Real>
 struct TypeList : AbstractTypeList
 {
