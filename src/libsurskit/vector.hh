@@ -26,19 +26,6 @@ struct Vector : std::vector<T>
     }
 };
 
-template <typename T>
-void fill(std::vector<T> &vector, int n, T value)
-{
-    vector.resize(n);
-    std::fill(vector.begin(), vector.begin() + n, value);
-}
-
-template <typename T>
-void fill(std::vector<T> &vector, int n)
-{
-    vector.resize(n);
-}
-
 template <typename T, size_t size>
 struct Array : std::array<T, size>
 {
@@ -49,22 +36,18 @@ struct Array : std::array<T, size>
     {
     }
 
+    int size = 0;
+
     void fill(int n, T value)
     {
         std::fill(this->begin(), this->begin() + n, value);
+        size = n;
     }
     void fill(int n)
     {
+        size = n;
+    }
+    int size () {
+        return size;
     }
 };
-
-template <typename T, int size>
-void fill(std::array<T, size> &vector, int n, T value)
-{
-    std::fill(vector.begin(), vector.begin() + n, value);
-}
-
-template <typename T, int size>
-void fill(std::array<T, size> &vector, int n)
-{
-}

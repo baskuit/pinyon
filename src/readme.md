@@ -30,9 +30,9 @@ For a basic example of this, see the `rollout` method in the implementation of`M
 
 	- For example, `MonteCarloModel<MatrixGame<...>>` is derived from `DoubleOracle<MatrixGame<...>>`, which in turn is derived from `AbstractModel<MatrixGame<...>>`.
 
-- And each type has a class which is base to all. These are `AbstractState<TypeList>`, `AbstractModel<State>`, `AbstractAlgorithm<Model>`, `AbstractTree<Algorithm>`.
+- And each type has a class which is base to all. These are `State<TypeList>`, `AbstractModel<State>`, `AbstractAlgorithm<Model>`, `AbstractTree<Algorithm>`.
 
-- Every class has a nested type list called `Types`. For a super class, this struct always inherits from the `Types` of the subclass. For the base classes (e.g. `AbstractModel`), `Types` will inherit from the`Types` of the lower template parameter class, except `AbstractState<TypeList>`, whose `Types` inherits from the template parameter directly.
+- Every class has a nested type list called `Types`. For a super class, this struct always inherits from the `Types` of the subclass. For the base classes (e.g. `AbstractModel`), `Types` will inherit from the`Types` of the lower template parameter class, except `State<TypeList>`, whose `Types` inherits from the template parameter directly.
 
 
 	Besides the aforementioned inheritance, the below also illustrates the pattern for supplying `Types` with more aliases within the scope of the class. 
@@ -80,7 +80,7 @@ The 'math' header contains a simple implementation of matrices via standard arra
 
 ## State
 	template <class _TypeList>
-	class AbstractState {
+	class State {
 	public:
 	    struct Types : _TypeList {
 	        using TypeList = _TypeList;
@@ -92,18 +92,18 @@ The 'math' header contains a simple implementation of matrices via standard arra
 In general, a state represents a partially-observed, stochastic, two-player matrix game. A state has an `Actions` type (not to be confused with `Action`) which stores information about the legal moves of *both* players, and a `Transition` type, which stores any information observed from the state after committing joint actions. This terminology mirrors that of a Markov Decision Process.
 Note that all these structs are empty. Indeed the abstract classes only inform the user what must be implemented in the derived classes. 
 
-### `DefaultState<TypeList> : AbstractState<TypeList>`
+### `DefaultState<TypeList> : State<TypeList>`
 
 Currently, all implemented higher classes assume that the state is derived from `DefaultState`. The design of this state is outlined below.
 
-	class DefaultState : public AbstractState<TypeList>
+	class DefaultState : public State<TypeList>
 	{
-	    struct Transition : AbstractState<TypeList>::Transition {
+	    struct Transition : State<TypeList>::Transition {
 	        typename Types::Observation obs;
 	        typename Types::Probability prob;
 	    };
 
-	    struct Actions : AbstractState<TypeList>::Actions {
+	    struct Actions : State<TypeList>::Actions {
 	        typename Types::VectorAction row_actions;
 	        typename Types::VectorAction col_actions;
 	        int rows;
@@ -125,7 +125,7 @@ Lastly there is a boolean indicator of whether the state is terminal. This is al
 It is not assumed that states are constructed with valid actions, payoff, or transition data in place. This is because this information may be costly to calculate. The user may have to call `get_actions()` on a state before using it. 
 A state must also be copyable. This is because the state will be 'rolled out' (mutated) during search, so these operations must be performed on a copy to keep the original state unmodified. 
 
-`DefaultState` has a smaller scope of representation than `AbstractState`. Its purpose is to codify a *perfect information* game. 
+`DefaultState` has a smaller scope of representation than `State`. Its purpose is to codify a *perfect information* game. 
 Thus the search tree assumes that the `Observation` uniquely identifies different transitions and has no handling of any 'mix-up' that may result from incomplete observations.
 Imperfect information games are beyond the scope of vanilla Surskit, and in fact convergence guarantees on such games would require something like Counterfactual Regret. Nevertheless, `DefaultState` is not base because the user may find that the look-ahead functionality of Surskit is useful in some imperfect info contexts.
 

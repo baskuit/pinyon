@@ -1,6 +1,6 @@
 #pragma once
 
-#include "algorithm.hh"
+#include "bandit.hh"
 
 #include "../libsurskit/math.hh"
 

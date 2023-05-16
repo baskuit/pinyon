@@ -2,11 +2,7 @@
 
 #include <string>
 
-#include "libsurskit/random.hh"
-#include "libsurskit/math.hh"
-#include "libsurskit/gambit.hh"
-#include "state/test-states.hh"
-#include "algorithm.hh"
+#include "bandit.hh"
 #include "tree/tree.hh"
 
 /*

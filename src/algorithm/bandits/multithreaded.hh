@@ -7,19 +7,6 @@
 #include <mutex>
 #include <atomic>
 
-/*
-This module needs a lot of work for general use.
-The function for multithreaded search clones the model since I don't know how to make those thread safe...
-
-I could make a new class of models that are marked as thread-safe. Libtorch stuff and maybe a example of MonteCarlo
-
-*/
-
-
-/*
-TreeBandit with a mutex in each matrix node
-*/
-
 template <class Model, class Algorithm>
 class TreeBanditThreaded : public TreeBanditBase<Model, Algorithm>
 {

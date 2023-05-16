@@ -22,7 +22,6 @@ template <
     typename _MatrixInt
 >
 struct Types {
-
     using Rational = _Rational;
     using Real = _Real;
     using Float = _Float;

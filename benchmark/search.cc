@@ -70,7 +70,7 @@ int main() {
     execution_times["foo2"] = duration.count();
 
     // save the execution times to a file
-    std::ofstream file("execution_times.txt", std::ios::app);
+    std::ofstream file("benchmark/results/search.txt", std::ios::app);
     auto now = system_clock::now();
     auto now_time = system_clock::to_time_t(now);
     file << "Test date/time: " << std::put_time(std::localtime(&now_time), "%F %T") << "\n";
