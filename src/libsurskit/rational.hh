@@ -2,18 +2,19 @@
 
 #include <iostream>
 
-class Rational
+template <typename T>
+struct Rational
 {
 
-    int p = 1;
-    int q = 1;
+    T p = 1;
+    T q = 1;
 
     void reduce()
     {
         // eulcid's algorithm
-        int a = p;
-        int b = q;
-        int c;
+        T a = p;
+        T b = q;
+        T c;
         while (b)
         {
             a %= b;
@@ -28,9 +29,9 @@ class Rational
 public:
     Rational() {}
 
-    Rational(int p) : p(p), q(1) {}
+    Rational(T p) : p(p), q(1) {}
 
-    Rational(int p, int q) : p(p), q(q) {}
+    Rational(T p, T q) : p(p), q(q) {}
 
     Rational(double x)
     {
@@ -38,15 +39,17 @@ public:
         // 1342177/-524288 TODO
         p = 0;
         q = 1;
-        if (x != 0.0) {
+        if (x != 0.0)
+        {
             bool neg = x < 0;
-            if (neg) {
+            if (neg)
+            {
                 x = -x;
             }
 
-            constexpr long shift = 15;         // a safe shift per step
-            constexpr double width = 1 << shift;  // = 2^shift
-            const int maxiter = 20;        // ought not be necessary, but just in case,
+            constexpr long shift = 15;           // a safe shift per step
+            constexpr double width = 1 << shift; // = 2^shift
+            const int maxiter = 20;              // ought not be necessary, but just in case,
             // max 300 bits of precision
             int expt;
             double mantissa = frexp(x, &expt);
@@ -65,7 +68,8 @@ public:
                 p <<= exponent;
             else if (exponent < 0)
                 q <<= -exponent;
-            if (neg) {
+            if (neg)
+            {
                 p *= -1;
             }
         }
