@@ -48,7 +48,8 @@ public:
     MatrixNode(
         ChanceNode<Algorithm> *parent,
         MatrixNode<Algorithm> *prev,
-        typename Types::Transition transition) : parent(parent), prev(prev), transition(transition) {}
+        typename Types::Observation obs,
+        typename Types::Probability prob) : parent(parent), prev(prev), obs(obs), prob(prob) {}
     ~MatrixNode();
 
     ChanceNode<Algorithm> *access(int row_idx, int col_idx)
@@ -85,12 +86,19 @@ public:
 
     int count_siblings()
     {
-        int c = 0;
+        // called on a matrix node to see how many branches its chance node parent has
+        int c = 1;
         MatrixNode<Algorithm> *current = this->next;
         while (current != nullptr)
         {
             ++c;
             current = current->next;
+        }
+        current = this->prev;
+        while (current != nullptr)
+        {
+            ++c;
+            current = current->prev;
         }
         return c;
     }
@@ -107,11 +115,14 @@ public:
         return c;
     }
 
-    void spot_delete () {
-        if (this->prev != nullptr) {
+    void spot_delete()
+    {
+        if (this->prev != nullptr)
+        {
             this->prev->next = this->next;
         }
-        else if (this->parent != nullptr) {
+        else if (this->parent != nullptr)
+        {
             this->parent->child = this->next;
         }
         delete this;
@@ -144,11 +155,11 @@ public:
         int col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
     ~ChanceNode();
 
-    MatrixNode<Algorithm> *access(typename Types::Transition &transition)
+    MatrixNode<Algorithm> *access(typename Types::obs &obs, typename Types::Probability prob) // TODO check speed on pass-by
     {
         if (this->child == nullptr)
         {
-            MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, nullptr, transition);
+            MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, nullptr, obs, prob);
             this->child = child;
             return child;
         }
@@ -157,13 +168,13 @@ public:
         while (current != nullptr)
         {
             previous = current;
-            if (current->obs == transition.obs)
+            if (current->obs == obs)
             {
                 return current;
             }
             current = current->next;
         }
-        MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, previous, transition);
+        MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, previous, obs, prob);
         previous->next = child;
         return child;
     };
@@ -182,33 +193,42 @@ public:
 
     int count_siblings()
     {
-        int c = 0;
+        int c = 1;
         ChanceNode<Algorithm> *current = this->next;
         while (current != nullptr)
         {
             ++c;
             current = current->next;
         }
+        current = this->prev;
+        while (current != nullptr)
+        {
+            ++c;
+            current = current->prev;
+        }
         return c;
     }
 
     typename Types::Probability get_explored_total()
     {
-        typename Types::Probability total(0, 1);
-        MatrixNode<Algorithm> cur = child;
-        while (cur != nullptr)
+        typename Types::Probability total(0);
+        MatrixNode<Algorithm> current = child;
+        while (current != nullptr)
         {
-            total += cur.transition.prob;
-            cur = cur->next;
+            total += current.prob;
+            current = current->next;
         }
         return total;
     }
 
-    void spot_delete () {
-        if (this->prev != nullptr) {
+    void spot_delete()
+    {
+        if (this->prev != nullptr)
+        {
             this->prev->next = this->next;
         }
-        else if (this->parent != nullptr) {
+        else if (this->parent != nullptr)
+        {
             this->parent->child = this->next;
         }
         delete this;
