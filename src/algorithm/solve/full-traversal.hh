@@ -16,7 +16,7 @@
 */
 
 template <typename Model>
-class Grow : public AbstractAlgorithm<Model>
+class FullTraversal : public AbstractAlgorithm<Model>
 {
     static_assert(std::derived_from<typename Model::Types::State, StateChance<typename Model::Types::TypeList>>,
         "This algorithm must be based on State type derived from StateChance");
@@ -28,8 +28,8 @@ public:
     struct ChanceStats;
     struct Types : AbstractAlgorithm<Model>::Types
     {
-        using MatrixStats = Grow::MatrixStats;
-        using ChanceStats = Grow::ChanceStats;
+        using MatrixStats = FullTraversal::MatrixStats;
+        using ChanceStats = FullTraversal::ChanceStats;
     };
     struct MatrixStats : AbstractAlgorithm<Model>::MatrixStats
     {
@@ -47,12 +47,12 @@ public:
 
     int max_depth = -1;
 
-    Grow() {}
+    FullTraversal() {}
 
     void grow(
         typename Types::State &state,
         Model &model,
-        MatrixNode<Grow> *matrix_node)
+        MatrixNode<FullTraversal> *matrix_node)
     {
 
         // expand node
@@ -92,12 +92,12 @@ public:
                 std::vector<typename Types::Observation> chance_actions;
                 state.get_chance_actions(chance_actions, row_action, col_action);
 
-                ChanceNode<Grow> *chance_node = matrix_node->access(row_idx, col_idx);
+                ChanceNode<FullTraversal> *chance_node = matrix_node->access(row_idx, col_idx);
                 for (auto chance_action : chance_actions)
                 {
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, chance_action);
-                    MatrixNode<Grow> *matrix_node_next = chance_node->access(state_copy.transition);
+                    MatrixNode<FullTraversal> *matrix_node_next = chance_node->access(state_copy.transition);
                     matrix_node_next->stats.depth = matrix_node->stats.depth + 1;
 
                     grow(state_copy, model, matrix_node_next);
