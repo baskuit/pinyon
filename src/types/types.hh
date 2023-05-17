@@ -6,6 +6,8 @@
 
 #include <vector>
 
+using ActionIndex = int;
+
 template <
     typename _Rational,
     typename _Real,
