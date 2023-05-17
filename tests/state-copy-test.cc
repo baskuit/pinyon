@@ -2,6 +2,6 @@
 
 int main () {
 
-    PerfectInfoState<SimpleTypes> state;
+    State<SimpleTypes> state;
 
 }

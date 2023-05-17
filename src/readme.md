@@ -208,20 +208,20 @@ The two algorithms provided with Surskit amend this by using a more suitable ban
 
 * MatrixUCB recovers the stochastic assumption by making the selection over *joint  actions* for both players.
 
-### `TreeBanditBase : public AbstractAlgorithm<Model>`
+### `TreeBandit : public AbstractAlgorithm<Model>`
 
 The class encapsulates the iterative selection, expansion and back-propagation process that is common to vanilla MTCS, Exp3p, and MatrixUCB. It introduces a helper struct called `Outcome` which stores the outcome of the bandit selection process at each node that is visited in the playout. This information consists of: the actions selected, the sampled probability of selecting those actions, and the reward received (the reward being the model's value estimate for the leaf node at the end of the playout.)
 The user interfaces with this class with its methods `run`, which asks for a specific number  of playouts to perform, `run_for_duration` which performs playouts until the time is up, and `get_strategies`, which gives the 'final answer' for the root node using the accumulated stats in the search tree.
 
 This class is actually incomplete, and has three derivations. 
 
-* `TreeBandit : public TreeBanditBase<Model, Algorithm>`
+* `TreeBandit : public TreeBandit<Model, Algorithm>`
 Single threaded
 
-* `TreeBanditThreaded : public TreeBanditBase<Model, Algorithm>`
+* `TreeBanditThreaded : public TreeBandit<Model, Algorithm>`
 A multi-threaded version that stores a mutex in each matrix node. This has lower contention but higher memory cost.
 
-* `TreeBanditPool : public TreeBanditBase<Model, Algorithm>`
+* `TreeBanditPool : public TreeBandit<Model, Algorithm>`
 A mult-threaded version that uses a pool of mutexes for the entire tree. Each matrix node is assigned an index that speficies a mutex. This has lower memory cost but higher contention.
 
 These classes differ only by their implementation of the playout function and data they have to add to the matrix stats for that purpose.
@@ -267,9 +267,9 @@ Each of these templates accepts a model specialization, of course, but also an A
         }
     }
 
-The methods `expand`, `update_matrix_node`, `update_chance_node`, and `select` are members of  the `TreeBanditBase` class, but `TreeBanditBase` is actually a *CRTP base class*. The methods are implemented in the particular bandit algorithm class like so:
+The methods `expand`, `update_matrix_node`, `update_chance_node`, and `select` are members of  the `TreeBandit` class, but `TreeBandit` is actually a *CRTP base class*. The methods are implemented in the particular bandit algorithm class like so:
 
-	// from TreeBanditBase
+	// from TreeBandit
     void update_matrix_node(
         MatrixNode<Algorithm> *matrix_node,
         Outcome &outcome) {

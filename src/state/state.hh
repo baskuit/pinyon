@@ -2,27 +2,27 @@
 
 #include "types/types.hh"
 
-template <struct _Types>
+template <class _Types>
 class AbstractState
 {
 };
 
 template <class _Types>
-class PerfectInfoState : public AbstractState<_Types>
+class State : public AbstractState<_Types>
 {
 public:
-    struct Actions;
-    struct Transition;
     struct Types : _Types
     {
-        using Actions = PerfectInfoState::Actions;
-        using Transition = PerfectInfoState::Transition;
     };
-    struct Actions
-    {
-        typename Types::VectorAction row_actions;
-        typename Types::VectorAction col_actions;
-    };
+
+    State () {}
+
+    typename Types::VectorAction row_actions, col_actions;
+    typename Types::Observation obs;
+    typename Types::Probability prob;
+    typename Types::Real row_payoff, col_payoff;
+    bool is_terminal{false};
+    typename Types::Seed seed{0};
 
     void get_actions();
 
@@ -30,9 +30,40 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action);
 
-    void random_seed(typename Types::PRNG &device){};
+    void reseed(typename Types::PRNG &device){};
 
-    typename Types::Real row_payoff, col_payoff;
-    bool is_terminal = false;
-    typename Types::Seed seed;
+    void apply_action_indices(
+        ActionIndex row_idx,
+        ActionIndex col_idx){
+        apply_actions(row_actions[row_idx], col_actions[col_idx])};
+};
+
+template <class _Types>
+class ChanceState : public State<_Types>
+{
+
+    struct Types : State<_Types>
+    {
+    };
+
+    void get_chance_actions () {
+        std::vector<typename Types::Observation> &chance_actions,
+        typename Types::Action row_action,
+        typename Types::Action col_action
+    };
+
+    void apply_actions(
+        typename Types::Action row_action,
+        typename Types::Action col_action,
+        typename Types::Observation chance_action
+    );
+
+    void apply_actions(
+        typename Types::Action row_action,
+        typename Types::Action col_action,
+        typename Types::Seed seed
+    ) {
+        this->seed = seed;
+        apply_actions(row_action, col_action);
+    }
 };

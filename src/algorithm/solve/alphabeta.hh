@@ -95,6 +95,7 @@ public:
         // 6: initialize restricted action sets I and J with a first action in stage s
         std::vector<int> &I = stats.I;
         std::vector<int> &J = stats.J;
+        // TODO first action using info from last expansion, if possible
         I.push_back(0);
         J.push_back(0);
 

@@ -1,18 +1,19 @@
 #pragma once
 
-#include "algorithm.hh"
+#include "bandit.hh"
+
 #include "tree/tree.hh"
 
 #include <thread>
 #include <mutex>
 #include <atomic>
 
-template <class Model, class Algorithm>
-class TreeBanditThreaded : public TreeBanditBase<Model, Algorithm>
+template <class Model, class BanditAlgorithm, struct Outcome=ChoicesOutcome>
+class TreeBanditThreaded : public TreeBandit<Model, BanditAlgorithm, Outcome>
 {
 public:
     struct MatrixStats;
-    struct Types : TreeBanditBase<Model, Algorithm>::Types
+    struct Types : TreeBandit<Model, BanditAlgorithm, Outcome>::Types
     {
         using MatrixStats = TreeBanditThreaded::MatrixStats;
     };
@@ -24,13 +25,13 @@ public:
 
     int threads = 1;
 
-    // Override the TreeBanditBase run for threads
+    // Override the TreeBandit run for threads
     void run(
         int playouts,
         prng &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Algorithm> &matrix_node)
+        MatrixNode<BanditAlgorithm> &matrix_node=this->root)
     {
         this->_initialize_stats(playouts, state, model, &matrix_node);
         std::thread thread_pool[threads];
@@ -50,7 +51,7 @@ public:
         prng *device,
         typename Types::State *state,
         typename Types::Model *model,
-        MatrixNode<Algorithm> *matrix_node)
+        MatrixNode<BanditAlgorithm> *matrix_node)
     {
         prng device_thread; // TODO deterministically provide new seed
         typename Types::Model model_thread = *model;
@@ -61,11 +62,11 @@ public:
         }
     }
 
-    MatrixNode<Algorithm> *playout(
+    MatrixNode<BanditAlgorithm> *playout(
         prng &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Algorithm> *matrix_node)
+        MatrixNode<BanditAlgorithm> *matrix_node)
     {
 
         std::mutex &mtx = matrix_node->stats.mtx;
@@ -74,7 +75,7 @@ public:
         {
             if (matrix_node->is_expanded)
             {
-                typename Types::Outcome outcome;
+                Outcome outcome;
 
                 mtx.lock();
                 this->_select(device, matrix_node, outcome);
@@ -84,10 +85,10 @@ public:
                 typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
                 state.apply_actions(row_action, col_action);
 
-                ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
+                ChanceNode<BanditAlgorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                MatrixNode<BanditAlgorithm> *matrix_node_next = chance_node->access(state.transition);
 
-                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(device, state, model, matrix_node_next);
+                MatrixNode<BanditAlgorithm> *matrix_node_leaf = this->playout(device, state, model, matrix_node_next);
 
                 outcome.row_value = matrix_node_leaf->inference.row_value;
                 outcome.col_value = matrix_node_leaf->inference.col_value;
@@ -113,20 +114,15 @@ public:
 };
 
 /*
-Currently doesn't even compile because of the extra pool_size template parameter... TODO TODO TODO
-Fixed, mostly. I just made it fixed lol. It's about as fast as BanditThreaded only not having millions of extra mutexes in the use-case.
-*/
-
-/*
 TreeBandit with a mutex pool
 */
 
-template <class Model, class Algorithm>
-class TreeBanditThreadPool : public TreeBanditBase<Model, Algorithm>
+template <class Model, class BanditAlgorithm, struct Outcome>
+class TreeBanditThreadPool : public TreeBandit<Model, BanditAlgorithm, Outcome>
 {
 public:
     struct MatrixStats;
-    struct Types : TreeBanditBase<Model, Algorithm>::Types
+    struct Types : TreeBandit<Model, BanditAlgorithm, Outcome>::Types
     {
         using MatrixStats = TreeBanditThreadPool::MatrixStats;
     };
@@ -148,7 +144,7 @@ public:
         prng &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Algorithm> &matrix_node)
+        MatrixNode<BanditAlgorithm> &matrix_node=this->root)
     {
         this->_initialize_stats(playouts, state, model, &matrix_node);
         std::thread thread_pool[threads];
@@ -168,7 +164,7 @@ public:
         prng *device,
         typename Types::State *state,
         typename Types::Model *model,
-        MatrixNode<Algorithm> *matrix_node)
+        MatrixNode<BanditAlgorithm> *matrix_node)
     {
         prng device_thread(device->get_seed());
         typename Types::Model model_thread = *model;
@@ -179,11 +175,11 @@ public:
         }
     }
 
-    MatrixNode<Algorithm> *playout(
+    MatrixNode<BanditAlgorithm> *playout(
         prng &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Algorithm> *matrix_node)
+        MatrixNode<BanditAlgorithm> *matrix_node)
     {
 
         std::mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
@@ -202,10 +198,10 @@ public:
                 typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
                 state.apply_actions(row_action, col_action);
 
-                ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
+                ChanceNode<BanditAlgorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                MatrixNode<BanditAlgorithm> *matrix_node_next = chance_node->access(state.transition);
 
-                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(device, state, model, matrix_node_next);
+                MatrixNode<BanditAlgorithm> *matrix_node_leaf = this->playout(device, state, model, matrix_node_next);
 
                 outcome.row_value = matrix_node_leaf->inference.row_value;
                 outcome.col_value = matrix_node_leaf->inference.col_value;
@@ -235,7 +231,7 @@ public:
 
 private:
     void get_mutex_index(
-        MatrixNode<Algorithm> *matrix_node)
+        MatrixNode<BanditAlgorithm> *matrix_node)
     {
         matrix_node->stats.mutex_index = (this->current_index++) % pool_size;
     }

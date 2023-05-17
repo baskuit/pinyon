@@ -36,8 +36,8 @@ public:
         typename Types::Real row_payoff, col_payoff;
         typename Types::VectorReal row_solution, col_solution;
         typename Types::MatrixReal nash_payoff_matrix;
-        int matrix_node_count = 1;
-        int depth = 0;
+        size_t matrix_node_count = 1;
+        unsigned int depth = 0;
     };
     struct ChanceStats : AbstractAlgorithm<Model>::ChanceStats
     {
@@ -49,7 +49,7 @@ public:
 
     FullTraversal() {}
 
-    void grow(
+    void run(
         typename Types::State &state,
         Model &model,
         MatrixNode<FullTraversal> *matrix_node)
@@ -100,7 +100,7 @@ public:
                     MatrixNode<FullTraversal> *matrix_node_next = chance_node->access(state_copy.transition);
                     matrix_node_next->stats.depth = matrix_node->stats.depth + 1;
 
-                    grow(state_copy, model, matrix_node_next);
+                    run(state_copy, model, matrix_node_next);
 
                     matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx) += matrix_node_next->stats.row_payoff * matrix_node_next->transition.prob;
                     matrix_node->stats.matrix_node_count += matrix_node_next->stats.matrix_node_count;
