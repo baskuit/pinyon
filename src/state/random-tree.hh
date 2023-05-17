@@ -11,65 +11,65 @@ RandomTree is a well-defined P-game.
 */
 
 template <size_t MaxTransitions>
-class RandomTree : public StateChanceVector<int, int, double>
+class RandomTree : public StateChance<SimpleTypes>
 {
 public:
-    struct Types : StateChanceVector<int, int, double>::Types
+    struct Types : StateChance<SimpleTypes>::Types
     {
     };
 
-    prng device;
+    typename Types::PRNG device;
     int depth_bound = 0;
     int rows = 0;
     int cols = 0;
     int payoff_bias = 0;
-    std::vector<typename Types::Probability> chance_strategies;
-    std::array<typename Types::Probability, MaxTransitions> chance_strategy;
     typename Types::Probability chance_threshold = Rational(1, MaxTransitions);
+    std::vector<typename Types::Probability> chance_strategies;
 
     int (*depth_bound_func)(RandomTree *, int) = &(RandomTree::dbf);
     int (*actions_func)(RandomTree *, int) = &(RandomTree::af);
     int (*payoff_bias_func)(RandomTree *, int) = &(RandomTree::pbf);
-    // use all info, allows for serialization inducing functions
+
+    // everything above determines the abstract game tree exactly
+
+    std::array<typename Types::Probability, MaxTransitions> chance_strategy;
+    // just a helper for the sample_pdf function in apply_actions
 
     RandomTree(
-        const prng &device, 
-        int depth_bound, 
-        int rows, 
+        const prng &device,
+        int depth_bound,
+        int rows,
         int cols,
-        typename Types::Probability chance_threshold) : 
-            device(device), 
-            depth_bound(depth_bound), 
-            rows(rows), 
-            cols(cols),
-            chance_threshold(chance_threshold)
+        typename Types::Probability chance_threshold) : device(device),
+                                                        depth_bound(depth_bound),
+                                                        rows(rows),
+                                                        cols(cols),
+                                                        chance_threshold(chance_threshold)
     {
         get_chance_strategies();
     }
 
     RandomTree(
-        const prng &device, 
-        int depth_bound, 
-        int rows, 
-        int cols, 
-        int (*depth_bound_func)(prng &, int), 
+        const prng &device,
+        int depth_bound,
+        int rows,
+        int cols,
+        int (*depth_bound_func)(prng &, int),
         int (*actions_func)(prng &, int),
-        int (*payoff_bias_func)(prng &, int)) : 
-            device(device), 
-            depth_bound(depth_bound), 
-            rows(rows), 
-            cols(cols), 
-            depth_bound_func(depth_bound_func), 
-            actions_func(actions_func), 
-            payoff_bias_func(payoff_bias_func)
+        int (*payoff_bias_func)(prng &, int)) : device(device),
+                                                depth_bound(depth_bound),
+                                                rows(rows),
+                                                cols(cols),
+                                                depth_bound_func(depth_bound_func),
+                                                actions_func(actions_func),
+                                                payoff_bias_func(payoff_bias_func)
     {
         get_chance_strategies();
     }
 
     void get_actions()
     {
-        this->actions.rows = rows;
-        this->actions.cols = cols;
+        // TODO optimize? Init actions in constr and only update entries when row/col increases
         this->actions.row_actions.fill(rows);
         this->actions.col_actions.fill(cols);
         for (int i = 0; i < rows; ++i)
@@ -82,27 +82,34 @@ public:
         };
     }
 
-    void get_chance_actions (
+    void get_chance_actions(
         std::vector<typename Types::Observation> &chance_actions,
         typename Types::Action row_action,
-        typename Types::Action col_action) 
+        typename Types::Action col_action)
     {
         chance_actions.clear();
         const int start_idx = get_transition_idx(row_action, col_action, 0);
-        for (int chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx) {
-            if (chance_strategies[start_idx + chance_idx] > 0) {
+        for (int chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx)
+        {
+            if (chance_strategies[start_idx + chance_idx] > 0)
+            {
                 chance_actions.push_back(chance_idx);
             }
         }
     }
 
-    void apply_actions(int row_action, int col_action, int chance_action, bool extra_prng_call = true)
+    void apply_actions(
+        typename Types::Action row_action,
+        typename Types::Action col_action,
+        typename Types::Observation chance_action,
+        bool extra_prng_call = true)
     {
-        if (extra_prng_call) {
+        if (extra_prng_call)
+        {
             device.uniform(); // TODO check if discard 1 does the same.
         }
         const int transition_idx = get_transition_idx(row_action, col_action, chance_action);
-        device.discard(transition_idx); 
+        device.discard(transition_idx);
         // advance the prng so that different player/chance actions have different outcomes
 
         this->obs = chance_action;
@@ -118,7 +125,9 @@ public:
             const typename Types::Real sigsum_bias = (payoff_bias > 0) - (payoff_bias < 0);
             this->row_payoff = (sigsum_bias + 1) / 2;
             this->col_payoff = 1.0 - this->row_payoff;
-        } else {
+        }
+        else
+        {
             rows = (*actions_func)(this, rows);
             cols = (*actions_func)(this, cols);
             get_chance_strategies();
@@ -126,19 +135,21 @@ public:
     }
 
     // RandomTreeVector is only used to generate a TreeState, and the grow algorithm only calls the other apply_actions
-    void apply_actions(int row_action, int col_action)
+    void apply_actions(
+        typename Types::Action row_action,
+        typename Types::Action col_action)
     {
         const int transition_idx = get_transition_idx(row_action, col_action, 0);
         std::copy_n(
-            chance_strategies.begin() + transition_idx, 
+            chance_strategies.begin() + transition_idx,
             MaxTransitions,
             chance_strategy.begin());
-        int chance_action = device.sample_pdf(chance_strategy, MaxTransitions);
-        apply_actions(row_action, col_action, chance_action, false);
+        const int chance_action_idx = device.sample_pdf(chance_strategy, MaxTransitions);
+        apply_actions(row_action, col_action, chance_action_idx, false); // TODO make type safe (assumes obs = int)
     }
 
     /*
-    Defaults
+    Default Growth Functions
     */
 
     static int dbf(RandomTree *state, int depth)
@@ -156,41 +167,48 @@ public:
     }
 
 private:
-
-    inline int get_transition_idx (int row_idx, int col_idx, int chance_idx) {
+    inline int get_transition_idx(int row_idx, int col_idx, int chance_idx)
+    {
         return row_idx * cols * MaxTransitions + col_idx * MaxTransitions + chance_idx;
     }
 
-    void get_chance_strategies () {
+    void get_chance_strategies()
+    {
         chance_strategies.fill(rows * cols * MaxTransitions);
-        for (int row_idx = 0; row_idx < rows; ++row_idx) {
+        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
+        {
 
-            for (int col_idx = 0; col_idx < cols; ++col_idx) {
+            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
+            {
 
-                int start_idx = row_idx * cols * MaxTransitions + col_idx * MaxTransitions;
+                ActionIndex start_idx = row_idx * cols * MaxTransitions + col_idx * MaxTransitions;
 
                 // get unnormalized distro
                 typename Types::Probability prob_sum = 0;
-                for (int i = 0; i < MaxTransitions; ++i) { 
+                for (ActionIndex chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx)
+                {
                     const typename Types::Probability p = device.uniform();
-                    chance_strategies[start_idx + i] = p;
+                    chance_strategies[start_idx + chance_idx] = p;
                     prob_sum += p;
                 }
-                
+
                 // clip and compute new norm
                 typename Types::Probability new_prob_sum = 0;
-                for (int i = 0; i < MaxTransitions; ++i) {
-                    typename Types::Probability &p = chance_strategies[start_idx + i];
+                for (int chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx)
+                {
+                    typename Types::Probability &p = chance_strategies[start_idx + chance_idx];
                     p /= prob_sum;
-                    if (p < chance_threshold) {
+                    if (p < chance_threshold)
+                    {
                         p = 0;
                     }
                     new_prob_sum += p;
                 }
 
                 // append final renormalized strategy
-                for (int i = 0; i < MaxTransitions; ++i) {
-                    chance_strategies[start_idx + i] /= new_prob_sum;
+                for (int chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx)
+                {
+                    chance_strategies[start_idx + chance_idx] /= new_prob_sum;
                 }
             }
         }
