@@ -6,19 +6,9 @@ template <class _State>
 class AbstractModel
 {
 public:
-    struct Inference;
     struct Types : _State::Types
     {
-        using State = _State;
-        using Inference = AbstractModel::Inference;
     };
-    struct Inference
-    {
-    };
-
-    void get_inference(
-        typename Types::State &state,
-        typename Types::Inference &inference);
 };
 
 /*
@@ -61,9 +51,9 @@ public:
     {
     };
 
-    prng device;
+    typename Types::PRNG device;
 
-    MonteCarloModel(prng &device) : device(device.get_seed()) {}
+    MonteCarloModel(typename Types::PRNG &device) : device(device) {}
 
     void get_inference(
         typename Types::State &state,
@@ -74,7 +64,7 @@ public:
         const typename Types::Real col_uniform = 1 / (typename Types::Real)state.col_actions.size();
         inference.col_policy.fill(state.col_actions.size(), col_uniform);
 
-        this->rollout(state);
+        rollout(state);
         inference.row_value = state.row_payoff;
         inference.col_value = state.col_payoff;
     }
@@ -82,48 +72,15 @@ public:
 protected:
     void rollout(State &state)
     {
+        // model inference in bandits happens in expand(), after get_actions is called
         while (!state.is_terminal)
         {
-            const int row_idx = this->device.random_int(state.row_actions.size());
-            const int col_idx = this->device.random_int(state.col_actions.size());
+            const ActionIndex row_idx = device.random_int(state.row_actions.size());
+            const ActionIndex col_idx = device.random_int(state.col_actions.size());
             const typename Types::Action row_action = state.row_actions[row_idx];
             const typename Types::Action col_action = state.col_actions[col_idx];
             state.apply_actions(row_action, col_action);
             state.get_actions();
         }
-    }
-};
-
-/*
-MonteCarlo model that uses a priori solutions to simulate expert inference
-*/
-
-template <class State>
-class SolvedMonteCarloModel : public MonteCarloModel<State>
-{   
-    static_assert(std::derived_from<State, SolvedState<typename State::Types::TypeList>>);
-
-public:
-    struct Types : DoubleOracleModel<State>::Types
-    {
-    };
-
-    typename Types::Real power = 1;
-    typename Types::Real epsilon = .005; // unused
-
-    SolvedMonteCarloModel(prng &device) : MonteCarloModel<State>(device) {}
-
-    SolvedMonteCarloModel(prng &device, typename Types::Real power, typename Types::Real epsilon) : 
-        MonteCarloModel<State>(device), power(power), epsilon(epsilon) {}
-
-    void get_inference(
-        typename Types::State &state,
-        typename Types::Inference &inference)
-    {
-        math::power_norm(state.row_strategy, state.row_actions.size(), power, inference.row_policy);
-        math::power_norm(state.col_strategy, state.col_actions.size(), power, inference.col_policy);
-        this->rollout(state);
-        inference.row_value = state.row_payoff;
-        inference.col_value = state.col_payoff;
     }
 };
