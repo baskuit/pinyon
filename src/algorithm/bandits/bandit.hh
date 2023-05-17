@@ -44,7 +44,7 @@ public:
 
     void run(
         int iterations,
-        prng &device,
+        typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> &matrix_node = root)
@@ -82,7 +82,7 @@ protected:
     }
 
     MatrixNode<Algorithm> *_playout(
-        prng &device,
+        typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
@@ -95,7 +95,7 @@ protected:
     }
 
     void _select(
-        prng &device,
+        typename Types::PRNG &device,
         MatrixNode<Algorithm> *matrix_node,
         Outcome &outcome)
     {
@@ -170,7 +170,7 @@ protected:
     */
 
     MatrixNode<BanditAlgorithm> *run_iteration(
-        prng &device,
+        typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> *matrix_node)
@@ -213,7 +213,7 @@ protected:
     // TODO rename. MCTS-A style search where you return the empirical average values of the next node instead of the leaf node value.
 
     void *run_iteration_average(
-        prng &device,
+        typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> *matrix_node)

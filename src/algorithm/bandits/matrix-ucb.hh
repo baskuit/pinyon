@@ -114,7 +114,7 @@ public:
     }
 
     void select(
-        prng &device,
+        typename Types::PRNG &device,
         MatrixNode<MatrixUCB> *matrix_node,
         typename Types::Outcome &outcome)
     {

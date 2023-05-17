@@ -28,7 +28,7 @@ public:
     // Override the TreeBandit run for threads
     void run(
         int iterations,
-        prng &device,
+        typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> &matrix_node=this->root)
@@ -48,12 +48,12 @@ public:
 
     void runThread(
         int iterations,
-        prng *device,
+        typename Types::PRNG *device,
         typename Types::State *state,
         typename Types::Model *model,
         MatrixNode<BanditAlgorithm> *matrix_node)
     {
-        prng device_thread; // TODO deterministically provide new seed
+        typename Types::PRNG device_thread; // TODO deterministically provide new seed
         typename Types::Model model_thread = *model;
         for (int playout = 0; playout < iterations; ++playout)
         {
@@ -63,7 +63,7 @@ public:
     }
 
     MatrixNode<BanditAlgorithm> *playout(
-        prng &device,
+        typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> *matrix_node)
@@ -141,7 +141,7 @@ public:
 
     void run(
         int iterations,
-        prng &device,
+        typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> &matrix_node=this->root)
@@ -161,12 +161,12 @@ public:
 
     void runThread(
         int iterations,
-        prng *device,
+        typename Types::PRNG *device,
         typename Types::State *state,
         typename Types::Model *model,
         MatrixNode<BanditAlgorithm> *matrix_node)
     {
-        prng device_thread(device->get_seed());
+        typename Types::PRNG device_thread(device->get_seed());
         typename Types::Model model_thread = *model;
         for (int playout = 0; playout < iterations; ++playout)
         {
@@ -176,7 +176,7 @@ public:
     }
 
     MatrixNode<BanditAlgorithm> *playout(
-        prng &device,
+        typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> *matrix_node)

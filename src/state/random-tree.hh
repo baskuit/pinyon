@@ -36,7 +36,7 @@ public:
     // just a helper for the sample_pdf function in apply_actions
 
     RandomTree(
-        const prng &device,
+        const typename Types::PRNG &device,
         int depth_bound,
         int rows,
         int cols,
@@ -50,13 +50,13 @@ public:
     }
 
     RandomTree(
-        const prng &device,
+        const typename Types::PRNG &device,
         int depth_bound,
         int rows,
         int cols,
-        int (*depth_bound_func)(prng &, int),
-        int (*actions_func)(prng &, int),
-        int (*payoff_bias_func)(prng &, int)) : device(device),
+        int (*depth_bound_func)(typename Types::PRNG &, int),
+        int (*actions_func)(typename Types::PRNG &, int),
+        int (*payoff_bias_func)(typename Types::PRNG &, int)) : device(device),
                                                 depth_bound(depth_bound),
                                                 rows(rows),
                                                 cols(cols),
@@ -72,13 +72,13 @@ public:
         // TODO optimize? Init actions in constr and only update entries when row/col increases
         this->actions.row_actions.fill(rows);
         this->actions.col_actions.fill(cols);
-        for (int i = 0; i < rows; ++i)
+        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
-            this->actions.row_actions[i] = i;
+            this->actions.row_actions[row_idx] = row_idx;
         };
-        for (int j = 0; j < cols; ++j)
+        for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
         {
-            this->actions.col_actions[j] = j;
+            this->actions.col_actions[col_idx] = col_idx;
         };
     }
 
@@ -88,8 +88,8 @@ public:
         typename Types::Action col_action)
     {
         chance_actions.clear();
-        const int start_idx = get_transition_idx(row_action, col_action, 0);
-        for (int chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx)
+        const ActionIndex start_idx = get_transition_idx(row_action, col_action, 0);
+        for (ActionIndex chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx)
         {
             if (chance_strategies[start_idx + chance_idx] > 0)
             {
@@ -102,15 +102,15 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action,
         typename Types::Observation chance_action,
-        bool extra_prng_call = true)
+        bool extra_typename Types::PRNG_call = true)
     {
-        if (extra_prng_call)
+        if (extra_typename Types::PRNG_call)
         {
             device.uniform(); // TODO check if discard 1 does the same.
         }
-        const int transition_idx = get_transition_idx(row_action, col_action, chance_action);
+        const ActionIndex transition_idx = get_transition_idx(row_action, col_action, chance_action);
         device.discard(transition_idx);
-        // advance the prng so that different player/chance actions have different outcomes
+        // advance the typename Types::PRNG so that different player/chance actions have different outcomes
 
         this->obs = chance_action;
         this->prob = chance_strategies[transition_idx];
@@ -139,12 +139,12 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action)
     {
-        const int transition_idx = get_transition_idx(row_action, col_action, 0);
+        const ActionIndex transition_idx = get_transition_idx(row_action, col_action, 0);
         std::copy_n(
             chance_strategies.begin() + transition_idx,
             MaxTransitions,
             chance_strategy.begin());
-        const int chance_action_idx = device.sample_pdf(chance_strategy, MaxTransitions);
+        const ActionIndex chance_action_idx = device.sample_pdf(chance_strategy, MaxTransitions);
         apply_actions(row_action, col_action, chance_action_idx, false); // TODO make type safe (assumes obs = int)
     }
 
@@ -167,7 +167,10 @@ public:
     }
 
 private:
-    inline int get_transition_idx(int row_idx, int col_idx, int chance_idx)
+    inline ActionIndex get_transition_idx(
+        ActionIndex row_idx, 
+        ActionIndex col_idx, 
+        ActionIndex chance_idx)
     {
         return row_idx * cols * MaxTransitions + col_idx * MaxTransitions + chance_idx;
     }
@@ -194,7 +197,7 @@ private:
 
                 // clip and compute new norm
                 typename Types::Probability new_prob_sum = 0;
-                for (int chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx)
+                for (ActionIndex chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx)
                 {
                     typename Types::Probability &p = chance_strategies[start_idx + chance_idx];
                     p /= prob_sum;
@@ -206,7 +209,7 @@ private:
                 }
 
                 // append final renormalized strategy
-                for (int chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx)
+                for (ActionIndex chance_idx = 0; chance_idx < MaxTransitions; ++chance_idx)
                 {
                     chance_strategies[start_idx + chance_idx] /= new_prob_sum;
                 }

@@ -91,7 +91,7 @@ public:
     }
 
     void select(
-        prng &device,
+        typename Types::PRNG &device,
         MatrixNode<Exp3> *matrix_node,
         typename Types::Outcome &outcome)
     {
