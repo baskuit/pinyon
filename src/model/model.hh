@@ -1,6 +1,6 @@
 #pragma once
 
-#include "state/state.hh"
+#include "../state/state.hh"
 
 template <class _State>
 class AbstractModel

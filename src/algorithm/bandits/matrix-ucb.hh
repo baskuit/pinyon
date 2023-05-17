@@ -3,7 +3,7 @@
 #include <string>
 
 #include "bandit.hh"
-#include "tree/tree.hh"
+#include "../tree/tree.hh"
 
 /*
 MatrixUCB
@@ -54,12 +54,12 @@ public:
     // bool require_interior = false;
 
     void initialize_stats(
-        int playouts,
+        int iterations,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<MatrixUCB> *matrix_node)
     {
-        matrix_node->stats.time = playouts;
+        matrix_node->stats.time = iterations;
     }
 
     void get_strategies(

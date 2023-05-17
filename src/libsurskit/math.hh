@@ -46,89 +46,15 @@ namespace math
 
 namespace Linear
 {
-
-    template <typename T, int size>
-    class Matrix
-    {
-    public:
-        std::array<T, size * size> data;
-        int rows, cols;
-        Matrix(){};
-        Matrix(int rows, int cols) : rows(rows), cols(cols) {}
-
-        void fill(int rows, int cols) {
-            this->rows = rows;
-            this->cols = cols;
-        }
-
-        void fill(int rows, int cols, T value)
-        {
-            this->rows = rows;
-            this->cols = cols;
-            std::fill(data.begin(), data.begin() + rows * cols, value);
-        }
-
-        T &get(int i, int j)
-        {
-            return data[i * cols + j];
-        }
-
-        Matrix operator*(T t)
-        {
-            const Matrix &M = *this;
-            Matrix output(M.rows, M.cols);
-            for (int i = 0; i < rows * cols; ++i)
-            {
-                output.data[i] = M.data[i] * t;
-            }
-            return output;
-        }
-
-        Matrix operator+(T t)
-        {
-            const Matrix &M = *this;
-            Matrix output(M.rows, M.cols);
-            for (int i = 0; i < rows * cols; ++i)
-            {
-                output.data[i] = M.data[i] + t;
-            }
-            return output;
-        }
-
-        void print()
-        {
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    std::cout << get(i, j) << ", ";
-                }
-                std::cout << std::endl;
-            }
-        }
-        
-        T max()
-        {
-            const int entries = rows * cols;
-            return *std::max_element(data.begin(), data.begin() + entries);
-        }
-
-        T min()
-        {
-            const int entries = rows * cols;
-            return *std::min_element(data.begin(), data.begin() + entries);
-        }
-    };
-
     template <typename T>
-    class MatrixVector
+    class Matrix
     {
     public:
         std::vector<T> data;
         int rows, cols;
 
-        MatrixVector(){};
-        MatrixVector(int rows, int cols) : data(std::vector<T>(rows * cols)), rows(rows), cols(cols)
+        Matrix(){};
+        Matrix(int rows, int cols) : data(std::vector<T>(rows * cols)), rows(rows), cols(cols)
         {
         }
 
@@ -153,24 +79,34 @@ namespace Linear
             return data[i * cols + j];
         }
 
-        MatrixVector operator*(T t)
+        Matrix operator*(T t)
         {
-            const MatrixVector &M = *this;
-            MatrixVector output(M.rows, M.cols);
+            const Matrix &M = *this;
+            Matrix output(M.rows, M.cols);
             for (int i = 0; i < rows * cols; ++i)
             {
                 output.data[i] = M.data[i] * t;
             }
             return output;
         }
-        MatrixVector operator+(T t)
+        Matrix operator+(T t)
         {
-            const MatrixVector &M = *this;
-            MatrixVector output(M.rows, M.cols);
+            const Matrix &M = *this;
+            Matrix output(M.rows, M.cols);
             for (int i = 0; i < rows * cols; ++i)
             {
                 output.data[i] = M.data[i] + t;
             }
+            return output;
+        }
+
+        Matrix operator+(const Matrix &t)
+        {
+            assert(t.rows == rows && t.cols == cols);
+            const Matrix &M = *this;
+            Matrix output(M.rows, M.cols);
+            std::transform(data.begin(), data.begin() + size, t.data.begin(), output.data.begin(),
+                        [](double a, double b) { return a + b; }); // Perform element-wise addition
             return output;
         }
 

@@ -1,31 +1,37 @@
 #pragma once
 
-#include "types/types.hh"
-#include "tree/tree.hh"
-#include "algorithm/algorithm.hh"
+#include "../../types/types.hh"
+#include "../../tree/tree.hh"
+#include "../algorithm.hh"
 
 #include <thread>
 #include <chrono>
 
 // outcome struct where we only store the policy for the selected action (indices) for either player
 
+<typename Model>
 struct ChoicesOutcome
 {
+    using Real = typename Model::Types::Real;
     ActionIndex row_idx, col_idx;
-    typename Types::Real row_value, col_value;
-    typename Types::Real row_mu, col_mu; // TODO should this be Float?
+    Real row_value, col_value;
+    Real row_mu, col_mu;
 };
 
 // outcome struct where we store the entire policy, for all actions
 
+<typename Model>
 struct PolicyOutcome
 {
+    using Real = typename Model::Types::Real;
+    using VectorReal = typename Model::Types::VectorReal;
+
     ActionIndex row_idx, col_idx;
-    typename Types::Real row_value, col_value;
-    typename Types::VectorReal row_policy, col_policy;
+    Real row_value, col_value;
+    VectorReal row_policy, col_policy;
 };
 
-template <class Model, class BanditAlgorithm, struct Outcome = ChoicesOutcome>
+template <class Model, class BanditAlgorithm, template <class Model_> class Outcome>
 class TreeBandit : public AbstractAlgorithm<Model>
 {
 public:
@@ -100,13 +106,13 @@ protected:
     }
 
     void _initialize_stats(
-        int playouts,
+        int iterations,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *root)
     {
         return static_cast<Algorithm *>(this)->initialize_stats(
-            playouts,
+            iterations,
             state,
             model,
             root);

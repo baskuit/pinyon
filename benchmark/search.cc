@@ -28,9 +28,9 @@ using MatrixUCB = MatrixPUCB<Model, TreeBandit>;
     Model model(device);
     MatrixNode<MatrixUCB> root;
     MatrixUCB session;
-    const int playouts = 100000;
+    const int iterations = 100000;
 
-    session.run(playouts, device, game, model, root);
+    session.run(iterations, device, game, model, root);
 
 }
 
@@ -46,9 +46,9 @@ using MatrixUCB = MatrixPUCB<Model, TreeBandit>;
     Model model(device);
     MatrixNode<MatrixUCB> root;
     MatrixUCB session;
-    const int playouts = 100000;
+    const int iterations = 100000;
 
-    session.run(playouts, device, game, model, root);
+    session.run(iterations, device, game, model, root);
 
 }
 

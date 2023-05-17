@@ -27,18 +27,18 @@ public:
 
     // Override the TreeBandit run for threads
     void run(
-        int playouts,
+        int iterations,
         prng &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> &matrix_node=this->root)
     {
-        this->_initialize_stats(playouts, state, model, &matrix_node);
+        this->_initialize_stats(iterations, state, model, &matrix_node);
         std::thread thread_pool[threads];
-        const int playouts_per_thread = playouts / threads;
+        const int iterations_per_thread = iterations / threads;
         for (int i = 0; i < threads; ++i)
         {
-            thread_pool[i] = std::thread(&TreeBanditThreaded::runThread, this, playouts_per_thread, &device, &state, &model, &matrix_node);
+            thread_pool[i] = std::thread(&TreeBanditThreaded::runThread, this, iterations_per_thread, &device, &state, &model, &matrix_node);
         }
         for (int i = 0; i < threads; ++i)
         {
@@ -47,7 +47,7 @@ public:
     }
 
     void runThread(
-        int playouts,
+        int iterations,
         prng *device,
         typename Types::State *state,
         typename Types::Model *model,
@@ -55,7 +55,7 @@ public:
     {
         prng device_thread; // TODO deterministically provide new seed
         typename Types::Model model_thread = *model;
-        for (int playout = 0; playout < playouts; ++playout)
+        for (int playout = 0; playout < iterations; ++playout)
         {
             typename Types::State state_copy = *state;
             this->_playout(*device, state_copy, *model, matrix_node);
@@ -140,18 +140,18 @@ public:
     // TODO test overflow behaviour
 
     void run(
-        int playouts,
+        int iterations,
         prng &device,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> &matrix_node=this->root)
     {
-        this->_initialize_stats(playouts, state, model, &matrix_node);
+        this->_initialize_stats(iterations, state, model, &matrix_node);
         std::thread thread_pool[threads];
-        const int playouts_per_thread = playouts / threads;
+        const int iterations_per_thread = iterations / threads;
         for (int i = 0; i < threads; ++i)
         {
-            thread_pool[i] = std::thread(&TreeBanditThreadPool::runThread, this, playouts_per_thread, &device, &state, &model, &matrix_node);
+            thread_pool[i] = std::thread(&TreeBanditThreadPool::runThread, this, iterations_per_thread, &device, &state, &model, &matrix_node);
         }
         for (int i = 0; i < threads; ++i)
         {
@@ -160,7 +160,7 @@ public:
     }
 
     void runThread(
-        int playouts,
+        int iterations,
         prng *device,
         typename Types::State *state,
         typename Types::Model *model,
@@ -168,7 +168,7 @@ public:
     {
         prng device_thread(device->get_seed());
         typename Types::Model model_thread = *model;
-        for (int playout = 0; playout < playouts; ++playout)
+        for (int playout = 0; playout < iterations; ++playout)
         {
             typename Types::State state_copy = *state;
             this->_playout(*device, state_copy, *model, matrix_node);

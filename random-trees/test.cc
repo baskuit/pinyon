@@ -39,8 +39,8 @@ void alpha_beta_test (
     const int min_depth, const int max_depth,
     const int games, const uint64_t seed = 0) 
 {
-    using SeedState = SeedState<MaxActions, MaxTransitions>;
-    using Model = MonteCarloModel<SeedState>;
+    using RandomTree = RandomTree<MaxActions, MaxTransitions>;
+    using Model = MonteCarloModel<RandomTree>;
     using MatrixUCB = MatrixUCB<Model, TreeBandit>;
     using Exp3p = Exp3p<Model, TreeBandit>;
     using Algorithm = Exp3p;
@@ -56,7 +56,7 @@ void alpha_beta_test (
             for (int game = 0; game < games; ++game) {
                 const uint64_t new_seed = device.uniform_64();
                 prng new_device(new_seed);
-                SeedState state(new_device, depth_bound, actions, actions, chance_threshold);
+                RandomTree state(new_device, depth_bound, actions, actions, chance_threshold);
                 Model model(new_device);
                 TreeState<Model> tree_state(state, model);
                 AlphaBeta<Model> alpha_beta_session(0, 1);

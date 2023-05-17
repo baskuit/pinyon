@@ -1,8 +1,8 @@
 #pragma once
 
-#include "libsurskit/rational.hh"
-#include "libsurskit/vector.hh"
-#include "libsurskit/random.hh"
+#include "../libsurskit/rational.hh"
+#include "../libsurskit/vector.hh"
+#include "../libsurskit/random.hh"
 
 #include <vector>
 

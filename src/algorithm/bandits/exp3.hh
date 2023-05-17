@@ -2,7 +2,7 @@
 
 #include "bandit.hh"
 
-#include "../libsurskit/math.hh"
+#include "../../libsurskit/math.hh"
 
 /*
 Exp3
@@ -50,29 +50,33 @@ public:
         return os;
     }
 
-    void get_strategies(
+    void _get_empirical_strategies(
         MatrixNode<Exp3> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
-        math::power_norm<typename Types::VectorInt, typename Types::VectorReal>(
-            matrix_node->stats.row_visits,
-            matrix_node->actions.rows,
-            1.0,
-            row_strategy);
-        math::power_norm<typename Types::VectorInt, typename Types::VectorReal>(
-            matrix_node->stats.col_visits,
-            matrix_node->actions.cols,
-            1.0,
-            col_strategy);
+        return;
+    }
+
+    void _get_empirical_values(
+        MatrixNode<Exp3> *matrix_node,
+        typename Types::Real &row_value,
+        typename Types::Real &col_value)
+    {
+        auto stats = matrix_node->stats;
+        const typename Types::Real den = 1 / (stats.total_visits + (stats.total_visits == 0));
+        row_value = stats.row_value_total * den;
+        col_value = stats.col_value_total * den;
+
     }
 
     void initialize_stats(
-        int playouts,
+        int iterations,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Exp3> *matrix_node)
     {
+        // i.e. time, so not used
     }
 
     void expand(

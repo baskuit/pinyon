@@ -1,4 +1,4 @@
-#include "model/model.hh"
+#include "../model/model.hh"
 
 template <class _Model>
 class AbstractAlgorithm

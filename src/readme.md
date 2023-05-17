@@ -195,12 +195,12 @@ Besides any methods that an algorithm may use in its operation, it also provides
 
 ### MCTS
 
-The MatrixUCB and Exp3p algorithms are both instances of a [Monte Carlo Tree Search](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search), where a tree is iteratively expanded via playouts. In the following, it is assumed that the reader is familiar with the fundamentals of this process.
+The MatrixUCB and Exp3p algorithms are both instances of a [Monte Carlo Tree Search](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search), where a tree is iteratively expanded via iterations. In the following, it is assumed that the reader is familiar with the fundamentals of this process.
 
 The usual formula for determining what actions to select during a playout is known as Upper Confidence Bounds. The application of this selection process to a tree structure is sometimes known as Upper Confidence Trees. 
 
 It is well known that this formula, when used to select the actions of the row and column players independently, fails to produce Nash equilibrium strategies. 
-The reason for this is best explained with some math terminology. UCB is a solution to a class of problems called [Multi Armed Bandits](https://en.wikipedia.org/wiki/Multi-armed_bandit). It is a principled way of selecting actions during playouts. However, UCB is a solution to the *stochastic* bandits problem, where the quality of an action is more or less fixed. This assumption does not hold in simultaneous move games because the quality of an action also depends on the selection of the opponent.
+The reason for this is best explained with some math terminology. UCB is a solution to a class of problems called [Multi Armed Bandits](https://en.wikipedia.org/wiki/Multi-armed_bandit). It is a principled way of selecting actions during iterations. However, UCB is a solution to the *stochastic* bandits problem, where the quality of an action is more or less fixed. This assumption does not hold in simultaneous move games because the quality of an action also depends on the selection of the opponent.
 
 The two algorithms provided with Surskit amend this by using a more suitable bandit algorithm:
 
@@ -211,7 +211,7 @@ The two algorithms provided with Surskit amend this by using a more suitable ban
 ### `TreeBandit : public AbstractAlgorithm<Model>`
 
 The class encapsulates the iterative selection, expansion and back-propagation process that is common to vanilla MTCS, Exp3p, and MatrixUCB. It introduces a helper struct called `Outcome` which stores the outcome of the bandit selection process at each node that is visited in the playout. This information consists of: the actions selected, the sampled probability of selecting those actions, and the reward received (the reward being the model's value estimate for the leaf node at the end of the playout.)
-The user interfaces with this class with its methods `run`, which asks for a specific number  of playouts to perform, `run_for_duration` which performs playouts until the time is up, and `get_strategies`, which gives the 'final answer' for the root node using the accumulated stats in the search tree.
+The user interfaces with this class with its methods `run`, which asks for a specific number  of iterations to perform, `run_for_duration` which performs iterations until the time is up, and `get_strategies`, which gives the 'final answer' for the root node using the accumulated stats in the search tree.
 
 This class is actually incomplete, and has three derivations. 
 
@@ -293,7 +293,7 @@ and
 The result of this inheritance scheme is quite powerful. The user can write their own bandit algorithm by simply implementing `select`, `expand`, `update_matrix_node`, `update_chance_node`. The bandit algorithm is then compatible with the single and multi threaded search processes, and can be initialized with just:
 
 	CustomBandit<Model, TreeBanditThreaded> session(device);
-	session.run(playouts, state, model, root);
+	session.run(iterations, state, model, root);
 
 
 
