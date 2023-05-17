@@ -80,15 +80,10 @@ public:
         typename Types::Model &model,
         MatrixNode<Exp3> *matrix_node)
     {
-        state.get_actions();
-        matrix_node->actions = state.actions;
-        matrix_node->is_expanded = true;
-        matrix_node->is_terminal = state.is_terminal;
-
-        matrix_node->stats.row_visits.fill(state.actions.rows, 0);
-        matrix_node->stats.col_visits.fill(state.actions.cols, 0);
-        matrix_node->stats.row_gains.fill(state.actions.rows, 0);
-        matrix_node->stats.col_gains.fill(state.actions.cols, 0);
+        matrix_node->stats.row_visits.fill(state.row_actions.size(), 0);
+        matrix_node->stats.col_visits.fill(state.col_actions.size(), 0);
+        matrix_node->stats.row_gains.fill(state.row_actions.size(), 0);
+        matrix_node->stats.col_gains.fill(state.col_actions.size(), 0);
     }
 
     void select(

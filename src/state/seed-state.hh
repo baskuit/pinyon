@@ -110,8 +110,8 @@ public:
         device.discard(transition_idx); 
         // advance the prng so that different player/chance actions have different outcomes
 
-        this->transition.obs = chance_action;
-        this->transition.prob = chance_strategies[transition_idx];
+        this->obs = chance_action;
+        this->prob = chance_strategies[transition_idx];
 
         depth_bound = (*depth_bound_func)(device, depth_bound);
         depth_bound *= depth_bound >= 0;
@@ -298,8 +298,8 @@ public:
         device.discard(transition_idx); 
         // advance the prng so that different player/chance actions have different outcomes
 
-        this->transition.obs = chance_action;
-        this->transition.prob = chance_strategies[transition_idx];
+        this->obs = chance_action;
+        this->prob = chance_strategies[transition_idx];
 
         depth_bound = (*depth_bound_func)(this, depth_bound);
         depth_bound *= depth_bound >= 0;

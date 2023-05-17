@@ -17,10 +17,10 @@ For a basic example of this, see the `rollout` method in the implementation of`M
 		
 			void rollout(State &state) {
 				while (!state.is_terminal) {
-					const int row_idx = this->device.random_int(state.actions.rows);
-					const int col_idx = this->device.random_int(state.actions.cols);
-					const typename Types::Action row_action = state.actions.row_actions[row_idx];
-					const typename Types::Action col_action = state.actions.col_actions[col_idx];
+					const int row_idx = this->device.random_int(state.row_actions.size());
+					const int col_idx = this->device.random_int(state.col_actions.size());
+					const typename Types::Action row_action = state.row_actions[row_idx];
+					const typename Types::Action col_action = state.col_actions[col_idx];
 					state.apply_actions(row_action, col_action);
 					state.get_actions();
 				}
@@ -404,7 +404,7 @@ and
         while (current != nullptr)
         {
             previous = current;
-            if (current->transition.obs == transition.obs)
+            if (current->obs == transition.obs)
             {
                 return current;
             }

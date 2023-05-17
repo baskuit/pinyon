@@ -29,8 +29,8 @@ public:
             this->actions.row_actions[i] = i;
             this->actions.col_actions[i] = i;
         }
-        this->transition.prob = 1.0;
-        this->transition.obs = 0;
+        this->prob = 1.0;
+        this->obs = 0;
     }
 
     void get_actions()

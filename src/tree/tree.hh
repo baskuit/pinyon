@@ -37,8 +37,10 @@ public:
     bool is_terminal = false;
     bool is_expanded = false;
 
-    typename Types::Actions actions;
-    typename Types::Transition transition;
+    typename Types::ActionVector row_actions;
+    typename Types::ActionVector col_actions;
+    typename Types::Observation obs;
+    typename Types::Probability prob;
     typename Types::Inference inference;
     typename Types::MatrixStats stats;
 
@@ -155,7 +157,7 @@ public:
         while (current != nullptr)
         {
             previous = current;
-            if (current->transition.obs == transition.obs)
+            if (current->obs == transition.obs)
             {
                 return current;
             }

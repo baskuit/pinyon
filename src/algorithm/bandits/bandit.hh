@@ -117,6 +117,11 @@ protected:
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
     {
+        state.get_actions();
+        matrix_node->row_actions = state.row_actions;
+        matrix_node->col_actions = state.col_actions;
+        matrix_node->is_expanded = true;
+        matrix_node->is_terminal = state.is_terminal;
 
         static_cast<Algorithm *>(this)->expand(
             state,

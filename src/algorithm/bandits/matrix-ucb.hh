@@ -85,12 +85,8 @@ public:
         typename Types::Model model,
         MatrixNode<MatrixUCB> *matrix_node)
     {
-        matrix_node->is_expanded = true;
-        state.get_actions();
-        matrix_node->is_terminal = state.is_terminal;
-        matrix_node->actions = state.actions;
-        const int rows = state.actions.rows;
-        const int cols = state.actions.cols;
+        const int rows = state.row_actions.size();
+        const int cols = state.col_actions.size();
         
         matrix_node->stats.row_value_matrix.fill(rows, cols, 0);
         matrix_node->stats.col_value_matrix.fill(rows, cols, 0);
@@ -110,7 +106,7 @@ public:
             typename Types::Real reach_probability =
                 matrix_parent->inference.row_policy[row_idx] *
                 matrix_parent->inference.col_policy[col_idx] *
-                (static_cast<typename Types::Real>(matrix_node->transition.prob));
+                (static_cast<typename Types::Real>(matrix_node->prob));
             int time_estimate = matrix_parent->stats.time * reach_probability;
             time_estimate = time_estimate == 0 ? 1 : time_estimate;
             matrix_node->stats.time = time_estimate;

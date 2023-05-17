@@ -57,7 +57,8 @@ public:
 
         // expand node
         state.get_actions();
-        matrix_node->actions = state.actions;
+        matrix_node->row_actions = state.row_actions;
+        matrix_node->col_actions = state.col_actions;
         matrix_node->is_expanded = true;
 
         if (state.is_terminal)
@@ -76,8 +77,8 @@ public:
             return;
         }
 
-        const int rows = state.actions.rows;
-        const int cols = state.actions.cols;
+        const int rows = state.row_actions.size();
+        const int cols = state.col_actions.size();
 
         matrix_node->stats.nash_payoff_matrix.fill(rows, cols, 0);
 
@@ -102,7 +103,7 @@ public:
 
                     run(state_copy, model, matrix_node_next);
 
-                    matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx) += matrix_node_next->stats.row_payoff * matrix_node_next->transition.prob;
+                    matrix_node->stats.nash_payoff_matrix.get(row_idx, col_idx) += matrix_node_next->stats.row_payoff * matrix_node_next->prob;
                     matrix_node->stats.matrix_node_count += matrix_node_next->stats.matrix_node_count;
                 }
             }

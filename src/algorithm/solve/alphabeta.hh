@@ -74,7 +74,8 @@ public:
         typename Types::Real beta)
     {
         state.get_actions();
-        matrix_node->actions = state.actions;
+        matrix_node->row_actions = state.row_actions;
+        matrix_node->col_actions = state.col_actions;
         auto &stats = matrix_node->stats;
 
         // if s is terminal state then
@@ -102,10 +103,10 @@ public:
         typename Types::MatrixReal &p = stats.p;
         typename Types::MatrixReal &o = stats.o;
         // 7: pI,J ← alpha-betaMin (sI,J , minval, maxval)
-        p.fill(state.actions.rows, state.actions.cols, min_val);
+        p.fill(state.row_actions.size(), state.col_actions.size(), min_val);
         // 8: oI,J ← alpha-betaMax (sI,J , minval, maxval)
-        o.fill(state.actions.rows, state.actions.cols, max_val);
-        stats.function_calls.fill(state.actions.rows, state.actions.cols, 0);
+        o.fill(state.row_actions.size(), state.col_actions.size(), max_val);
+        stats.function_calls.fill(state.row_actions.size(), state.col_actions.size(), 0);
         stats.total_calls = 1;
         // Note: this implementation does not use serialized alpha beta
         // Just seems like too much tree traversal?
@@ -126,8 +127,8 @@ public:
                         ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
                         ChanceNode<Grow<Model>> *chance_node_teacher = stats.teacher->access(row_idx, col_idx);
 
-                        const typename Types::Action row_action = state.actions.row_actions[row_idx];
-                        const typename Types::Action col_action = state.actions.col_actions[col_idx];
+                        const typename Types::Action row_action = state.row_actions[row_idx];
+                        const typename Types::Action col_action = state.col_actions[col_idx];
 
                         std::vector<typename Types::Observation> chance_actions;
                         state.get_chance_actions(chance_actions, row_action, col_action);
@@ -241,7 +242,7 @@ public:
         int new_action_idx = -1;
 
         // 3: for i = {1, . . . , n} do
-        for (int row_idx = 0; row_idx < state.actions.rows; ++row_idx) {
+        for (int row_idx = 0; row_idx < state.row_actions.size(); ++row_idx) {
             bool cont = false;
             
             // 4: pi,J ← alpha-betaMin(si,J , minval, maxval)
@@ -277,8 +278,8 @@ public:
                         ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
                         ChanceNode<Grow<Model>> *chance_node_teacher = matrix_node->stats.teacher->access(row_idx, col_idx);
                         
-                        const typename Types::Action row_action = state.actions.row_actions[row_idx];
-                        const typename Types::Action col_action = state.actions.col_actions[col_idx];
+                        const typename Types::Action row_action = state.row_actions[row_idx];
+                        const typename Types::Action col_action = state.col_actions[col_idx];
 
                         std::vector<typename Types::Observation> chance_actions;
                         state.get_chance_actions(chance_actions, row_action, col_action);
@@ -332,7 +333,7 @@ public:
         typename Types::Real best_response_col = beta;
         int new_action_idx = -1;
 
-        for (int col_idx = 0; col_idx < state.actions.cols; ++col_idx) {
+        for (int col_idx = 0; col_idx < state.col_actions.size(); ++col_idx) {
             bool cont = false;
 
             typename Types::Real expected_p_payoff = 0;
@@ -358,8 +359,8 @@ public:
                         ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
                         ChanceNode<Grow<Model>> *chance_node_teacher = matrix_node->stats.teacher->access(row_idx, col_idx);
 
-                        const typename Types::Action row_action = state.actions.row_actions[row_idx];
-                        const typename Types::Action col_action = state.actions.col_actions[col_idx];
+                        const typename Types::Action row_action = state.row_actions[row_idx];
+                        const typename Types::Action col_action = state.col_actions[col_idx];
 
                         std::vector<typename Types::Observation> chance_actions;
                         state.get_chance_actions(chance_actions, row_action, col_action);

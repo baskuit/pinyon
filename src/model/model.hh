@@ -69,10 +69,10 @@ public:
         typename Types::State &state,
         typename Types::Inference &inference)
     {
-        const typename Types::Real row_uniform = 1 / (typename Types::Real)state.actions.rows;
-        inference.row_policy.fill(state.actions.rows, row_uniform);
-        const typename Types::Real col_uniform = 1 / (typename Types::Real)state.actions.cols;
-        inference.col_policy.fill(state.actions.cols, col_uniform);
+        const typename Types::Real row_uniform = 1 / (typename Types::Real)state.row_actions.size();
+        inference.row_policy.fill(state.row_actions.size(), row_uniform);
+        const typename Types::Real col_uniform = 1 / (typename Types::Real)state.col_actions.size();
+        inference.col_policy.fill(state.col_actions.size(), col_uniform);
 
         this->rollout(state);
         inference.row_value = state.row_payoff;
@@ -84,10 +84,10 @@ protected:
     {
         while (!state.is_terminal)
         {
-            const int row_idx = this->device.random_int(state.actions.rows);
-            const int col_idx = this->device.random_int(state.actions.cols);
-            const typename Types::Action row_action = state.actions.row_actions[row_idx];
-            const typename Types::Action col_action = state.actions.col_actions[col_idx];
+            const int row_idx = this->device.random_int(state.row_actions.size());
+            const int col_idx = this->device.random_int(state.col_actions.size());
+            const typename Types::Action row_action = state.row_actions[row_idx];
+            const typename Types::Action col_action = state.col_actions[col_idx];
             state.apply_actions(row_action, col_action);
             state.get_actions();
         }
@@ -120,8 +120,8 @@ public:
         typename Types::State &state,
         typename Types::Inference &inference)
     {
-        math::power_norm(state.row_strategy, state.actions.rows, power, inference.row_policy);
-        math::power_norm(state.col_strategy, state.actions.cols, power, inference.col_policy);
+        math::power_norm(state.row_strategy, state.row_actions.size(), power, inference.row_policy);
+        math::power_norm(state.col_strategy, state.col_actions.size(), power, inference.col_policy);
         this->rollout(state);
         inference.row_value = state.row_payoff;
         inference.col_value = state.col_payoff;
