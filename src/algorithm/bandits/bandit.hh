@@ -1,51 +1,53 @@
 #pragma once
 
+#include "types/types.hh"
 #include "tree/tree.hh"
 #include "algorithm/algorithm.hh"
 
 #include <thread>
 #include <chrono>
 
-template <class Model, class Algorithm>
-class TreeBanditBase : public AbstractAlgorithm<Model>
+// outcome struct where we only store the policy for the selected action (indices) for either player
+
+struct ChoicesOutcome
+{
+    ActionIndex row_idx, col_idx;
+    typename Types::Real row_value, col_value;
+    typename Types::Real row_mu, col_mu; // TODO should this be Float?
+};
+
+// outcome struct where we store the entire policy, for all actions
+
+struct PolicyOutcome
+{
+    ActionIndex row_idx, col_idx;
+    typename Types::Real row_value, col_value;
+    typename Types::VectorReal row_policy, col_policy;
+};
+
+template <class Model, class BanditAlgorithm, struct Outcome = ChoicesOutcome>
+class TreeBandit : public AbstractAlgorithm<Model>
 {
 public:
-    // Would have to pass Outcome type as template parameter if you wanted to specialize it. Have to pass Model since Algorithm is incomplete.
-    struct Outcome;
     struct Types : AbstractAlgorithm<Model>::Types
     {
-        using Outcome = TreeBanditBase::Outcome;
+        using Outcome = Outcome;
     };
 
-    struct Outcome
-    {
-        int row_idx, col_idx;
-        typename Types::Real row_value, col_value;
-        typename Types::Real row_mu, col_mu; // TODO should this be Float?
-    };
-
-    MatrixNode<Algorithm> root;
+    MatrixNode<BanditAlgorithm> root;
 
     void run(
         int iterations,
-        typename Types::PRNG &device,
-        typename Types::State &state,
-        typename Types::Model &model)
-    {
-        run(iterations, device, state, model, root);
-    }
-
-    void run(
-        int playouts,
         prng &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Algorithm> &matrix_node)
+        MatrixNode<Algorithm> &matrix_node = root)
     {
-        this->_initialize_stats(playouts, state, model, &matrix_node);
-        for (int playout = 0; playout < playouts; ++playout)
+        this->_initialize_stats(iterations, state, model, &matrix_node);
+        for (int iteration = 0; iteration < iterations; ++iteration)
         {
             typename Types::State state_copy = state;
+            state_copy.seed = device.get_seed();
             this->_playout(device, state_copy, model, &matrix_node);
         }
     }
@@ -85,6 +87,7 @@ protected:
             model,
             matrix_node);
     }
+
     void _select(
         prng &device,
         MatrixNode<Algorithm> *matrix_node,
@@ -95,6 +98,7 @@ protected:
             matrix_node,
             outcome);
     }
+
     void _initialize_stats(
         int playouts,
         typename Types::State &state,
@@ -107,16 +111,31 @@ protected:
             model,
             root);
     }
+
     void _expand(
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<Algorithm> *matrix_node)
     {
-        return static_cast<Algorithm *>(this)->expand(
+
+        static_cast<Algorithm *>(this)->expand(
             state,
             model,
-            matrix_node); // TODO consider adding inference code here. It's all the same
+            matrix_node);
+
+        // have to do this last, since monte carlo model does not clone, so it rolls the state out during inference.
+
+        if (matrix_node->is_terminal)
+        {
+            matrix_node->inference.row_value = state.row_payoff;
+            matrix_node->inference.col_value = state.col_payoff;
+        }
+        else
+        {
+            model.get_inference(state, matrix_node->inference);
+        }
     }
+    
     void _update_matrix_node(
         MatrixNode<Algorithm> *matrix_node,
         Outcome &outcome)
@@ -134,25 +153,16 @@ protected:
             chance_node,
             outcome);
     }
-};
 
-/*
-Tree Bandit (single threaded)
-*/
+    /*
+    These functions below are overrided in the multithreaded implementations.
+    */
 
-template <class Model, class Algorithm>
-class TreeBandit : public TreeBanditBase<Model, Algorithm>
-{
-public:
-    struct Types : TreeBanditBase<Model, Algorithm>::Types
-    {
-    };
-
-    MatrixNode<Algorithm> *run_iteration(
+    MatrixNode<BanditAlgorithm> *run_iteration(
         prng &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Algorithm> *matrix_node)
+        MatrixNode<BanditAlgorithm> *matrix_node)
     {
         if (!matrix_node->is_terminal)
         {
@@ -160,21 +170,21 @@ public:
             {
                 typename Types::Outcome outcome;
 
-                this->_select(device, matrix_node, outcome);
+                _select(device, matrix_node, outcome);
 
                 typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
                 typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
                 state.apply_actions(row_action, col_action);
 
-                ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
+                ChanceNode<BanditAlgorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                MatrixNode<BanditAlgorithm> *matrix_node_next = chance_node->access(state.transition);
 
-                MatrixNode<Algorithm> *matrix_node_leaf = this->run_iteration(device, state, model, matrix_node_next);
+                MatrixNode<BanditAlgorithm> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next);
 
                 outcome.row_value = matrix_node_leaf->inference.row_value;
                 outcome.col_value = matrix_node_leaf->inference.col_value;
-                this->_update_matrix_node(matrix_node, outcome);
-                this->_update_chance_node(chance_node, outcome);
+                _update_matrix_node(matrix_node, outcome);
+                _update_chance_node(chance_node, outcome);
                 return matrix_node_leaf;
             }
             else
@@ -191,11 +201,11 @@ public:
 
     // TODO rename. MCTS-A style search where you return the empirical average values of the next node instead of the leaf node value.
 
-    MatrixNode<Algorithm> *run_iteration_average(
+    void *run_iteration_average(
         prng &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Algorithm> *matrix_node)
+        MatrixNode<BanditAlgorithm> *matrix_node)
     {
         if (!matrix_node->is_terminal)
         {
@@ -203,20 +213,20 @@ public:
             {
                 typename Types::Outcome outcome;
 
-                this->_select(device, matrix_node, outcome);
+                _select(device, matrix_node, outcome);
 
                 typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
                 typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
                 state.apply_actions(row_action, col_action);
 
-                ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
+                ChanceNode<BanditAlgorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                MatrixNode<BanditAlgorithm> *matrix_node_next = chance_node->access(state.transition);
 
-                MatrixNode<Algorithm> *matrix_node_leaf = this->run_iteration_average(device, state, model, matrix_node_next);
+                run_iteration_average(device, state, model, matrix_node_next);
 
-                this->_get_empirical_values(matrix_node_next, outcome.row_value, outcome.col_value);
-                this->_update_matrix_node(matrix_node, outcome);
-                this->_update_chance_node(chance_node, outcome);
+                _get_empirical_values(matrix_node_next, outcome.row_value, outcome.col_value);
+                _update_matrix_node(matrix_node, outcome);
+                _update_chance_node(chance_node, outcome);
                 return matrix_node_leaf;
             }
             else

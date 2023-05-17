@@ -91,16 +91,6 @@ public:
         matrix_node->actions = state.actions;
         const int rows = state.actions.rows;
         const int cols = state.actions.cols;
-
-        if (matrix_node->is_terminal)
-        {
-            matrix_node->inference.row_value = state.row_payoff;
-            matrix_node->inference.col_value = state.col_payoff;
-        }
-        else
-        {
-            model.get_inference(state, matrix_node->inference);
-        }
         
         matrix_node->stats.row_value_matrix.fill(rows, cols, 0);
         matrix_node->stats.col_value_matrix.fill(rows, cols, 0);

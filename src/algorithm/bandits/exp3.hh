@@ -89,16 +89,6 @@ public:
         matrix_node->stats.col_visits.fill(state.actions.cols, 0);
         matrix_node->stats.row_gains.fill(state.actions.rows, 0);
         matrix_node->stats.col_gains.fill(state.actions.cols, 0);
-
-        if (matrix_node->is_terminal)
-        {
-            matrix_node->inference.row_value = state.row_payoff;
-            matrix_node->inference.col_value = state.col_payoff;
-        }
-        else
-        {
-            model.get_inference(state, matrix_node->inference);
-        }
     }
 
     void select(
