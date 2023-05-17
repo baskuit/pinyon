@@ -1,48 +1,48 @@
 #pragma once
 
-#include "model/model.hh"
-#include "seed-state.hh"
-#include "grow.hh"
-#include "tree/tree.hh"
+#include "../model/model.hh"
+#include "random-tree.hh"
+#include "../algorithm/solve/full-traversal.hh"
+#include "../tree/tree.hh"
 
 #include <memory>
 #include <numeric>
 
 /*
 
-This state is a wrapper for the tree produced by the Grow algorithm
+This state is a wrapper for the tree produced by the FullTraversal algorithm
 
 What should template type be? Just model?
 
 */
 
 template <class Model>
-class TreeState : public SolvedState<typename Model::Types::TypeList>
+class TraversedState : public SolvedState<typename Model::Types::TypeList>
 {
     static_assert(std::derived_from<typename Model::Types::State, StateChance<typename Model::Types::TypeList>>,
-        "TreeState must be based on State type derived from StateChance");
+        "TraversedState must be based on State type derived from StateChance");
     static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
-        "Grow algorithm requires Model must be derived from DoubleOracleModel");
+        "FullTraversal algorithm requires Model must be derived from DoubleOracleModel");
 
 public:
     struct Types : Model::Types
     {
     };
 
-    prng device;
-    std::shared_ptr<MatrixNode<Grow<Model>>> tree;
-    MatrixNode<Grow<Model>> *current_node;
+    typename Types::PRNG device;
+    std::shared_ptr<MatrixNode<FullTraversal<Model>>> tree;
+    MatrixNode<FullTraversal<Model>> *current_node;
     typename Types::State::Transition transition;
 
-    TreeState(
+    TraversedState(
         typename Types::State &state,
         Model &model,
         int max_depth=-1) :
             device(state.device)
     {
-        this->tree = std::make_shared<MatrixNode<Grow<Model>>>();
+        this->tree = std::make_shared<MatrixNode<FullTraversal<Model>>>();
         this->current_node = &*tree;
-        Grow<Model> session;
+        FullTraversal<Model> session;
         session.max_depth = max_depth;
         session.grow(state, model, current_node);
         update_solved_state_info();
@@ -62,7 +62,7 @@ public:
     {
         int row_idx = std::find(this->actions.row_actions.begin(), this->actions.row_actions.end(), row_action) - this->actions.row_actions.begin();
         int col_idx = std::find(this->actions.col_actions.begin(), this->actions.col_actions.end(), col_action) - this->actions.col_actions.begin();
-        ChanceNode<Grow<Model>> *chance_node = current_node->access(row_idx, col_idx);
+        ChanceNode<FullTraversal<Model>> *chance_node = current_node->access(row_idx, col_idx);
         chance_actions = chance_node->stats.chance_actions;
     }
 
@@ -72,7 +72,7 @@ public:
     {
         int row_idx = std::find(this->actions.row_actions.begin(), this->actions.row_actions.end(), row_action) - this->actions.row_actions.begin();
         int col_idx = std::find(this->actions.col_actions.begin(), this->actions.col_actions.end(), col_action) - this->actions.col_actions.begin();
-        ChanceNode<Grow<Model>> *chance_node = current_node->access(row_idx, col_idx);
+        ChanceNode<FullTraversal<Model>> *chance_node = current_node->access(row_idx, col_idx);
         const int chance_idx = device.sample_pdf(chance_node->stats.chance_strategy, chance_node->stats.chance_strategy.size());
         typename Types::Observation chance_action = chance_node->stats.chance_actions[chance_idx];
         transition.obs = chance_action;

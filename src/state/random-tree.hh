@@ -134,7 +134,7 @@ public:
         }
     }
 
-    // RandomTreeVector is only used to generate a TreeState, and the grow algorithm only calls the other apply_actions
+    // RandomTreeVector is only used to generate a TraversedState, and the grow algorithm only calls the other apply_actions
     void apply_actions(
         typename Types::Action row_action,
         typename Types::Action col_action)

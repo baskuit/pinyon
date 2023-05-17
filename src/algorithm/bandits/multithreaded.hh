@@ -2,13 +2,13 @@
 
 #include "bandit.hh"
 
-#include "tree/tree.hh"
+#include "../../tree/tree.hh"
 
 #include <thread>
 #include <mutex>
 #include <atomic>
 
-template <class Model, class BanditAlgorithm, struct Outcome=ChoicesOutcome>
+template <class Model, class BanditAlgorithm, template <class Model_> class Outcome>
 class TreeBanditThreaded : public TreeBandit<Model, BanditAlgorithm, Outcome>
 {
 public:
@@ -117,8 +117,8 @@ public:
 TreeBandit with a mutex pool
 */
 
-template <class Model, class BanditAlgorithm, struct Outcome>
-class TreeBanditThreadPool : public TreeBandit<Model, BanditAlgorithm, Outcome>
+template <class Model, class BanditAlgorithm, class Outcome>
+class TreeBanditThreadPool : public TreeBandit<Model, BanditAlgorithm, template <class Model_> class Outcome>
 {
 public:
     struct MatrixStats;

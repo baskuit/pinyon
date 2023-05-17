@@ -30,7 +30,7 @@ void print_matrix (MatrixNode<Algorithm> *matrix_node) {
 template <class State>
 void alpha_beta_test (State &state) {
     using Model = MonteCarloModel<State>;
-    TreeState<Model> tree_state(state)
+    TraversedState<Model> tree_state(state)
 }
 
 template <size_t MaxActions, size_t MaxTransitions>
@@ -58,7 +58,7 @@ void alpha_beta_test (
                 prng new_device(new_seed);
                 RandomTree state(new_device, depth_bound, actions, actions, chance_threshold);
                 Model model(new_device);
-                TreeState<Model> tree_state(state, model);
+                TraversedState<Model> tree_state(state, model);
                 AlphaBeta<Model> alpha_beta_session(0, 1);
                 MatrixNode<AlphaBeta<Model>> alpha_beta_root;
                 alpha_beta_session.run(state, model, &alpha_beta_root, tree_state.current_node);

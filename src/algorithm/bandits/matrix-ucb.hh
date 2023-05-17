@@ -3,7 +3,7 @@
 #include <string>
 
 #include "bandit.hh"
-#include "../tree/tree.hh"
+#include "../../tree/tree.hh"
 
 /*
 MatrixUCB
