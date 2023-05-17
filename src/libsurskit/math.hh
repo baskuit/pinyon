@@ -199,26 +199,27 @@ namespace Linear
         }
     };
 
-    template <class TypeList>
-    typename TypeList::Real exploitability(
-        typename TypeList::MatrixReal &row_payoff_matrix,
-        typename TypeList::MatrixReal &col_payoff_matrix,
-        typename TypeList::VectorReal &row_strategy,
-        typename TypeList::VectorReal &col_strategy)
+    template <class Types>
+    typename Types::Real exploitability(
+        typename Types::MatrixReal &row_payoff_matrix,
+        typename Types::MatrixReal &col_payoff_matrix,
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy)
     {
         const int rows = row_payoff_matrix.rows;
         const int cols = row_payoff_matrix.cols;
 
-        typename TypeList::Real row_payoff = 0, col_payoff = 0;
-        typename TypeList::VectorReal row_response, col_response;
+        typename Types::Real row_payoff = 0, col_payoff = 0;
+        typename Types::VectorReal row_response, col_response;
         row_response.fill(rows, 0);
         col_response.fill(cols, 0); // TODO maybe replace this with just a constructor
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                const typename TypeList::Real u = row_payoff_matrix.get(row_idx, col_idx) * col_strategy[col_idx];
-                const typename TypeList::Real v = col_payoff_matrix.get(row_idx, col_idx) * row_strategy[row_idx];
+                const size_t data_idx = row_idx * cols + col_idx;
+                const typename Types::Real u = row_payoff_matrix.data[data_idx] * col_strategy[col_idx];
+                const typename Types::Real v = col_payoff_matrix.data[data_idx] * row_strategy[row_idx];
                 row_payoff += u * row_strategy[row_idx];
                 col_payoff += v * col_strategy[col_idx];
                 row_response[row_idx] += u;
@@ -226,21 +227,8 @@ namespace Linear
             }
         }
 
-        typename TypeList::Real row_best_response = row_response[0], col_best_response = col_response[0];
-        for (int row_idx = 1; row_idx < rows; ++row_idx)
-        {
-            if (row_response[row_idx] > row_best_response)
-            {
-                row_best_response = row_response[row_idx];
-            }
-        }
-        for (int col_idx = 1; col_idx < cols; ++col_idx)
-        {
-            if (col_response[col_idx] > col_best_response)
-            {
-                col_best_response = col_response[col_idx];
-            }
-        }
+        typename Types::Real row_best_response = std::max(row_response);
+        typename Types::Real col_best_response = std::max(col_response);
 
         return (row_best_response - row_payoff) + (col_best_response - col_payoff);
     }
