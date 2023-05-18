@@ -9,6 +9,8 @@ We don't override the default copy constructor. That preserves the progress of t
 `copy()` returns one with the same seed but 'restarted'.
 */
 
+struct NullSeed {};
+
 class prng
 {
     std::mt19937::result_type seed;
@@ -17,6 +19,19 @@ class prng
     std::uniform_int_distribution<uint32_t> uniform_32_;
 
 public:
+
+    template <typename Seed>
+    Seed new_seed ();
+
+    template <>
+    uint64_t new_seed () {
+        return uniform_64();
+    }
+
+    NullSeed new_seed () {
+        return NullSeed{};
+    }
+
     prng() : seed(std::random_device{}()), engine(std::mt19937{seed}) {}
     prng(std::mt19937::result_type seed) : seed(seed), engine(std::mt19937{seed}) {}
 
@@ -51,6 +66,21 @@ public:
     {
         double p = uniform();
         for (int i = 0; i < k; ++i)
+        {
+            p -= input[i];
+            if (p <= 0)
+            {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    template <typename Vector>
+    int sample_pdf(Vector &input)
+    {
+        double p = uniform();
+        for (int i = 0; i < input.size(); ++i)
         {
             p -= input[i];
             if (p <= 0)

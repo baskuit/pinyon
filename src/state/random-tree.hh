@@ -15,7 +15,7 @@ template <size_t MaxTransitions>
 class RandomTree : public ChanceState<SimpleTypes>
 {
 public:
-    struct Types : SimpleTypes
+    struct Types : ChanceState<SimpleTypes>::Types
     {
     };
 

@@ -7,13 +7,17 @@
 template <class _Types>
 class AbstractState
 {
+public: // why? TODO
+    struct Types : _Types {
+        using TypeList = _Types;
+    };
 };
 
 template <class _Types>
 class State : public AbstractState<_Types>
 {
 public:
-    struct Types : _Types
+    struct Types : AbstractState<_Types>::Types
     {
     };
 
@@ -45,8 +49,8 @@ public:
 template <class _Types>
 class ChanceState : public State<_Types>
 {
-
-    struct Types : _Types
+public:
+    struct Types : State<_Types>::Types
     {
     };
 

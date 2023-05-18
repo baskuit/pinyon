@@ -1,6 +1,9 @@
 #include "../src/state/random-tree.hh"
 #include "../src/model/model.hh"
 #include "../src/algorithm/bandits/exp3.hh"
+#include "../src/algorithm/solve/full-traversal.hh"
+#include "../src/algorithm/solve/alphabeta.hh"
+
 
 const size_t MaxTransitions = 1;
 
@@ -15,7 +18,11 @@ void foo () {
     Exp3 session;
 
     MatrixNode<Exp3> root;
-    session.run(1000, device, state, model, root);
+    session.run(1000000, device, state, model, root);
+
+    MatrixNode<FullTraversal<Model>> root_;
+    FullTraversal<Model> session_;
+    session_.run(state, model, &root_);
 }
 
 int main () {

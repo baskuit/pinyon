@@ -1,9 +1,9 @@
 #pragma once
 
 #include "state.hh"
-#include "model/model.hh"
+#include "../model/model.hh"
 // #include "algorithm/exp3p.hh"
-#include "tree/tree.hh"
+#include "../tree/tree.hh"
 
 /*
  Large uniform tree for testing etc. So called because it grows until it can't.
@@ -17,9 +17,9 @@ public:
     {
     };
     
-    int max_depth = 1;
+    size_t max_depth = 1;
 
-    MoldState(int max_depth) : max_depth((depth >= 0) * depth)
+    MoldState(size_t max_depth) : max_depth((max_depth >= 0) * max_depth)
     {
         this->actions.row_actions.fill(size);
         this->actions.col_actions.fill(size);

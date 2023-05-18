@@ -16,15 +16,15 @@ public:
 Similar to `State`, in that virtually all models will be derived from it.
 */
 
-template <class State>
+template <class _State>
 
-class DoubleOracleModel : public AbstractModel<State>
+class DoubleOracleModel : public AbstractModel<_State>
 {
-    // static_assert(std::derived_from<State, State<typename State::Types::TypeList>>);
+    static_assert(std::derived_from<_State, State<typename _State::Types::TypeList>>);
 
 public:
     struct Inference;
-    struct Types : AbstractModel<State>::Types
+    struct Types : AbstractModel<_State>::Types
     {
         using Inference = DoubleOracleModel::Inference;
     };

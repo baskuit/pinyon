@@ -1,6 +1,6 @@
-#include "libsurskit/gambit.hh"
-#include "tree/tree.hh"
-#include "algorithm/algorithm.hh"
+#include "../../libsurskit/gambit.hh"
+#include "../../tree/tree.hh"
+#include "../algorithm.hh"
 
 // #include <algorithm
 #include <ranges>
@@ -35,7 +35,7 @@ public:
         std::vector<int> I{}, J{}; 
         // vector of row_idx, col_idx in the substage
         int depth = 0;
-        MatrixNode<Grow<Model>> *teacher = nullptr;
+        MatrixNode<FullTraversal<Model>> *teacher = nullptr;
         typename Types::VectorReal row_strategy, col_strategy;
         int row_br_idx, col_br_idx;
         bool ok = true;
@@ -59,7 +59,7 @@ public:
         typename Types::State &state,
         Model &model,
         MatrixNode<AlphaBeta> *root,
-        MatrixNode<Grow<Model>> *teacher
+        MatrixNode<FullTraversal<Model>> *teacher
     ) {
         root->stats.teacher = teacher;
         double_oracle(state, model, root, min_val, max_val);
@@ -125,7 +125,7 @@ public:
                         // 12: u(si, j ) ← double-oracle(si, j , pi, j, oi, j )
                         typename Types::Real u_ij = 0;
                         ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-                        ChanceNode<Grow<Model>> *chance_node_teacher = stats.teacher->access(row_idx, col_idx);
+                        ChanceNode<FullTraversal<Model>> *chance_node_teacher = stats.teacher->access(row_idx, col_idx);
 
                         const typename Types::Action row_action = state.row_actions[row_idx];
                         const typename Types::Action col_action = state.col_actions[col_idx];
@@ -276,7 +276,7 @@ public:
                         // 11: u(s_ij) = double_oracle (s_ij, p_ij, o_ij)
                         typename Types::Real u_ij = 0;
                         ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-                        ChanceNode<Grow<Model>> *chance_node_teacher = matrix_node->stats.teacher->access(row_idx, col_idx);
+                        ChanceNode<FullTraversal<Model>> *chance_node_teacher = matrix_node->stats.teacher->access(row_idx, col_idx);
                         
                         const typename Types::Action row_action = state.row_actions[row_idx];
                         const typename Types::Action col_action = state.col_actions[col_idx];
@@ -357,7 +357,7 @@ public:
                     } else {
                         typename Types::Real u_ij = 0;
                         ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-                        ChanceNode<Grow<Model>> *chance_node_teacher = matrix_node->stats.teacher->access(row_idx, col_idx);
+                        ChanceNode<FullTraversal<Model>> *chance_node_teacher = matrix_node->stats.teacher->access(row_idx, col_idx);
 
                         const typename Types::Action row_action = state.row_actions[row_idx];
                         const typename Types::Action col_action = state.col_actions[col_idx];

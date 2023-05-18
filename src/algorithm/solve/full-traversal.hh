@@ -2,10 +2,10 @@
 
 #include <string>
 
-#include "libsurskit/gambit.hh"
-#include "model/model.hh"
-#include "tree/tree.hh"
-#include "algorithm/algorithm.hh"
+#include "../../libsurskit/gambit.hh"
+#include "../../model/model.hh"
+#include "../../tree/tree.hh"
+#include "../../algorithm/algorithm.hh"
 
 /*
     This algorithm expands a node into a tree that is one-to-one with the abstract game tree
@@ -18,8 +18,9 @@
 template <typename Model>
 class FullTraversal : public AbstractAlgorithm<Model>
 {
-    static_assert(std::derived_from<typename Model::Types::State, StateChance<typename Model::Types::TypeList>>,
-        "This algorithm must be based on State type derived from StateChance");
+    static_assert(std::derived_from<typename Model::Types::State, ChanceState<typename Model::Types::TypeList>>,
+        "This algorithm must be based on State type derived from ChanceState");
+
     static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
         "The Inference type of the DoubleOracleModel is used to store Nash strategies and payoff");
 
@@ -83,12 +84,12 @@ public:
         matrix_node->stats.nash_payoff_matrix.fill(rows, cols, 0);
 
         // recurse
-        for (int row_idx = 0; row_idx < rows; ++row_idx)
+        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
-            for (int col_idx = 0; col_idx < cols; ++col_idx)
+            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
             {
-                const typename Types::Action row_action = matrix_node->actions.row_actions[row_idx];
-                const typename Types::Action col_action = matrix_node->actions.col_actions[col_idx];
+                const typename Types::Action row_action = matrix_node->row_actions[row_idx];
+                const typename Types::Action col_action = matrix_node->col_actions[col_idx];
 
                 std::vector<typename Types::Observation> chance_actions;
                 state.get_chance_actions(chance_actions, row_action, col_action);
@@ -98,7 +99,7 @@ public:
                 {
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, chance_action);
-                    MatrixNode<FullTraversal> *matrix_node_next = chance_node->access(state_copy.transition);
+                    MatrixNode<FullTraversal> *matrix_node_next = chance_node->access(state_copy.obs, state_copy.prob);
                     matrix_node_next->stats.depth = matrix_node->stats.depth + 1;
 
                     run(state_copy, model, matrix_node_next);
@@ -108,6 +109,9 @@ public:
                 }
             }
         }
+
+        matrix_node->stats.row_solution.fill(rows);
+        matrix_node->stats.col_solution.fill(cols);
 
         LibGambit::solve_matrix<Types>(
             matrix_node->stats.nash_payoff_matrix,

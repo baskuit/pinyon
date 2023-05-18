@@ -9,6 +9,8 @@
 #include "rational.hh"
 #include "vector.hh"
 
+using ActionIndex = int;
+
 namespace math
 {
 
@@ -29,13 +31,13 @@ namespace math
     }
 
     template <typename Vector>
-    void print(Vector &input, int length)
+    void print(Vector &input)
     {
-        for (int i = 0; i < length; ++i)
+        for (int i = 0; i < input.size(); ++i)
         {
             std::cout << input[i] << ", ";
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
 
     template <typename Real>
@@ -150,9 +152,9 @@ namespace Linear
         typename Types::VectorReal row_response, col_response;
         row_response.fill(rows, 0);
         col_response.fill(cols, 0); // TODO maybe replace this with just a constructor
-        for (int row_idx = 0; row_idx < rows; ++row_idx)
+        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
-            for (int col_idx = 0; col_idx < cols; ++col_idx)
+            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
             {
                 const size_t data_idx = row_idx * cols + col_idx;
                 const typename Types::Real u = row_payoff_matrix.data[data_idx] * col_strategy[col_idx];
