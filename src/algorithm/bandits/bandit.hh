@@ -31,13 +31,13 @@ struct PolicyOutcome
     VectorReal row_policy, col_policy;
 };
 
-template <class Model, class BanditAlgorithm>
+template <class Model, class BanditAlgorithm, class _Outcome>
 class TreeBandit : public AbstractAlgorithm<Model>
 {
 public:
     struct Types : AbstractAlgorithm<Model>::Types
     {
-        using Outcome = ChoicesOutcome<Model>;
+        using Outcome = _Outcome;
     };
 
     // MatrixNode<BanditAlgorithm> root;
@@ -61,7 +61,7 @@ public:
         for (int iteration = 0; iteration < iterations; ++iteration)
         {
             typename Types::State state_copy = state;
-            state_copy.seed = device.get_seed();
+            state_copy.seed = device.template new_seed<uint64_t>();
             this->_playout(device, state_copy, model, &matrix_node);
         }
     }

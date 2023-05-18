@@ -1,7 +1,7 @@
 #pragma once
 
 #include "math.hh"
-#include "gambit.h"
+#include "../../../gambit/src/gambit.h"
 #include "linalg/vertenum.imp"
 #include "state/test-states.hh"
 
@@ -32,12 +32,12 @@ namespace LibGambit
 
     using BFS = Gambit::linalg::BFS<double>;
 
-    template <class TypeList>
+    template <class Types>
     void solve_bimatrix(
-        typename TypeList::MatrixReal &row_payoff_matrix,
-        typename TypeList::MatrixReal &col_payoff_matrix,
-        typename TypeList::VectorReal &row_strategy,
-        typename TypeList::VectorReal &col_strategy)
+        typename Types::MatrixReal &row_payoff_matrix,
+        typename Types::MatrixReal &col_payoff_matrix,
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy)
     {
         const int rows = row_payoff_matrix.rows;
         const int cols = row_payoff_matrix.cols;
@@ -170,12 +170,12 @@ namespace LibGambit
         }
     }
 
-    template <class TypeList>
+    template <class Types>
     void solve_matrix(
-        typename TypeList::MatrixReal &row_payoff_matrix,
-        typename TypeList::VectorReal &row_strategy,
-        typename TypeList::VectorReal &col_strategy,
-        const typename TypeList::Real payoff_sum = 1)
+        typename Types::MatrixReal &row_payoff_matrix,
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy,
+        const typename Types::Real payoff_sum = 1)
     {
         const int rows = row_payoff_matrix.rows;
         const int cols = row_payoff_matrix.cols;

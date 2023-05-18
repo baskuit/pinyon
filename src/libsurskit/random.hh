@@ -23,15 +23,6 @@ public:
     template <typename Seed>
     Seed new_seed ();
 
-    template <>
-    uint64_t new_seed () {
-        return uniform_64();
-    }
-
-    NullSeed new_seed () {
-        return NullSeed{};
-    }
-
     prng() : seed(std::random_device{}()), engine(std::mt19937{seed}) {}
     prng(std::mt19937::result_type seed) : seed(seed), engine(std::mt19937{seed}) {}
 
@@ -95,3 +86,15 @@ public:
         engine.discard(n);
     }
 };
+
+template <>
+uint64_t prng::new_seed<uint64_t>()
+{
+    return uniform_64();
+}
+
+template <>
+NullSeed prng::new_seed<NullSeed>()
+{
+    return NullSeed{};
+}

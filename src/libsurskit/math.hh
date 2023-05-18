@@ -16,6 +16,8 @@ namespace math
 
     template <typename VectorIn, typename VectorOut>
     void power_norm(VectorIn &input, int length, double power, VectorOut &output)
+
+    // TODO modernize
     {
         double sum = 0;
         for (int i = 0; i < length; ++i)
@@ -166,8 +168,8 @@ namespace Linear
             }
         }
 
-        typename Types::Real row_best_response = std::max(row_response);
-        typename Types::Real col_best_response = std::max(col_response);
+        typename Types::Real row_best_response = *std::max_element(row_response.begin(), row_response.end());
+        typename Types::Real col_best_response = *std::max_element(col_response.begin(), col_response.end());
 
         return (row_best_response - row_payoff) + (col_best_response - col_payoff);
     }

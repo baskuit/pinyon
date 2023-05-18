@@ -8,13 +8,13 @@
 Exp3
 */
 
-template <class Model, template <class _Model, class _BanditAlgorithm> class _TreeBandit>
-class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit>>
+template <class Model, template <class _Model, class _BanditAlgorithm, class Outcome> class _TreeBandit>
+class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>
 {
 public:
     struct MatrixStats;
     struct ChanceStats;
-    struct Types : _TreeBandit<Model, Exp3<Model, _TreeBandit>>::Types
+    struct Types : _TreeBandit<Model, Exp3<Model, _TreeBandit>,  ChoicesOutcome<Model>>::Types
     {
         using MatrixStats = Exp3::MatrixStats;
         using ChanceStats = Exp3::ChanceStats;
@@ -50,15 +50,18 @@ public:
         return os;
     }
 
-    void _get_empirical_strategies(
+    void get_empirical_strategies(
         MatrixNode<Exp3> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
-        return;
+        row_strategy.fill(matrix_node->stats.row_visits.size());
+        col_strategy.fill(matrix_node->stats.col_visits.size());
+        math::power_norm(matrix_node->stats.row_visits, row_strategy.size(), 1, row_strategy);
+        math::power_norm(matrix_node->stats.col_visits, col_strategy.size(), 1, col_strategy);
     }
 
-    void _get_empirical_values(
+    void get_empirical_values(
         MatrixNode<Exp3> *matrix_node,
         typename Types::Real &row_value,
         typename Types::Real &col_value)

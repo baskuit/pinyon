@@ -4,24 +4,24 @@
 
 #include "bandit.hh"
 #include "../../tree/tree.hh"
-
+#include "../../libsurskit/gambit.hh"
 /*
 MatrixUCB
 */
 
-template <class Model, template <class _Model, class _BanditAlgorithm> class _TreeBandit>
-class MatrixUCB : public _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>
+template <class Model, template <class _Model, class _BanditAlgorithm, class _Outcome> class _TreeBandit>
+class MatrixUCB : public _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>, ChoicesOutcome<Model>>
 {
 public:
     struct MatrixStats;
     struct ChanceStats;
-    struct Types : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>::Types
+    struct Types : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>, ChoicesOutcome<Model>>::Types
     {
         using MatrixStats = MatrixUCB::MatrixStats;
         using ChanceStats = MatrixUCB::ChanceStats;
     };
 
-    struct MatrixStats : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>::MatrixStats
+    struct MatrixStats : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>, ChoicesOutcome<Model>>::MatrixStats
     {
         int time = 0;
         typename Types::MatrixReal row_value_matrix;
@@ -32,7 +32,7 @@ public:
         typename Types::VectorReal col_strategy;
     };
 
-    struct ChanceStats : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>>::ChanceStats
+    struct ChanceStats : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>, ChoicesOutcome<Model>>::ChanceStats
     {
         // int visits = 0;
         // typename Types::Real row_value_total = 0;
@@ -62,13 +62,17 @@ public:
         matrix_node->stats.time = iterations;
     }
 
-    void get_strategies(
+    void get_empirical_strategies( // TODO
         MatrixNode<MatrixUCB> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
-        typename Types::MatrixReal row_ev_matrix(matrix_node->actions.rows, matrix_node->actions.cols);
-        typename Types::MatrixReal col_ev_matrix(matrix_node->actions.rows, matrix_node->actions.cols);
+        const int rows = matrix_node->row_actions.size();
+        const int cols = matrix_node->col_actions.size();
+        row_strategy.fill(rows);
+        col_strategy.fill(cols);
+        typename Types::MatrixReal row_ev_matrix(rows, cols);
+        typename Types::MatrixReal col_ev_matrix(rows, cols);
         get_ev_matrix(
             matrix_node,
             row_ev_matrix,
@@ -78,6 +82,13 @@ public:
             col_ev_matrix,
             row_strategy,
             col_strategy);
+    }
+
+    void get_empirical_values(
+        MatrixNode<MatrixUCB> *matrix_node,
+        typename Types::Real &row_value,
+        typename Types::Real &col_value)
+    {
     }
 
     void expand(
@@ -118,8 +129,10 @@ public:
         MatrixNode<MatrixUCB> *matrix_node,
         typename Types::Outcome &outcome)
     {
-        typename Types::MatrixReal row_ucb_matrix(matrix_node->actions.rows, matrix_node->actions.cols);
-        typename Types::MatrixReal col_ucb_matrix(matrix_node->actions.rows, matrix_node->actions.cols);
+        const int rows = matrix_node->row_actions.size();
+        const int cols = matrix_node->col_actions.size();
+        typename Types::MatrixReal row_ucb_matrix(rows, cols);
+        typename Types::MatrixReal col_ucb_matrix(rows, cols);
         get_ucb_matrix(
             matrix_node,
             row_ucb_matrix,
