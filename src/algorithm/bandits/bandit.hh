@@ -31,25 +31,25 @@ struct PolicyOutcome
     VectorReal row_policy, col_policy;
 };
 
-template <class Model, class BanditAlgorithm, class _Outcome>
+template <class Model, class BanditAlgorithm>
 class TreeBandit : public AbstractAlgorithm<Model>
 {
 public:
     struct Types : AbstractAlgorithm<Model>::Types
     {
-        using Outcome = _Outcome;
+        using Outcome = ChoicesOutcome<Model>;
     };
 
-    MatrixNode<BanditAlgorithm> root;
+    // MatrixNode<BanditAlgorithm> root;
 
-    void run(
-        int iterations,
-        typename Types::PRNG &device,
-        typename Types::State &state,
-        typename Types::Model &model)
-    {
-        run(iterations, device, state, model, root);
-    }
+    // void run(
+    //     int iterations,
+    //     typename Types::PRNG &device,
+    //     typename Types::State &state,
+    //     typename Types::Model &model)
+    // {
+    //     run(iterations, device, state, model, root);
+    // }
     void run(
         int iterations,
         typename Types::PRNG &device,
@@ -95,7 +95,7 @@ protected:
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> *matrix_node)
     {
-        return static_cast<BanditAlgorithm *>(this)->playout(
+        return static_cast<BanditAlgorithm *>(this)->run_iteration(
             device,
             state,
             model,
@@ -191,12 +191,12 @@ protected:
 
                 _select(device, matrix_node, outcome);
 
-                typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
-                typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
+                typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
+                typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
                 state.apply_actions(row_action, col_action);
 
                 ChanceNode<BanditAlgorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<BanditAlgorithm> *matrix_node_next = chance_node->access(state.transition);
+                MatrixNode<BanditAlgorithm> *matrix_node_next = chance_node->access(state.obs, state.prob);
 
                 MatrixNode<BanditAlgorithm> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next);
 

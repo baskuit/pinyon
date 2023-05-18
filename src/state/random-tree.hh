@@ -71,15 +71,15 @@ public:
     void get_actions()
     {
         // TODO optimize? Init actions in constr and only update entries when row/col increases
-        this->actions.row_actions.fill(rows);
-        this->actions.col_actions.fill(cols);
+        this->row_actions.fill(rows);
+        this->col_actions.fill(cols);
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
-            this->actions.row_actions[row_idx] = row_idx;
+            this->row_actions[row_idx] = row_idx;
         };
         for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
         {
-            this->actions.col_actions[col_idx] = col_idx;
+            this->col_actions[col_idx] = col_idx;
         };
     }
 

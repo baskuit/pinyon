@@ -8,13 +8,13 @@
 Exp3
 */
 
-template <class Model, template <class _Model, class _BanditAlgorithm, class _Outcome> class _TreeBandit>
-class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>
+template <class Model, template <class _Model, class _BanditAlgorithm> class _TreeBandit>
+class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit>>
 {
 public:
     struct MatrixStats;
     struct ChanceStats;
-    struct Types : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>::Types
+    struct Types : _TreeBandit<Model, Exp3<Model, _TreeBandit>>::Types
     {
         using MatrixStats = Exp3::MatrixStats;
         using ChanceStats = Exp3::ChanceStats;
@@ -99,8 +99,8 @@ public:
         Softmaxing of the gains to produce forecasts/strategies for the row and col players.
         The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
         */
-        const int rows = matrix_node->actions.rows;
-        const int cols = matrix_node->actions.cols;
+        const int rows = matrix_node->row_actions.size();
+        const int cols = matrix_node->col_actions.size();
         typename Types::VectorReal row_forecast(rows);
         typename Types::VectorReal col_forecast(cols);
         if (rows == 1)

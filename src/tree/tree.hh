@@ -155,7 +155,7 @@ public:
         int col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
     ~ChanceNode();
 
-    MatrixNode<Algorithm> *access(typename Types::obs &obs, typename Types::Probability prob) // TODO check speed on pass-by
+    MatrixNode<Algorithm> *access(typename Types::Observation &obs, typename Types::Probability prob) // TODO check speed on pass-by
     {
         if (this->child == nullptr)
         {

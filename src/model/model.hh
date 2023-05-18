@@ -29,7 +29,7 @@ public:
         using Inference = DoubleOracleModel::Inference;
     };
 
-    struct Inference : AbstractModel<State>::Inference
+    struct Inference
     {
         typename Types::Real row_value;
         typename Types::Real col_value;
