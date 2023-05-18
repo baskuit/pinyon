@@ -3,6 +3,7 @@
 #include "../libsurskit/rational.hh"
 #include "../libsurskit/vector.hh"
 #include "../libsurskit/random.hh"
+#include "../libsurskit/math.hh"
 
 #include <vector>
 
@@ -14,6 +15,7 @@ template <
     typename _Float,
     typename _Action,
     typename _Observation,
+    typename _Probability,
     typename _Seed,
     typename _PRNG,
     typename _VectorReal,
@@ -29,6 +31,7 @@ struct Types {
     using Float = _Float;
     using Action = _Action;
     using Observation = _Observation;
+    using Probability = _Probability;
     using Seed = _Seed;
     using PRNG = _PRNG;
     using VectorReal = _VectorReal;
@@ -45,13 +48,14 @@ using SimpleTypes = Types<
     double,
     int,
     int,
+    double,
     uint64_t,
     prng,
     Vector<double>,
     Vector<int>,
     Vector<int>,
-    Linear::MatrixVector<double>,
-    Linear::MatrixVector<double>,
-    Linear::MatrixVector<int>
+    Linear::Matrix<double>,
+    Linear::Matrix<double>,
+    Linear::Matrix<int>
 >;
     

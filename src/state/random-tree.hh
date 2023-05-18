@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../types/types.hh"
 #include "state.hh"
 #include "../libsurskit/random.hh"
 
@@ -11,10 +12,10 @@ RandomTree is a well-defined P-game.
 */
 
 template <size_t MaxTransitions>
-class RandomTree : public StateChance<SimpleTypes>
+class RandomTree : public ChanceState<SimpleTypes>
 {
 public:
-    struct Types : StateChance<SimpleTypes>::Types
+    struct Types : SimpleTypes
     {
     };
 
@@ -102,9 +103,9 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action,
         typename Types::Observation chance_action,
-        bool extra_typename Types::PRNG_call = true)
+        bool extra_prng_call = true)
     {
-        if (extra_typename Types::PRNG_call)
+        if (extra_prng_call)
         {
             device.uniform(); // TODO check if discard 1 does the same.
         }
@@ -177,7 +178,7 @@ private:
 
     void get_chance_strategies()
     {
-        chance_strategies.fill(rows * cols * MaxTransitions);
+        chance_strategies.resize(rows * cols * MaxTransitions);
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
 

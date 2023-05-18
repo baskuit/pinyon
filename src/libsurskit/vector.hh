@@ -27,8 +27,8 @@ struct Vector : std::vector<T>
     }
 };
 
-template <typename T, size_t size>
-struct Array : std::array<T, size>
+template <typename T, size_t MaxSize>
+struct Array : std::array<T, MaxSize>
 {
 
     Array() {}
@@ -37,18 +37,18 @@ struct Array : std::array<T, size>
     {
     }
 
-    int size = 0;
+    int _size = 0; // TODO does array already have a size member?
 
     void fill(int n, T value)
     {
         std::fill(this->begin(), this->begin() + n, value);
-        size = n;
+        _size = n;
     }
     void fill(int n)
     {
-        size = n;
+        _size = n;
     }
     int size () {
-        return size;
+        return _size;
     }
 };

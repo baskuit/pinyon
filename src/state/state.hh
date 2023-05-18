@@ -2,6 +2,8 @@
 
 #include "../types/types.hh"
 
+#include <vector>
+
 template <class _Types>
 class AbstractState
 {
@@ -15,7 +17,7 @@ public:
     {
     };
 
-    State () {}
+    State() {}
 
     typename Types::VectorAction row_actions, col_actions;
     typename Types::Observation obs;
@@ -34,35 +36,35 @@ public:
 
     void apply_action_indices(
         ActionIndex row_idx,
-        ActionIndex col_idx){
-        apply_actions(row_actions[row_idx], col_actions[col_idx])};
+        ActionIndex col_idx)
+    {
+        apply_actions(row_actions[row_idx], col_actions[col_idx]);
+    };
 };
 
 template <class _Types>
 class ChanceState : public State<_Types>
 {
 
-    struct Types : State<_Types>
+    struct Types : _Types
     {
     };
 
-    void get_chance_actions () {
+    void get_chance_actions(
         std::vector<typename Types::Observation> &chance_actions,
-        typename Types::Action row_action,
-        typename Types::Action col_action
-    };
+        int row_action,
+        typename Types::Action col_action);
 
     void apply_actions(
         typename Types::Action row_action,
         typename Types::Action col_action,
-        typename Types::Observation chance_action
-    );
+        typename Types::Observation chance_action);
 
     void apply_actions(
         typename Types::Action row_action,
         typename Types::Action col_action,
-        typename Types::Seed seed
-    ) {
+        typename Types::Seed seed)
+    {
         this->seed = seed;
         apply_actions(row_action, col_action);
     }

@@ -9,7 +9,7 @@
 
 // outcome struct where we only store the policy for the selected action (indices) for either player
 
-<typename Model>
+template <typename Model>
 struct ChoicesOutcome
 {
     using Real = typename Model::Types::Real;
@@ -20,7 +20,7 @@ struct ChoicesOutcome
 
 // outcome struct where we store the entire policy, for all actions
 
-<typename Model>
+template <typename Model>
 struct PolicyOutcome
 {
     using Real = typename Model::Types::Real;
@@ -31,13 +31,13 @@ struct PolicyOutcome
     VectorReal row_policy, col_policy;
 };
 
-template <class Model, class BanditAlgorithm, template <class Model_> class Outcome>
+template <class Model, class BanditAlgorithm, template <class Model_> class _Outcome>
 class TreeBandit : public AbstractAlgorithm<Model>
 {
 public:
     struct Types : AbstractAlgorithm<Model>::Types
     {
-        using Outcome = Outcome;
+        using Outcome = _Outcome<Model>;
     };
 
     MatrixNode<BanditAlgorithm> root;
@@ -46,8 +46,16 @@ public:
         int iterations,
         typename Types::PRNG &device,
         typename Types::State &state,
+        typename Types::Model &model)
+    {
+        run(iterations, device, state, model, root);
+    }
+    void run(
+        int iterations,
+        typename Types::PRNG &device,
+        typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Algorithm> &matrix_node = root)
+        MatrixNode<BanditAlgorithm> &matrix_node)
     {
         this->_initialize_stats(iterations, state, model, &matrix_node);
         for (int iteration = 0; iteration < iterations; ++iteration)
@@ -60,34 +68,34 @@ public:
 
 protected:
     void _get_empirical_strategies(
-        MatrixNode<Algorithm> *matrix_node,
+        MatrixNode<BanditAlgorithm> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
-        return static_cast<Algorithm *>(this)->get_empirical_strategies(
+        return static_cast<BanditAlgorithm *>(this)->get_empirical_strategies(
             matrix_node,
             row_strategy,
             col_strategy);
     }
 
     void _get_empirical_values(
-        MatrixNode<Algorithm> *matrix_node,
+        MatrixNode<BanditAlgorithm> *matrix_node,
         typename Types::Real &row_value,
         typename Types::Real &col_value)
     {
-        return static_cast<Algorithm *>(this)->get_empirical_values(
+        return static_cast<BanditAlgorithm *>(this)->get_empirical_values(
             matrix_node,
             row_value,
             col_value);
     }
 
-    MatrixNode<Algorithm> *_playout(
+    MatrixNode<BanditAlgorithm> *_playout(
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Algorithm> *matrix_node)
+        MatrixNode<BanditAlgorithm> *matrix_node)
     {
-        return static_cast<Algorithm *>(this)->playout(
+        return static_cast<BanditAlgorithm *>(this)->playout(
             device,
             state,
             model,
@@ -96,10 +104,10 @@ protected:
 
     void _select(
         typename Types::PRNG &device,
-        MatrixNode<Algorithm> *matrix_node,
-        Outcome &outcome)
+        MatrixNode<BanditAlgorithm> *matrix_node,
+        typename Types::Outcome &outcome)
     {
-        return static_cast<Algorithm *>(this)->select(
+        return static_cast<BanditAlgorithm *>(this)->select(
             device,
             matrix_node,
             outcome);
@@ -109,9 +117,9 @@ protected:
         int iterations,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Algorithm> *root)
+        MatrixNode<BanditAlgorithm> *root)
     {
-        return static_cast<Algorithm *>(this)->initialize_stats(
+        return static_cast<BanditAlgorithm *>(this)->initialize_stats(
             iterations,
             state,
             model,
@@ -121,7 +129,7 @@ protected:
     void _expand(
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Algorithm> *matrix_node)
+        MatrixNode<BanditAlgorithm> *matrix_node)
     {
         state.get_actions();
         matrix_node->row_actions = state.row_actions;
@@ -129,7 +137,7 @@ protected:
         matrix_node->is_expanded = true;
         matrix_node->is_terminal = state.is_terminal;
 
-        static_cast<Algorithm *>(this)->expand(
+        static_cast<BanditAlgorithm *>(this)->expand(
             state,
             model,
             matrix_node);
@@ -146,21 +154,21 @@ protected:
             model.get_inference(state, matrix_node->inference);
         }
     }
-    
+
     void _update_matrix_node(
-        MatrixNode<Algorithm> *matrix_node,
-        Outcome &outcome)
+        MatrixNode<BanditAlgorithm> *matrix_node,
+        typename Types::Outcome &outcome)
     {
-        return static_cast<Algorithm *>(this)->update_matrix_node(
+        return static_cast<BanditAlgorithm *>(this)->update_matrix_node(
             matrix_node,
             outcome);
     }
 
     void _update_chance_node(
-        ChanceNode<Algorithm> *chance_node,
-        Outcome &outcome)
+        ChanceNode<BanditAlgorithm> *chance_node,
+        typename Types::Outcome &outcome)
     {
-        return static_cast<Algorithm *>(this)->update_chance_node(
+        return static_cast<BanditAlgorithm *>(this)->update_chance_node(
             chance_node,
             outcome);
     }
@@ -212,7 +220,7 @@ protected:
 
     // TODO rename. MCTS-A style search where you return the empirical average values of the next node instead of the leaf node value.
 
-    void *run_iteration_average(
+    void run_iteration_average(
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
@@ -238,17 +246,17 @@ protected:
                 _get_empirical_values(matrix_node_next, outcome.row_value, outcome.col_value);
                 _update_matrix_node(matrix_node, outcome);
                 _update_chance_node(chance_node, outcome);
-                return matrix_node_leaf;
+                return;
             }
             else
             {
                 this->_expand(state, model, matrix_node);
-                return matrix_node;
+                return;
             }
         }
         else
         {
-            return matrix_node;
+            return;
         }
     }
 };

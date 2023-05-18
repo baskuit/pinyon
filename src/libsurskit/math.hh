@@ -105,6 +105,7 @@ namespace Linear
             assert(t.rows == rows && t.cols == cols);
             const Matrix &M = *this;
             Matrix output(M.rows, M.cols);
+            const size_t size = rows * cols;
             std::transform(data.begin(), data.begin() + size, t.data.begin(), output.data.begin(),
                         [](double a, double b) { return a + b; }); // Perform element-wise addition
             return output;

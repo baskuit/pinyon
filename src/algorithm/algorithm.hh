@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../model/model.hh"
 
 template <class _Model>
