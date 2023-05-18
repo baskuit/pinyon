@@ -37,8 +37,8 @@ public:
     bool is_terminal = false;
     bool is_expanded = false;
 
-    typename Types::ActionVector row_actions;
-    typename Types::ActionVector col_actions;
+    typename Types::VectorAction row_actions;
+    typename Types::VectorAction col_actions;
     typename Types::Observation obs;
     typename Types::Probability prob;
     typename Types::Inference inference;

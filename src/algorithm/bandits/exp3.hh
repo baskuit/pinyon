@@ -8,18 +8,18 @@
 Exp3
 */
 
-template <class Model, template <class _Model, class _BanditAlgorithm, template<class __Model> class _Outcome> class _TreeBandit>
-class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit, ChoicesOutcome<Model>>>
+template <class Model, template <class _Model, class _BanditAlgorithm, class _Outcome> class _TreeBandit>
+class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>
 {
 public:
     struct MatrixStats;
     struct ChanceStats;
-    struct Types : _TreeBandit<Model, Exp3<Model, _TreeBandit, ChoicesOutcome<Model>>>::Types
+    struct Types : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>::Types
     {
         using MatrixStats = Exp3::MatrixStats;
         using ChanceStats = Exp3::ChanceStats;
     };
-    struct MatrixStats : _TreeBandit<Model, Exp3<Model, _TreeBandit, ChoicesOutcome<Model>>>::MatrixStats
+    struct MatrixStats
     {
         typename Types::VectorReal row_gains;
         typename Types::VectorReal col_gains;
@@ -31,7 +31,7 @@ public:
         typename Types::Real col_value_total = 0;
     };
 
-    struct ChanceStats : _TreeBandit<Model, Exp3<Model, _TreeBandit, ChoicesOutcome<Model>>>::ChanceStats
+    struct ChanceStats
     {
         int visits = 0;
         typename Types::Real row_value_total = 0;

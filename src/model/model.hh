@@ -8,6 +8,7 @@ class AbstractModel
 public:
     struct Types : _State::Types
     {
+        using State = _State;
     };
 };
 
@@ -19,7 +20,7 @@ template <class State>
 
 class DoubleOracleModel : public AbstractModel<State>
 {
-    static_assert(std::derived_from<State, State<typename State::Types::TypeList>>);
+    // static_assert(std::derived_from<State, State<typename State::Types::TypeList>>);
 
 public:
     struct Inference;
@@ -44,7 +45,7 @@ Universal model.
 template <class State>
 class MonteCarloModel : public DoubleOracleModel<State>
 {
-    static_assert(std::derived_from<State, State<typename State::Types::TypeList>>);
+    // static_assert(std::derived_from<State, State<typename State::Types::TypeList>>);
 
 public:
     struct Types : DoubleOracleModel<State>::Types

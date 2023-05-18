@@ -24,7 +24,7 @@ public:
     int rows = 0;
     int cols = 0;
     int payoff_bias = 0;
-    typename Types::Probability chance_threshold = Rational(1, MaxTransitions);
+    typename Types::Probability chance_threshold = Rational<int>(1, MaxTransitions);
     std::vector<typename Types::Probability> chance_strategies;
 
     int (*depth_bound_func)(RandomTree *, int) = &(RandomTree::dbf);
