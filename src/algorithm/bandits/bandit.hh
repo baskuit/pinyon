@@ -40,18 +40,8 @@ public:
         using Outcome = _Outcome;
     };
 
-    // MatrixNode<BanditAlgorithm> root;
-
-    // void run(
-    //     int iterations,
-    //     typename Types::PRNG &device,
-    //     typename Types::State &state,
-    //     typename Types::Model &model)
-    // {
-    //     run(iterations, device, state, model, root);
-    // }
     void run(
-        int iterations,
+        size_t iterations,
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
@@ -89,19 +79,6 @@ protected:
             col_value);
     }
 
-    MatrixNode<BanditAlgorithm> *_run_iteration(
-        typename Types::PRNG &device,
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixNode<BanditAlgorithm> *matrix_node)
-    {
-        return static_cast<BanditAlgorithm *>(this)->run_iteration(
-            device,
-            state,
-            model,
-            matrix_node);
-    }
-
     void _select(
         typename Types::PRNG &device,
         MatrixNode<BanditAlgorithm> *matrix_node,
@@ -114,7 +91,7 @@ protected:
     }
 
     void _initialize_stats(
-        int iterations,
+        size_t iterations,
         typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> *root)
