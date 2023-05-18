@@ -19,7 +19,7 @@ public:
         using MatrixStats = Exp3::MatrixStats;
         using ChanceStats = Exp3::ChanceStats;
     };
-    struct MatrixStats
+    struct MatrixStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>::MatrixStats
     {
         typename Types::VectorReal row_gains;
         typename Types::VectorReal col_gains;
@@ -31,7 +31,7 @@ public:
         typename Types::Real col_value_total = 0;
     };
 
-    struct ChanceStats
+    struct ChanceStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>::ChanceStats
     {
         int visits = 0;
         typename Types::Real row_value_total = 0;

@@ -62,7 +62,7 @@ public:
         {
             typename Types::State state_copy = state;
             state_copy.seed = device.template new_seed<uint64_t>();
-            this->_playout(device, state_copy, model, &matrix_node);
+            this->run_iteration(device, state_copy, model, &matrix_node);
         }
     }
 
@@ -89,7 +89,7 @@ protected:
             col_value);
     }
 
-    MatrixNode<BanditAlgorithm> *_playout(
+    MatrixNode<BanditAlgorithm> *_run_iteration(
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
