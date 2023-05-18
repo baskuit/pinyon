@@ -1,5 +1,6 @@
 #include "../src/state/random-tree.hh"
 #include "../src/model/model.hh"
+#include "../src/algorithm/bandits/multithreaded.hh"
 #include "../src/algorithm/bandits/exp3.hh"
 #include "../src/algorithm/bandits/matrix-ucb.hh"
 #include "../src/algorithm/solve/full-traversal.hh"
@@ -15,113 +16,211 @@ using namespace std::chrono;
 
 std::ofstream file("test.txt", std::ios::app);
 
-void get_expl_from_random_tree_loop(
-    uint64_t device_seed,
-    size_t depth_bound,
-    size_t rows,
-    size_t cols,
-    size_t transitions,
-    double chance_threshold,
-    size_t max_log2_iterations)
+struct GameData
 {
-    using State = RandomTree;
-    using Model = MonteCarloModel<State>;
-    using Exp3 = Exp3<Model, TreeBandit>;
-    using MatrixUCB = MatrixUCB<Model, TreeBandit>;
 
-    prng device(device_seed);
-    State state(device, depth_bound, rows, cols, transitions, chance_threshold);
-    Model model(device);
-    Exp3 exp3_session;
-    MatrixUCB matrix_ucb_session;
-    FullTraversal<Model> session;
+    size_t matrix_node_count = 0;
+    size_t time_spent = 0;
+    size_t n = 0;
 
-    MatrixNode<Exp3> exp3_root;
-    MatrixNode<MatrixUCB> matrix_ucb_root;
+    GameData() {}
 
-    MatrixNode<FullTraversal<Model>> root;
-    session.run(state, model, &root);
-    auto row_payoff_matrix = root.stats.nash_payoff_matrix;
-    auto col_payoff_matrix = row_payoff_matrix * -1 + 1;
+    GameData(size_t matrix_node_count, size_t time_spent) : matrix_node_count(matrix_node_count), time_spent(time_spent), n(1) {}
 
-    size_t iterations = 1 << 8;
-    auto start = high_resolution_clock::now();
-    exp3_session.run(iterations, device, state, model, exp3_root);
-    auto end = high_resolution_clock::now();
-    auto exp3_duration = duration_cast<microseconds>(end - start);
+    GameData &operator+=(const GameData &other)
+    {
+        matrix_node_count += other.matrix_node_count;
+        time_spent += other.time_spent;
+        n += other.n;
+        return (*this);
+    }
+};
 
-    start = high_resolution_clock::now();
-    matrix_ucb_session.run(iterations, device, state, model, matrix_ucb_root);
-    end = high_resolution_clock::now();
-    auto matrix_ucb_duration = duration_cast<microseconds>(end - start);
+template <class RowAlgorithm, class ColAlgorithm>
+typename RowAlgorithm::Types::Real vs(
+    typename RowAlgorithm::Types::PRNG &device,
+    size_t iterations,
+    typename RowAlgorithm::Types::State &state,
+    typename RowAlgorithm::Types::Model &row_model,
+    typename ColAlgorithm::Types::Model &col_model,
+    RowAlgorithm &row_session,
+    ColAlgorithm &col_session,
+    GameData &row_data,
+    GameData &col_data)
+{
+    using State = typename RowAlgorithm::Types::State;
+    auto state_copy = state;
+    state_copy.get_actions();
 
-    State::Types::VectorReal row_strategy, col_strategy;
-    while (iterations <= (1 << max_log2_iterations))
+    while (!state_copy.is_terminal)
     {
 
-        exp3_session.get_empirical_strategies(&exp3_root, row_strategy, col_strategy);
-        auto exp3_expl = Linear::exploitability<State::Types>(
-            row_payoff_matrix,
-            col_payoff_matrix,
-            row_strategy,
-            col_strategy);
+        ActionIndex row_idx, col_idx;
 
-        matrix_ucb_session.get_empirical_strategies(&matrix_ucb_root, row_strategy, col_strategy);
-        auto matrix_ucb_expl = Linear::exploitability<State::Types>(
-            row_payoff_matrix,
-            col_payoff_matrix,
-            row_strategy,
-            col_strategy);
+        MatrixNode<RowAlgorithm> row_root;
+        MatrixNode<ColAlgorithm> col_root;
 
-        file << "exp3,"       << device_seed << ',' << depth_bound << ',' << rows << ',' << transitions << chance_threshold << ',' << iterations << ',' <<       exp3_root.count_matrix_nodes() << ',' <<       exp3_expl << ',' <<       exp3_duration << '\n';
-        file << "matrix_ucb," << device_seed << ',' << depth_bound << ',' << rows << ',' << transitions << chance_threshold << ',' << iterations << ',' << matrix_ucb_root.count_matrix_nodes() << ',' << matrix_ucb_expl << ',' << matrix_ucb_duration << '\n';
+        auto start = high_resolution_clock::now();
+        row_session.run(iterations, device, state_copy, row_model, row_root);
+        auto end = high_resolution_clock::now();
+        auto row_time_spent = duration_cast<microseconds>(end - start);
 
         start = high_resolution_clock::now();
-        exp3_session.run(iterations, device, state, model, exp3_root);
+        col_session.run(iterations, device, state_copy, col_model, col_root);
         end = high_resolution_clock::now();
-        exp3_duration += duration_cast<microseconds>(end - start);
+        auto col_time_spent = duration_cast<microseconds>(end - start);
 
-        start = high_resolution_clock::now();
-        matrix_ucb_session.run(iterations, device, state, model, matrix_ucb_root);
-        end = high_resolution_clock::now();
-        matrix_ucb_duration += duration_cast<microseconds>(end - start);
+        typename RowAlgorithm::Types::VectorReal row_strategy, col_strategy;
+        row_session.get_empirical_strategies(&row_root, row_strategy, col_strategy);
+        row_idx = device.sample_pdf(row_strategy);
+        col_session.get_empirical_strategies(&col_root, row_strategy, col_strategy);
+        col_idx = device.sample_pdf(col_strategy);
+        state_copy.apply_actions(state_copy.row_actions[row_idx], state_copy.col_actions[col_idx]);
+        state_copy.get_actions();
 
-        iterations <<= 1;
+        GameData row_game_data(row_root.count_matrix_nodes(), row_time_spent.count());
+        GameData col_game_data(col_root.count_matrix_nodes(), col_time_spent.count());
+        row_data += row_game_data;
+        col_data += col_game_data;
     }
+
+    return state_copy.row_payoff;
+}
+
+void file_write(
+    const std::string name,
+    const uint64_t seed,
+    const size_t depth_bound,
+    const size_t actions,
+    const size_t transitions,
+    const double chance_threshold,
+    const size_t iterations,
+    double average_score,
+    const size_t matrix_node_count,
+    const size_t time_spent,
+    const size_t sample_size,
+    const size_t total_games)
+{
+    file
+        << name << ','
+        << seed << ','
+        << depth_bound << ','
+        << actions << ','
+        << transitions << ','
+        << chance_threshold << ','
+        << iterations << ','
+        << average_score << ','
+        << matrix_node_count << ','
+        << time_spent << ','
+        << sample_size << ','
+        << total_games << std::endl;
+    // matrix_ucb,336324124281831975,5,3,3,0.25,12,-1.5,1910,271223,40,6
 }
 
 void foo(
     const uint64_t initial_seed,
-    const size_t max_depth_bound,
-    const size_t max_actions,
-    const size_t max_transitions,
-    const size_t max_log2_iterations,
+    std::vector<size_t> &depth_bound,
+    std::vector<size_t> &actions,
+    std::vector<size_t> &transitions,
+    std::vector<size_t> &log2_iterations,
     const size_t max_games)
 {
+
+    /*
+
+    Generates new games
+
+    */
+
+    using State = RandomTree;
+    using Model = MonteCarloModel<State>;
+    using Exp3 = Exp3<Model, TreeBanditThreaded>;
+    using MatrixUCB = MatrixUCB<Model, TreeBanditThreaded>;
+
     prng device(initial_seed);
-    for (size_t depth_bound = 4; depth_bound <= max_depth_bound; ++depth_bound)
+    Model model(device);
+    Exp3 exp3_session;
+    MatrixUCB matrix_ucb_session;
+
+    exp3_session.threads = 3;
+    matrix_ucb_session.threads = 3;
+
+    for (size_t cycle = 0; cycle < 100; ++cycle)
     {
-        for (size_t rows = 3; rows <= max_actions; ++rows)
+        for (const size_t db : depth_bound)
         {
-            size_t cols = rows;
-            for (size_t transitions = 1; transitions <= max_transitions; ++transitions)
+            for (const size_t rows : actions)
             {
-                for (size_t game = 0; game <= max_games; ++game)
+                size_t cols = rows;
+                for (const size_t t : transitions)
                 {
-                    const uint64_t tree_seed = device.uniform_64();
-                    const double transition_threshold = 1 / (double)(transitions + 1);
-                    std::cout << tree_seed << ' ' << depth_bound << ' ' << rows << ' ' << transitions << ' ' << transition_threshold << '\n';
-                    get_expl_from_random_tree_loop(tree_seed, depth_bound, rows, cols, transitions, transition_threshold, max_log2_iterations);
+                    double chance_threshold = 1 / (double)(t + 1);
+
+                    for (const size_t it : log2_iterations)
+                    {
+                        const size_t iterations = 1 << it;
+                        double exp3_cum_score = 0;
+                        GameData exp3_data, matrix_ucb_data;
+                        uint64_t state_seed = device.uniform_64();
+                        prng state_device(state_seed);
+                        State state(state_device, db, rows, cols, t, chance_threshold);
+
+                        for (size_t game_on_fixed_tree = 0; game_on_fixed_tree <= max_games; ++game_on_fixed_tree)
+                        {
+                            exp3_cum_score += vs(device, iterations, state, model, model, exp3_session, matrix_ucb_session, exp3_data, matrix_ucb_data);
+                            exp3_cum_score += 1 - vs(device, iterations, state, model, model, matrix_ucb_session, exp3_session, matrix_ucb_data, exp3_data);
+                        }
+
+                        file_write(
+                            "exp3",
+                            state_seed, db, rows, t, chance_threshold, iterations, exp3_cum_score / max_games / 2,
+                            exp3_data.matrix_node_count / exp3_data.n,
+                            exp3_data.time_spent / exp3_data.n,
+                            exp3_data.n,
+                            2 * max_games);
+
+                        file_write(
+                            "matrix_ucb",
+                            state_seed, db, rows, t, chance_threshold, iterations, (max_games * 2 - exp3_cum_score) / max_games / 2,
+                            matrix_ucb_data.matrix_node_count / matrix_ucb_data.n,
+                            matrix_ucb_data.time_spent / matrix_ucb_data.n,
+                            matrix_ucb_data.n,
+                            2 * max_games);
+
+                        std::cout << "!\n";
+                    }
                 }
             }
         }
     }
 }
 
+std::vector<size_t> range(const size_t a, const size_t b, const size_t c = 1)
+{
+    std::vector<size_t> x{};
+    for (size_t i = a; i < b; i += c)
+    {
+        x.push_back(i);
+    }
+    return x;
+}
+
 int main()
 {
+    uint64_t initial_seed{0};
+    auto depth_bound = range(5, 20, 3);
+    auto actions = range(2, 6);
+    auto transitions = range(1, 4);
+    auto log2_iterations = range(8, 15, 2);
+    size_t max_games = 3;
 
-    foo(0, 6, 4, 2, 17, 10);
+    foo(
+        initial_seed,
+        depth_bound,
+        actions,
+        transitions,
+        log2_iterations,
+        max_games);
 
     return 0;
 }
