@@ -153,7 +153,7 @@ namespace Linear
         typename Types::Real row_payoff = 0, col_payoff = 0;
         typename Types::VectorReal row_response, col_response;
         row_response.fill(rows, 0);
-        col_response.fill(cols, 0); // TODO maybe replace this with just a constructor
+        col_response.fill(cols, 0);
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)

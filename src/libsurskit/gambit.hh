@@ -305,7 +305,7 @@ namespace LibGambit
                     {
                         col_strategy[k - 1] /= col_sum;
                     }
-                    return; // TODO continue calculating?
+                    return;
                 }
             }
         }

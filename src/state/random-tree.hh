@@ -42,12 +42,13 @@ public:
         size_t rows,
         size_t cols,
         size_t transitions,
-        typename Types::Probability chance_threshold) : device(device),
-                                                        depth_bound(depth_bound),
-                                                        rows(rows),
-                                                        cols(cols),
-                                                        transitions(transitions),
-                                                        chance_threshold(chance_threshold)
+        typename Types::Probability chance_threshold)
+        : device(device),
+          depth_bound(depth_bound),
+          rows(rows),
+          cols(cols),
+          transitions(transitions),
+          chance_threshold(chance_threshold)
     {
         get_chance_strategies();
     }
@@ -60,14 +61,15 @@ public:
         size_t transitions,
         int (*depth_bound_func)(RandomTree *, int),
         int (*actions_func)(RandomTree *, int),
-        int (*payoff_bias_func)(RandomTree *, int)) : device(device),
-                                                depth_bound(depth_bound),
-                                                rows(rows),
-                                                cols(cols),
-                                                transitions(transitions),
-                                                depth_bound_func(depth_bound_func),
-                                                actions_func(actions_func),
-                                                payoff_bias_func(payoff_bias_func)
+        int (*payoff_bias_func)(RandomTree *, int))
+        : device(device),
+          depth_bound(depth_bound),
+          rows(rows),
+          cols(cols),
+          transitions(transitions),
+          depth_bound_func(depth_bound_func),
+          actions_func(actions_func),
+          payoff_bias_func(payoff_bias_func)
     {
         get_chance_strategies();
     }
@@ -141,8 +143,8 @@ public:
     {
         std::vector<typename Types::Observation> chance_actions{};
         get_chance_actions(chance_actions, row_action, col_action);
-        const ActionIndex chance_action_idx = chance_actions[this->seed % chance_actions.size()];
-        apply_actions(row_action, col_action, chance_action_idx); // TODO make type safe (assumes obs = int)
+        typename Types::Observation chance_action = chance_actions[this->seed % chance_actions.size()];
+        apply_actions(row_action, col_action, chance_action);
     }
 
     /*
@@ -165,8 +167,8 @@ public:
 
 private:
     inline ActionIndex get_transition_idx(
-        ActionIndex row_idx, 
-        ActionIndex col_idx, 
+        ActionIndex row_idx,
+        ActionIndex col_idx,
         ActionIndex chance_idx)
     {
         return row_idx * cols * transitions + col_idx * transitions + chance_idx;

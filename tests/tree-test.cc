@@ -114,7 +114,6 @@ void file_write(
         << time_spent << ','
         << sample_size << ','
         << total_games << std::endl;
-    // matrix_ucb,336324124281831975,5,3,3,0.25,12,-1.5,1910,271223,40,6
 }
 
 void foo(

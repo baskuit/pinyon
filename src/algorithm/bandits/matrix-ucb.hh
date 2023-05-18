@@ -30,6 +30,10 @@ public:
 
         typename Types::VectorReal row_strategy;
         typename Types::VectorReal col_strategy;
+
+        typename Types::Real row_value_total = 0;
+        typename Types::Real col_value_total = 0;
+        int total_visits = 0;
     };
 
     struct ChanceStats : _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>, ChoicesOutcome<Model>>::ChanceStats
@@ -39,7 +43,7 @@ public:
         // typename Types::Real col_value_total = 0;
     };
 
-    MatrixUCB () {}
+    MatrixUCB() {}
 
     MatrixUCB(typename Types::Real c_uct, typename Types::Real expl_threshold) : c_uct(c_uct), expl_threshold(expl_threshold) {}
 
@@ -62,26 +66,27 @@ public:
         matrix_node->stats.time = iterations;
     }
 
-    void get_empirical_strategies( // TODO
+    void get_empirical_strategies(
         MatrixNode<MatrixUCB> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
         const int rows = matrix_node->row_actions.size();
         const int cols = matrix_node->col_actions.size();
-        row_strategy.fill(rows);
-        col_strategy.fill(cols);
-        typename Types::MatrixReal row_ev_matrix(rows, cols);
-        typename Types::MatrixReal col_ev_matrix(rows, cols);
-        get_ev_matrix(
-            matrix_node,
-            row_ev_matrix,
-            col_ev_matrix);
-        LibGambit::solve_bimatrix<Types>(
-            row_ev_matrix,
-            col_ev_matrix,
-            row_strategy,
-            col_strategy);
+        row_strategy.fill(rows, 0);
+        col_strategy.fill(cols, 0);
+        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
+            {
+                const int n = matrix_node->stats.visit_matrix.get(row_idx, col_idx);
+                row_strategy[row_idx] += n;
+                col_strategy[col_idx] += n;
+            }
+        }
+        math::power_norm(row_strategy, rows, 1, row_strategy);
+        math::power_norm(col_strategy, cols, 1, col_strategy);
+
     }
 
     void get_empirical_values(
@@ -89,6 +94,10 @@ public:
         typename Types::Real &row_value,
         typename Types::Real &col_value)
     {
+        auto stats = matrix_node->stats;
+        const typename Types::Real den = 1 / (stats.total_visits + (stats.total_visits == 0));
+        row_value = stats.row_value_total * den;
+        col_value = stats.col_value_total * den;
     }
 
     void expand(
@@ -98,7 +107,7 @@ public:
     {
         const int rows = state.row_actions.size();
         const int cols = state.col_actions.size();
-        
+
         matrix_node->stats.row_value_matrix.fill(rows, cols, 0);
         matrix_node->stats.col_value_matrix.fill(rows, cols, 0);
         matrix_node->stats.visit_matrix.fill(rows, cols, 0);
@@ -161,6 +170,9 @@ public:
         matrix_node->stats.row_value_matrix.get(outcome.row_idx, outcome.col_idx) += outcome.row_value;
         matrix_node->stats.col_value_matrix.get(outcome.row_idx, outcome.col_idx) += outcome.col_value;
         matrix_node->stats.visit_matrix.get(outcome.row_idx, outcome.col_idx) += 1;
+        matrix_node->stats.row_value_total += outcome.row_value;
+        matrix_node->stats.col_value_total += outcome.col_value;
+        ++matrix_node->stats.total_visits;
     }
 
     void update_chance_node(
@@ -172,7 +184,7 @@ public:
         // ++chance_node->stats.visits;
     }
 
-// private:
+    // private:
     void get_ucb_matrix(
         MatrixNode<MatrixUCB> *matrix_node,
         typename Types::MatrixReal &row_ucb_matrix,

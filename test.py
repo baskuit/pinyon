@@ -18,7 +18,10 @@ def new(x, y):
 
 # Print the data list
 for entry in data:
-    name, seed, depth_bound, actions, transitions, chance_threshold, _, iterations, count, expl, duration = entry
+    try:
+        name, seed, depth_bound, actions, transitions, chance_threshold, iterations, count, expl, duration = entry
+    except:
+        continue
     duration = duration[:-2]
     key = (depth_bound, actions, transitions, chance_threshold, iterations)
     value = (expl, count, duration, 1)
@@ -36,8 +39,9 @@ for key, value in matrix_ucb_data.items():
     value_ = exp3_data[key]
     print('depth, actions, chance, thresh, iterations')
     print(key)
-    print(value_[0], value[0])
-    print(int(value_[2]), int(value[2]))
+    print("expl: ", value_[0], value[0])
+    print('count: ', int(value_[1]), int(value[1]))
+    print('runtime (ms): ', int(value_[2]), int(value[2]))
     print()
 
 

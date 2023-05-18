@@ -7,7 +7,7 @@
 template <class _Types>
 class AbstractState
 {
-public: // why? TODO
+public:
     struct Types : _Types {
         using TypeList = _Types;
     };

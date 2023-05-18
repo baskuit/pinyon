@@ -57,6 +57,7 @@ public:
     {
         row_strategy.fill(matrix_node->stats.row_visits.size());
         col_strategy.fill(matrix_node->stats.col_visits.size());
+        // denoise?
         math::power_norm(matrix_node->stats.row_visits, row_strategy.size(), 1, row_strategy);
         math::power_norm(matrix_node->stats.col_visits, col_strategy.size(), 1, col_strategy);
     }
@@ -70,7 +71,6 @@ public:
         const typename Types::Real den = 1 / (stats.total_visits + (stats.total_visits == 0));
         row_value = stats.row_value_total * den;
         col_value = stats.col_value_total * den;
-
     }
 
     void initialize_stats(
