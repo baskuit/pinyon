@@ -27,18 +27,18 @@ public:
         typename Types::VectorInt col_visits;
 
         int visits = 0;
-        typename Types::Real row_value_total = 0;
-        typename Types::Real col_value_total = 0;
+        typename Types::Real row_value_total{0};
+        typename Types::Real col_value_total{0};
     };
 
     struct ChanceStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>::ChanceStats
     {
         int visits = 0;
-        typename Types::Real row_value_total = 0;
-        typename Types::Real col_value_total = 0;
+        typename Types::Real row_value_total{0};
+        typename Types::Real col_value_total{0};
     };
 
-    typename Types::Real gamma = .01;
+    typename Types::Real gamma{.01};
 
     Exp3() {}
 
@@ -112,7 +112,7 @@ public:
         }
         else
         {
-            const typename Types::Real eta = gamma / rows;
+            const typename Types::Real eta {gamma / static_cast<double>(rows)};
             softmax(row_forecast, matrix_node->stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
@@ -125,7 +125,7 @@ public:
         }
         else
         {
-            const typename Types::Real eta = gamma / cols;
+            const typename Types::Real eta {gamma / static_cast<double>(cols)};
             softmax(col_forecast, matrix_node->stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
@@ -136,8 +136,8 @@ public:
         const int col_idx = device.sample_pdf(col_forecast, cols);
         outcome.row_idx = row_idx;
         outcome.col_idx = col_idx;
-        outcome.row_mu = row_forecast[row_idx];
-        outcome.col_mu = col_forecast[col_idx];
+        outcome.row_mu = static_cast<typename Types::Real>(row_forecast[row_idx]);
+        outcome.col_mu = static_cast<typename Types::Real>(col_forecast[col_idx]);
     }
 
     void update_matrix_node(
@@ -172,21 +172,21 @@ private:
         /*
         Softmax helper function with logit scaling.
         */
-        typename Types::Real max = 0;
+        typename Types::Real max{0};
         for (int i = 0; i < k; ++i)
         {
-            typename Types::Real x = gains[i];
+            typename Types::Real x{gains[i]};
             if (x > max)
             {
                 max = x;
             }
         }
-        typename Types::Real sum = 0;
+        typename Types::Real sum{0};
         for (int i = 0; i < k; ++i)
         {
             gains[i] -= max;
-            typename Types::Real x = gains[i];
-            typename Types::Real y = std::exp(x * eta);
+            typename Types::Real x{gains[i]};
+            typename Types::Real y{std::exp(x * eta)};
             forecast[i] = y;
             sum += y;
         }

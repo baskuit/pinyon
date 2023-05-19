@@ -125,9 +125,9 @@ public:
         if (depth_bound == 0)
         {
             this->is_terminal = true;
-            const typename Types::Real sigsum_bias = (payoff_bias > 0) - (payoff_bias < 0);
-            this->row_payoff = (sigsum_bias + 1) / 2;
-            this->col_payoff = 1.0 - this->row_payoff;
+            const typename Types::Real sigsum_bias{static_cast<double>((payoff_bias > 0) - (payoff_bias < 0))};
+            this->row_payoff = static_cast<typename Types::Real>((sigsum_bias + 1.0) / 2.0);
+            this->col_payoff = static_cast<typename Types::Real>(this->row_payoff * -1.0 + 1.0);
         }
         else
         {

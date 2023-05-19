@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <vector>
+#include <chrono>
 
 #include "random.hh"
 #include "rational.hh"
@@ -31,6 +32,26 @@ namespace math
             output[i] = output[i] / sum;
         }
     }
+
+    template <typename VectorIn>
+    void power_norm(VectorIn &input, double power=1.0)
+
+    // TODO modernize
+    {
+        double sum = 0;
+        const size_t length = input.size();
+        for (int i = 0; i < length; ++i)
+        {
+            double x = std::pow(input[i], power);
+            input[i] = x;
+            sum += x;
+        }
+        for (int i = 0; i < length; ++i)
+        {
+            input[i] = input[i] / sum;
+        }
+    }
+
 
     template <typename Vector>
     void print(Vector &input)
@@ -150,7 +171,7 @@ namespace Linear
         const int rows = row_payoff_matrix.rows;
         const int cols = row_payoff_matrix.cols;
 
-        typename Types::Real row_payoff = 0, col_payoff = 0;
+        typename Types::Real row_payoff{0}, col_payoff{0};
         typename Types::VectorReal row_response, col_response;
         row_response.fill(rows, 0);
         col_response.fill(cols, 0);
@@ -159,8 +180,8 @@ namespace Linear
             for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
             {
                 const size_t data_idx = row_idx * cols + col_idx;
-                const typename Types::Real u = row_payoff_matrix.data[data_idx] * col_strategy[col_idx];
-                const typename Types::Real v = col_payoff_matrix.data[data_idx] * row_strategy[row_idx];
+                const typename Types::Real u{row_payoff_matrix.data[data_idx] * col_strategy[col_idx]};
+                const typename Types::Real v{col_payoff_matrix.data[data_idx] * row_strategy[row_idx]};
                 row_payoff += u * row_strategy[row_idx];
                 col_payoff += v * col_strategy[col_idx];
                 row_response[row_idx] += u;
@@ -168,9 +189,21 @@ namespace Linear
             }
         }
 
-        typename Types::Real row_best_response = *std::max_element(row_response.begin(), row_response.end());
-        typename Types::Real col_best_response = *std::max_element(col_response.begin(), col_response.end());
+        typename Types::Real row_best_response {*std::max_element(row_response.begin(), row_response.end())};
+        typename Types::Real col_best_response {*std::max_element(col_response.begin(), col_response.end())};
 
-        return (row_best_response - row_payoff) + (col_best_response - col_payoff);
+        return static_cast<typename Types::Real>((row_best_response - row_payoff) + (col_best_response - col_payoff));
     }
 }
+
+// template <typename Func>
+// auto timeExecution(Func&& func) -> decltype(func()) {
+//     auto start = std::chrono::steady_clock::now();
+//     auto result = std::forward<Func>(func)();
+//     auto end = std::chrono::steady_clock::now();
+
+//     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+//     // std::cout << "Execution time: " << duration.count() << " microseconds" << std::endl;
+
+//     return result;
+// }

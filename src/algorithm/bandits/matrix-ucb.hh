@@ -31,8 +31,8 @@ public:
         typename Types::VectorReal row_strategy;
         typename Types::VectorReal col_strategy;
 
-        typename Types::Real row_value_total = 0;
-        typename Types::Real col_value_total = 0;
+        typename Types::Real row_value_total{Rational<int>{0}};
+        typename Types::Real col_value_total{Rational<int>{0}};
         int total_visits = 0;
     };
 
@@ -53,8 +53,8 @@ public:
         return os;
     }
 
-    const typename Types::Real c_uct = 1;
-    const typename Types::Real expl_threshold = .005;
+    const typename Types::Real c_uct{1.0};
+    const typename Types::Real expl_threshold{.005};
     // bool require_interior = false;
 
     void initialize_stats(
@@ -86,7 +86,6 @@ public:
         }
         math::power_norm(row_strategy, rows, 1, row_strategy);
         math::power_norm(col_strategy, cols, 1, col_strategy);
-
     }
 
     void get_empirical_values(
@@ -123,10 +122,9 @@ public:
             MatrixNode<MatrixUCB> *matrix_parent = chance_parent->parent;
             int row_idx = chance_parent->row_idx;
             int col_idx = chance_parent->col_idx;
-            typename Types::Real reach_probability =
-                matrix_parent->inference.row_policy[row_idx] *
-                matrix_parent->inference.col_policy[col_idx] *
-                (static_cast<typename Types::Real>(matrix_node->prob));
+            typename Types::Real reach_probability{matrix_parent->inference.row_policy[row_idx] *
+                                                   matrix_parent->inference.col_policy[col_idx] *
+                                                   (matrix_node->prob)};
             int time_estimate = matrix_parent->stats.time * reach_probability;
             time_estimate = time_estimate == 0 ? 1 : time_estimate;
             matrix_node->stats.time = time_estimate;
@@ -196,20 +194,20 @@ public:
         const int time = matrix_node->stats.time;
         const int rows = visit_matrix.rows;
         const int cols = visit_matrix.cols;
-        const typename Types::Real num = 2 * std::log(time) + std::log(2 * rows * cols);
+        const typename Types::Real num{2 * std::log(time) + std::log(2 * rows * cols)};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                const typename Types::Real u = row_value_matrix.get(row_idx, col_idx);
-                const typename Types::Real v = col_value_matrix.get(row_idx, col_idx);
-                int n = visit_matrix.get(row_idx, col_idx);
-                n += (n == 0);
-                typename Types::Real a = u / n;
-                typename Types::Real b = v / n;
-                typename Types::Real const eta = this->c_uct * std::sqrt(num / n);
-                const typename Types::Real x = a + eta;
-                const typename Types::Real y = b + eta;
+                const typename Types::Real u{row_value_matrix.get(row_idx, col_idx)};
+                const typename Types::Real v{col_value_matrix.get(row_idx, col_idx)};
+                typename Types::Real n{1}; // {visit_matrix.get(row_idx, col_idx)};
+                n += static_cast<double>(n == 0.0);
+                typename Types::Real a{u / n};
+                typename Types::Real b{v / n};
+                typename Types::Real const eta{this->c_uct * std::sqrt(num / n)};
+                const typename Types::Real x{a + eta};
+                const typename Types::Real y{b + eta};
                 row_ucb_matrix.get(row_idx, col_idx) = x;
                 col_ucb_matrix.get(row_idx, col_idx) = y;
             }

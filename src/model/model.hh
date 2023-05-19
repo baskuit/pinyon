@@ -60,9 +60,9 @@ public:
         typename Types::State &state,
         typename Types::Inference &inference)
     {
-        const typename Types::Real row_uniform = 1 / (typename Types::Real)state.row_actions.size();
+        const typename Types::Real row_uniform{1 / (typename Types::Real)state.row_actions.size()};
         inference.row_policy.fill(state.row_actions.size(), row_uniform);
-        const typename Types::Real col_uniform = 1 / (typename Types::Real)state.col_actions.size();
+        const typename Types::Real col_uniform{1 / (typename Types::Real)state.col_actions.size()};
         inference.col_policy.fill(state.col_actions.size(), col_uniform);
 
         rollout(state);

@@ -4,6 +4,7 @@
 #include "../libsurskit/vector.hh"
 #include "../libsurskit/random.hh"
 #include "../libsurskit/math.hh"
+#include "arithmetic.hh"
 
 #include <vector>
 
@@ -26,8 +27,46 @@ template <
     typename _MatrixInt
 >
 struct Types {
+
+    template <typename T>
+    struct RationalType : ArithmeticType<T> {
+        explicit RationalType(T val) : ArithmeticType<T>{val} {}
+        explicit RationalType () : ArithmeticType<T>{} {}
+    };
+
+    template <typename T>
+    struct RealType : ArithmeticType<T> {
+        explicit RealType(T val) : ArithmeticType<T>{val} {}
+        explicit RealType () : ArithmeticType<T>{} {}
+    };
+
+    template <typename T>
+    struct FloatType : ArithmeticType<T> {
+        explicit FloatType(T val) : ArithmeticType<T>{val} {}
+        explicit FloatType () : ArithmeticType<T>{} {}
+    };
+
+    template <typename T>
+    struct ActionType {
+        T value;
+    };
+
+    template <typename T>
+    struct ObservationType {
+        T value;
+    };
+
+    template <typename T>
+    struct ProbabilityType : ArithmeticType<T> {
+        explicit ProbabilityType(T val) : ArithmeticType<T>{val} {}
+        explicit ProbabilityType () : ArithmeticType<T>{} {}
+    };
+
+    template <typename T>
+    struct Vector;
+
     using Rational = _Rational;
-    using Real = _Real;
+    using Real = RealType<_Real>;
     using Float = _Float;
     using Action = _Action;
     using Observation = _Observation;

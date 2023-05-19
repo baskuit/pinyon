@@ -141,10 +141,10 @@ void foo(
     Exp3 exp3_session;
     MatrixUCB matrix_ucb_session;
 
-    exp3_session.threads = 3;
-    matrix_ucb_session.threads = 3;
+    // exp3_session.threads = 3;
+    // matrix_ucb_session.threads = 3;
 
-    for (size_t cycle = 0; cycle < 100; ++cycle)
+    for (size_t cycle = 0; cycle < 1; ++cycle)
     {
         for (const size_t db : depth_bound)
         {
@@ -170,23 +170,23 @@ void foo(
                             exp3_cum_score += 1 - vs(device, iterations, state, model, model, matrix_ucb_session, exp3_session, matrix_ucb_data, exp3_data);
                         }
 
-                        file_write(
-                            "exp3",
-                            state_seed, db, rows, t, chance_threshold, iterations, exp3_cum_score / max_games / 2,
-                            exp3_data.matrix_node_count / exp3_data.n,
-                            exp3_data.time_spent / exp3_data.n,
-                            exp3_data.n,
-                            2 * max_games);
+                        // file_write(
+                        //     "exp3",
+                        //     state_seed, db, rows, t, chance_threshold, iterations, exp3_cum_score / max_games / 2,
+                        //     exp3_data.matrix_node_count / exp3_data.n,
+                        //     exp3_data.time_spent / exp3_data.n,
+                        //     exp3_data.n,
+                        //     2 * max_games);
 
-                        file_write(
-                            "matrix_ucb",
-                            state_seed, db, rows, t, chance_threshold, iterations, (max_games * 2 - exp3_cum_score) / max_games / 2,
-                            matrix_ucb_data.matrix_node_count / matrix_ucb_data.n,
-                            matrix_ucb_data.time_spent / matrix_ucb_data.n,
-                            matrix_ucb_data.n,
-                            2 * max_games);
+                        // file_write(
+                        //     "matrix_ucb",
+                        //     state_seed, db, rows, t, chance_threshold, iterations, (max_games * 2 - exp3_cum_score) / max_games / 2,
+                        //     matrix_ucb_data.matrix_node_count / matrix_ucb_data.n,
+                        //     matrix_ucb_data.time_spent / matrix_ucb_data.n,
+                        //     matrix_ucb_data.n,
+                        //     2 * max_games);
 
-                        std::cout << "!\n";
+                        // std::cout << "!\n";
                     }
                 }
             }
@@ -204,22 +204,30 @@ std::vector<size_t> range(const size_t a, const size_t b, const size_t c = 1)
     return x;
 }
 
+std::ofstream bmark("b.txt", std::ios::app);
+
+
 int main()
 {
     uint64_t initial_seed{0};
-    auto depth_bound = range(5, 20, 3);
-    auto actions = range(2, 6);
-    auto transitions = range(1, 4);
-    auto log2_iterations = range(8, 15, 2);
-    size_t max_games = 3;
+    auto depth_bound = range(5, 6, 3);
+    auto actions = range(5, 6);
+    auto transitions = range(1, 2);
+    auto log2_iterations = range(14, 15);
+    size_t max_games = 1;
 
-    foo(
-        initial_seed,
+    auto start = std::chrono::steady_clock::now();
+    foo(initial_seed,
         depth_bound,
         actions,
         transitions,
         log2_iterations,
         max_games);
+    auto end = std::chrono::steady_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    size_t us = duration.count();
+    bmark << us << '\n';
 
     return 0;
 }
