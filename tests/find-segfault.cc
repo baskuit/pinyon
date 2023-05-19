@@ -209,7 +209,7 @@ std::ofstream bmark("b.txt", std::ios::app);
 
 int main()
 {
-    uint64_t initial_seed{0};
+    uint64_t initial_seed{1};
     auto depth_bound = range(5, 25, 3);
     auto actions = range(5, 6);
     auto transitions = range(1, 3);
