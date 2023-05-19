@@ -7,6 +7,8 @@
 #include <thread>
 #include <chrono>
 
+using namespace std::chrono;
+
 // outcome struct where we only store the policy for the selected action (indices) for either player
 
 template <typename Model>
@@ -53,6 +55,29 @@ public:
             typename Types::State state_copy = state;
             state_copy.seed = device.template new_seed<uint64_t>();
             this->run_iteration(device, state_copy, model, &matrix_node);
+        }
+    }
+
+    void run_for_duration(
+        size_t duration_us,
+        typename Types::PRNG &device,
+        typename Types::State &state,
+        typename Types::Model &model,
+        MatrixNode<BanditAlgorithm> &matrix_node)
+    {
+        auto start = high_resolution_clock::now();
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(end - start);
+
+        // this->_initialize_stats(iterations, state, model, &matrix_node);
+        while (duration.count() < duration_us)
+        {
+            typename Types::State state_copy = state;
+            state_copy.seed = device.template new_seed<uint64_t>();
+            this->run_iteration(device, state_copy, model, &matrix_node);
+
+            end = high_resolution_clock::now();
+            duration = duration_cast<microseconds>(end - start);
         }
     }
 

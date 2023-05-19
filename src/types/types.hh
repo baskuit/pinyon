@@ -28,11 +28,12 @@ template <
 >
 struct Types {
 
-    template <typename T>
-    struct RationalType : ArithmeticType<T> {
-        explicit RationalType(T val) : ArithmeticType<T>{val} {}
-        explicit RationalType () : ArithmeticType<T>{} {}
-    };
+    // template <typename T>
+    // struct RationalType : ArithmeticType<T> {
+    //     explicit RationalType(T val) : ArithmeticType<T>{val} {}
+    //     explicit RationalType () : ArithmeticType<T>{} {}
+    // };
+    // Rational is basically a primitive, yeah?
 
     template <typename T>
     struct RealType : ArithmeticType<T> {

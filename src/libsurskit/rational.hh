@@ -141,3 +141,21 @@ public:
         return p / (double)q;
     }
 };
+
+template <typename U, typename T>
+bool operator<(U x, const Rational<T>& y)
+{
+    return x * y.q < y.p;
+}
+
+template <typename U, typename T>
+bool operator>(U x, const Rational<T>& y)
+{
+    return x * y.q > y.p;
+}
+
+template <template <typename U> class V, typename U, typename T>
+bool operator>(V<U> x, const Rational<T>& y)
+{
+    return x.value * y.q > y.p;
+}

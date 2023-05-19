@@ -24,7 +24,7 @@ public:
     size_t cols = 0;
     size_t transitions = 1;
     int payoff_bias = 0;
-    typename Types::Probability chance_threshold = Rational<int>(1, transitions);
+    typename Types::Probability chance_threshold{typename Types::Rational(1, transitions + 1)};
     std::vector<typename Types::Probability> chance_strategies;
 
     int (*depth_bound_func)(RandomTree *, int) = &(RandomTree::dbf);
@@ -42,7 +42,7 @@ public:
         size_t rows,
         size_t cols,
         size_t transitions,
-        typename Types::Probability chance_threshold)
+        double chance_threshold)
         : device(device),
           depth_bound(depth_bound),
           rows(rows),
@@ -98,7 +98,7 @@ public:
         const ActionIndex start_idx = get_transition_idx(row_action, col_action, 0);
         for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
         {
-            if (chance_strategies[start_idx + chance_idx] > 0)
+            if (chance_strategies[start_idx + chance_idx] > typename Types::Rational(0))
             {
                 chance_actions.push_back(chance_idx);
             }
@@ -186,23 +186,23 @@ private:
                 ActionIndex start_idx = row_idx * cols * transitions + col_idx * transitions;
 
                 // get unnormalized distro
-                typename Types::Probability prob_sum = 0;
+                typename Types::Probability prob_sum{typename Types::Rational(0)};
                 for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
                 {
-                    const typename Types::Probability p = device.uniform();
+                    const typename Types::Probability p{device.uniform()}; // Prob = double
                     chance_strategies[start_idx + chance_idx] = p;
                     prob_sum += p;
                 }
 
                 // clip and compute new norm
-                typename Types::Probability new_prob_sum = 0;
+                typename Types::Probability new_prob_sum{typename Types::Rational(0)};
                 for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
                 {
                     typename Types::Probability &p = chance_strategies[start_idx + chance_idx];
                     p /= prob_sum;
                     if (p < chance_threshold)
                     {
-                        p = 0;
+                        p = typename Types::Probability(typename Types::Rational(0));
                     }
                     new_prob_sum += p;
                 }
