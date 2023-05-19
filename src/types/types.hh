@@ -67,7 +67,7 @@ struct Types {
     struct Vector;
 
     using Rational = _Rational;
-    using Real = RealType<_Real>;
+    using Real = _Real;
     using Float = _Float;
     using Action = _Action;
     using Observation = _Observation;
