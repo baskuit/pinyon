@@ -26,4 +26,8 @@ Windows is currently not supported
 The fast computation of Nash Equilibrium strategies is necessary for the MatrixUCB algorithm.
 
 ## Status
-The core features of Surskit, namely the single/multi-threaded bandit search, have been implemented. Documentation has been written to convey the motivation for design choices and how to use the program. Tests and benchmarks are the priority now.
+Master branch is likely not building right now but I'm refactoring using strong typing and doing some important design changes on the 'types' branch.
+Integration with pkmn/engine is proven and this has been moved to 'Taurus' repo.
+Once the refactor is done the next priority is *extensive* search parameter testing on random trees
+After that, extending AlpheBeta functionality to general `State`s using brute force calculation of transitions.
+Then I want to write a general batched inference wrapper around Libtorch models, and if that goes well, a Python binding to move testing and NN design to a more accessible platform.
