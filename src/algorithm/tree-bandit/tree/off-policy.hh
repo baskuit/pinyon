@@ -24,79 +24,60 @@ public:
         using Outcome = _Outcome;
     };
 
-    size_t batch_size;
-    size_t thread_batch_size;
-    size_t trees_per_thread;
-
-    size_t threads;
-
-    // buffer for obs tensor, policy, score, value etc TRAINING DATA
-
-    void get_threads_started()
+    void run(
+        size_t learner_iterations,
+        size_t actor_iterations,
+        typename Types::PRNG &device,
+        std::vector<typename Types::State> &states,
+        typename Types::Model &model,
+        std::vector<MatrixNode<BanditAlgorithm>> &matrix_nodes)
     {
+
+        // Perform batched inference on all trees
+        // grab `actor` many samples, inference, update
+        // do this `leaner` many times
+
+        for (auto matrix_node : matrix_nodes)
+        {
+            this->_initialize_stats(learner_iterations * actor_iterations, states[0], model, &matrix_node);
+        }
+
+        std::vector<MatrixNode<BanditAlgorithm>> leafs{};
+
+        for (int learner_iteration = 0; learner_iteration < learner_iterations; ++learner_iteration)
+        {
+
+            get_leafs(actor_iterations, device, states, model, matrix_nodes, leafs);
+
+            // batched inference on all states? state outputs?
+            model.inference();
+
+            // redistribute
+            update_leafs(leafs);
+
+        }
     }
 
-    // void thread_function(
-    //     uint64_t device_seed,
-    //     std::vector<typename Types::State> &states,
-    //     Model &model,
-    //     std::vector<MatrixNode<BanditAlgorithm>> &roots
-    // )
-    // {
+    void get_leafs(
+        size_t actor_iterations,
+        typename Types::PRNG &device,
+        std::vector<typename Types::State> &states,
+        typename Types::Model &model,
+        std::vector<MatrixNode<BanditAlgorithm>> &matrix_nodes,
+        std::vector<MatrixNode<BanditAlgorithm>> &leafs)
+    {
+        for (auto &matrix_node : matrix_nodes)
+        {
+            auto state = states[0];
+            for (size_t actor_iteration = 0; actor_iteration < actor_iterations; ++actor_iteration) {
+                auto state_copy = state;
+                auto leaf = run_iteration(device, state_copy, model, matrix_node);
+                leafs.push_back(leaf);
+            }
+        }
+    }
 
-    //     // typename Types::PRNG device(thread_seed);
-
-    //     std::vector<MatrixNode<BanditAlgorithm>> leafs;
-    //     leafs.resize(thread_batch_size);
-
-    //     const size_t samples_per_tree = thread_batch_size / trees_per_thread;
-
-    //     while (true)
-    //     {
-
-    //         // game after game
-
-    //         int thread_batch_index = 0;
-
-    //         for (auto &root : roots)
-    //         {
-
-    //             for (size_t iteration = 0; iteration < samples_per_tree; ++iteration)
-    //             {
-
-    //                 auto leaf_node = run_iteration(device, state, model, root);
-    //                 // state is now rolled out as well
-    //                 auto row_observation_tensor = model->get_row_obs(state);
-    //                 thread_input_tensor[thread_batch_index] = row_observation_tensor;
-    //                 thread_batch_index++;
-    //             }
-    //         }
-
-    //         // All nodes observed, thread_batch waiting to go.
-
-    //         model->get_inference(thread_input_tensor, thread_output_tensor);
-
-    //         thread_batch_index = 0;
-
-    //         for (int b = 0; b < thread_batch_size; ++b)
-    //         {
-
-    //             auto leaf = leafs[b];
-
-    //             // state? just need actions, do that earlier
-
-    //             if (leaf.is_expanded)
-    //             {
-    //                 // skip?
-    //             }
-    //             else
-    //             {
-    //                 _expand(state, model, leaf);
-    //                 update_post_facto(leaf);
-    //             }
-    //         }
-    //     };
-    // }
+    void update_leafs(std::vector<MatrixNode<BanditAlgorithm>*> &leafs) {}
 
 protected:
     void _get_empirical_strategies(
@@ -152,7 +133,8 @@ protected:
     {
         state.get_actions();
         matrix_node->is_terminal = state.is_terminal;
-        if (state.is_terminal) {
+        if (state.is_terminal)
+        {
             matrix_node->is_terminal = true;
             return;
         }
@@ -165,31 +147,6 @@ protected:
             state,
             model,
             matrix_node);
-    }
-
-    void update_post_facto(
-        MatrixNode<BanditAlgorithm> *matrix_node)
-    {
-        if (matrix_node == nullptr)
-        {
-            return;
-        }
-
-        if (matrix_node->is_expanded)
-        {
-
-        }
-
-        ChanceNode<BanditAlgorithm> *chance_node_parent = matrix_node->parent;
-
-        while (chance_node_parent) {
-
-            
-
-            MatrixNode<BanditAlgorithm> *matrix_node_parent = chance_node_parent->parent;
-            matrix_node = matrix_node_parent;
-            chance_node_parent = matrix_node->parent;
-        }
     }
 
     MatrixNode<BanditAlgorithm> *run_iteration(
