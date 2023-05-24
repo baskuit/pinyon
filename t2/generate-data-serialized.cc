@@ -1,10 +1,11 @@
-#include "../src/state/random-tree-serialized.hh"
-#include "../src/model/model.hh"
-#include "../src/algorithm/bandits/multithreaded.hh"
-#include "../src/algorithm/bandits/exp3.hh"
-#include "../src/algorithm/bandits/matrix-ucb.hh"
-#include "../src/algorithm/solve/full-traversal.hh"
-#include "../src/algorithm/solve/alphabeta.hh"
+#include <state/random-tree.hh>
+#include <model/model.hh>
+#include <algorithm/tree-bandit/bandit/tree/multithreaded.hh>
+#include <algorithm/tree-bandit/bandit/exp3.hh>
+#include<algorithm/tree-bandit/bandit/matrix-ucb.hh>
+#include <algorithm/solver/full-traversal.hh>
+#include <algorithm/solver/alpha-beta.hh>
+
 
 #include <chrono>
 #include <fstream>

@@ -1,6 +1,6 @@
-#include "../../libsurskit/gambit.hh"
-#include "../../tree/tree.hh"
-#include "../algorithm.hh"
+#include <libsurskit/gambit.hh>
+#include <tree/tree.hh>
+#include <algorithm/algorithm.hh>
 
 // #include <algorithm
 #include <ranges>
@@ -9,7 +9,7 @@
 An implementation of Simultaneous Move Alpha Beta
 
 See "Using Double-Oracle Method and Serialized Alpha-Beta Search
-for Pruning in Simultaneous Move Games"
+for Pruning in Simultaneous Move Games>
 
 */
 

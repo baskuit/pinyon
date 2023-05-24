@@ -2,9 +2,9 @@
 
 #include <string>
 
-#include "bandit.hh"
-#include "../../tree/tree.hh"
-#include "../../libsurskit/gambit.hh"
+// #include "bandit.hh>
+#include <tree/tree.hh>
+#include <libsurskit/gambit.hh>
 /*
 MatrixUCB
 */

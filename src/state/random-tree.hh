@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../types/types.hh"
-#include "state.hh"
-#include "../libsurskit/random.hh"
+#include <types/types.hh>
+#include <state/state.hh>
+#include <libsurskit/random.hh>
 
 #include <vector>
 #include <span>

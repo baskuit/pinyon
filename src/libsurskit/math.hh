@@ -6,9 +6,9 @@
 #include <vector>
 #include <chrono>
 
-#include "random.hh"
-#include "rational.hh"
-#include "vector.hh"
+#include <libsurskit/random.hh>
+#include <libsurskit/rational.hh>
+#include <libsurskit/vector.hh>
 
 using ActionIndex = int;
 

@@ -2,10 +2,10 @@
 
 #include <string>
 
-#include "../../libsurskit/gambit.hh"
-#include "../../model/model.hh"
-#include "../../tree/tree.hh"
-#include "../../algorithm/algorithm.hh"
+#include <libsurskit/gambit.hh>
+#include <model/model.hh>
+#include <tree/tree.hh>
+#include <algorithm/algorithm.hh>
 
 /*
     This algorithm expands a node into a tree that is one-to-one with the abstract game tree

@@ -1,4 +1,4 @@
-    #include "libsurskit/random.hh"
+    #include <libsurskit/random.hh>
 
     #include <cmath>
     

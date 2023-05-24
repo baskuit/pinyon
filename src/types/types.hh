@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../libsurskit/rational.hh"
-#include "../libsurskit/vector.hh"
-#include "../libsurskit/random.hh"
-#include "../libsurskit/math.hh"
-#include "arithmetic.hh"
+#include <libsurskit/rational.hh>
+#include <libsurskit/vector.hh>
+#include <libsurskit/random.hh>
+#include <libsurskit/math.hh>
+#include <types/arithmetic.hh>
 
 #include <vector>
 

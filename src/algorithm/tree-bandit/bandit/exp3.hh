@@ -1,8 +1,8 @@
 #pragma once
 
-#include "bandit.hh"
+// #include "bandit.hh>
 
-#include "../../libsurskit/math.hh"
+#include <libsurskit/math.hh>
 
 /*
 Exp3

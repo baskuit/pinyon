@@ -1,10 +1,10 @@
-#include "../src/state/random-tree.hh"
-#include "../src/model/model.hh"
-#include "../src/algorithm/bandits/multithreaded.hh"
-#include "../src/algorithm/bandits/exp3.hh"
-#include "../src/algorithm/bandits/matrix-ucb.hh"
-#include "../src/algorithm/solve/full-traversal.hh"
-#include "../src/algorithm/solve/alphabeta.hh"
+#include <state/random-tree.hh>
+#include <model/model.hh>
+#include <algorithm/tree-bandit/bandit/tree/multithreaded.hh>
+#include <algorithm/tree-bandit/bandit/exp3.hh>
+#include <algorithm/tree-bandit/bandit/matrix-ucb.hh>
+#include <algorithm/solver/full-traversal.hh>
+#include <algorithm/solver/alpha-beta.hh>
 
 #include <chrono>
 #include <fstream>
@@ -14,7 +14,7 @@
 
 using namespace std::chrono;
 
-std::ofstream file("test.txt", std::ios::app);
+std::ofstream file("find-segfault.txt", std::ios::app);
 
 struct GameData
 {
@@ -133,8 +133,8 @@ void foo(
 
     using State = RandomTree;
     using Model = MonteCarloModel<State>;
-    using Exp3 = Exp3<Model, TreeBanditThreaded>;
-    using MatrixUCB = MatrixUCB<Model, TreeBanditThreaded>;
+    using Exp3 = Exp3<Model, TreeBandit>;
+    using MatrixUCB = MatrixUCB<Model, TreeBandit>;
 
     prng device(initial_seed);
     Model model(device);
@@ -144,7 +144,7 @@ void foo(
     // exp3_session.threads = 3;
     // matrix_ucb_session.threads = 3;
 
-    for (size_t cycle = 0; cycle < 1; ++cycle)
+    for (size_t cycle = 0; cycle < 100; ++cycle)
     {
         for (const size_t db : depth_bound)
         {
@@ -170,23 +170,23 @@ void foo(
                             exp3_cum_score += 1 - vs(device, iterations, state, model, model, matrix_ucb_session, exp3_session, matrix_ucb_data, exp3_data);
                         }
 
-                        // file_write(
-                        //     "exp3",
-                        //     state_seed, db, rows, t, chance_threshold, iterations, exp3_cum_score / max_games / 2,
-                        //     exp3_data.matrix_node_count / exp3_data.n,
-                        //     exp3_data.time_spent / exp3_data.n,
-                        //     exp3_data.n,
-                        //     2 * max_games);
+                        file_write(
+                            "exp3",
+                            state_seed, db, rows, t, chance_threshold, iterations, exp3_cum_score / max_games / 2,
+                            exp3_data.matrix_node_count / exp3_data.n,
+                            exp3_data.time_spent / exp3_data.n,
+                            exp3_data.n,
+                            2 * max_games);
 
-                        // file_write(
-                        //     "matrix_ucb",
-                        //     state_seed, db, rows, t, chance_threshold, iterations, (max_games * 2 - exp3_cum_score) / max_games / 2,
-                        //     matrix_ucb_data.matrix_node_count / matrix_ucb_data.n,
-                        //     matrix_ucb_data.time_spent / matrix_ucb_data.n,
-                        //     matrix_ucb_data.n,
-                        //     2 * max_games);
+                        file_write(
+                            "matrix_ucb",
+                            state_seed, db, rows, t, chance_threshold, iterations, (max_games * 2 - exp3_cum_score) / max_games / 2,
+                            matrix_ucb_data.matrix_node_count / matrix_ucb_data.n,
+                            matrix_ucb_data.time_spent / matrix_ucb_data.n,
+                            matrix_ucb_data.n,
+                            2 * max_games);
 
-                        // std::cout << "!\n";
+                        std::cout << "!\n";
                     }
                 }
             }
@@ -209,12 +209,12 @@ std::ofstream bmark("b.txt", std::ios::app);
 
 int main()
 {
-    uint64_t initial_seed{0};
-    auto depth_bound = range(5, 6, 3);
+    uint64_t initial_seed{1};
+    auto depth_bound = range(5, 25, 3);
     auto actions = range(5, 6);
-    auto transitions = range(1, 2);
-    auto log2_iterations = range(14, 15);
-    size_t max_games = 1;
+    auto transitions = range(1, 3);
+    auto log2_iterations = range(8, 12);
+    size_t max_games = 5;
 
     auto start = std::chrono::steady_clock::now();
     foo(initial_seed,

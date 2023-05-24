@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../libsurskit/math.hh"
+#include <libsurskit/math.hh>
 
 #include <concepts>
 

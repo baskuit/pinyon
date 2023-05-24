@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../types/types.hh"
-#include "../../tree/tree.hh"
-#include "../algorithm.hh"
+#include <types/types.hh>
+#include <tree/tree.hh>
+#include <algorithm.hh>
 
 #include <torch/torch.h>
 #include <thread>

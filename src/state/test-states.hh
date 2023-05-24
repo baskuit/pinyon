@@ -1,9 +1,6 @@
 #pragma once
 
-#include "state.hh"
-#include "../model/model.hh"
-// #include "algorithm/exp3p.hh"
-#include "../tree/tree.hh"
+#include <state/state.hh>
 
 /*
  Large uniform tree for testing etc. So called because it grows until it can't.

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../model/model.hh"
-#include "random-tree.hh"
-#include "../algorithm/solve/full-traversal.hh"
-#include "../tree/tree.hh"
+#include <model/model.hh>
+#include <state/random-tree.hh>
+#include <algorithm/solve/full-traversal.hh>
+#include <tree/tree.hh>
 
 #include <memory>
 #include <numeric>

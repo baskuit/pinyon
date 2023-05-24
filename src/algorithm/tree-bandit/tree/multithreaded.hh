@@ -1,8 +1,8 @@
 #pragma once
 
-#include "bandit.hh"
+#include <algorithm/tree-bandit/tree/bandit.hh>
 
-#include "../../tree/tree.hh"
+#include <tree/tree.hh>
 
 #include <thread>
 #include <mutex>
