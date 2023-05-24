@@ -4,9 +4,7 @@ set (CMAKE_CXX_STANDARD 20)
 project(surskit VERSION 0.1.0)
 
 add_library(surskit INTERFACE)
-target_include_directories(surskit INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-
-target_compile_definitions(surskit INTERFACE SURSKIT_INCLUDE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_include_directories(surskit INTERFACE src)
 
 add_subdirectory(gambit) # creats static library 'gambit'
 

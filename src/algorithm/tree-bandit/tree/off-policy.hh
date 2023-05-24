@@ -2,9 +2,10 @@
 
 #include <types/types.hh>
 #include <tree/tree.hh>
-#include <algorithm.hh>
+#include <algorithm/algorithm.hh>
+#include <algorithm/tree-bandit/tree/bandit.hh>
 
-#include <torch/torch.h>
+// #include <torch/torch.h>
 #include <thread>
 #include <chrono>
 
@@ -14,30 +15,8 @@ using namespace std::chrono;
 
 // outcome struct where we only store the policy for the selected action (indices) for either player
 
-template <typename Model>
-struct ChoicesOutcome
-{
-    using Real = typename Model::Types::Real;
-    ActionIndex row_idx, col_idx;
-    Real row_value, col_value;
-    Real row_mu, col_mu;
-};
-
-// outcome struct where we store the entire policy, for all actions
-
-template <typename Model>
-struct PolicyOutcome
-{
-    using Real = typename Model::Types::Real;
-    using VectorReal = typename Model::Types::VectorReal;
-
-    ActionIndex row_idx, col_idx;
-    Real row_value, col_value;
-    VectorReal row_policy, col_policy;
-};
-
 template <class Model, class BanditAlgorithm, class _Outcome>
-class BatchedTreeBandit : public AbstractAlgorithm<Model>
+class OffPolicy : public AbstractAlgorithm<Model>
 {
 public:
     struct Types : AbstractAlgorithm<Model>::Types
@@ -51,76 +30,73 @@ public:
 
     size_t threads;
 
-    Torch::Tensor thread_input_tensor = Torch::empty({thread_batch_size, BATTLE_INPUT_DIM});
-    Torch::Tensor thread_output_tensor = Torch::empty({thread_batch_size, 1});
-
     // buffer for obs tensor, policy, score, value etc TRAINING DATA
 
     void get_threads_started()
     {
     }
 
-    void thread_function(
-        uint64_t device_seed,
-        std::vector<typename Types::State> &states,
-        Model &model,
-        std::vector<MatrixNode<BanditAlgorithm>> &roots
-    )
-    {
+    // void thread_function(
+    //     uint64_t device_seed,
+    //     std::vector<typename Types::State> &states,
+    //     Model &model,
+    //     std::vector<MatrixNode<BanditAlgorithm>> &roots
+    // )
+    // {
 
-        typename Types::PRNG device(thread_seed);
+    //     // typename Types::PRNG device(thread_seed);
 
-        std::vector<MatrixNode<BanditAlgorithm>> leafs;
-        leafs.resize(thread_batch_size);
+    //     std::vector<MatrixNode<BanditAlgorithm>> leafs;
+    //     leafs.resize(thread_batch_size);
 
-        const size_t samples_per_tree = thread_batch_size / trees_per_thread;
+    //     const size_t samples_per_tree = thread_batch_size / trees_per_thread;
 
-        while (true)
-        {
+    //     while (true)
+    //     {
 
-            // game after game
+    //         // game after game
 
-            int thread_batch_index = 0;
+    //         int thread_batch_index = 0;
 
-            for (auto &root : roots)
-            {
+    //         for (auto &root : roots)
+    //         {
 
-                for (size_t iteration = 0; iteration < samples_per_tree; ++iteration)
-                {
+    //             for (size_t iteration = 0; iteration < samples_per_tree; ++iteration)
+    //             {
 
-                    auto leaf_node = run_iteration(device, state, model, root);
-                    // state is now rolled out as well
-                    auto row_observation_tensor = model->get_row_obs(state);
-                    thread_input_tensor[thread_batch_index] = row_observation_tensor;
-                    thread_batch_index++;
-                }
-            }
+    //                 auto leaf_node = run_iteration(device, state, model, root);
+    //                 // state is now rolled out as well
+    //                 auto row_observation_tensor = model->get_row_obs(state);
+    //                 thread_input_tensor[thread_batch_index] = row_observation_tensor;
+    //                 thread_batch_index++;
+    //             }
+    //         }
 
-            // All nodes observed, thread_batch waiting to go.
+    //         // All nodes observed, thread_batch waiting to go.
 
-            model->get_inference(thread_input_tensor, thread_output_tensor);
+    //         model->get_inference(thread_input_tensor, thread_output_tensor);
 
-            thread_batch_index = 0;
+    //         thread_batch_index = 0;
 
-            for (int b = 0; b < thread_batch_size; ++b)
-            {
+    //         for (int b = 0; b < thread_batch_size; ++b)
+    //         {
 
-                auto leaf = leafs[b];
+    //             auto leaf = leafs[b];
 
-                // state? just need actions, do that earlier
+    //             // state? just need actions, do that earlier
 
-                if (leaf.is_expanded)
-                {
-                    // skip?
-                }
-                else
-                {
-                    _expand(state, model, leaf);
-                    update_post_facto(leaf);
-                }
-            }
-        };
-    }
+    //             if (leaf.is_expanded)
+    //             {
+    //                 // skip?
+    //             }
+    //             else
+    //             {
+    //                 _expand(state, model, leaf);
+    //                 update_post_facto(leaf);
+    //             }
+    //         }
+    //     };
+    // }
 
 protected:
     void _get_empirical_strategies(
