@@ -72,14 +72,13 @@ namespace math
 namespace Linear
 {
     template <typename T>
-    class Matrix
+    class Matrix : public std::vector<T>
     {
     public:
-        std::vector<T> data;
         int rows, cols;
 
         Matrix(){};
-        Matrix(int rows, int cols) : data(std::vector<T>(rows * cols)), rows(rows), cols(cols)
+        Matrix(int rows, int cols) : std::vector<T>(rows * cols), rows(rows), cols(cols)
         {
         }
 
@@ -87,7 +86,7 @@ namespace Linear
         {
             this->rows = rows;
             this->cols = cols;
-            data.resize(rows * cols);
+            this->resize(rows * cols);
         }
 
         void fill(int rows, int cols, T value)
@@ -95,13 +94,13 @@ namespace Linear
             this->rows = rows;
             this->cols = cols;
             const int n = rows * cols;
-            data.resize(n);
-            std::fill(data.begin(), data.begin() + n, value);
+            this->resize(n);
+            std::fill(this->begin(), this->begin() + n, value);
         }
 
         T &get(int i, int j)
         {
-            return data[i * cols + j];
+            return (*this)[i * cols + j];
         }
 
         Matrix operator*(T t)
@@ -110,7 +109,7 @@ namespace Linear
             Matrix output(M.rows, M.cols);
             for (int i = 0; i < rows * cols; ++i)
             {
-                output.data[i] = M.data[i] * t;
+                output[i] = M[i] * t;
             }
             return output;
         }
@@ -120,18 +119,18 @@ namespace Linear
             Matrix output(M.rows, M.cols);
             for (int i = 0; i < rows * cols; ++i)
             {
-                output.data[i] = M.data[i] + t;
+                output[i] = M[i] + t;
             }
             return output;
         }
 
-        Matrix operator+(const Matrix &t)
+        Matrix operator+(const Matrix &t) const
         {
             assert(t.rows == rows && t.cols == cols);
             const Matrix &M = *this;
             Matrix output(M.rows, M.cols);
             const size_t size = rows * cols;
-            std::transform(data.begin(), data.begin() + size, t.data.begin(), output.data.begin(),
+            std::transform(this->begin(), this->begin() + size, t.begin(), output.begin(),
                         [](double a, double b) { return a + b; }); // Perform element-wise addition
             return output;
         }
@@ -151,13 +150,13 @@ namespace Linear
         T max()
         {
             const int entries = rows * cols;
-            return *std::max_element(data.begin(), data.begin() + entries);
+            return *std::max_element(this->begin(), this->begin() + entries);
         }
 
         T min()
         {
             const int entries = rows * cols;
-            return *std::min_element(data.begin(), data.begin() + entries);
+            return *std::min_element(this->begin(), this->begin() + entries);
         }
     };
 
@@ -180,8 +179,8 @@ namespace Linear
             for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
             {
                 const size_t data_idx = row_idx * cols + col_idx;
-                const typename Types::Real u{row_payoff_matrix.data[data_idx] * col_strategy[col_idx]};
-                const typename Types::Real v{col_payoff_matrix.data[data_idx] * row_strategy[row_idx]};
+                const typename Types::Real u{row_payoff_matrix[data_idx] * col_strategy[col_idx]};
+                const typename Types::Real v{col_payoff_matrix[data_idx] * row_strategy[row_idx]};
                 row_payoff += u * row_strategy[row_idx];
                 col_payoff += v * col_strategy[col_idx];
                 row_response[row_idx] += u;
