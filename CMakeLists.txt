@@ -21,3 +21,11 @@ foreach(TEST_FILE ${TEST_FILES})
                       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
 endforeach()
 enable_testing()
+
+# Python Module
+
+add_subdirectory(extern/pybind11)
+pybind11_add_module(pysurskit pybind/main.cpp)
+target_link_libraries(pysurskit PRIVATE surskit)
+target_link_libraries(pysurskit PRIVATE gambit)
+set_target_properties(pysurskit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_PROJECT_DIR}/pybind)
