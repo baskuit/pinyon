@@ -258,3 +258,77 @@ ChanceNode<Algorithm>::~ChanceNode()
         delete victim;
     }
 };
+
+template <class Algorithm>
+void expand_on_stack(
+    typename Algorithm::Types::State &state,
+    typename Algorithm::Types::Model &model,
+    std::vector<ChanceNode<Algorithm>> &chance_nodes)
+{
+    auto root = *matrix_nodes.begin();
+
+    state.get_actions();
+    root.row_actions = state.row_actions;
+    root.col_actions = state.col_actions;
+
+    for (const auto &row_action : state.row_actions)
+    {
+        for (const auto &col_action : state.col_actions)
+        {
+            auto state_copy = state;
+            ChanceNode<Algorithm> child;
+
+            chance_nodes.emplace_back(child);
+        }
+    }
+};
+
+template <class Algorithm>
+struct StackNode
+{
+
+    MatrixNode<Algorithm> root;
+    std::vector<ChanceNode<Algorithm>> children;
+
+    StackNode(
+        typename Algorithm::Types::State &state)
+    {
+        state.get_actions();
+
+        if (root.is_terminal = state.is_terminal)
+        {
+            // root.is_expanded = true;
+            return;
+        }
+
+        root.row_actions = state.row_actions;
+        root.col_actions = state.col_actions;
+
+        size_t entries = state.row_actions.size() * state.col_actions.size();
+        children.resize(entries);
+
+        size_t index = 0;
+        size_t row_idx = 0, col_idx = 0;
+        for (const auto row_action : state.row_actions)
+        {
+            col_idx = 0;
+            for (const auto col_action : state.col_actions)
+            {
+                auto state_copy = state;
+                state_copy.apply_actions(row_action, col_action);
+                ChanceNode<Algorithm> &child = children[index];
+                child.parent = &root;
+                if (index > 0)
+                {
+                    child.prev = &children[index - 1];
+                }
+                child.row_idx = row_idx;
+                child.col_idx = col_idx;
+
+                ++index;
+                ++col_idx;
+            }
+            ++row_idx;
+        }
+    }
+};
