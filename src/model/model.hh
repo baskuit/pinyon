@@ -26,9 +26,7 @@ class DoubleOracleModel : public AbstractModel<_State>
 
 public:
     struct ModelOutput;
-    struct ModelBatchOutput
-    {
-    };
+    struct ModelBatchOutput;
     struct ModelInput;
     struct ModelBatchInput;
 
@@ -45,21 +43,21 @@ public:
         typename Types::VectorReal col_policy;
     };
 
-    void get_input(
-        const typename Types::State &state,
-        ModelInput &input);
+    // virtual void get_input(
+    //     const typename Types::State &state,
+    //     ModelInput &input) = 0;
 
-    void get_batch_input(
-        const std::vector<typename Types::State> &states,
-        ModelBatchInput &inputs);
+    // virtual void get_batch_input(
+    //     const std::vector<typename Types::State> &states,
+    //     ModelBatchInput &inputs) = 0;
 
-    void get_inference(
-        ModelInput &input,
-        ModelOutput &output);
+    // virtual void get_inference(
+    //     ModelInput &input,
+    //     ModelOutput &output) = 0;
 
-    void get_inference(
-        ModelBatchInput &inputs,
-        ModelBatchOutput &outputs);
+    // virtual void get_inference(
+    //     ModelBatchInput &inputs,
+    //     ModelBatchOutput &outputs) = 0;
 };
 
 /*
@@ -109,6 +107,15 @@ public:
         rollout(input);
         output.row_value = input.row_payoff;
         output.col_value = input.col_payoff;
+    }
+
+    void get_inference(
+        typename Types::ModelBatchInput &inputs,
+        typename Types::ModelBatchOutput &outputs)
+    {
+        for (auto &input : inputs) {
+
+        }
     }
 
 protected:
