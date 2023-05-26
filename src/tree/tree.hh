@@ -260,30 +260,6 @@ ChanceNode<Algorithm>::~ChanceNode()
 };
 
 template <class Algorithm>
-void expand_on_stack(
-    typename Algorithm::Types::State &state,
-    typename Algorithm::Types::Model &model,
-    std::vector<ChanceNode<Algorithm>> &chance_nodes)
-{
-    auto root = *matrix_nodes.begin();
-
-    state.get_actions();
-    root.row_actions = state.row_actions;
-    root.col_actions = state.col_actions;
-
-    for (const auto &row_action : state.row_actions)
-    {
-        for (const auto &col_action : state.col_actions)
-        {
-            auto state_copy = state;
-            ChanceNode<Algorithm> child;
-
-            chance_nodes.emplace_back(child);
-        }
-    }
-};
-
-template <class Algorithm>
 struct StackNode
 {
 
