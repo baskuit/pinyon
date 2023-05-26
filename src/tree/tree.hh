@@ -52,7 +52,7 @@ public:
         typename Types::Probability prob) : parent(parent), prev(prev), obs(obs), prob(prob) {}
     ~MatrixNode();
 
-    ChanceNode<Algorithm> *access(int row_idx, int col_idx)
+    ChanceNode<Algorithm> *access(ActionIndex row_idx, int col_idx)
     {
         if (this->child == nullptr)
         {
@@ -84,10 +84,10 @@ public:
     //     is_terminal = true;
     // }
 
-    int count_siblings()
+    size_t count_siblings()
     {
         // called on a matrix node to see how many branches its chance node parent has
-        int c = 1;
+        size_t c = 1;
         MatrixNode<Algorithm> *current = this->next;
         while (current != nullptr)
         {
@@ -103,9 +103,9 @@ public:
         return c;
     }
 
-    int count_matrix_nodes()
+    size_t count_matrix_nodes()
     {
-        int c = 1;
+        size_t c = 1;
         ChanceNode<Algorithm> *current = this->child;
         while (current != nullptr)
         {
@@ -143,16 +143,17 @@ public:
     ChanceNode<Algorithm> *prev = nullptr;
     ChanceNode<Algorithm> *next = nullptr;
 
-    int row_idx;
-    int col_idx;
+    ActionIndex row_idx;
+    ActionIndex col_idx;
 
     typename Types::ChanceStats stats;
 
+    ChanceNode () {}
     ChanceNode(
         MatrixNode<Algorithm> *parent,
         ChanceNode<Algorithm> *prev,
-        int row_idx,
-        int col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
+        ActionIndex row_idx,
+        ActionIndex col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
     ~ChanceNode();
 
     MatrixNode<Algorithm> *access(typename Types::Observation &obs, typename Types::Probability prob) // TODO check speed on pass-by
@@ -179,9 +180,9 @@ public:
         return child;
     };
 
-    int count_matrix_nodes()
+    size_t count_matrix_nodes()
     {
-        int c = 0;
+        size_t c = 0;
         MatrixNode<Algorithm> *current = this->child;
         while (current != nullptr)
         {
@@ -191,9 +192,9 @@ public:
         return c;
     }
 
-    int count_siblings()
+    size_t count_siblings()
     {
-        int c = 1;
+        size_t c = 1;
         ChanceNode<Algorithm> *current = this->next;
         while (current != nullptr)
         {
