@@ -5,7 +5,6 @@
 #include <libsurskit/random.hh>
 
 #include <vector>
-#include <span>
 
 /*
 RandomTree is a well-defined P-game.
