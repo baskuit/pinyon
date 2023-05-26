@@ -51,29 +51,33 @@ typename RowAlgorithm::Types::Real vs(
 
         ActionIndex row_idx, col_idx;
 
-        MatrixNode<RowAlgorithm> row_root;
-        MatrixNode<ColAlgorithm> col_root;
+        StackNode<RowAlgorithm> row_stack_root(state);
+        StackNode<ColAlgorithm> col_stack_root(state);
+
+
+        // MatrixNode<RowAlgorithm> row_root;
+        // MatrixNode<ColAlgorithm> col_root;
 
         auto start = high_resolution_clock::now();
-        row_session.run(iterations, device, state_copy, row_model, row_root);
+        row_session.run(iterations, device, state_copy, row_model, row_stack_root.root);
         auto end = high_resolution_clock::now();
         auto row_time_spent = duration_cast<microseconds>(end - start);
 
         start = high_resolution_clock::now();
-        col_session.run(iterations, device, state_copy, col_model, col_root);
+        col_session.run(iterations, device, state_copy, col_model, col_stack_root.root);
         end = high_resolution_clock::now();
         auto col_time_spent = duration_cast<microseconds>(end - start);
 
         typename RowAlgorithm::Types::VectorReal row_strategy, col_strategy;
-        row_session.get_empirical_strategies(&row_root, row_strategy, col_strategy);
+        row_session.get_empirical_strategies(&(row_stack_root.root), row_strategy, col_strategy);
         row_idx = device.sample_pdf(row_strategy);
-        col_session.get_empirical_strategies(&col_root, row_strategy, col_strategy);
+        col_session.get_empirical_strategies(&(col_stack_root.root), row_strategy, col_strategy);
         col_idx = device.sample_pdf(col_strategy);
         state_copy.apply_actions(state_copy.row_actions[row_idx], state_copy.col_actions[col_idx]);
         state_copy.get_actions();
 
-        GameData row_game_data(row_root.count_matrix_nodes(), row_time_spent.count());
-        GameData col_game_data(col_root.count_matrix_nodes(), col_time_spent.count());
+        GameData row_game_data(row_stack_root.root.count_matrix_nodes(), row_time_spent.count());
+        GameData col_game_data(col_stack_root.root.count_matrix_nodes(), col_time_spent.count());
         row_data += row_game_data;
         col_data += col_game_data;
     }

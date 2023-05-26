@@ -8,7 +8,12 @@
 
 #include <vector>
 
-using ActionIndex = int;
+class EmptyClass {
+public:
+    EmptyClass () {}
+    ~EmptyClass () {}
+    EmptyClass (const EmptyClass &t) {}
+};
 
 template <
     typename _Rational,
