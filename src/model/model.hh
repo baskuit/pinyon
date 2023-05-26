@@ -2,6 +2,8 @@
 
 #include <state/state.hh>
 
+#include <vector>
+
 template <class _State>
 class AbstractModel
 {
@@ -23,55 +25,94 @@ class DoubleOracleModel : public AbstractModel<_State>
     static_assert(std::derived_from<_State, State<typename _State::Types::TypeList>>);
 
 public:
-    struct Inference;
+    struct ModelOutput;
+    struct ModelBatchOutput
+    {
+    };
+    struct ModelInput;
+    struct ModelBatchInput;
+
     struct Types : AbstractModel<_State>::Types
     {
-        using Inference = DoubleOracleModel::Inference;
+        using ModelOutput = DoubleOracleModel::ModelOutput;
     };
 
-    struct Inference
+    struct ModelOutput
     {
         typename Types::Real row_value;
         typename Types::Real col_value;
         typename Types::VectorReal row_policy;
         typename Types::VectorReal col_policy;
     };
+
+    void get_input(
+        const typename Types::State &state,
+        ModelInput &input);
+
+    void get_batch_input(
+        const std::vector<typename Types::State> &states,
+        ModelBatchInput &inputs);
+
+    void get_inference(
+        ModelInput &input,
+        ModelOutput &output);
+
+    void get_inference(
+        ModelBatchInput &inputs,
+        ModelBatchOutput &outputs);
 };
 
 /*
 Universal model.
 */
 
-template <class State>
-class MonteCarloModel : public DoubleOracleModel<State>
+template <class _State>
+class MonteCarloModel : public DoubleOracleModel<_State>
 {
-    // static_assert(std::derived_from<State, State<typename State::Types::TypeList>>);
+    // static_assert(std::derived_from<_State, _State<typename State::Types::TypeList>>);
 
 public:
-    struct Types : DoubleOracleModel<State>::Types
+    struct Types : DoubleOracleModel<_State>::Types
     {
+        using ModelBatchOutput = std::vector<typename Types::ModelOutput>;
+        using ModelBatchInput = std::vector<_State>;
+        using ModelInput = _State;
     };
 
     typename Types::PRNG device;
 
     MonteCarloModel(typename Types::PRNG &device) : device(device) {}
 
-    void get_inference(
-        typename Types::State &state,
-        typename Types::Inference &inference)
+    void get_input(
+        const typename Types::State &state,
+        typename Types::ModelInput &input)
     {
-        const typename Types::Real row_uniform{1 / (typename Types::Real)state.row_actions.size()};
-        inference.row_policy.fill(state.row_actions.size(), row_uniform);
-        const typename Types::Real col_uniform{1 / (typename Types::Real)state.col_actions.size()};
-        inference.col_policy.fill(state.col_actions.size(), col_uniform);
+        input = state;
+    }
 
-        rollout(state);
-        inference.row_value = state.row_payoff;
-        inference.col_value = state.col_payoff;
+    void get_batch_input(
+        const std::vector<typename Types::State> &states,
+        typename Types::ModelBatchInput &inputs)
+    {
+        inputs = states;
+    }
+
+    void get_inference(
+        typename Types::ModelInput &input,
+        typename Types::ModelOutput &output)
+    {
+        const typename Types::Real row_uniform{1 / (typename Types::Real)input.row_actions.size()};
+        output.row_policy.fill(input.row_actions.size(), row_uniform);
+        const typename Types::Real col_uniform{1 / (typename Types::Real)input.col_actions.size()};
+        output.col_policy.fill(input.col_actions.size(), col_uniform);
+
+        rollout(input);
+        output.row_value = input.row_payoff;
+        output.col_value = input.col_payoff;
     }
 
 protected:
-    void rollout(State &state)
+    void rollout(_State &state)
     {
         // model inference in bandits happens in expand(), after get_actions is called
         while (!state.is_terminal)

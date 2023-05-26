@@ -50,7 +50,7 @@ public:
             get_leafs(actor_iterations, device, states, model, matrix_nodes, leafs);
 
             // batched inference on all states? state outputs?
-            model.inference();
+            model.get_inference();
 
             // redistribute
             update_leafs(leafs);
@@ -77,7 +77,20 @@ public:
         }
     }
 
-    void update_leafs(std::vector<MatrixNode<BanditAlgorithm>*> &leafs) {}
+    void update_leafs(std::vector<MatrixNode<BanditAlgorithm>*> &leafs) {
+
+    }
+
+    void update_leaf(
+        MatrixNode<BanditAlgorithm>* leaf
+        ) {
+        auto chance_node_parent = leaf->parent;
+
+        while (chance_node_parent != nullptr) {
+
+
+        }
+    }
 
 protected:
     void _get_empirical_strategies(

@@ -41,7 +41,7 @@ public:
     typename Types::VectorAction col_actions;
     typename Types::Observation obs;
     typename Types::Probability prob;
-    typename Types::Inference inference;
+    typename Types::ModelOutput inference;
     typename Types::MatrixStats stats;
 
     MatrixNode(){};
