@@ -17,7 +17,7 @@ def new(x, y):
         (_ * m + __ * n) / (m + n) for _, __ in zip(x[:-1], y[:-1])
     ) + (m + n,)
 
-"">
+"""
         << name << ','
         << seed << ','
         << depth_bound << ','
@@ -30,7 +30,7 @@ def new(x, y):
         << time_spent << ','
         << sample_size << ','
         << total_games << std::endl;
-"">
+"""
 
 
 # Print the data list
