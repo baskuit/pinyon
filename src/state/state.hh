@@ -30,11 +30,11 @@ public:
     bool is_terminal{false};
     typename Types::Seed seed{0};
 
-    void get_actions();
+    virtual void get_actions() = 0;
 
-    void apply_actions(
+    virtual void apply_actions(
         typename Types::Action row_action,
-        typename Types::Action col_action);
+        typename Types::Action col_action) = 0;
 
     void reseed(typename Types::PRNG &device){};
 
