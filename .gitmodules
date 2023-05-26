@@ -1,10 +1,4 @@
-[submodule "gambit"]
-	path = extern/gambit
-	url = https://github.com/baskuit/gambit
 [submodule "extern/pybind11"]
 	path = extern/pybind11
 	url = ../../pybind/pybind11
 	branch = stable
-[submodule "lrslib"]
-	path = extern/lrslib
-	url = https://github.com/baskuit/lrslib
