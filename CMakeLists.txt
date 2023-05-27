@@ -6,7 +6,7 @@ project(surskit VERSION 0.1.0)
 add_library(surskit INTERFACE)
 target_include_directories(surskit INTERFACE src)
 
-add_subdirectory(gambit) # creats static library 'gambit'
+add_subdirectory(extern/gambit) # creats static library 'gambit'
 
 # Testing
 file(GLOB TEST_FILES tests/*.cc)

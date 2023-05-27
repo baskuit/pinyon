@@ -39,35 +39,37 @@ public:
     };
 };
 
-template <typename Algorithm>
-class MatrixNodeSmaller : public AbstractNode<Algorithm>
-{
-public:
-    struct Types : AbstractNode<Algorithm>::Types
-    {
-    };
+// template <typename Algorithm>
+// class MatrixNodeSmaller : public AbstractNode<Algorithm>
+// {
+// public:
+//     struct Types : AbstractNode<Algorithm>::Types
+//     {
+//     };
 
-    ChanceNode<Algorithm> *parent = nullptr;
-    ChanceNode<Algorithm> *child = nullptr;
-    MatrixNode<Algorithm> *prev = nullptr;
-    MatrixNode<Algorithm> *next = nullptr;
+//     ChanceNode<Algorithm> *parent = nullptr;
+//     ChanceNode<Algorithm> *child = nullptr;
+//     MatrixNode<Algorithm> *prev = nullptr;
+//     MatrixNode<Algorithm> *next = nullptr;
 
-    bool is_terminal = false;
-    bool is_expanded = false;
+//     bool is_terminal = false;
+//     bool is_expanded = false;
 
-    typename Types::VectorAction row_actions;
-    typename Types::VectorAction col_actions;
-    typename Types::Observation obs;
-    typename Types::Probability prob;
-    typename Types::ModelOutput inference;
-    typename Types::MatrixStats stats;
-}
+//     typename Types::VectorAction row_actions;
+//     typename Types::VectorAction col_actions;
+//     typename Types::Observation obs;
+//     typename Types::Probability prob;
+//     typename Types::ModelOutput inference;
+//     typename Types::MatrixStats stats;
+// }
 
 
 int main () {
 
-    std::cout << "Small: " << sizeof(MatrixNode<EmptyAlgorithm<SmallTypes>>) / 8.0 << std::endl;
-    std::cout << "Current: " << sizeof(MatrixNode<EmptyAlgorithm<CurrentTypes>>) / 8.0 << std::endl;
+    double bytes_per_block = 64;
+
+    std::cout << "Small: " << sizeof(MatrixNode<EmptyAlgorithm<SmallTypes>>) / bytes_per_block << "" << std::endl;
+    std::cout << "Current: " << sizeof(MatrixNode<EmptyAlgorithm<CurrentTypes>>) / bytes_per_block << std::endl;
 
     return 0;
 }
