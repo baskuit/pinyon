@@ -122,9 +122,13 @@ public:
             MatrixNode<MatrixUCB> *matrix_parent = chance_parent->parent;
             int row_idx = chance_parent->row_idx;
             int col_idx = chance_parent->col_idx;
-            typename Types::Real reach_probability{matrix_parent->inference.row_policy[row_idx] *
-                                                   matrix_parent->inference.col_policy[col_idx] *
-                                                   (matrix_node->prob)};
+            typename Types::Real reach_probability{
+                matrix_parent->inference.row_policy[row_idx] *
+                matrix_parent->inference.col_policy[col_idx]
+                //    * (matrix_node->prob)};
+            };
+            // will probably remove this algorithm anyway?
+            // TODO "wrong" reach prob
             int time_estimate = matrix_parent->stats.time * reach_probability;
             time_estimate = time_estimate == 0 ? 1 : time_estimate;
             matrix_node->stats.time = time_estimate;

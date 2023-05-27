@@ -40,7 +40,6 @@ public:
     typename Types::VectorAction row_actions;
     typename Types::VectorAction col_actions;
     typename Types::Observation obs;
-    typename Types::Probability prob;
     typename Types::ModelOutput inference;
     typename Types::MatrixStats stats;
 
@@ -48,8 +47,7 @@ public:
     MatrixNode(
         ChanceNode<Algorithm> *parent,
         MatrixNode<Algorithm> *prev,
-        typename Types::Observation obs,
-        typename Types::Probability prob) : parent(parent), prev(prev), obs(obs), prob(prob) {}
+        typename Types::Observation obs) : parent(parent), prev(prev), obs(obs) {}
     ~MatrixNode();
 
     ChanceNode<Algorithm> *access(ActionIndex row_idx, int col_idx)
@@ -156,11 +154,11 @@ public:
         ActionIndex col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
     ~ChanceNode();
 
-    MatrixNode<Algorithm> *access(typename Types::Observation &obs, typename Types::Probability prob) // TODO check speed on pass-by
+    MatrixNode<Algorithm> *access(typename Types::Observation &obs) // TODO check speed on pass-by
     {
         if (this->child == nullptr)
         {
-            MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, nullptr, obs, prob);
+            MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, nullptr, obs);
             this->child = child;
             return child;
         }
@@ -175,7 +173,7 @@ public:
             }
             current = current->next;
         }
-        MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, previous, obs, prob);
+        MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, previous, obs);
         previous->next = child;
         return child;
     };
@@ -208,18 +206,6 @@ public:
             current = current->prev;
         }
         return c;
-    }
-
-    typename Types::Probability get_explored_total()
-    {
-        typename Types::Probability total(0);
-        MatrixNode<Algorithm> current = child;
-        while (current != nullptr)
-        {
-            total += current.prob;
-            current = current->next;
-        }
-        return total;
     }
 
     void spot_delete()

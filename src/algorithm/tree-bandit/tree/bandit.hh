@@ -198,7 +198,7 @@ protected:
                 state.apply_actions(row_action, col_action);
 
                 ChanceNode<BanditAlgorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<BanditAlgorithm> *matrix_node_next = chance_node->access(state.obs, state.prob);
+                MatrixNode<BanditAlgorithm> *matrix_node_next = chance_node->access(state.obs);
 
                 MatrixNode<BanditAlgorithm> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next);
 
