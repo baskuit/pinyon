@@ -2,3 +2,6 @@
 	path = extern/pybind11
 	url = ../../pybind/pybind11
 	branch = stable
+[submodule "extern/lrslib"]
+	path = extern/lrslib
+	url = https://github.com/baskuit/lrslib
