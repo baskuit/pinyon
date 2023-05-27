@@ -8,3 +8,6 @@
 [submodule "extern/gambit"]
 	path = extern/gambit
 	url = https://github.com/baskuit/gambit
+[submodule "extern/eigen"]
+	path = extern/eigen
+	url = https://github.com/libigl/eigen
