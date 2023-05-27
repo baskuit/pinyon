@@ -1,6 +1,8 @@
 // #include <surskit.hh>
 #include <tree/tree.hh>
 
+#include <Eigen/Dense>
+
 #include <iostream>
 #include <vector>
 
@@ -70,6 +72,13 @@ int main () {
 
     std::cout << "Small: " << sizeof(MatrixNode<EmptyAlgorithm<SmallTypes>>) / bytes_per_block << "" << std::endl;
     std::cout << "Current: " << sizeof(MatrixNode<EmptyAlgorithm<CurrentTypes>>) / bytes_per_block << std::endl;
+
+    const Eigen::MatrixXd matrix = Eigen::MatrixXd::Random(3, 3);
+    const Linear::Matrix<double> libmatrix(3, 3);
+
+    std::cout << "Eigen: " << sizeof(matrix) / bytes_per_block << "" << std::endl;
+    std::cout << "Current: " << sizeof(libmatrix) / bytes_per_block << std::endl;
+
 
     return 0;
 }
