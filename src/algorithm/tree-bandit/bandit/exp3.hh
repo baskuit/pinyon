@@ -8,7 +8,9 @@
 Exp3
 */
 
-template <class Model, template <class _Model, class _BanditAlgorithm, class Outcome> class _TreeBandit>
+template <class Model, template <class _Model, class _BanditAlgorithm, class Outcome> 
+    class _TreeBandit = TreeBandit
+>
 class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>
 {
 public:

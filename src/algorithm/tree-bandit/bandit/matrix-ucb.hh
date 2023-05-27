@@ -9,7 +9,8 @@
 MatrixUCB
 */
 
-template <class Model, template <class _Model, class _BanditAlgorithm, class _Outcome> class _TreeBandit>
+template <class Model, template <class _Model, class _BanditAlgorithm, class _Outcome> 
+    class _TreeBandit = TreeBandit>
 class MatrixUCB : public _TreeBandit<Model, MatrixUCB<Model, _TreeBandit>, ChoicesOutcome<Model>>
 {
 public:

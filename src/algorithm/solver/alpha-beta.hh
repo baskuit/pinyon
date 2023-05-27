@@ -90,7 +90,7 @@ public:
             model.get_inference(state, matrix_node->inference);
             stats.value = matrix_node->inference.row_value;
             teacher_check(matrix_node);
-            return matrix_node->inference.row_value;
+            return stats.value;
         }
 
         // 6: initialize restricted action sets I and J with a first action in stage s

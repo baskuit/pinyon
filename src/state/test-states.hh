@@ -18,13 +18,13 @@ public:
 
     MoldState(size_t max_depth) : max_depth((max_depth >= 0) * max_depth)
     {
-        this->actions.row_actions.fill(size);
-        this->actions.col_actions.fill(size);
+        this->row_actions.fill(size);
+        this->col_actions.fill(size);
 
         for (int i = 0; i < size; ++i)
         {
-            this->actions.row_actions[i] = i;
-            this->actions.col_actions[i] = i;
+            this->row_actions[i] = i;
+            this->col_actions[i] = i;
         }
         this->prob = 1.0;
         this->obs = 0;
@@ -32,12 +32,7 @@ public:
 
     void get_actions()
     {
-        if (this->max_depth <= 0)
-        {
-            this->actions.rows = 0;
-            this->actions.cols = 0;
-            this->is_terminal = true;
-        }
+        this->is_terminal = (this->max_depth <= 0);
     }
 
     void apply_actions(
