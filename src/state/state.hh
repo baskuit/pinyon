@@ -22,6 +22,7 @@ public:
     };
 
     static constexpr typename Types::Real MIN_PAYOFF{0}, MAX_PAYOFF{1};
+    static constexpr typename Types::Real PAYOFF_SUM{MIN_PAYOFF + MAX_PAYOFF};
     static constexpr bool IS_CONSTANT_SUM = false;
 
     State() {}

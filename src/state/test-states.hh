@@ -13,6 +13,8 @@ public:
     struct Types : State<SimpleTypes>::Types
     {
     };
+
+    static constexpr bool IS_CONSTANT_SUM = true;
     
     size_t max_depth = 1;
 
