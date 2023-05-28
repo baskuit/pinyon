@@ -162,7 +162,7 @@ void foo(
                         prng state_device(state_seed);
                         State state(state_device, db, rows, cols, t, chance_threshold);
 
-                        for (size_t game_on_fixed_tree = 0; game_on_fixed_tree <= max_games; ++game_on_fixed_tree)
+                        for (size_t game_on_fixed_tree = 0; game_on_fixed_tree < max_games; ++game_on_fixed_tree)
                         {
                             exp3_cum_score += vs(device, iterations, state, model, model, exp3_session, matrix_ucb_session, exp3_data, matrix_ucb_data);
                             exp3_cum_score += 1 - vs(device, iterations, state, model, model, matrix_ucb_session, exp3_session, matrix_ucb_data, exp3_data);

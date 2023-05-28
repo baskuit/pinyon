@@ -18,7 +18,7 @@ int main () {
     MonteCarlo model(device);
     MatrixUCB session;
     MatrixNode<MatrixUCB> root;
-    const size_t iterations = 100;
+    const size_t iterations = 10000;
     session.run(iterations, device, state, model, root);
 
     return 0;
