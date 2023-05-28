@@ -21,6 +21,9 @@ public:
     {
     };
 
+    static constexpr typename Types::Real MIN_PAYOFF{0}, MAX_PAYOFF{1};
+    static constexpr bool IS_CONSTANT_SUM = false;
+
     State() {}
 
     typename Types::VectorAction row_actions, col_actions;
@@ -28,13 +31,13 @@ public:
     typename Types::Probability prob;
     typename Types::Real row_payoff, col_payoff;
     bool is_terminal{false};
-    typename Types::Seed seed{0};
+    typename Types::Seed seed{};
 
-    virtual void get_actions() = 0;
+    void get_actions();
 
-    virtual void apply_actions(
+    void apply_actions(
         typename Types::Action row_action,
-        typename Types::Action col_action) = 0;
+        typename Types::Action col_action);
 
     void reseed(typename Types::PRNG &device){};
 
