@@ -202,7 +202,7 @@ public:
             {
                 const typename Types::Real u{row_value_matrix.get(row_idx, col_idx)};
                 const typename Types::Real v{col_value_matrix.get(row_idx, col_idx)};
-                typename Types::Real n{1}; //{visit_matrix.get(row_idx, col_idx)};
+                typename Types::Real n = visit_matrix.get(row_idx, col_idx);
                 n += static_cast<double>(n == 0.0);
                 typename Types::Real a{u / n};
                 typename Types::Real b{v / n};
@@ -236,7 +236,6 @@ public:
     {
         int time = 0;
         typename Types::MatrixReal row_value_matrix;
-        typename Types::MatrixReal col_value_matrix;
         typename Types::MatrixInt visit_matrix;
 
         typename Types::VectorReal row_strategy;
@@ -319,7 +318,6 @@ public:
         const int cols = state.col_actions.size();
 
         matrix_node->stats.row_value_matrix.fill(rows, cols, 0);
-        matrix_node->stats.col_value_matrix.fill(rows, cols, 0);
         matrix_node->stats.visit_matrix.fill(rows, cols, 0);
 
         // Uniform initialization of stats.strategies
@@ -381,7 +379,6 @@ public:
         typename Types::Outcome &outcome)
     {
         matrix_node->stats.row_value_matrix.get(outcome.row_idx, outcome.col_idx) += outcome.row_value;
-        matrix_node->stats.col_value_matrix.get(outcome.row_idx, outcome.col_idx) += outcome.col_value;
         matrix_node->stats.visit_matrix.get(outcome.row_idx, outcome.col_idx) += 1;
         matrix_node->stats.row_value_total += outcome.row_value;
         matrix_node->stats.col_value_total += outcome.col_value;
@@ -401,7 +398,6 @@ public:
         typename Types::MatrixReal &col_ucb_matrix)
     {
         typename Types::MatrixReal &row_value_matrix = matrix_node->stats.row_value_matrix;
-        typename Types::MatrixReal &col_value_matrix = matrix_node->stats.col_value_matrix;
         typename Types::MatrixInt &visit_matrix = matrix_node->stats.visit_matrix;
         const int time = matrix_node->stats.time;
         const int rows = visit_matrix.rows;
@@ -412,11 +408,10 @@ public:
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
                 const typename Types::Real u{row_value_matrix.get(row_idx, col_idx)};
-                const typename Types::Real v{col_value_matrix.get(row_idx, col_idx)};
-                typename Types::Real n{1}; //{visit_matrix.get(row_idx, col_idx)};
+                typename Types::Real n = visit_matrix.get(row_idx, col_idx);
                 n += static_cast<double>(n == 0.0);
                 typename Types::Real a{u / n};
-                typename Types::Real b{v / n};
+                typename Types::Real b{1 - Model::Types::State::PAYOFF_SUM};
                 typename Types::Real const eta{this->c_uct * std::sqrt(num / n)};
                 const typename Types::Real x{a + eta};
                 const typename Types::Real y{b + eta};

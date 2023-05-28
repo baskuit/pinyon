@@ -1,6 +1,6 @@
 #include <state/random-tree.hh>
 #include <model/model.hh>
-#include <algorithm/tree-bandit/bandit/tree/multithreaded.hh>
+#include <algorithm/tree-bandit/tree/multithreaded.hh>
 #include <algorithm/tree-bandit/bandit/exp3.hh>
 #include<algorithm/tree-bandit/bandit/matrix-ucb.hh>
 #include <algorithm/solver/full-traversal.hh>
@@ -17,7 +17,7 @@
 
 using namespace std::chrono;
 
-std::ofstream file("data/data.txt", std::ios::app);
+std::ofstream file("data.txt", std::ios::app);
 std::mutex file_mutex;
 
 struct GameData
