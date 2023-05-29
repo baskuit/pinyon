@@ -1,8 +1,8 @@
 #pragma once
 
 #include <libsurskit/math.hh>
-#include "../../gambit/src/gambit.h"
-#include "../../gambit/src/linalg/vertenum.imp"
+#include "../../extern/gambit/src/gambit.h"
+#include "../../extern/gambit/src/linalg/vertenum.imp"
 // #include <state/test-states.hh>
 
 /*

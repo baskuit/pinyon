@@ -5,6 +5,7 @@
 #include <libsurskit/random.hh>
 #include <libsurskit/rational.hh>
 #include <libsurskit/vector.hh>
+#include <libsurskit/gmp.hh>
 
 
 #include <state/state.hh>
@@ -27,5 +28,3 @@
 
 
 #include <tree/tree.hh>
-
-using POO = RandomTree;
