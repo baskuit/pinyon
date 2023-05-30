@@ -6,9 +6,9 @@ big_int x{1};
 
 int main () {
 
-    long long int y{*x};
+    // long long int y{*x};
 
-    std::cout << y << std::endl;
+    // std::cout << static_cast<long long int>(x[0]) << std::endl;
 
 
     return 0;
