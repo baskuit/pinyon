@@ -50,11 +50,12 @@ public:
         MatrixNode<BanditAlgorithm> &matrix_node)
     {
         this->_initialize_stats(iterations, state, model, &matrix_node);
+        typename Types::ModelOutput inference;
         for (int iteration = 0; iteration < iterations; ++iteration)
         {
             typename Types::State state_copy = state;
             state_copy.seed = device.template new_seed<uint64_t>();
-            this->run_iteration(device, state_copy, model, &matrix_node);
+            this->run_iteration(device, state_copy, model, &matrix_node, inference);
         }
     }
 
@@ -131,7 +132,8 @@ protected:
     void _expand(
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<BanditAlgorithm> *matrix_node)
+        MatrixNode<BanditAlgorithm> *matrix_node,
+        typename Types::ModelOutput &inference)
     {
         state.get_actions();
         matrix_node->row_actions = state.row_actions;
@@ -148,12 +150,12 @@ protected:
 
         if (matrix_node->is_terminal)
         {
-            matrix_node->inference.row_value = state.row_payoff;
-            matrix_node->inference.col_value = state.col_payoff;
+            inference.row_value = state.row_payoff;
+            inference.col_value = state.col_payoff;
         }
         else
         {
-            model.get_inference(state, matrix_node->inference);
+            model.get_inference(state, inference);
         }
     }
 
@@ -183,7 +185,8 @@ protected:
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<BanditAlgorithm> *matrix_node)
+        MatrixNode<BanditAlgorithm> *matrix_node,
+        typename Types::ModelOutput &inference)
     {
         if (!matrix_node->is_terminal)
         {
@@ -200,17 +203,17 @@ protected:
                 ChanceNode<BanditAlgorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode<BanditAlgorithm> *matrix_node_next = chance_node->access(state.obs);
 
-                MatrixNode<BanditAlgorithm> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next);
+                MatrixNode<BanditAlgorithm> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
 
-                outcome.row_value = matrix_node_leaf->inference.row_value;
-                outcome.col_value = matrix_node_leaf->inference.col_value;
+                outcome.row_value = inference.row_value;
+                outcome.col_value = inference.col_value;
                 _update_matrix_node(matrix_node, outcome);
                 _update_chance_node(chance_node, outcome);
                 return matrix_node_leaf;
             }
             else
             {
-                this->_expand(state, model, matrix_node);
+                this->_expand(state, model, matrix_node, inference);
                 return matrix_node;
             }
         }

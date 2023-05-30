@@ -40,7 +40,6 @@ public:
     typename Types::VectorAction row_actions;
     typename Types::VectorAction col_actions;
     typename Types::Observation obs;
-    typename Types::ModelOutput inference; // TODO remove this
     typename Types::MatrixStats stats;
 
     MatrixNode(){};
