@@ -3,3 +3,6 @@
 
 *.txt
 # benchmarks
+
+*.pyd
+# pybind11 module

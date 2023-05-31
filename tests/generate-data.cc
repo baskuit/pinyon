@@ -2,7 +2,6 @@
 #include <model/model.hh>
 #include <algorithm/tree-bandit/tree/multithreaded.hh>
 #include <algorithm/tree-bandit/bandit/exp3.hh>
-#include<algorithm/tree-bandit/bandit/matrix-ucb.hh>
 #include <algorithm/solver/full-traversal.hh>
 #include <algorithm/solver/alpha-beta.hh>
 
@@ -88,7 +87,7 @@ typename RowAlgorithm::Types::Real vs(
         col_data += col_game_data;
     }
 
-    return state_copy.row_payoff;
+    return state_copy.payoff.row_value;
 }
 
 void file_write(
@@ -143,7 +142,7 @@ void foo(
     using State = RandomTree;
     using Model = MonteCarloModel<State>;
     using Exp3 = Exp3<Model, TreeBandit>;
-    using MatrixUCB = MatrixUCB<Model, TreeBandit>;
+    using MatrixUCB = Exp3;
 
     prng device(initial_seed);
     Model model(device);
