@@ -2,6 +2,7 @@
 
 #include <types/types.hh>
 
+#include <concepts>
 #include <vector>
 
 template <class _Types>
@@ -13,25 +14,69 @@ public:
     };
 };
 
+template <class State>
+struct Value {
+    typename State::Types::Real row_value;
+    typename State::Types::Real col_value;
+    Value () {}
+    Value(typename State::Types::Real row_value, typename State::Types::Real col_value) : row_value{row_value}, col_value{col_value} {}
+    inline typename State::Types::Real get_row_value () {
+        return row_value;
+    }
+    inline typename State::Types::Real get_col_value () {
+        return col_value;
+    }
+    Value& operator+=(const Value& other) {
+        row_value += other.row_value;
+        col_value += other.col_value;
+        return *this;
+    }
+};
+
+template <class State>
+    requires State::IS_CONSTANT_SUM
+struct Value<State> {
+    typename State::Types::Real row_value;
+    Value () {}
+    Value(typename State::Types::Real row_value) : row_value{row_value} {}
+    Value(typename State::Types::Real row_value, typename State::Types::Real col_value) : row_value{row_value} {}
+    Value& operator=(const typename State::Types::Real value) {
+        row_value = value;
+        return *this;
+    }
+    inline typename State::Types::Real get_row_value () {
+        return row_value;
+    }
+    inline typename State::Types::Real get_col_value () {
+        return State::PAYOFF_SUM - row_value;
+    }
+    Value& operator+=(const Value& other) {
+        row_value += other.row_value;
+        return *this;
+    }
+};
+
 template <class _Types>
 class State : public AbstractState<_Types>
 {
 public:
+    static constexpr typename _Types::Real MIN_PAYOFF{0}, MAX_PAYOFF{1};
+    static constexpr typename _Types::Real PAYOFF_SUM{MIN_PAYOFF + MAX_PAYOFF};
+    static constexpr bool IS_CONSTANT_SUM = false;
+
     struct Types : AbstractState<_Types>::Types
     {
+        using Value = Value<State>;
     };
-
-    static constexpr typename Types::Real MIN_PAYOFF{0}, MAX_PAYOFF{1};
-    static constexpr typename Types::Real PAYOFF_SUM{MIN_PAYOFF + MAX_PAYOFF};
-    static constexpr bool IS_CONSTANT_SUM = false;
 
     State() {}
 
-    typename Types::VectorAction row_actions, col_actions;
-    typename Types::Observation obs;
-    typename Types::Probability prob;
-    typename Types::Real row_payoff, col_payoff;
     bool is_terminal{false};
+    typename Types::VectorAction row_actions{};
+    typename Types::VectorAction col_actions{};
+    typename Types::Value payoff{};
+    typename Types::Observation obs{};
+    typename Types::Probability prob{};
     typename Types::Seed seed{};
 
     void get_actions();

@@ -16,7 +16,7 @@ struct ChoicesOutcome
 {
     using Real = typename Model::Types::Real;
     ActionIndex row_idx, col_idx;
-    Real row_value, col_value;
+    typename Model::Types::Value value;
     Real row_mu, col_mu;
 };
 
@@ -29,7 +29,7 @@ struct PolicyOutcome
     using VectorReal = typename Model::Types::VectorReal;
 
     ActionIndex row_idx, col_idx;
-    Real row_value, col_value;
+    typename Model::Types::Value value;
     VectorReal row_policy, col_policy;
 };
 
@@ -150,8 +150,7 @@ protected:
 
         if (matrix_node->is_terminal)
         {
-            inference.row_value = state.row_payoff;
-            inference.col_value = state.col_payoff;
+            inference.value = state.payoff;
         }
         else
         {
@@ -205,8 +204,7 @@ protected:
 
                 MatrixNode<BanditAlgorithm> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
 
-                outcome.row_value = inference.row_value;
-                outcome.col_value = inference.col_value;
+                outcome.value = inference.value;
                 _update_matrix_node(matrix_node, outcome);
                 _update_chance_node(chance_node, outcome);
                 return matrix_node_leaf;

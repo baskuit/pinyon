@@ -37,8 +37,7 @@ public:
 
     struct ModelOutput
     {
-        typename Types::Real row_value;
-        typename Types::Real col_value;
+        typename Types::Value value;
         typename Types::VectorReal row_policy;
         typename Types::VectorReal col_policy;
     };
@@ -105,8 +104,7 @@ public:
         output.col_policy.fill(input.col_actions.size(), col_uniform);
 
         rollout(input);
-        output.row_value = input.row_payoff;
-        output.col_value = input.col_payoff;
+        output.value = input.payoff;
     }
 
     void get_inference(
