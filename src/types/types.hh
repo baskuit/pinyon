@@ -117,17 +117,17 @@ using SimpleTypes = Types<
 
 using BattleTypes = Types<
     Rational<int>,
-    double,
-    double,
+    float,
+    float,
     uint8_t,
-    std::array<uint8_t, 64>,
-    double,
+    std::array<uint8_t, 1>,
+    float,
     uint64_t,
     prng,
-    Vector<double>,
+    Vector<float>,
     Vector<int>,
     Vector<int>,
-    Matrix<double>,
-    Matrix<double>,
+    Matrix<float>,
+    Matrix<float>,
     Matrix<int>
 >;
