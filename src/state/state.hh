@@ -5,17 +5,16 @@
 #include <concepts>
 #include <vector>
 
-template <class _Types, class _Value>
+template <class _Types>
 class AbstractState
 {
 public:
     struct Types : _Types {
         using TypeList = _Types;
-        using Value = _Value;
     };
 };
 
-template <class _Types, class Value>
+template <class _Types>
 class State : public AbstractState<_Types>
 {
 public:
@@ -25,7 +24,6 @@ public:
 
     struct Types : AbstractState<_Types>::Types
     {
-        using Value = Value<typename Types::Real, IS_CONSTANT_SUM, PAYOFF_SUM>;
     };
 
     State() {}

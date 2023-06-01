@@ -2,11 +2,11 @@
 
 #include <libsurskit/gambit.hh>
 #include <libsurskit/math.hh>
-#include <types/random.hh>
-#include <types/random.hh>
-#include <libsurskit/vector.hh>
 #include <libsurskit/gmp.hh>
 
+#include <types/random.hh>
+#include <types/random.hh>
+#include <types/vector.hh>
 
 #include <state/state.hh>
 #include <state/test-states.hh>

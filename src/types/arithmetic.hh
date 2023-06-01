@@ -1,3 +1,5 @@
+#include <types/rational.hh>
+
 template <typename T>
 struct ArithmeticType
 {

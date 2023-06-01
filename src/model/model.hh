@@ -26,9 +26,6 @@ class DoubleOracleModel : public AbstractModel<_State>
 
 public:
     struct ModelOutput;
-    struct ModelBatchOutput;
-    struct ModelInput;
-    struct ModelBatchInput;
 
     struct Types : AbstractModel<_State>::Types
     {
@@ -38,25 +35,9 @@ public:
     struct ModelOutput
     {
         typename Types::Value value;
-        typename Types::VectorReal row_policy;
-        typename Types::VectorReal col_policy;
+        typename Types::Strategy row_policy;
+        typename Types::Strategy col_policy;
     };
-
-    // virtual void get_input(
-    //     const typename Types::State &state,
-    //     ModelInput &input) = 0;
-
-    // virtual void get_batch_input(
-    //     const std::vector<typename Types::State> &states,
-    //     ModelBatchInput &inputs) = 0;
-
-    // virtual void get_inference(
-    //     ModelInput &input,
-    //     ModelOutput &output) = 0;
-
-    // virtual void get_inference(
-    //     ModelBatchInput &inputs,
-    //     ModelBatchOutput &outputs) = 0;
 };
 
 /*
@@ -66,7 +47,6 @@ Universal model.
 template <class _State>
 class MonteCarloModel : public DoubleOracleModel<_State>
 {
-    // static_assert(std::derived_from<_State, _State<typename State::Types::TypeList>>);
 
 public:
     struct Types : DoubleOracleModel<_State>::Types
@@ -111,9 +91,7 @@ public:
         typename Types::ModelBatchInput &inputs,
         typename Types::ModelBatchOutput &outputs)
     {
-        for (auto &input : inputs) {
-
-        }
+        // TODO use transform
     }
 
 protected:

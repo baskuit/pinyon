@@ -27,54 +27,55 @@ struct Rational
     }
 
 public:
-    Rational() {}
 
-    Rational(T p) : p(p), q(1) {}
+    constexpr Rational() {}
 
-    Rational(T p, T q) : p(p), q(q) {}
+    constexpr Rational(T p) : p(p), q(1) {}
 
-    Rational operator+(Rational y)
+    constexpr Rational(T p, T q) : p(p), q(q) {}
+
+    constexpr Rational operator+(Rational y)
     {
         Rational z = {p * y.q + y.p * q, q * y.q};
         z.reduce();
         return z;
     }
 
-    Rational operator*(Rational y)
+    constexpr Rational operator*(Rational y)
     {
         Rational z = {p * y.p, q * y.q};
         z.reduce();
         return z;
     }
 
-    Rational operator/(Rational y)
+    constexpr Rational operator/(Rational y)
     {
         Rational z = {p * y.q, q * y.p};
         z.reduce();
         return z;
     }
 
-    bool operator<(Rational y)
+    constexpr bool operator<(Rational y)
     {
         return p * y.q < y.p * q;
     }
 
-    bool operator<=(Rational y)
+    constexpr bool operator<=(Rational y)
     {
         return p * y.q <= y.p * q;
     }
 
-    bool operator>(Rational y)
+    constexpr bool operator>(Rational y)
     {
         return p * y.q > y.p * q;
     }
 
-    bool operator>=(Rational y)
+    constexpr bool operator>=(Rational y)
     {
         return p * y.q >= y.p * q;
     }
 
-    Rational &operator+=(Rational y)
+    constexpr Rational &operator+=(Rational y)
     {
         p = p * y.q + y.p * q;
         q = p * y.q;
@@ -88,12 +89,12 @@ public:
         return os;
     }
 
-    operator float()
+    constexpr operator float() const
     {
         return p / (float)q;
     }
 
-    operator double()
+    constexpr operator double() const 
     {
         return p / (double)q;
     }

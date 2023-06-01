@@ -2,7 +2,7 @@
 
 template <typename Real, bool IS_CONSTANT_SUM, int PAYOFF_SUM_NUM=1, int PAYOFF_SUM_DEN=1>
 struct Value {
-    static constexpr Rational<int> PAYOFF_SUM = Rational<int>(PAYOFF_SUM_NUM, PAYOFF_SUM_DEN);
+    static constexpr Real PAYOFF_SUM{Rational{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN}};
     Real row_value;
     Real col_value;
     Value () {}
@@ -22,7 +22,7 @@ struct Value {
 
 template <typename Real, int PAYOFF_SUM_NUM, int PAYOFF_SUM_DEN>
 struct Value<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN> {
-    static constexpr Rational<int> PAYOFF_SUM = Rational<int>(PAYOFF_SUM_NUM, PAYOFF_SUM_DEN);
+    static constexpr Real PAYOFF_SUM{Rational{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN}};
     Real row_value;
     Value () {}
     Value(Real row_value, Real col_value) : row_value{row_value} {}

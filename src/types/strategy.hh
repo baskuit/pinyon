@@ -8,6 +8,7 @@ Simplest is just encode as 1/256 fractions, and omit the last action, since its 
 
 */
 
+#include <stdint.h>
 #include <limits>
 
 template <typename Int = uint8_t>

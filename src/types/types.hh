@@ -1,10 +1,12 @@
 #pragma once
 
-#include <types/random.hh>
-#include <libsurskit/vector.hh>
-#include <types/random.hh>
 #include <libsurskit/math.hh>
+#include <types/random.hh>
+#include <types/vector.hh>
+#include <types/matrix.hh>
+#include <types/random.hh>
 #include <types/arithmetic.hh>
+#include <types/value.hh>
 
 #include <vector>
 
@@ -19,6 +21,7 @@ template <
     typename _Rational,
     typename _Real,
     typename _Float,
+
     typename _Action,
     typename _Observation,
     typename _Probability,
@@ -74,19 +77,25 @@ struct Types {
     using Rational = _Rational;
     using Real = _Real;
     using Float = _Float;
+
+    using Value = Value<Real, true, 0, 1>; 
     using Action = _Action;
     using Observation = _Observation;
     using Probability = _Probability;
+
     using Seed = _Seed;
     using PRNG = _PRNG;
+
     using VectorReal = _VectorReal;
     using VectorAction = _VectorAction;
     using VectorInt = _VectorInt;
+
     using MatrixReal = _MatrixReal;
     using MatrixFloat = _MatrixFloat;
     using MatrixInt = _MatrixInt;
-    using Value = 
-    using MatrixValue = Matrix<Value>
+    using MatrixValue = Matrix<Value>;
+
+    using Strategy = VectorReal;
 };
 
 using SimpleTypes = Types<
@@ -101,8 +110,8 @@ using SimpleTypes = Types<
     Vector<double>,
     Vector<int>,
     Vector<int>,
-    Linear::Matrix<double>,
-    Linear::Matrix<double>,
-    Linear::Matrix<int>
+    Matrix<double>,
+    Matrix<double>,
+    Matrix<int>
 >;
     

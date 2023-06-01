@@ -40,7 +40,7 @@ public:
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [](T a)
+                       [t](T a)
                        { return a * t; });
         return output;
     }
@@ -49,7 +49,7 @@ public:
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [](T a)
+                       [t](T a)
                        { return a + t; });
         return output;
     }
