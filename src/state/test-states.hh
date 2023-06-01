@@ -14,7 +14,7 @@ public:
     {
     };
 
-    static constexpr bool IS_CONSTANT_SUM = true;
+    static constexpr bool IS_CONSTANT_SUM = false;
     
     size_t max_depth = 1;
 
@@ -28,7 +28,7 @@ public:
             this->row_actions[i] = i;
             this->col_actions[i] = i;
         }
-        this->prob = 1.0;
+        this->prob = typename Types::Probability{1};
         this->obs = 0;
     }
 

@@ -2,8 +2,8 @@
 
 #include <libsurskit/gambit.hh>
 #include <libsurskit/math.hh>
-#include <libsurskit/random.hh>
-#include <libsurskit/rational.hh>
+#include <types/random.hh>
+#include <types/random.hh>
 #include <libsurskit/vector.hh>
 #include <libsurskit/gmp.hh>
 

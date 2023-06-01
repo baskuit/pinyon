@@ -10,7 +10,7 @@ Simplest is just encode as 1/256 fractions, and omit the last action, since its 
 
 #include <limits>
 
-template <typename Int>
+template <typename Int = uint8_t>
 struct Strategy : public std::vector<Int> {
 
     static constexpr size_ = std::numeric_limits<int>::max();

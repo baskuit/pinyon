@@ -6,8 +6,8 @@
 #include <vector>
 #include <chrono>
 
-#include <libsurskit/random.hh>
-#include <libsurskit/rational.hh>
+#include <types/random.hh>
+#include <types/random.hh>
 #include <libsurskit/vector.hh>
 
 using ActionIndex = int;
@@ -69,140 +69,35 @@ namespace math
     }
 }
 
-namespace Linear
-{
-    template <typename T>
-    class Matrix : public std::vector<T>
-    {
-    public:
-        int rows, cols;
-
-        Matrix(){};
-        Matrix(int rows, int cols) : std::vector<T>(rows * cols), rows(rows), cols(cols)
-        {
-        }
-
-        void fill(int rows, int cols)
-        {
-            this->rows = rows;
-            this->cols = cols;
-            this->resize(rows * cols);
-        }
-
-        void fill(int rows, int cols, T value)
-        {
-            this->rows = rows;
-            this->cols = cols;
-            const int n = rows * cols;
-            this->resize(n);
-            std::fill(this->begin(), this->begin() + n, value);
-        }
-
-        T &get(int i, int j)
-        {
-            return (*this)[i * cols + j];
-        }
-
-        Matrix operator*(T t)
-        {
-            const Matrix &M = *this;
-            Matrix output(M.rows, M.cols);
-            for (int i = 0; i < rows * cols; ++i)
-            {
-                output[i] = M[i] * t;
-            }
-            return output;
-        }
-        Matrix operator+(T t)
-        {
-            const Matrix &M = *this;
-            Matrix output(M.rows, M.cols);
-            for (int i = 0; i < rows * cols; ++i)
-            {
-                output[i] = M[i] + t;
-            }
-            return output;
-        }
-
-        Matrix operator+(const Matrix &t) const
-        {
-            assert(t.rows == rows && t.cols == cols);
-            const Matrix &M = *this;
-            Matrix output(M.rows, M.cols);
-            const size_t size = rows * cols;
-            std::transform(this->begin(), this->begin() + size, t.begin(), output.begin(),
-                        [](double a, double b) { return a + b; }); // Perform element-wise addition
-            return output;
-        }
-
-        void print()
-        {
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    std::cout << get(i, j) << ", ";
-                }
-                std::cout << std::endl;
-            }
-        }
-
-        T max()
-        {
-            const int entries = rows * cols;
-            return *std::max_element(this->begin(), this->begin() + entries);
-        }
-
-        T min()
-        {
-            const int entries = rows * cols;
-            return *std::min_element(this->begin(), this->begin() + entries);
-        }
-    };
-
     template <class Types>
     typename Types::Real exploitability(
-        typename Types::MatrixReal &row_payoff_matrix,
-        typename Types::MatrixReal &col_payoff_matrix,
+        typename Types::MatrixValue &value_matrix,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
-        const int rows = row_payoff_matrix.rows;
-        const int cols = row_payoff_matrix.cols;
+        const int rows = value_matrix.rows;
+        const int cols = value_matrix.cols;
 
-        typename Types::Real row_payoff{0}, col_payoff{0};
-        typename Types::VectorReal row_response, col_response;
-        row_response.fill(rows, 0);
-        col_response.fill(cols, 0);
+        typename Types::Real row_payoff{Rational(0)}, col_payoff{Rational(0)}; // TODO rationals?
+        typename Types::VectorReal row_response(rows), col_response(cols);
+        size_t data_idx = 0;
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
             {
-                const size_t data_idx = row_idx * cols + col_idx;
-                const typename Types::Real u{row_payoff_matrix[data_idx] * col_strategy[col_idx]};
-                const typename Types::Real v{col_payoff_matrix[data_idx] * row_strategy[row_idx]};
+                const auto value = value_matrix[data_idx];
+                const typename Types::Real u{value.row_value * col_strategy[col_idx]};
+                const typename Types::Real v{value.col_value * row_strategy[row_idx]};
                 row_payoff += u * row_strategy[row_idx];
                 col_payoff += v * col_strategy[col_idx];
                 row_response[row_idx] += u;
                 col_response[col_idx] += v;
+                ++data_idx;
             }
         }
 
         typename Types::Real row_best_response {*std::max_element(row_response.begin(), row_response.end())};
         typename Types::Real col_best_response {*std::max_element(col_response.begin(), col_response.end())};
 
-        return static_cast<typename Types::Real>((row_best_response - row_payoff) + (col_best_response - col_payoff));
+        return (row_best_response - row_payoff) + (col_best_response - col_payoff);
     }
-}
-
-// template <typename Func>
-// auto timeExecution(Func&& func) -> decltype(func()) {
-//     auto start = std::chrono::steady_clock::now();
-//     auto result = std::forward<Func>(func)();
-//     auto end = std::chrono::steady_clock::now();
-
-//     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-//     // std::cout << "Execution time: " << duration.count() << " microseconds" << std::endl;
-
-//     return result;
-// }

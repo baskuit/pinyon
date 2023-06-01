@@ -1,8 +1,8 @@
 #pragma once
 
-#include <libsurskit/rational.hh>
+#include <types/random.hh>
 #include <libsurskit/vector.hh>
-#include <libsurskit/random.hh>
+#include <types/random.hh>
 #include <libsurskit/math.hh>
 #include <types/arithmetic.hh>
 
@@ -85,6 +85,8 @@ struct Types {
     using MatrixReal = _MatrixReal;
     using MatrixFloat = _MatrixFloat;
     using MatrixInt = _MatrixInt;
+    using Value = 
+    using MatrixValue = Matrix<Value>
 };
 
 using SimpleTypes = Types<

@@ -5,58 +5,17 @@
 #include <concepts>
 #include <vector>
 
-template <class _Types>
+template <class _Types, class _Value>
 class AbstractState
 {
 public:
     struct Types : _Types {
         using TypeList = _Types;
+        using Value = _Value;
     };
 };
 
-template <class State>
-struct Value {
-    typename State::Types::Real row_value;
-    typename State::Types::Real col_value;
-    Value () {}
-    Value(typename State::Types::Real row_value, typename State::Types::Real col_value) : row_value{row_value}, col_value{col_value} {}
-    inline typename State::Types::Real get_row_value () {
-        return row_value;
-    }
-    inline typename State::Types::Real get_col_value () {
-        return col_value;
-    }
-    Value& operator+=(const Value& other) {
-        row_value += other.row_value;
-        col_value += other.col_value;
-        return *this;
-    }
-};
-
-template <class State>
-    requires State::IS_CONSTANT_SUM
-struct Value<State> {
-    typename State::Types::Real row_value;
-    Value () {}
-    Value(typename State::Types::Real row_value) : row_value{row_value} {}
-    Value(typename State::Types::Real row_value, typename State::Types::Real col_value) : row_value{row_value} {}
-    Value& operator=(const typename State::Types::Real value) {
-        row_value = value;
-        return *this;
-    }
-    inline typename State::Types::Real get_row_value () {
-        return row_value;
-    }
-    inline typename State::Types::Real get_col_value () {
-        return State::PAYOFF_SUM - row_value;
-    }
-    Value& operator+=(const Value& other) {
-        row_value += other.row_value;
-        return *this;
-    }
-};
-
-template <class _Types>
+template <class _Types, class Value>
 class State : public AbstractState<_Types>
 {
 public:
@@ -66,7 +25,7 @@ public:
 
     struct Types : AbstractState<_Types>::Types
     {
-        using Value = Value<State>;
+        using Value = Value<typename Types::Real, IS_CONSTANT_SUM, PAYOFF_SUM>;
     };
 
     State() {}

@@ -2,7 +2,7 @@
 
 #include <types/types.hh>
 #include <state/state.hh>
-#include <libsurskit/random.hh>
+#include <types/random.hh>
 
 #include <vector>
 
