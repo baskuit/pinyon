@@ -1,6 +1,6 @@
 #pragma once
 
-#include <libsurskit/gambit.hh>
+// #include <libsurskit/gambit.hh>
 #include <libsurskit/math.hh>
 #include <libsurskit/gmp.hh>
 
@@ -21,8 +21,8 @@
 
 #include <algorithm/tree-bandit/bandit/exp3.hh>
 
-#include <algorithm/solver/full-traversal.hh>
-#include <algorithm/solver/alpha-beta.hh>
+// #include <algorithm/solver/full-traversal.hh>
+// #include <algorithm/solver/alpha-beta.hh>
 
 
 #include <tree/tree.hh>

@@ -22,7 +22,5 @@ int main () {
     const size_t iterations = 1000000;
     session.run(iterations, device, state, model, root);
 
-    std::cout << root.count_matrix_nodes() << std::endl;
-
     return 0;
 }
