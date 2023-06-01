@@ -18,10 +18,6 @@ template <class _Types>
 class State : public AbstractState<_Types>
 {
 public:
-    static constexpr typename _Types::Real MIN_PAYOFF{0}, MAX_PAYOFF{1};
-    static constexpr typename _Types::Real PAYOFF_SUM{MIN_PAYOFF + MAX_PAYOFF};
-    static constexpr bool IS_CONSTANT_SUM = false;
-
     struct Types : AbstractState<_Types>::Types
     {
     };

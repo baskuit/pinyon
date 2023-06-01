@@ -1,5 +1,11 @@
 #pragma once
 
+/*
+
+Exp3 is faster rn without assuming constant sum because then it saves the col_value, instead of recomputing each node lol
+
+*/
+
 template <typename Real, bool IS_CONSTANT_SUM, int PAYOFF_SUM_NUM=1, int PAYOFF_SUM_DEN=1>
 struct Value {
     static constexpr Real PAYOFF_SUM{Rational{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN}};

@@ -16,9 +16,7 @@ public:
     struct Types : ChanceState<SimpleTypes>::Types
     {
     };
-
-    static constexpr bool IS_CONSTANT_SUM = true;
-
+    
     typename Types::PRNG device;
     int depth_bound = 0;
     size_t rows = 0;

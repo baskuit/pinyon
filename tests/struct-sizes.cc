@@ -14,7 +14,7 @@ struct SmallTypes {
     struct ModelOutput {
         float x, y; std::vector<float> a, b;
     };
-    using Observation = struct A {};
+    using Observation = uint8_t[1];
     using Probability = float;
 };
 
@@ -26,14 +26,17 @@ struct CurrentTypes {
     struct ModelOutput {
         double x, y; std::vector<double> a, b;
     };
-    using Observation = struct A {};
+    using Observation = uint8_t[1];
     using Probability = double;
 };
 
 template <class _Types>
 class EmptyAlgorithm {
 public:
-    struct MatrixStats {};
+    struct MatrixStats {
+        std::vector<float> row_gains, col_gains;
+        std::vector<uint32_t> row_visits, col_visits;
+    };
     struct ChanceStats {};
 
     struct Types : _Types {
@@ -42,29 +45,27 @@ public:
     };
 };
 
-// template <typename Algorithm>
-// class MatrixNodeSmaller : public AbstractNode<Algorithm>
-// {
-// public:
-//     struct Types : AbstractNode<Algorithm>::Types
-//     {
-//     };
+template <typename Algorithm>
+class MatrixNodeSmaller : public AbstractNode<Algorithm>
+{
+public:
+    struct Types : AbstractNode<Algorithm>::Types
+    {
+    };
 
-//     ChanceNode<Algorithm> *parent = nullptr;
-//     ChanceNode<Algorithm> *child = nullptr;
-//     MatrixNode<Algorithm> *prev = nullptr;
-//     MatrixNode<Algorithm> *next = nullptr;
+    ChanceNode<Algorithm> *child = nullptr;
+    MatrixNode<Algorithm> *next = nullptr;
 
-//     bool is_terminal = false;
-//     bool is_expanded = false;
+    uint8_t is_terminal = false;
+    // bool is_expanded = false;
 
-//     typename Types::VectorAction row_actions;
-//     typename Types::VectorAction col_actions;
-//     typename Types::Observation obs;
-//     typename Types::Probability prob;
-//     typename Types::ModelOutput inference;
-//     typename Types::MatrixStats stats;
-// }
+    typename Types::VectorAction row_actions;
+    // typename Types::VectorAction col_actions;
+    // typename Types::Observation obs;
+    // typename Types::Probability prob;
+    // typename Types::ModelOutput inference;
+    typename Types::MatrixStats stats;
+};
 
 
 int main () {
@@ -73,6 +74,7 @@ int main () {
 
     std::cout << "Small: " << sizeof(MatrixNode<EmptyAlgorithm<SmallTypes>>) / bytes_per_block << "" << std::endl;
     std::cout << "Current: " << sizeof(MatrixNode<EmptyAlgorithm<CurrentTypes>>) / bytes_per_block << std::endl;
+    std::cout << "Smallest: " << sizeof(MatrixNodeSmaller<EmptyAlgorithm<SmallTypes>>) / bytes_per_block << "" << std::endl;
 
     const Eigen::MatrixXd matrix = Eigen::MatrixXd::Random(3, 3);
     const Matrix<double> libmatrix(3, 3);

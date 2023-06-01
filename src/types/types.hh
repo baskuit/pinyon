@@ -78,7 +78,7 @@ struct Types {
     using Real = _Real;
     using Float = _Float;
 
-    using Value = Value<Real, true, 0, 1>; 
+    using Value = Value<Real, false, 0, 1>; 
     using Action = _Action;
     using Observation = _Observation;
     using Probability = _Probability;
@@ -114,4 +114,20 @@ using SimpleTypes = Types<
     Matrix<double>,
     Matrix<int>
 >;
-    
+
+using BattleTypes = Types<
+    Rational<int>,
+    double,
+    double,
+    uint8_t,
+    std::array<uint8_t, 64>,
+    double,
+    uint64_t,
+    prng,
+    Vector<double>,
+    Vector<int>,
+    Vector<int>,
+    Matrix<double>,
+    Matrix<double>,
+    Matrix<int>
+>;
