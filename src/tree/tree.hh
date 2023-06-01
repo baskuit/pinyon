@@ -29,31 +29,33 @@ public:
     {
     };
 
-    ChanceNode<Algorithm> *parent = nullptr;
+    // ChanceNode<Algorithm> *parent = nullptr;
     ChanceNode<Algorithm> *child = nullptr;
-    MatrixNode<Algorithm> *prev = nullptr;
-    MatrixNode<Algorithm> *next = nullptr;
+    // MatrixNode<Algorithm> *prev = nullptr;
+    // MatrixNode<Algorithm> *next = nullptr;
 
     bool is_terminal = false;
     bool is_expanded = false;
 
     typename Types::VectorAction row_actions;
     typename Types::VectorAction col_actions;
-    typename Types::Observation obs;
+    // typename Types::Observation obs;
     typename Types::MatrixStats stats;
 
     MatrixNode(){};
-    MatrixNode(
-        ChanceNode<Algorithm> *parent,
-        MatrixNode<Algorithm> *prev,
-        typename Types::Observation obs) : parent(parent), prev(prev), obs(obs) {}
+    // MatrixNode(
+        // typename Types::Observation obs) : obs(obs) {}
+    // MatrixNode(
+    //     ChanceNode<Algorithm> *parent,
+    //     MatrixNode<Algorithm> *prev,
+    //     typename Types::Observation obs) : parent(parent), prev(prev), obs(obs) {}
     ~MatrixNode();
 
     ChanceNode<Algorithm> *access(ActionIndex row_idx, int col_idx)
     {
         if (this->child == nullptr)
         {
-            this->child = new ChanceNode<Algorithm>(this, nullptr, row_idx, col_idx);
+            this->child = new ChanceNode<Algorithm>(row_idx, col_idx);
             return this->child;
         }
         ChanceNode<Algorithm> *current = this->child;
@@ -67,7 +69,7 @@ public:
             }
             current = current->next;
         }
-        ChanceNode<Algorithm> *child = new ChanceNode<Algorithm>(this, previous, row_idx, col_idx);
+        ChanceNode<Algorithm> *child = new ChanceNode<Algorithm>(row_idx, col_idx);
         previous->next = child;
         return child;
     };
@@ -100,30 +102,30 @@ public:
         return c;
     }
 
-    size_t count_matrix_nodes()
-    {
-        size_t c = 1;
-        ChanceNode<Algorithm> *current = this->child;
-        while (current != nullptr)
-        {
-            c += current->count_matrix_nodes();
-            current = current->next;
-        }
-        return c;
-    }
+    // size_t count_matrix_nodes()
+    // {
+    //     size_t c = 1;
+    //     ChanceNode<Algorithm> *current = this->child;
+    //     while (current != nullptr)
+    //     {
+    //         c += current->count_matrix_nodes();
+    //         current = current->next;
+    //     }
+    //     return c;
+    // }
 
-    void spot_delete()
-    {
-        if (this->prev != nullptr)
-        {
-            this->prev->next = this->next;
-        }
-        else if (this->parent != nullptr)
-        {
-            this->parent->child = this->next;
-        }
-        delete this;
-    }
+    // void spot_delete()
+    // {
+    //     if (this->prev != nullptr)
+    //     {
+    //         this->prev->next = this->next;
+    //     }
+    //     else if (this->parent != nullptr)
+    //     {
+    //         this->parent->child = this->next;
+    //     }
+    //     delete this;
+    // }
 };
 
 // Chance Node
@@ -135,10 +137,27 @@ public:
     {
     };
 
-    MatrixNode<Algorithm> *parent = nullptr;
-    MatrixNode<Algorithm> *child = nullptr;
-    ChanceNode<Algorithm> *prev = nullptr;
+    struct L {
+
+        MatrixNode<Algorithm>* matrix_node = nullptr;
+        typename Types::Observation obs;
+        L* next = nullptr;
+        L () {}
+        L (
+            MatrixNode<Algorithm>* matrix_node,
+            typename Types::Observation obs
+        ) : matrix_node(matrix_node), obs(obs) {}
+        ~L () {
+            delete matrix_node;
+            delete next;
+        }
+    };
+
+    // MatrixNode<Algorithm> *parent = nullptr;
+    // MatrixNode<Algorithm> *child = nullptr;
+    // ChanceNode<Algorithm> *prev = nullptr;
     ChanceNode<Algorithm> *next = nullptr;
+    L l;
 
     ActionIndex row_idx;
     ActionIndex col_idx;
@@ -147,78 +166,83 @@ public:
 
     ChanceNode () {}
     ChanceNode(
-        MatrixNode<Algorithm> *parent,
-        ChanceNode<Algorithm> *prev,
         ActionIndex row_idx,
-        ActionIndex col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
+        ActionIndex col_idx) : row_idx(row_idx), col_idx(col_idx) {}
+    // ChanceNode(
+    //     MatrixNode<Algorithm> *parent,
+    //     ChanceNode<Algorithm> *prev,
+    //     ActionIndex row_idx,
+    //     ActionIndex col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
     ~ChanceNode();
 
     MatrixNode<Algorithm> *access(typename Types::Observation &obs) // TODO check speed on pass-by
     {
-        if (this->child == nullptr)
+        if (l.matrix_node == nullptr)
         {
-            MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, nullptr, obs);
-            this->child = child;
+            MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>();
+            l.matrix_node = child;
+            l.obs = obs;
             return child;
         }
-        MatrixNode<Algorithm> *current = this->child;
-        MatrixNode<Algorithm> *previous = this->child;
+        L *current = &l;
+        L *previous = &l;
         while (current != nullptr)
         {
             previous = current;
             if (current->obs == obs)
             {
-                return current;
+                return current->matrix_node;
             }
             current = current->next;
         }
-        MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, previous, obs);
-        previous->next = child;
+        MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>();
+        L* child_wrapper = new L(child, obs);
+        previous->next = child_wrapper;
         return child;
     };
 
-    size_t count_matrix_nodes()
-    {
-        size_t c = 0;
-        MatrixNode<Algorithm> *current = this->child;
-        while (current != nullptr)
-        {
-            c += current->count_matrix_nodes();
-            current = current->next;
-        }
-        return c;
-    }
+    // size_t count_matrix_nodes()
+    // {
+    //     size_t c = 0;
+    //     MatrixNode<Algorithm> *current = this->l.matrix_node;
+    //     while (current != nullptr)
+    //     {
+    //         c += current->count_matrix_nodes();
+    //         current = current->next;
+    //     }
+    //     return c;
+    // }
 
-    size_t count_siblings()
-    {
-        size_t c = 1;
-        ChanceNode<Algorithm> *current = this->next;
-        while (current != nullptr)
-        {
-            ++c;
-            current = current->next;
-        }
-        current = this->prev;
-        while (current != nullptr)
-        {
-            ++c;
-            current = current->prev;
-        }
-        return c;
-    }
+    // size_t count_siblings()
+    // {
+    //     size_t c = 1;
+    //     ChanceNode<Algorithm> *current = this->next;
+    //     while (current != nullptr)
+    //     {
+    //         ++c;
+    //         current = current->next;
+    //     }
+    //     current = this->prev;
+    //     while (current != nullptr)
+    //     {
+    //         ++c;
+    //         current = current->prev;
+    //     }
+    //     return c;
+    // }
 
-    void spot_delete()
-    {
-        if (this->prev != nullptr)
-        {
-            this->prev->next = this->next;
-        }
-        else if (this->parent != nullptr)
-        {
-            this->parent->child = this->next;
-        }
-        delete this;
-    }
+    // void spot_delete()
+    // {
+    //     if (this->prev != nullptr)
+    //     {
+    //         this->prev->next = this->next;
+    //     }
+    //     else if (this->parent != nullptr)
+    //     {
+    //         this->parent->child = this->next;
+    //     }
+    //     delete this;
+    // }
 };
 
 // We have to hold off on destructor definitions until here
@@ -237,12 +261,7 @@ MatrixNode<Algorithm>::~MatrixNode()
 template <typename Algorithm>
 ChanceNode<Algorithm>::~ChanceNode()
 {
-    while (this->child != nullptr)
-    {
-        MatrixNode<Algorithm> *victim = this->child;
-        this->child = this->child->next;
-        delete victim;
-    }
+    // delete &l
 };
 
 template <class Algorithm>
