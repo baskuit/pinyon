@@ -78,7 +78,7 @@ struct Types {
     using Real = _Real;
     using Float = _Float;
 
-    using Value = Value<Real, false, 0, 1>; 
+    using Value = _Value<Real, false, 0, 1>; 
     using Action = _Action;
     using Observation = _Observation;
     using Probability = _Probability;
@@ -115,17 +115,36 @@ using SimpleTypes = Types<
     Matrix<int>
 >;
 
+// template <
+//     typename _Rational,
+//     typename _Real,
+//     typename _Float,
+
+//     typename _Action,
+//     typename _Observation,
+//     typename _Probability,
+//     typename _Seed,
+//     typename _PRNG,
+//     typename _VectorReal,
+//     typename _VectorAction,
+//     typename _VectorInt,
+//     typename _MatrixReal,
+//     typename _MatrixFloat,
+//     typename _MatrixInt
+// >
+
+template <size_t LogSize>
 using BattleTypes = Types<
     Rational<int>,
     float,
     float,
     uint8_t,
-    std::array<uint8_t, 1>,
+    std::array<uint8_t, LogSize>,
     float,
     uint64_t,
     prng,
     Vector<float>,
-    Vector<int>,
+    Array<uint8_t, 9>,
     Vector<int>,
     Matrix<float>,
     Matrix<float>,

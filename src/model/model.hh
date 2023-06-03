@@ -109,3 +109,48 @@ protected:
         }
     }
 };
+
+template <class _State>
+class EmptyModel : public DoubleOracleModel<_State>
+{
+
+public:
+    struct Types : DoubleOracleModel<_State>::Types
+    {
+        using ModelBatchOutput = std::vector<typename Types::ModelOutput>;
+        using ModelBatchInput = std::vector<_State>;
+        using ModelInput = _State;
+    };
+
+    typename Types::PRNG device;
+
+    EmptyModel(typename Types::PRNG &device) : device(device) {}
+
+    void get_input(
+        const typename Types::State &state,
+        typename Types::ModelInput &input)
+    {
+        input = state;
+    }
+
+    void get_batch_input(
+        const std::vector<typename Types::State> &states,
+        typename Types::ModelBatchInput &inputs)
+    {
+        inputs = states;
+    }
+
+    void get_inference(
+        typename Types::ModelInput &input,
+        typename Types::ModelOutput &output)
+    {
+        output.value = typename Types::Value{.5, .5};
+    }
+
+    void get_inference(
+        typename Types::ModelBatchInput &inputs,
+        typename Types::ModelBatchOutput &outputs)
+    {
+        // TODO use transform
+    }
+};

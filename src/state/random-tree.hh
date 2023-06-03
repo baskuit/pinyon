@@ -18,6 +18,7 @@ public:
     };
     
     typename Types::PRNG device;
+    typename Types::Seed seed{};
     int depth_bound = 0;
     size_t rows = 0;
     size_t cols = 0;
@@ -71,6 +72,10 @@ public:
           payoff_bias_func(payoff_bias_func)
     {
         get_chance_strategies();
+    }
+
+    void reseed (typename Types::Seed seed) {
+        this->seed = seed;
     }
 
     void get_actions()

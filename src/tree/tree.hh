@@ -102,17 +102,17 @@ public:
         return c;
     }
 
-    // size_t count_matrix_nodes()
-    // {
-    //     size_t c = 1;
-    //     ChanceNode<Algorithm> *current = this->child;
-    //     while (current != nullptr)
-    //     {
-    //         c += current->count_matrix_nodes();
-    //         current = current->next;
-    //     }
-    //     return c;
-    // }
+    size_t count_matrix_nodes()
+    {
+        size_t c = 1;
+        ChanceNode<Algorithm> *current = this->child;
+        while (current != nullptr)
+        {
+            c += current->count_matrix_nodes();
+            current = current->next;
+        }
+        return c;
+    }
 
     // void spot_delete()
     // {
@@ -201,17 +201,17 @@ public:
         return child;
     };
 
-    // size_t count_matrix_nodes()
-    // {
-    //     size_t c = 0;
-    //     MatrixNode<Algorithm> *current = this->l.matrix_node;
-    //     while (current != nullptr)
-    //     {
-    //         c += current->count_matrix_nodes();
-    //         current = current->next;
-    //     }
-    //     return c;
-    // }
+    size_t count_matrix_nodes()
+    {
+        size_t c = 0;
+        auto current = &(this->l);
+        while (current != nullptr)
+        {
+            c += current->matrix_node->count_matrix_nodes();
+            current = current->next;
+        }
+        return c;
+    }
 
     // size_t count_siblings()
     // {

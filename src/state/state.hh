@@ -30,15 +30,14 @@ public:
     typename Types::Value payoff{};
     typename Types::Observation obs{};
     typename Types::Probability prob{};
-    typename Types::Seed seed{};
-
+    
     void get_actions();
 
     void apply_actions(
         typename Types::Action row_action,
         typename Types::Action col_action);
 
-    void reseed(typename Types::PRNG &device){};
+    // void reseed(typename Types::PRNG &device){};
 
     void apply_action_indices(
         ActionIndex row_idx,

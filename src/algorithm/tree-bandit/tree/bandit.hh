@@ -54,7 +54,7 @@ public:
         for (int iteration = 0; iteration < iterations; ++iteration)
         {
             typename Types::State state_copy = state;
-            state_copy.seed = device.template new_seed<uint64_t>();
+            state_copy.reseed(device.template new_seed<uint64_t>());
             this->run_iteration(device, state_copy, model, &matrix_node, inference);
         }
     }

@@ -30,6 +30,10 @@ public:
         this->obs = 0;
     }
 
+    void reseed(typename Types::Seed)
+    {
+    }
+
     void get_actions()
     {
         this->is_terminal = (this->max_depth <= 0);
