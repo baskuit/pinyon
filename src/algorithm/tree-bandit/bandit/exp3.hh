@@ -25,8 +25,10 @@ public:
     };
     struct MatrixStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>::MatrixStats
     {
-        typename Types::VectorReal row_col_gains;
-        typename Types::VectorInt row_col_visits;
+        typename Types::VectorReal row_gains;
+        typename Types::VectorReal col_gains;
+        typename Types::VectorInt row_visits;
+        typename Types::VectorInt col_visits;
 
         int visits = 0;
         typename Types::Value value_total;
@@ -91,9 +93,10 @@ public:
         typename Types::Model &model,
         MatrixNode<Exp3> *matrix_node)
     {
-        const size_t rows_cols = state.row_actions.size() + state.col_actions.size();
-        matrix_node->stats.row_col_visits.fill(rows_cols, 0);
-        matrix_node->stats.row_col_gains.fill(rows_cols, 0);
+        matrix_node->stats.row_visits.fill(state.row_actions.size(), 0);
+        matrix_node->stats.col_visits.fill(state.col_actions.size(), 0);
+        matrix_node->stats.row_gains.fill(state.row_actions.size(), 0);
+        matrix_node->stats.col_gains.fill(state.col_actions.size(), 0);
     }
 
     void select(
@@ -115,8 +118,8 @@ public:
         }
         else
         {
-            const typename Types::Real eta {gamma / rows};
-            softmax(row_forecast.data(), matrix_node->stats.row_col_gains.data(), rows, eta);
+            const typename Types::Real eta {gamma / static_cast<double>(rows)};
+            softmax(row_forecast, matrix_node->stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
                 row_forecast[row_idx] = (1 - gamma) * row_forecast[row_idx] + eta;
@@ -128,8 +131,8 @@ public:
         }
         else
         {
-            const typename Types::Real eta {gamma / cols};
-            softmax(col_forecast.data(), matrix_node->stats.row_col_gains.data() + rows, cols, eta);
+            const typename Types::Real eta {gamma / static_cast<double>(cols)};
+            softmax(col_forecast, matrix_node->stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
                 col_forecast[col_idx] = (1 - gamma) * col_forecast[col_idx] + eta;
@@ -147,13 +150,12 @@ public:
         MatrixNode<Exp3> *matrix_node,
         typename Types::Outcome &outcome)
     {
-        const size_t rows = matrix_node->row_actions.size();
         matrix_node->stats.value_total += outcome.value;
         matrix_node->stats.visits += 1;
-        matrix_node->stats.row_col_visits[outcome.row_idx] += 1;
-        matrix_node->stats.row_col_visits[outcome.col_idx + rows] += 1;
-        matrix_node->stats.row_col_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu;
-        matrix_node->stats.row_col_gains[outcome.col_idx + rows] += outcome.value.get_col_value() / outcome.col_mu;
+        matrix_node->stats.row_visits[outcome.row_idx] += 1;
+        matrix_node->stats.col_visits[outcome.col_idx] += 1;
+        matrix_node->stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu;
+        matrix_node->stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu;
     }
 
     void update_chance_node(
@@ -167,8 +169,8 @@ public:
 
 private:
     inline void softmax(
-        typename Types::Real *forecast,
-        typename Types::Real *gains,
+        typename Types::VectorReal &forecast,
+        typename Types::VectorReal &gains,
         int k,
         typename Types::Real eta)
     {
