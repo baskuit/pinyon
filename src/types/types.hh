@@ -78,7 +78,7 @@ struct Types {
     using Real = _Real;
     using Float = _Float;
 
-    using Value = _Value<Real, false, 0, 1>; 
+    using Value = ValueStruct<Real, false, 0, 1>; 
     using Action = _Action;
     using Observation = _Observation;
     using Probability = _Probability;
