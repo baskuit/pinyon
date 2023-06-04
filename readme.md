@@ -1,29 +1,84 @@
-# Surskit
+# What is This
 
-Surskit is a highly generic implementation of search for 'stochastic matrix tree games' in C++.
+Surskit is a highly extensible and heavily abstracted library for applying/testing search and solving algorithms for perfect-info, simultaneous move, stochastic games.
 
-At minimum, the user can wrap their specific game as a `DefaultState` and the provided implementations of [SM-MCTS](https://arxiv.org/abs/1804.09045) and [MatrixUCB](https://arxiv.org/abs/2006.05145) will provide convergence guarantees. 
-A compiled libtorch model or heuristic evaluation may be substituted all the same by wrapping it as a `DoubleOracleModel`.
+## Intended Use
 
-If the user would like to create new algorithms, then they may be aided by the implementation pattern of Surskit that provides an inheritance framework for additional classes and a type management system that standardizes syntax. 
+This library is really attempt at reconciling two disparate realities
 
-A more detailed explanation of the implementation is [here](https://github.com/baskuit/surskit/blob/master/src/readme.md).
+* Pokemon is an incredibly popular intellectual property with 2 major competitve formats.
 
-## Installation
+* There are no agents that have been shown to be as strong as the best human players. In fact, most of the milestone developments of machine learning in other domains: (situational) tactical superiority, sound analysis, and computationally feasible search, have yet to be replicated here.
 
-    git clone --recurse-submodules https://github.com/baskuit/surskit
-    cd surskit
-    mkdir build
-    cd build
-    cmake ..
-    make
+# Scope
 
-Windows is currently not supported
+As there is scarce publicly available work, this library attempts to attack machine learning in pokemon incrementally. By far the most important consequence of this attitude is information.
 
-## Gambit
+## Imperfect Info
 
-**[Gambit](https://github.com/gambitproject/gambit)** is an open-source collection of tools for doing computation in game theory. 
-The fast computation of Nash Equilibrium strategies is necessary for the MatrixUCB algorithm.
+The species of pokemon on a team, and each pokemon's moves, item, ability, etc are not known at the start of a game in any popular format. The management of this info is essential to high level play.
 
-## Status
-The core features of Surskit, namely the single/multi-threaded bandit search, have been implemented. Documentation has been written to convey the motivation for design choices and how to use the program. Tests and benchmarks are the priority now.
+However my survey of methods in imperfect info games suggests that domain is significanltly more difficult and expensive to explore. Thus we make the following assumption that has natural justification
+
+## Perfect Info
+
+The hidden information of either player is only ever *revealed* during the course of a game, never renewed or augmented.
+
+This means that games are always approaching a condition of perfect information. In practice, it is somewhat fre
+
+## Simulator
+
+TODO we use engine because nothing else is fast enough. If a sim for any other format other than RBY were to come out, the library is designed to wrap it all the same. 
+
+This library is *format independent*
+
+This also extends to other aspects that are explained in deeper docs :ghost: :scream:
+
+# Example
+
+The following code snippet is the execution of monte-carlo style tree search using a C++ Pytorch model
+
+```cpp
+using Battle = PkmnRBY<SmallTypes>;
+using Model = Libtorch<Battle, Raw>;
+using Algo = Exp3<Model, BatchInference>;
+
+Battle battle(PkmnRBY::RandomTeams);
+Model model();
+typename Battle::Types::Seed seed = 42;
+prng device(seed);
+Algo session(device);
+
+const int playouts = 1000;
+session.run(playouts, battle, model);
+```
+
+
+and the following is the execution of simultaneous move AlphaBeta with depth=2.
+
+```
+TODO
+```
+
+This level of abstraction makes it straightforward for a user to implement a process like below:
+```
+TODO PSEUDO CODE
+```
+
+## For More Info
+
+The interface relies on a view of the search process via the following families of types:
+* Types
+* State
+* Model
+* Algorithm
+* Node
+
+The directory /src has its own readme regarding how these families relate to each other.
+Also each family has its own directory in /src with its own readme.
+
+The former doc is an overview while the latter will go more into implementation details. 
+
+# Contributing
+
+The best way to help is to use the library to test your own ideas. The interface is designed so that creating a custom search algorithm
