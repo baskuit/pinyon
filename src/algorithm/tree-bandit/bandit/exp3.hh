@@ -1,10 +1,6 @@
 #pragma once
 
-// #include "bandit.hh>
-
 #include <libsurskit/math.hh>
-
-#include <type_traits>
 
 /*
 Exp3
