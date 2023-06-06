@@ -91,7 +91,20 @@ public:
         typename Types::ModelBatchInput &inputs,
         typename Types::ModelBatchOutput &outputs)
     {
-        // TODO use transform
+        outputs.resize(inputs.size());
+        // add empty structs
+        for (int i = 0; i < inputs.size(); ++i) {
+            auto &input = inputs[i];
+            auto &output = outputs[i];
+            get_inference(input, output);
+        }
+    }
+
+    void add_to_batch_input (
+        typename Types::State &state,
+        typename Types::ModelBatchInput &input
+    ) {
+        input.push_back(state);
     }
 
 protected:

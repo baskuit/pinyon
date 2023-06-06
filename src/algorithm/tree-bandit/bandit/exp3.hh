@@ -1,7 +1,9 @@
 #pragma once
 
 #include <libsurskit/math.hh>
+
 #include <tree/tree.hh>
+#include <tree/tree-debug.hh>
 #include <tree/tree-obs.hh>
 
 /*
@@ -11,8 +13,8 @@ Exp3
 template <
     class Model,
     template <class _Model, class _BanditAlgorithm, class Outcome, template <class A> class MNode, template <class A> class CNode> class _TreeBandit = TreeBandit,
-    template <class Algo> class _MatrixNode = MatrixNodeL,
-    template <class Algo> class _ChanceNode = ChanceNodeL
+    template <class Algo> class _MatrixNode = MatrixNode,
+    template <class Algo> class _ChanceNode = ChanceNode
 >
 class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>, _MatrixNode, _ChanceNode>
 {
@@ -99,6 +101,47 @@ public:
         matrix_node->stats.col_gains.fill(state.col_actions.size(), 0);
     }
 
+    void get_policy(
+        _MatrixNode<Exp3> *matrix_node,
+        typename Types::VectorReal &row_policy,
+        typename Types::VectorReal &col_policy)
+    {
+        /*
+        Softmaxing of the gains to produce forecasts/strategies for the row and col players.
+        The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
+        */
+        const int rows = matrix_node->row_actions.size();
+        const int cols = matrix_node->col_actions.size();
+        row_policy.fill(rows);
+        col_policy.fill(cols);
+        if (rows == 1)
+        {
+            row_policy[0] = 1;
+        }
+        else
+        {
+            const typename Types::Real eta {gamma / static_cast<typename Types::Real>(rows)};
+            softmax(row_policy, matrix_node->stats.row_gains, rows, eta);
+            for (int row_idx = 0; row_idx < rows; ++row_idx)
+            {
+                row_policy[row_idx] = (1 - gamma) * row_policy[row_idx] + eta;
+            }
+        }
+        if (cols == 1)
+        {
+            col_policy[0] = 1;
+        }
+        else
+        {
+            const typename Types::Real eta {gamma / static_cast<typename Types::Real>(cols)};
+            softmax(col_policy, matrix_node->stats.col_gains, cols, eta);
+            for (int col_idx = 0; col_idx < cols; ++col_idx)
+            {
+                col_policy[col_idx] = (1 - gamma) * col_policy[col_idx] + eta;
+            }
+        }
+    }
+
     void select(
         typename Types::PRNG &device,
         _MatrixNode<Exp3> *matrix_node,
@@ -161,6 +204,26 @@ public:
     void update_chance_node(
         _ChanceNode<Exp3> *chance_node,
         typename Types::Outcome &outcome)
+    {
+    }
+
+    void update_matrix_node(
+        _MatrixNode<Exp3> *matrix_node,
+        typename Types::Outcome &outcome,
+        double learning_rate)
+    {
+        matrix_node->stats.value_total += outcome.value * learning_rate;
+        matrix_node->stats.visits += 1;
+        matrix_node->stats.row_visits[outcome.row_idx] += 1;
+        matrix_node->stats.col_visits[outcome.col_idx] += 1;
+        matrix_node->stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu * learning_rate;
+        matrix_node->stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu * learning_rate;
+    }
+
+    void update_chance_node(
+        _ChanceNode<Exp3> *chance_node,
+        typename Types::Outcome &outcome,
+        double learning_rate)
     {
     }
 
