@@ -1,25 +1,34 @@
 #pragma once
 
 #include <libsurskit/math.hh>
+#include <tree/tree.hh>
+#include <tree/tree-obs.hh>
 
 /*
 Exp3
 */
 
-template <class Model, template <class _Model, class _BanditAlgorithm, class Outcome> 
-    class _TreeBandit = TreeBandit, typename = void>
-class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>
+template <
+    class Model,
+    template <class _Model, class _BanditAlgorithm, class Outcome, template <class A> class MNode, template <class A> class CNode> class _TreeBandit = TreeBandit,
+    template <class Algo> class _MatrixNode = MatrixNodeL,
+    template <class Algo> class _ChanceNode = ChanceNodeL
+>
+class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>, _MatrixNode, _ChanceNode>
 {
 
 public:
     struct MatrixStats;
     struct ChanceStats;
-    struct Types : _TreeBandit<Model, Exp3<Model, _TreeBandit>,  ChoicesOutcome<Model>>::Types
+    struct Types : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>, _MatrixNode, _ChanceNode>::Types
     {
         using MatrixStats = Exp3::MatrixStats;
         using ChanceStats = Exp3::ChanceStats;
+        using MatrixNode = _MatrixNode<Exp3>;
+        using ChanceNode = _ChanceNode<Exp3>;
     };
-    struct MatrixStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>::MatrixStats
+
+    struct MatrixStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>, _MatrixNode, _ChanceNode>::MatrixStats
     {
         typename Types::VectorReal row_gains;
         typename Types::VectorReal col_gains;
@@ -31,13 +40,8 @@ public:
 
     };
 
-    struct ChanceStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>>::ChanceStats
+    struct ChanceStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>, _MatrixNode, _ChanceNode>::ChanceStats
     {
-        // int visits = 0;
-        // typename Types::Real row_value_total{0};
-        // typename Types::Real col_value_total{0};
-        // Without this information, we cannot determine value/visit matrix
-        // However we don't currently use that info anyway TODO
     };
 
     typename Types::Real gamma{.01};
@@ -53,7 +57,7 @@ public:
     }
 
     void get_empirical_strategies(
-        MatrixNode<Exp3> *matrix_node,
+        _MatrixNode<Exp3> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
@@ -66,7 +70,7 @@ public:
     }
 
     void get_empirical_values(
-        MatrixNode<Exp3> *matrix_node,
+        _MatrixNode<Exp3> *matrix_node,
         typename Types::Real &row_value,
         typename Types::Real &col_value)
     {
@@ -80,14 +84,14 @@ public:
         int iterations,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Exp3> *matrix_node)
+        _MatrixNode<Exp3> *matrix_node)
     {
     }
 
     void expand(
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Exp3> *matrix_node)
+        _MatrixNode<Exp3> *matrix_node)
     {
         matrix_node->stats.row_visits.fill(state.row_actions.size(), 0);
         matrix_node->stats.col_visits.fill(state.col_actions.size(), 0);
@@ -97,7 +101,7 @@ public:
 
     void select(
         typename Types::PRNG &device,
-        MatrixNode<Exp3> *matrix_node,
+        _MatrixNode<Exp3> *matrix_node,
         typename Types::Outcome &outcome)
     {
         /*
@@ -143,7 +147,7 @@ public:
     }
 
     void update_matrix_node(
-        MatrixNode<Exp3> *matrix_node,
+        _MatrixNode<Exp3> *matrix_node,
         typename Types::Outcome &outcome)
     {
         matrix_node->stats.value_total += outcome.value;
@@ -155,12 +159,9 @@ public:
     }
 
     void update_chance_node(
-        ChanceNode<Exp3> *chance_node,
+        _ChanceNode<Exp3> *chance_node,
         typename Types::Outcome &outcome)
     {
-        // chance_node->stats.row_value_total += outcome.row_value;
-        // chance_node->stats.col_value_total += outcome.col_value;
-        // chance_node->stats.visits += 1;
     }
 
 private:
@@ -201,5 +202,6 @@ private:
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy
     ) {
+        // TODO
     }
 };

@@ -1,16 +1,7 @@
 #pragma once
 
 #include <libsurskit/math.hh>
-
-template <class _Algorithm>
-class AbstractNode
-{
-public:
-    struct Types : _Algorithm::Types
-    {
-        using Algorithm = _Algorithm;
-    };
-};
+#include <tree/node.hh>
 
 template <typename Algorithm>
 class ChanceNode;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <types/types.hh>
-#include <tree/tree.hh>
+// #include <tree/tree.hh>
 #include <algorithm/algorithm.hh>
 
 #include <thread>
@@ -33,7 +33,8 @@ struct PolicyOutcome
     VectorReal row_policy, col_policy;
 };
 
-template <class Model, class BanditAlgorithm, class _Outcome>
+template <class Model, class BanditAlgorithm, class _Outcome, 
+    template <class Algo> class MatrixNode, template <class Algo> class ChanceNode>
 class TreeBandit : public AbstractAlgorithm<Model>
 {
 public:

@@ -16,7 +16,7 @@ int main () {
     RandomTree state(device, 10, 3, 3, 1, 0);
     MonteCarlo model(device);
     Exp3 session(.01);
-    MatrixNode<Exp3> root;
+    Exp3::Types::MatrixNode root;
     const size_t iterations = 1000000;
     session.run(iterations, device, state, model, root);
 
