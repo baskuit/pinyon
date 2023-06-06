@@ -2,8 +2,6 @@
 
 #include <libsurskit/math.hh>
 
-#include <concepts>
-
 template <class _Algorithm>
 class AbstractNode
 {
