@@ -6,36 +6,37 @@
 Minimal model for benchmarking purposes (Test speed of state and tree structure)
 */
 
-template <class Model, template <class _Model, class _BanditAlgorithm, class Outcome> 
-    class _TreeBandit = TreeBandit, typename = void>
-class Rand : public _TreeBandit<Model, Rand<Model, _TreeBandit>, ChoicesOutcome<Model>>
+template <
+    class Model, 
+    template <class _Model, class _BanditAlgorithm, template <class M> class Outcome, template <class A> class MNode, template <class A> class CNode> 
+        class _TreeBandit = TreeBandit,
+    template <class Algo> class _MatrixNode = MatrixNode,
+    template <class Algo> class _ChanceNode = ChanceNode
+>
+class Rand : public _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>
 {
 
 public:
     struct MatrixStats;
     struct ChanceStats;
-    struct Types : _TreeBandit<Model, Rand<Model, _TreeBandit>,  ChoicesOutcome<Model>>::Types
+    struct Types : _TreeBandit<Model, Rand<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>::Types
     {
         using MatrixStats = Rand::MatrixStats;
         using ChanceStats = Rand::ChanceStats;
     };
-    struct MatrixStats : _TreeBandit<Model, Rand<Model, _TreeBandit>, ChoicesOutcome<Model>>::MatrixStats
+    struct MatrixStats : _TreeBandit<Model, Rand<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>::MatrixStats
     {
     };
 
-    struct ChanceStats : _TreeBandit<Model, Rand<Model, _TreeBandit>, ChoicesOutcome<Model>>::ChanceStats
+    struct ChanceStats : _TreeBandit<Model, Rand<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>::ChanceStats
     {
     };
-
-    typename Types::Real gamma{.01};
 
     Rand() {}
 
-    Rand(typename Types::Real gamma) : gamma(gamma) {}
-
     friend std::ostream &operator<<(std::ostream &os, const Rand &session)
     {
-        os << "Rand; gamma: " << session.gamma;
+        os << "Rand";
         return os;
     }
 
