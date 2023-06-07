@@ -33,14 +33,14 @@ struct PolicyOutcome
     VectorReal row_policy, col_policy;
 };
 
-template <class Model, class BanditAlgorithm, class _Outcome, 
-    template <class Algo> class MatrixNode, template <class Algo> class ChanceNode>
+template <class Model, class BanditAlgorithm, 
+    template <class M> class _Outcome, template <class A> class MatrixNode, template <class A> class ChanceNode>
 class TreeBandit : public AbstractAlgorithm<Model>
 {
 public:
     struct Types : AbstractAlgorithm<Model>::Types
     {
-        using Outcome = _Outcome;
+        using Outcome = _Outcome<Model>;
     };
 
     void run(

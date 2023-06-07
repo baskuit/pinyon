@@ -11,18 +11,19 @@ Exp3
 */
 
 template <
-    class Model,
-    template <class _Model, class _BanditAlgorithm, class Outcome, template <class A> class MNode, template <class A> class CNode> class _TreeBandit = TreeBandit,
+    class Model, 
+    template <class _Model, class _BanditAlgorithm, template <class M> class Outcome, template <class A> class MNode, template <class A> class CNode> 
+        class _TreeBandit = TreeBandit,
     template <class Algo> class _MatrixNode = MatrixNode,
     template <class Algo> class _ChanceNode = ChanceNode
 >
-class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>, _MatrixNode, _ChanceNode>
+class Exp3 : public _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>
 {
 
 public:
     struct MatrixStats;
     struct ChanceStats;
-    struct Types : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>, _MatrixNode, _ChanceNode>::Types
+    struct Types : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>::Types
     {
         using MatrixStats = Exp3::MatrixStats;
         using ChanceStats = Exp3::ChanceStats;
@@ -30,7 +31,7 @@ public:
         using ChanceNode = _ChanceNode<Exp3>;
     };
 
-    struct MatrixStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>, _MatrixNode, _ChanceNode>::MatrixStats
+    struct MatrixStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>::MatrixStats
     {
         typename Types::VectorReal row_gains;
         typename Types::VectorReal col_gains;
@@ -42,7 +43,7 @@ public:
 
     };
 
-    struct ChanceStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome<Model>, _MatrixNode, _ChanceNode>::ChanceStats
+    struct ChanceStats : _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>::ChanceStats
     {
     };
 

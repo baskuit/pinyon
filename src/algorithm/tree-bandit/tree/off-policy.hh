@@ -19,16 +19,14 @@ TODO still no chance node updates (does any algo actually NEED this?)
 
 */
 
-// outcome struct where we only store the policy for the selected action (indices) for either player
-
-template <class Model, class BanditAlgorithm, class _Outcome, 
-    template <class Algo> class MatrixNode, template <class Algo> class ChanceNode>
+template <class Model, class BanditAlgorithm, 
+    template <class M> class _Outcome, template <class Algo> class MatrixNode, template <class Algo> class ChanceNode>
 class OffPolicy : public AbstractAlgorithm<Model>
 {
 public:
     struct Types : AbstractAlgorithm<Model>::Types
     {
-        using Outcome = _Outcome;
+        using Outcome = _Outcome<Model>;
     };
 
     struct Frame {
