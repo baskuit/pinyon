@@ -1,6 +1,6 @@
 #pragma once
 
-// #include <libsurskit/gambit.hh>
+#include <libsurskit/gambit.hh>
 #include <libsurskit/math.hh>
 #include <libsurskit/gmp.hh>
 
