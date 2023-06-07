@@ -117,8 +117,8 @@ public:
             typename Types::ModelOutput &out = output[index];
             for (Frame &frame : trajectory) {
                 auto matrix_node = frame.matrix_node;
-                auto outcome = frame.outcome;
-                frame.outcome.value = out.value;
+                auto &outcome = frame.outcome;
+                outcome.value = out.value;
 
                 typename Types::VectorReal row_policy;
                 typename Types::VectorReal col_policy;
