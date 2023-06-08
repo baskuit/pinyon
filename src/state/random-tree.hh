@@ -252,55 +252,65 @@ struct RandomTreeGenerator
     Product view = std::views::cartesian_product(depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trials);
 
     RandomTreeGenerator(
-        prng &device,
+        prng &d,
         std::vector<size_t> &depth_bound_vec,
         std::vector<size_t> &actions_vec,
         std::vector<size_t> &chance_action_vec,
         std::vector<double> &chance_threshold_vec,
-        size_t trials)
-        : device{device},
+        std::vector<size_t> &trials)
+        : device{d},
           depth_bound_vec{depth_bound_vec},
           actions_vec{actions_vec},
           chance_action_vec{chance_action_vec},
           chance_threshold_vec{chance_threshold_vec},
-          trials{std::vector<size_t>{trials}}
+          trials{trials}
     {
+        seed = device.uniform_64();
     }
 
-    class Iterator : public It {
-        public:
-        RandomTreeGenerator* ptr;
+    class Iterator : public It
+    {
+    public:
+        RandomTreeGenerator *ptr;
 
-        Iterator (const It& it, RandomTreeGenerator* ptr) : It{it}, ptr{ptr} {
-
+        Iterator(const It &it, RandomTreeGenerator *ptr) : It{it}, ptr{ptr}
+        {
         }
 
-        Iterator& operator++() {
+        Iterator &operator++()
+        {
             It::operator++();
             ptr->seed = ptr->device.uniform_64();
             return (*this);
         }
 
-        RandomTree operator*() {
+        RandomTree operator*()
+        {
 
             Tuple tuple = It::operator*();
 
-            return RandomTree {
+            return RandomTree{
                 prng{ptr->seed},
-                std::get<0>(tuple),
+                static_cast<int>(std::get<0>(tuple)),
                 std::get<1>(tuple),
                 std::get<1>(tuple),
                 std::get<2>(tuple),
-                std::get<3>(tuple)
-            };
+                std::get<3>(tuple)};
+        }
+
+        bool operator==(const Iterator &other) const
+        {
+            return static_cast<const It &>(*this) == static_cast<const It &>(other);
         }
     };
 
-    Iterator begin() {
+    Iterator begin()
+    {
         return Iterator(view.begin(), this);
     }
 
-    Iterator end () {
+    Iterator end()
+    {
         return Iterator(view.end(), this);
     }
 };

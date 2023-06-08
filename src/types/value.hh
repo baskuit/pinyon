@@ -29,6 +29,13 @@ struct ValueStruct {
     ValueStruct operator*(T val) {
         return ValueStruct{row_value * val, col_value * val};
     }
+
+
+    friend std::ostream &operator<<(std::ostream &os, const ValueStruct &session)
+    {
+        os << session.row_value;
+        return os;
+    }
 };
 
 template <typename Real, int PAYOFF_SUM_NUM, int PAYOFF_SUM_DEN>
@@ -52,5 +59,11 @@ struct ValueStruct<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN> {
     template <typename T>
     ValueStruct operator*(T val) {
         return ValueStruct{row_value * val};
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const ValueStruct &session)
+    {
+        os << session.row_value;
+        return os;
     }
 };
