@@ -172,13 +172,13 @@ namespace LibGambit
 
     template <class Types>
     void solve_matrix(
-        typename Types::MatrixReal &row_payoff_matrix,
+        typename Types::MatrixValue &payoff_matrix,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy,
         const typename Types::Real payoff_sum = 1)
     {
-        const int rows = row_payoff_matrix.rows;
-        const int cols = row_payoff_matrix.cols;
+        const size_t rows = payoff_matrix.rows;
+        const size_t cols = payoff_matrix.cols;
         /*
         Accept surksit style matrices and use gambit protocol to solve
         */
@@ -189,8 +189,8 @@ namespace LibGambit
         Gambit::Matrix<double> A2(1, cols,
                                   1, rows);
 
-        const double row_payoff_max = row_payoff_matrix.max();
-        const double row_payoff_min = row_payoff_matrix.min();
+        const double row_payoff_max = payoff_matrix.max();
+        const double row_payoff_min = payoff_matrix.min();
         double max = std::max(row_payoff_max, payoff_sum - row_payoff_max);
         double min = std::min(row_payoff_min, payoff_sum - row_payoff_min);
 
@@ -210,7 +210,7 @@ namespace LibGambit
         {
             for (size_t j = 1; j <= cols; j++)
             {
-                const double row_payoff = row_payoff_matrix.get(i - 1, j - 1);
+                const double row_payoff = payoff_matrix.get(i - 1, j - 1).get_row_value();
                 A1(i, j) = fac * (row_payoff - min);
                 A2(j, i) = fac * (payoff_sum - row_payoff - min);
             }

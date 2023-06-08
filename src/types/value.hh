@@ -13,10 +13,10 @@ struct ValueStruct {
     Real col_value;
     ValueStruct () {}
     ValueStruct(Real row_value, Real col_value) : row_value{row_value}, col_value{col_value} {}
-    inline Real get_row_value () {
+    inline Real get_row_value () const {
         return row_value;
     }
-    inline Real get_col_value () {
+    inline Real get_col_value () const {
         return col_value;
     }
     ValueStruct& operator+=(const ValueStruct& other) {
@@ -38,10 +38,10 @@ struct ValueStruct<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN> {
     ValueStruct () {}
     ValueStruct (Real row_value) : row_value{row_value} {}
     ValueStruct(Real row_value, Real col_value) : row_value{row_value} {}
-    inline Real get_row_value () {
+    inline Real get_row_value () const {
         return row_value;
     }
-    inline Real get_col_value () {
+    inline Real get_col_value () const {
         return PAYOFF_SUM - row_value;
     }
     ValueStruct& operator+=(const ValueStruct& other) {

@@ -5,18 +5,19 @@
 #include <types/random.hh>
 
 #include <vector>
+#include <iterator>
 
 /*
 RandomTree is a well-defined P-game.
 */
 
-class RandomTree : public ChanceState<SimpleTypes>
+class RandomTree : public ChanceState<RandomTreeTypes>
 {
 public:
-    struct Types : ChanceState<SimpleTypes>::Types
+    struct Types : ChanceState<RandomTreeTypes>::Types
     {
     };
-    
+
     typename Types::PRNG device;
     typename Types::Seed seed{};
     int depth_bound = 0;
@@ -74,7 +75,8 @@ public:
         get_chance_strategies();
     }
 
-    void reseed (typename Types::Seed seed) {
+    void reseed(typename Types::Seed seed)
+    {
         this->seed = seed;
     }
 
@@ -218,4 +220,111 @@ private:
             }
         }
     }
+};
+
+/*
+
+Helper class to generate random tree instances for testing
+
+*/
+
+class RandomTreeGenerator
+{
+public:
+    prng device;
+    std::vector<size_t> depth_bound_vec;
+    std::vector<size_t> actions_vec;
+    std::vector<size_t> chance_action_vec;
+    std::vector<double> chance_threshold_vec;
+    size_t trials;
+
+    std::array<size_t, 5> sizes;
+    size_t length;
+
+    // template <typename Float>
+    RandomTreeGenerator(
+        prng &device,
+        std::vector<size_t> &depth_bound_vec,
+        std::vector<size_t> &actions_vec,
+        std::vector<size_t> &chance_action_vec,
+        std::vector<double> &chance_threshold_vec,
+        size_t trials)
+        : device{device},
+          depth_bound_vec{depth_bound_vec},
+          actions_vec{actions_vec},
+          chance_action_vec{chance_action_vec},
+          chance_threshold_vec{chance_threshold_vec},
+          trials{trials}
+    {
+        length =
+            depth_bound_vec.size() *
+            actions_vec.size() *
+            chance_action_vec.size() *
+            chance_threshold_vec.size() *
+            trials;
+        sizes = {
+            trials - 1,
+            chance_threshold_vec.size() - 1,
+            chance_action_vec.size() - 1,
+            actions_vec.size() - 1,
+            depth_bound_vec.size() - 1,
+        };
+    }
+
+    struct Iterator
+    {
+        RandomTreeGenerator *ptr;
+        std::array<size_t, 5> params_indices{0};
+        Iterator(RandomTreeGenerator *ptr, std::array<size_t, 5> params_indices) 
+        : ptr{ptr}, params_indices{params_indices} {}
+
+        RandomTree operator*()
+        {
+            return ptr->get_state(params_indices);
+        }
+        Iterator &operator++()
+        {
+            ++params_indices[0];
+            for (int i = 0; i < 4; ++i)
+            {
+                if (params_indices[i] > ptr->sizes[i])
+                {
+                    params_indices[i] = 0;
+                    ++params_indices[i + 1];
+                }
+            }
+            return *this;
+        }
+        bool operator==(const Iterator &other)
+        {
+            return ptr == other.ptr && params_indices == other.params_indices;
+        }
+    };
+
+    Iterator begin()
+    {
+        return Iterator{this, {0}};
+    }
+
+    Iterator end()
+    {
+        auto sizes_ = sizes;
+        sizes_[4]++; 
+        return Iterator{this, sizes};
+    }
+
+    RandomTree get_state(std::array<size_t, 5> &params_indices)
+    {
+
+        uint64_t seed = device.uniform_64();
+
+        return RandomTree{
+            prng{seed}, 
+            depth_bound_vec[params_indices[4]],
+            actions_vec[params_indices[3]],
+            actions_vec[params_indices[3]],
+            chance_action_vec[params_indices[2]],
+            chance_threshold_vec[params_indices[1]]
+        };
+    } // TODO still off by one error
 };

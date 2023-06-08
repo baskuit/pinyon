@@ -115,6 +115,23 @@ using SimpleTypes = Types<
     Matrix<int>
 >;
 
+using RandomTreeTypes = Types<
+    Rational<int>,
+    double,
+    double,
+    int,
+    int,
+    double,
+    uint64_t,
+    prng,
+    Vector<double>,
+    Vector<int>,
+    Vector<int>,
+    Matrix<double>,
+    Matrix<double>,
+    Matrix<int>
+>;
+
 // template <
 //     typename _Rational,
 //     typename _Real,

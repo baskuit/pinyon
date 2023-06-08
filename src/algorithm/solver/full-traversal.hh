@@ -34,9 +34,9 @@ public:
     };
     struct MatrixStats : AbstractAlgorithm<Model>::MatrixStats
     {
-        typename Types::Real row_payoff, col_payoff;
+        typename Types::Value payoff;
         typename Types::VectorReal row_solution, col_solution;
-        typename Types::MatrixReal nash_payoff_matrix;
+        typename Types::MatrixValue nash_payoff_matrix;
         size_t matrix_node_count = 1;
         unsigned int depth = 0;
         typename Types::Probability prob;
@@ -68,16 +68,15 @@ public:
 
         if (state.is_terminal)
         {
-            stats.row_payoff = state.row_payoff;
-            stats.col_payoff = state.col_payoff;
+            stats.payoff = state.payoff;
             matrix_node->is_terminal = true;
             return;
         }
         if (max_depth > 0 && stats.depth >= max_depth) 
         {
-            model.get_inference(state, matrix_node->inference);
-            stats.row_payoff = matrix_node->inference.row_value;
-            stats.col_payoff = matrix_node->inference.col_value;
+            typename Types::ModelOutput model_output;
+            model.get_inference(state, model_output);
+            stats.payoff = model_output.value;
             matrix_node->is_terminal = true;
             return;
         }
@@ -103,12 +102,12 @@ public:
                 {
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, chance_action);
-                    MatrixNode<FullTraversal> *matrix_node_next = chance_node->access(state_copy.obs, state_copy.prob);
+                    MatrixNode<FullTraversal> *matrix_node_next = chance_node->access(state_copy.obs);
                     matrix_node_next->stats.depth = stats.depth + 1;
 
                     run(state_copy, model, matrix_node_next);
 
-                    stats.nash_payoff_matrix.get(row_idx, col_idx) += matrix_node_next->stats.row_payoff * matrix_node_next->stats.prob;
+                    stats.nash_payoff_matrix.get(row_idx, col_idx) += matrix_node_next->stats.payoff * matrix_node_next->stats.prob;
                     stats.matrix_node_count += matrix_node_next->stats.matrix_node_count;
                 }
             }
@@ -121,19 +120,18 @@ public:
             stats.nash_payoff_matrix,
             stats.row_solution,
             stats.col_solution);
-        stats.row_payoff = 0;
+        stats.payoff = 0;
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                stats.row_payoff +=
-                    stats.row_solution[row_idx] *
-                    stats.col_solution[col_idx] *
-                    stats.nash_payoff_matrix.get(row_idx, col_idx);
-                stats.col_payoff = 1 - stats.row_payoff;
+                stats.payoff +=
+                    stats.nash_payoff_matrix.get(row_idx, col_idx) *
+                    (stats.row_solution[row_idx] * stats.col_solution[col_idx]);
+                // stats.col_payoff = 1 - stats.row_payoff;
             }
         }
         return;
     }
 
-};
+}; // TODO TODO review changes!!!!!

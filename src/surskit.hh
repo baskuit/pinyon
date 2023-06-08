@@ -11,6 +11,7 @@
 #include <state/state.hh>
 #include <state/test-states.hh>
 #include <state/random-tree.hh>
+#include <state/traversed.hh>
 
 
 #include <model/model.hh>
@@ -23,7 +24,7 @@
 #include <algorithm/tree-bandit/bandit/rand.hh>
 
 
-// #include <algorithm/solver/full-traversal.hh>
+#include <algorithm/solver/full-traversal.hh>
 // #include <algorithm/solver/alpha-beta.hh>
 
 

@@ -33,12 +33,12 @@ template <
         class _TreeBandit,
         template <class A> class _MNode,
         template <class A> class _CNode>
-    class _BanditAlgorithm,
+    class BanditAlgorithm,
 
     template <class M, class BA,
               template <class _M> class _Outcome, template <class A> class _MNode, template <class A> class _CNode>
     class TreeBandit>
-struct Search<State, _Model, _BanditAlgorithm, TreeBandit> : S
+struct Search<State, _Model, BanditAlgorithm, TreeBandit> : S
 {
 
     using Model = _Model<State>;
@@ -91,8 +91,8 @@ int main()
 
     // TODO make it easier for battle wrappers to use the same engine battle
 
-    Search<Battle<64>, MonteCarloModel, Exp3, TreeBandit> x(nullptr, nullptr, .01);
-    Search<Battle<128>, MonteCarloModel, Exp3, TreeBandit> y{};
+    Search<Battle<64>, MonteCarloModel, Exp3, TreeBandit> x(.01);
+    Search<Battle<128>, MonteCarloModel, Exp3, TreeBandit> y{.05};
     S *arr[2] = {&x, &y};
 
     for (S *search : arr)

@@ -2,7 +2,7 @@
 
 #include <model/model.hh>
 #include <state/random-tree.hh>
-#include <algorithm/solve/full-traversal.hh>
+#include <algorithm/solver/full-traversal.hh>
 #include <tree/tree.hh>
 
 #include <memory>
@@ -12,26 +12,26 @@
 
 This state is a wrapper for the tree produced by the FullTraversal algorithm
 
-What should template type be? Just model?
+What should template type be? Just model? TODO
+nah I want it to wrap a state basically, 
 
 */
 
-template <class Model>
-class TraversedState : public SolvedState<typename Model::Types::TypeList>
+template <class Model> // TODO add specialization that takes State, assumes MonteCarlo...
+class TraversedState : public State<typename Model::Types>
 {
-    static_assert(std::derived_from<typename Model::Types::State, StateChance<typename Model::Types::TypeList>>,
-        "TraversedState must be based on State type derived from StateChance");
-    static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
-        "FullTraversal algorithm requires Model must be derived from DoubleOracleModel");
+    // static_assert(std::derived_from<typename Model::Types::State, StateChance<typename Model::Types::TypeList>>,
+    //     "TraversedState must be based on State type derived from StateChance");
+    // static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
+    //     "FullTraversal algorithm requires Model must be derived from DoubleOracleModel");
 
 public:
-    struct Types : SolvedState<typename Model::Types::TypeList>::Types
+    struct Types : State<typename Model::Types>::Types
     {
     };
 
     std::shared_ptr<MatrixNode<FullTraversal<Model>>> tree;
     MatrixNode<FullTraversal<Model>> *current_node;
-    typename Types::State::Transition transition;
 
     TraversedState(
         typename Types::State &state,
@@ -42,7 +42,7 @@ public:
         this->current_node = &*tree;
         FullTraversal<Model> session;
         session.max_depth = max_depth;
-        session.grow(state, model, current_node);
+        session.run(state, model, current_node);
         update_solved_state_info();
     }
 
@@ -99,10 +99,10 @@ private:
     void update_solved_state_info()
     {
         this->is_terminal = current_node->is_terminal; 
-        this->row_payoff = current_node->stats.row_payoff;
-        this->col_payoff = 1 - this->row_payoff;
-        this->row_strategy = current_node->stats.row_solution;
-        this->col_strategy = current_node->stats.col_solution; // wasteful for arrays TODO
+        this->payoff = current_node->stats.payoff;
+        // this->col_payoff = 1 - this->row_payoff;
+        // this->row_strategy = current_node->stats.row_solution;
+        // this->col_strategy = current_node->stats.col_solution; // wasteful for arrays TODO TODO no solved state
     }
 
     void sort_actions()

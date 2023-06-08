@@ -64,12 +64,12 @@ public:
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
-        // row_strategy.fill(matrix_node->stats.row_visits.size());
-        // col_strategy.fill(matrix_node->stats.col_visits.size());
-        // // denoise? TODO
-        // denoise(row_strategy, col_strategy); // uses this->gamma;
-        // math::power_norm(matrix_node->stats.row_visits, row_strategy.size(), 1, row_strategy);
-        // math::power_norm(matrix_node->stats.col_visits, col_strategy.size(), 1, col_strategy);
+        row_strategy.fill(matrix_node->stats.row_visits.size());
+        col_strategy.fill(matrix_node->stats.col_visits.size());
+        // denoise? TODO
+        denoise(row_strategy, col_strategy); // uses this->gamma;
+        math::power_norm(matrix_node->stats.row_visits, row_strategy.size(), 1, row_strategy);
+        math::power_norm(matrix_node->stats.col_visits, col_strategy.size(), 1, col_strategy);
     }
 
     void get_empirical_values(
