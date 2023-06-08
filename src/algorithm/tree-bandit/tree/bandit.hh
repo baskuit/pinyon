@@ -46,7 +46,7 @@ public:
     void run(
         size_t iterations,
         typename Types::PRNG &device,
-        typename Types::State &state,
+        const typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> &matrix_node)
     {
@@ -119,7 +119,7 @@ protected:
 
     void _initialize_stats(
         size_t iterations,
-        typename Types::State &state,
+        const typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<BanditAlgorithm> *root)
     {

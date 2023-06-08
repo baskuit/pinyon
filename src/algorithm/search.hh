@@ -9,16 +9,14 @@ struct S // TODO Rename
     virtual void run(
         size_t iterations) = 0;
 
-    virtual void get_strategies (
-        std::vector<float> &row_strategy,
-        std::vector<float> &col_strategy,
-        float row_value, 
-        float col_value
-    ) {
-
+    virtual void get_strategies(
+        std::vector<double> &row_strategy,
+        std::vector<double> &col_strategy)
+    {
     }
 
-    virtual void forward () {
+    virtual void forward()
+    {
         // search and advance
     }
 };
@@ -56,7 +54,7 @@ struct Search : S
     {
     }
 
-    Search(State &state, Model &model) : state{&state}, model{model}
+    Search(State &state, Model &model) : state{&state}, model{&model}
     {
     }
 
@@ -66,7 +64,7 @@ struct Search : S
 
     template <class... Args>
 
-    Search(State* state, Model* model, Args... args) : state(state), model(model), session(args...)
+    Search(State *state, Model *model, Args... args) : state(state), model(model), session(args...)
     {
     }
 
@@ -85,29 +83,26 @@ struct Search : S
     void run(
         size_t iterations)
     {
-
         session.run(iterations, device, *state, *model, root);
     }
 };
 
-// int main()
-// {
+template <
+    class State,
 
+    template <class S> class _Model,
 
+    template <
+        class __Model,
+        template <class ___Model, class _BanditAlgorithm, template <class ____Model> class _Outcome, template <class A> class _MNode, template <class A> class>
+        class _TreeBandit,
+        template <class A> class _MNode,
+        template <class A> class _CNode>
+    class BanditAlgorithm,
 
-
-//     Search<Battle<64>, MonteCarloModel, Exp3, TreeBandit> x(.01);
-//     Search<Battle<128>, MonteCarloModel, Exp3, TreeBandit> y{.05};
-//     S *arr[2] = {&x, &y};
-
-//     for (S *search : arr)
-//     {
-//         search->run(1000);
-//     }
-
-
-//     return 0;
-
-    
-// }
-
+    template <class M, class BA,
+              template <class _M> class _Outcome, template <class A> class _MNode, template <class A> class _CNode>
+    class TreeBandit>
+Search<State, _Model, BanditAlgorithm, TreeBandit> foo(State &state, _Model<State> &model) {
+    return Search<State, _Model, BanditAlgorithm, TreeBandit>(state, model);
+}

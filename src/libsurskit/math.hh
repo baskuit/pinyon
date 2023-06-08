@@ -102,3 +102,36 @@ typename Types::Real exploitability(
 
     return (row_best_response - row_payoff) + (col_best_response - col_payoff);
 }
+
+template <class Types>
+typename Types::Real exploitability(
+    typename Types::MatrixValue &value_matrix,
+    typename Types::VectorReal &&row_strategy,
+    typename Types::VectorReal &&col_strategy)
+{
+    const int rows = value_matrix.rows;
+    const int cols = value_matrix.cols;
+
+    typename Types::Real row_payoff{Rational(0)}, col_payoff{Rational(0)}; // TODO rationals?
+    typename Types::VectorReal row_response(rows), col_response(cols);
+    size_t data_idx = 0;
+    for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
+    {
+        for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
+        {
+            const auto value = value_matrix[data_idx];
+            const typename Types::Real u{value.get_row_value() * col_strategy[col_idx]};
+            const typename Types::Real v{value.get_col_value() * row_strategy[row_idx]};
+            row_payoff += u * row_strategy[row_idx];
+            col_payoff += v * col_strategy[col_idx];
+            row_response[row_idx] += u;
+            col_response[col_idx] += v;
+            ++data_idx;
+        }
+    }
+
+    typename Types::Real row_best_response{*std::max_element(row_response.begin(), row_response.end())};
+    typename Types::Real col_best_response{*std::max_element(col_response.begin(), col_response.end())};
+
+    return (row_best_response - row_payoff) + (col_best_response - col_payoff);
+}

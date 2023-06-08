@@ -85,7 +85,7 @@ public:
 
     void initialize_stats(
         int iterations,
-        typename Types::State &state,
+        const typename Types::State &state,
         typename Types::Model &model,
         _MatrixNode<Exp3> *matrix_node)
     {

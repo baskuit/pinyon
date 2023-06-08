@@ -10,6 +10,8 @@ struct Vector : std::vector<T>
 
     Vector() {}
 
+    Vector(const std::vector<T> &vec) : std::vector<T>(vec) {}
+
     Vector(size_t n)
     {
         this->resize(n);

@@ -236,7 +236,7 @@ Helper class to generate random tree instances for testing
 struct RandomTreeGenerator
 {
 
-    using Tuple = std::tuple<size_t, size_t, size_t, double, size_t>;
+    using Tuple = std::tuple<size_t, size_t, size_t, double>;
 
     prng device;
     uint64_t seed;
@@ -244,12 +244,12 @@ struct RandomTreeGenerator
     const std::vector<size_t> actions_vec;
     const std::vector<size_t> chance_action_vec;
     const std::vector<double> chance_threshold_vec;
-    const std::vector<size_t> trials;
+    const size_t trials;
 
-    using Product = decltype(std::views::cartesian_product(depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trials));
+    using Product = decltype(std::views::cartesian_product(depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec));
     using It = std::ranges::iterator_t<Product>;
 
-    Product view = std::views::cartesian_product(depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trials);
+    Product view = std::views::cartesian_product(depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec);
 
     RandomTreeGenerator(
         prng &d,
@@ -257,7 +257,7 @@ struct RandomTreeGenerator
         std::vector<size_t> &actions_vec,
         std::vector<size_t> &chance_action_vec,
         std::vector<double> &chance_threshold_vec,
-        std::vector<size_t> &trials)
+        size_t trials)
         : device{d},
           depth_bound_vec{depth_bound_vec},
           actions_vec{actions_vec},
@@ -272,6 +272,7 @@ struct RandomTreeGenerator
     {
     public:
         RandomTreeGenerator *ptr;
+        size_t trial = 0;
 
         Iterator(const It &it, RandomTreeGenerator *ptr) : It{it}, ptr{ptr}
         {
@@ -279,8 +280,14 @@ struct RandomTreeGenerator
 
         Iterator &operator++()
         {
-            It::operator++();
+            if (trial == 0) {
+                It::operator++();
+            }
             ptr->seed = ptr->device.uniform_64();
+
+            ++trial;
+            trial %= ptr->trials;
+
             return (*this);
         }
 
@@ -288,6 +295,7 @@ struct RandomTreeGenerator
         {
 
             Tuple tuple = It::operator*();
+            std::cout << std::get<0>(tuple) << ' ' << std::get<1>(tuple) << ' ' << std::get<2>(tuple) << ' ' << std::get<3>(tuple) << std::endl;
 
             return RandomTree{
                 prng{ptr->seed},
@@ -300,7 +308,7 @@ struct RandomTreeGenerator
 
         bool operator==(const Iterator &other) const
         {
-            return static_cast<const It &>(*this) == static_cast<const It &>(other);
+            return static_cast<const It &>(*this) == static_cast<const It &>(other) && trial == other.trial;
         }
     };
 
