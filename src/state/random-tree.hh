@@ -6,6 +6,11 @@
 
 #include <vector>
 #include <iterator>
+#include <algorithm>
+#include <cstdio>
+#include <iterator>
+#include <ranges>
+#include <string>
 
 /*
 RandomTree is a well-defined P-game.
@@ -228,20 +233,24 @@ Helper class to generate random tree instances for testing
 
 */
 
-class RandomTreeGenerator
+struct RandomTreeGenerator
 {
-public:
+
+    using Tuple = std::tuple<size_t, size_t, size_t, double, size_t>;
+
     prng device;
-    std::vector<size_t> depth_bound_vec;
-    std::vector<size_t> actions_vec;
-    std::vector<size_t> chance_action_vec;
-    std::vector<double> chance_threshold_vec;
-    size_t trials;
+    uint64_t seed;
+    const std::vector<size_t> depth_bound_vec;
+    const std::vector<size_t> actions_vec;
+    const std::vector<size_t> chance_action_vec;
+    const std::vector<double> chance_threshold_vec;
+    const std::vector<size_t> trials;
 
-    std::array<size_t, 5> sizes;
-    size_t length;
+    using Product = decltype(std::views::cartesian_product(depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trials));
+    using It = std::ranges::iterator_t<Product>;
 
-    // template <typename Float>
+    Product view = std::views::cartesian_product(depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trials);
+
     RandomTreeGenerator(
         prng &device,
         std::vector<size_t> &depth_bound_vec,
@@ -254,77 +263,44 @@ public:
           actions_vec{actions_vec},
           chance_action_vec{chance_action_vec},
           chance_threshold_vec{chance_threshold_vec},
-          trials{trials}
+          trials{std::vector<size_t>{trials}}
     {
-        length =
-            depth_bound_vec.size() *
-            actions_vec.size() *
-            chance_action_vec.size() *
-            chance_threshold_vec.size() *
-            trials;
-        sizes = {
-            trials - 1,
-            chance_threshold_vec.size() - 1,
-            chance_action_vec.size() - 1,
-            actions_vec.size() - 1,
-            depth_bound_vec.size() - 1,
-        };
     }
 
-    struct Iterator
-    {
-        RandomTreeGenerator *ptr;
-        std::array<size_t, 5> params_indices{0};
-        Iterator(RandomTreeGenerator *ptr, std::array<size_t, 5> params_indices) 
-        : ptr{ptr}, params_indices{params_indices} {}
+    class Iterator : public It {
+        public:
+        RandomTreeGenerator* ptr;
 
-        RandomTree operator*()
-        {
-            return ptr->get_state(params_indices);
+        Iterator (const It& it, RandomTreeGenerator* ptr) : It{it}, ptr{ptr} {
+
         }
-        Iterator &operator++()
-        {
-            ++params_indices[0];
-            for (int i = 0; i < 4; ++i)
-            {
-                if (params_indices[i] > ptr->sizes[i])
-                {
-                    params_indices[i] = 0;
-                    ++params_indices[i + 1];
-                }
-            }
-            return *this;
+
+        Iterator& operator++() {
+            It::operator++();
+            ptr->seed = ptr->device.uniform_64();
+            return (*this);
         }
-        bool operator==(const Iterator &other)
-        {
-            return ptr == other.ptr && params_indices == other.params_indices;
+
+        RandomTree operator*() {
+
+            Tuple tuple = It::operator*();
+
+            return RandomTree {
+                prng{ptr->seed},
+                std::get<0>(tuple),
+                std::get<1>(tuple),
+                std::get<1>(tuple),
+                std::get<2>(tuple),
+                std::get<3>(tuple)
+            };
         }
     };
 
-    Iterator begin()
-    {
-        return Iterator{this, {0}};
+    Iterator begin() {
+        return Iterator(view.begin(), this);
     }
 
-    Iterator end()
-    {
-        auto sizes_ = sizes;
-        sizes_[4]++; 
-        return Iterator{this, sizes};
+    Iterator end () {
+        return Iterator(view.end(), this);
     }
-
-    RandomTree get_state(std::array<size_t, 5> &params_indices)
-    {
-
-        uint64_t seed = device.uniform_64();
-
-        return RandomTree{
-            prng{seed}, 
-            depth_bound_vec[params_indices[4]],
-            actions_vec[params_indices[3]],
-            actions_vec[params_indices[3]],
-            chance_action_vec[params_indices[2]],
-            chance_threshold_vec[params_indices[1]]
-        };
-    } // TODO still off by one error
 };
