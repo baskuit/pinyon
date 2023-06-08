@@ -218,6 +218,7 @@ protected:
         }
         else
         {
+            inference.value = state.payoff;
             return matrix_node;
         }
     }
