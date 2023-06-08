@@ -2,6 +2,8 @@
 
 #include <surskit.hh>
 
+// #include <battle-surskit.hh>
+
 struct S // TODO Rename
 {
     virtual void run(
@@ -38,11 +40,11 @@ template <
     template <class M, class BA,
               template <class _M> class _Outcome, template <class A> class _MNode, template <class A> class _CNode>
     class TreeBandit>
-struct Search<State, _Model, BanditAlgorithm, TreeBandit> : S
+struct Search : S
 {
 
     using Model = _Model<State>;
-    using Algorithm = _BanditAlgorithm<Model, TreeBandit, MatrixNode, ChanceNode>;
+    using Algorithm = BanditAlgorithm<Model, TreeBandit, MatrixNode, ChanceNode>;
 
     typename State::Types::PRNG device;
     State *state;
@@ -51,6 +53,10 @@ struct Search<State, _Model, BanditAlgorithm, TreeBandit> : S
     MatrixNode<Algorithm> root;
 
     Search() : state{}, model{}
+    {
+    }
+
+    Search(State &state, Model &model) : state{&state}, model{model}
     {
     }
 
@@ -84,35 +90,24 @@ struct Search<State, _Model, BanditAlgorithm, TreeBandit> : S
     }
 };
 
-temp,l.ate
+// int main()
+// {
 
-int main()
-{
 
-    // TODO make it easier for battle wrappers to use the same engine battle
 
-    Search<Battle<64>, MonteCarloModel, Exp3, TreeBandit> x(.01);
-    Search<Battle<128>, MonteCarloModel, Exp3, TreeBandit> y{.05};
-    S *arr[2] = {&x, &y};
 
-    for (S *search : arr)
-    {
-        search->run(1000);
-    }
+//     Search<Battle<64>, MonteCarloModel, Exp3, TreeBandit> x(.01);
+//     Search<Battle<128>, MonteCarloModel, Exp3, TreeBandit> y{.05};
+//     S *arr[2] = {&x, &y};
 
-    // SearchList<
-    // Search<Battle<128>, MonteCarloModel, Exp3, TreeBandit>,
-    // Search<Battle<128>, MonteCarloModel, Exp3, TreeBandit>,
-    // Search<Battle<128>, MonteCarloModel, Exp3, TreeBandit>,
-    // Search<Battle<128>, MonteCarloModel, Exp3, TreeBandit>
-    // > pool {
-    //     {.01}, {.05}, {.1}, {.5}
-    // };
+//     for (S *search : arr)
+//     {
+//         search->run(1000);
+//     }
 
-    // SearchList<
 
-    return 0;
+//     return 0;
 
     
-}
+// }
 

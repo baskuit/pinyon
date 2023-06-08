@@ -26,6 +26,7 @@
 
 #include <algorithm/solver/full-traversal.hh>
 // #include <algorithm/solver/alpha-beta.hh>
+#include <algorithm/search.hh>
 
 
 #include <tree/tree.hh>

@@ -9,6 +9,7 @@
 #include <types/rational.hh>
 #include <types/random.hh>
 #include <types/vector.hh>
+#include <cstdint>
 
 using ActionIndex = int;
 
