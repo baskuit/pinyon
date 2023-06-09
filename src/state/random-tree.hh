@@ -5,12 +5,7 @@
 #include <types/random.hh>
 
 #include <vector>
-#include <iterator>
-#include <algorithm>
-#include <cstdio>
-#include <iterator>
 #include <ranges>
-#include <string>
 
 /*
 RandomTree is a well-defined P-game.
@@ -295,7 +290,6 @@ struct RandomTreeGenerator
         {
 
             Tuple tuple = It::operator*();
-            std::cout << std::get<0>(tuple) << ' ' << std::get<1>(tuple) << ' ' << std::get<2>(tuple) << ' ' << std::get<3>(tuple) << std::endl;
 
             return RandomTree{
                 prng{ptr->seed},

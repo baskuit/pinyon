@@ -18,7 +18,7 @@ nah I want it to wrap a state basically,
 */
 
 template <class Model> // TODO add specialization that takes State, assumes MonteCarlo...
-class TraversedState : public State<typename Model::Types>
+class TraversedState : public SolvedState<typename Model::Types>
 {
     // static_assert(std::derived_from<typename Model::Types::State, StateChance<typename Model::Types::TypeList>>,
     //     "TraversedState must be based on State type derived from StateChance");
@@ -26,7 +26,7 @@ class TraversedState : public State<typename Model::Types>
     //     "FullTraversal algorithm requires Model must be derived from DoubleOracleModel");
 
 public:
-    struct Types : State<typename Model::Types>::Types
+    struct Types : SolvedState<typename Model::Types>::Types
     {
     };
 
@@ -88,11 +88,9 @@ public:
     }
 
     void get_payoff_matrix(
-        typename Types::MatrixReal &row_payoff_matrix,
-        typename Types::MatrixReal &col_payoff_matrix
+        typename Types::MatrixValue &payoff_matrix
     ) {
-        row_payoff_matrix = current_node->stats.nash_payoff_matrix;
-        col_payoff_matrix = row_payoff_matrix * -1 + 1;
+        payoff_matrix = current_node->stats.nash_payoff_matrix;
     }
 
 private:

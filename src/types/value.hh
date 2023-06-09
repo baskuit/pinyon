@@ -58,7 +58,7 @@ struct ValueStruct<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN> {
 
     template <typename T>
     ValueStruct operator*(T val) {
-        return ValueStruct{row_value * val};
+        return ValueStruct{row_value * static_cast<Real>(val)};
     }
 
     friend std::ostream &operator<<(std::ostream &os, const ValueStruct &session)

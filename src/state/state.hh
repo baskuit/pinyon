@@ -68,9 +68,20 @@ public:
     void apply_actions(
         typename Types::Action row_action,
         typename Types::Action col_action,
-        typename Types::Seed seed)
+        typename Types::Seed seed);
+
+};
+
+template <class _Types>
+class SolvedState : public ChanceState<_Types>
+{
+public:
+    struct Types : ChanceState<_Types>::Types
     {
-        this->seed = seed;
-        apply_actions(row_action, col_action);
-    }
+
+    };
+
+    void get_payoff_matrix (
+        typename Types::MatrixValue &matrix
+    );
 };
