@@ -18,16 +18,16 @@ public:
 Similar to `State`, in that virtually all models will be derived from it.
 */
 
-template <class _State>
+template <class State>
 
-class DoubleOracleModel : public AbstractModel<_State>
+class DoubleOracleModel : public AbstractModel<State>
 {
-    static_assert(std::derived_from<_State, State<typename _State::Types::TypeList>>);
+    static_assert(std::derived_from<State, PerfectInfoState<typename State::Types::TypeList>>);
 
 public:
     struct ModelOutput;
 
-    struct Types : AbstractModel<_State>::Types
+    struct Types : AbstractModel<State>::Types
     {
         using ModelOutput = DoubleOracleModel::ModelOutput;
     };
@@ -44,21 +44,23 @@ public:
 Universal model.
 */
 
-template <class _State>
-class MonteCarloModel : public DoubleOracleModel<_State>
+template <class State>
+class MonteCarloModel : public DoubleOracleModel<State>
 {
 
 public:
-    struct Types : DoubleOracleModel<_State>::Types
+    struct Types : DoubleOracleModel<State>::Types
     {
         using ModelBatchOutput = std::vector<typename Types::ModelOutput>;
-        using ModelBatchInput = std::vector<_State>;
-        using ModelInput = _State;
+        using ModelBatchInput = std::vector<State>;
+        using ModelInput = State;
     };
 
     typename Types::PRNG device;
 
     MonteCarloModel(typename Types::PRNG &device) : device(device) {}
+
+    MonteCarloModel(uint64_t seed) : device(seed) {}
 
     void get_input(
         const typename Types::State &state,
@@ -108,7 +110,7 @@ public:
     }
 
 protected:
-    void rollout(_State &state)
+    void rollout(State &state)
     {
         // model inference in bandits happens in expand(), after get_actions is called
         while (!state.is_terminal)
@@ -123,16 +125,16 @@ protected:
     }
 };
 
-template <class _State>
-class EmptyModel : public DoubleOracleModel<_State>
+template <class State>
+class EmptyModel : public DoubleOracleModel<State>
 {
 
 public:
-    struct Types : DoubleOracleModel<_State>::Types
+    struct Types : DoubleOracleModel<State>::Types
     {
         using ModelBatchOutput = std::vector<typename Types::ModelOutput>;
-        using ModelBatchInput = std::vector<_State>;
-        using ModelInput = _State;
+        using ModelBatchInput = std::vector<State>;
+        using ModelInput = State;
     };
 
     typename Types::PRNG device;

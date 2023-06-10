@@ -7,10 +7,10 @@
 */
 
 template <int size>
-class MoldState : public State<SimpleTypes>
+class MoldState : public PerfectInfoState<SimpleTypes>
 {
 public:
-    struct Types : State<SimpleTypes>::Types
+    struct Types : PerfectInfoState<SimpleTypes>::Types
     {
     };
 

@@ -18,11 +18,11 @@
 template <typename Model>
 class FullTraversal : public AbstractAlgorithm<Model>
 {
-    static_assert(std::derived_from<typename Model::Types::State, ChanceState<typename Model::Types::TypeList>>,
-        "This algorithm must be based on State type derived from ChanceState");
+    // static_assert(std::derived_from<typename Model::Types::State, ChanceState<typename Model::Types::TypeList>>,
+    //     "This algorithm must be based on State type derived from ChanceState");
 
-    static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
-        "The Inference type of the DoubleOracleModel is used to store Nash strategies and payoff");
+    // static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
+    //     "The Inference type of the DoubleOracleModel is used to store Nash strategies and payoff");
 
 public:
     struct MatrixStats;

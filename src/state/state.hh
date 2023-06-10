@@ -15,14 +15,14 @@ public:
 };
 
 template <class _Types>
-class State : public AbstractState<_Types>
+class PerfectInfoState : public AbstractState<_Types>
 {
 public:
     struct Types : AbstractState<_Types>::Types
     {
     };
 
-    State() {}
+    PerfectInfoState() {}
 
     bool is_terminal{false};
     typename Types::VectorAction row_actions{};
@@ -48,10 +48,10 @@ public:
 };
 
 template <class _Types>
-class ChanceState : public State<_Types>
+class ChanceState : public PerfectInfoState<_Types>
 {
 public:
-    struct Types : State<_Types>::Types
+    struct Types : PerfectInfoState<_Types>::Types
     {
     };
 
@@ -83,5 +83,10 @@ public:
 
     void get_payoff_matrix (
         typename Types::MatrixValue &matrix
+    );
+
+    void get_strategies (
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy
     );
 };

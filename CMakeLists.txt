@@ -5,7 +5,7 @@ project(surskit VERSION 0.1.0)
 
 add_library(surskit INTERFACE)
 target_include_directories(surskit INTERFACE src)
-target_include_directories(surskit INTERFACE extern/eigen)
+# target_include_directories(surskit INTERFACE extern/eigen)
 
 add_subdirectory(extern/gambit) # creats static library 'gambit'
 

@@ -25,9 +25,8 @@
 
 
 #include <algorithm/solver/full-traversal.hh>
-// #include <algorithm/solver/alpha-beta.hh>
+// #include <algorithm/solver/alpha-beta.hh> // TODO add stochastic optimizations
 #include <algorithm/search.hh>
-
 
 #include <tree/tree.hh>
 #include <tree/tree-obs.hh>
