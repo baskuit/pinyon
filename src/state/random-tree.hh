@@ -87,11 +87,11 @@ public:
         this->col_actions.fill(cols);
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
-            this->row_actions[row_idx] = row_idx;
+            this->row_actions[row_idx] = typename Types::Action{row_idx};
         };
         for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
         {
-            this->col_actions[col_idx] = col_idx;
+            this->col_actions[col_idx] = typename Types::Action{col_idx};
         };
     }
 
@@ -101,12 +101,12 @@ public:
         typename Types::Action col_action)
     {
         chance_actions.clear();
-        const ActionIndex start_idx = get_transition_idx(row_action, col_action, 0);
+        const size_t start_idx = get_transition_idx(row_action, col_action, typename Types::Observation{0});
         for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
         {
             if (chance_strategies[start_idx + chance_idx] > typename Types::Rational(0))
             {
-                chance_actions.push_back(chance_idx);
+                chance_actions.push_back(typename Types::Observation{chance_idx});
             }
         }
     }
@@ -171,11 +171,14 @@ public:
     }
 
 private:
-    inline ActionIndex get_transition_idx(
-        ActionIndex row_idx,
-        ActionIndex col_idx,
-        ActionIndex chance_idx)
+    inline size_t get_transition_idx(
+        typename Types::Action row_action,
+        typename Types::Action col_action,
+        typename Types::Observation chance_action)
     {
+        const ActionIndex row_idx{row_action};
+        const ActionIndex col_idx{col_action};
+        const ActionIndex chance_idx{chance_action};
         return row_idx * cols * transitions + col_idx * transitions + chance_idx;
     }
 

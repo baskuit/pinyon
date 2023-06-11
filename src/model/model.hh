@@ -117,8 +117,8 @@ protected:
         {
             const ActionIndex row_idx = device.random_int(state.row_actions.size());
             const ActionIndex col_idx = device.random_int(state.col_actions.size());
-            const typename Types::Action row_action = state.row_actions[row_idx];
-            const typename Types::Action col_action = state.col_actions[col_idx];
+            const typename Types::Action row_action{state.row_actions[row_idx]};
+            const typename Types::Action col_action{state.col_actions[col_idx]};
             state.apply_actions(row_action, col_action);
             state.get_actions();
         }

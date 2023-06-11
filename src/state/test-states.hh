@@ -23,11 +23,10 @@ public:
 
         for (int i = 0; i < size; ++i)
         {
-            this->row_actions[i] = i;
-            this->col_actions[i] = i;
+            this->row_actions[i] = typename Types::Action{i};
+            this->col_actions[i] = typename Types::Action{i};
         }
         this->prob = typename Types::Probability{1};
-        this->obs = 0;
     }
 
     void reseed(typename Types::Seed)

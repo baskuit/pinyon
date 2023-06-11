@@ -84,14 +84,14 @@ public:
         const int rows = state.row_actions.size();
         const int cols = state.col_actions.size();
 
-        stats.nash_payoff_matrix.fill(rows, cols, 0);
+        stats.nash_payoff_matrix.fill(rows, cols, typename Types::Value{0, 0});
 
         // recurse
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
             {
-                const typename Types::Action row_action = matrix_node->row_actions[row_idx];
+                const typename Types::Action row_action{matrix_node->row_actions[row_idx]};
                 const typename Types::Action col_action = matrix_node->col_actions[col_idx];
 
                 std::vector<typename Types::Observation> chance_actions;
@@ -120,7 +120,7 @@ public:
             stats.nash_payoff_matrix,
             stats.row_solution,
             stats.col_solution);
-        stats.payoff = 0;
+        stats.payoff = typename Types::Value{0.0, 0.0};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)

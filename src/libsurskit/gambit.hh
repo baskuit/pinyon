@@ -191,8 +191,8 @@ namespace LibGambit
 
         const double row_payoff_max = payoff_matrix.max();
         const double row_payoff_min = payoff_matrix.min();
-        double max = std::max(row_payoff_max, payoff_sum - row_payoff_max);
-        double min = std::min(row_payoff_min, payoff_sum - row_payoff_min);
+        double max = std::max(row_payoff_max, static_cast<double>(payoff_sum - row_payoff_max));
+        double min = std::min(row_payoff_min, static_cast<double>(payoff_sum - row_payoff_min));
 
         if (min > 0)
         {

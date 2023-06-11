@@ -4,6 +4,8 @@
 #include <array>
 #include <algorithm>
 
+#include "wrapper.hh"
+
 template <typename T>
 struct Vector : std::vector<T>
 {
@@ -29,28 +31,37 @@ struct Vector : std::vector<T>
     }
 };
 
-template <typename T, size_t MaxSize>
-struct Array : std::array<T, MaxSize>
+template <size_t MaxSize>
+struct A
 {
+    template <typename T>
+    struct Array : std::array<T, MaxSize> {
 
-    Array() {}
+        Array() {}
 
-    Array(size_t n)
-    {
-    }
+        Array(size_t n)
+        {
+        }
 
-    int _size = 0; // TODO does array already have a size member?
+        int _size = 0; // TODO does array already have a size member?
 
-    void fill(int n, T value)
-    {
-        std::fill(this->begin(), this->begin() + n, value);
-        _size = n;
-    }
-    void fill(int n)
-    {
-        _size = n;
-    }
-    int size () {
-        return _size;
-    }
+        void fill(int n, T value)
+        {
+            std::fill(this->begin(), this->begin() + n, value);
+            _size = n;
+        }
+        void fill(int n)
+        {
+            _size = n;
+        }
+        int size () {
+            return _size;
+        }
+
+        template <typename U, template <typename U_> typename W>
+        U* data() {
+            return static_cast<U*>(this->std::array<T, MaxSize>::data());
+        }
+
+    };
 };

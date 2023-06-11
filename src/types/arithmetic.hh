@@ -3,11 +3,11 @@
 template <typename T>
 struct ArithmeticType
 {
-    T value;
+    T value{};
 
-    explicit ArithmeticType() {}
-
-    explicit ArithmeticType(const T &val) : value(val) {}
+    constexpr ArithmeticType() {}
+    
+    constexpr ArithmeticType (const T &val) : value{val} {}
 
     operator T() const
     {

@@ -126,4 +126,11 @@ struct Search : S
             return expl;
         }
     };
+
+    State get_new_state () {
+        State state{};
+        return state;
+    }
+
+
 };

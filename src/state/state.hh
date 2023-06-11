@@ -9,7 +9,8 @@ template <class _Types>
 class AbstractState
 {
 public:
-    struct Types : _Types {
+    struct Types : _Types
+    {
         using TypeList = _Types;
     };
 };
@@ -24,13 +25,15 @@ public:
 
     PerfectInfoState() {}
 
+    PerfectInfoState(typename Types::PRNG &device) {}
+
     bool is_terminal{false};
     typename Types::VectorAction row_actions{};
     typename Types::VectorAction col_actions{};
     typename Types::Value payoff{};
     typename Types::Observation obs{};
     typename Types::Probability prob{};
-    
+
     void get_actions();
 
     void apply_actions(
@@ -69,7 +72,6 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action,
         typename Types::Seed seed);
-
 };
 
 template <class _Types>
@@ -78,15 +80,12 @@ class SolvedState : public ChanceState<_Types>
 public:
     struct Types : ChanceState<_Types>::Types
     {
-
     };
 
-    void get_payoff_matrix (
-        typename Types::MatrixValue &matrix
-    );
+    void get_payoff_matrix(
+        typename Types::MatrixValue &matrix);
 
-    void get_strategies (
+    void get_strategies(
         typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy
-    );
+        typename Types::VectorReal &col_strategy);
 };

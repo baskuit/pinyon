@@ -13,6 +13,8 @@ struct ValueStruct {
     Real col_value;
     ValueStruct () {}
     ValueStruct(Real row_value, Real col_value) : row_value{row_value}, col_value{col_value} {}
+    template <typename T>
+    ValueStruct(T row_value, T col_value) : row_value{row_value}, col_value{col_value} {}
     inline Real get_row_value () const {
         return row_value;
     }
@@ -45,6 +47,8 @@ struct ValueStruct<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN> {
     ValueStruct () {}
     ValueStruct (Real row_value) : row_value{row_value} {}
     ValueStruct(Real row_value, Real col_value) : row_value{row_value} {}
+    template <typename T>
+    ValueStruct(T row_value, T col_value) : row_value{row_value} {}
     inline Real get_row_value () const {
         return row_value;
     }
