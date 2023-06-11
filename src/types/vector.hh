@@ -60,7 +60,7 @@ struct A
 
         template <typename U, template <typename U_> typename W>
         U* data() {
-            return static_cast<U*>(this->std::array<T, MaxSize>::data());
+            return reinterpret_cast<U*>(this->std::array<T, MaxSize>::data());
         }
 
     };
