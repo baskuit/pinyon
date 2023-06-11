@@ -38,6 +38,18 @@ public:
     // just a helper for the sample_pdf function in apply_actions
 
     RandomTree(
+        const typename Types::PRNG &device)
+        : device(device),
+          depth_bound(16),
+          rows(4),
+          cols(4),
+          transitions(1),
+          chance_threshold(0)
+    {
+        get_chance_strategies();
+    }
+
+    RandomTree(
         const typename Types::PRNG &device,
         int depth_bound,
         size_t rows,

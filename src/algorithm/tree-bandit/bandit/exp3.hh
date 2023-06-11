@@ -211,7 +211,7 @@ public:
     void update_matrix_node(
         _MatrixNode<Exp3> *matrix_node,
         typename Types::Outcome &outcome,
-        double learning_rate)
+        typename Types::Real learning_rate)
     {
         matrix_node->stats.value_total += outcome.value * learning_rate;
         matrix_node->stats.visits += 1;
@@ -224,7 +224,7 @@ public:
     void update_chance_node(
         _ChanceNode<Exp3> *chance_node,
         typename Types::Outcome &outcome,
-        double learning_rate)
+        typename Types::Real learning_rate)
     {
     }
 
