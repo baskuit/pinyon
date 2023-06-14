@@ -3,6 +3,7 @@
 #include <types/types.hh>
 #include <state/state.hh>
 #include <types/random.hh>
+#include <dynamic/basic.hh>
 
 #include <vector>
 #include <ranges>
@@ -246,7 +247,6 @@ Helper class to generate random tree instances for testing
 struct RandomTreeGenerator
 {
 
-    using Tuple = std::tuple<size_t, size_t, size_t, double>;
 
     prng device;
     uint64_t seed;
@@ -256,6 +256,7 @@ struct RandomTreeGenerator
     const std::vector<double> chance_threshold_vec;
     const size_t trials;
 
+    using Tuple = std::tuple<size_t, size_t, size_t, double>;
     using Product = decltype(std::views::cartesian_product(depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec));
     using It = std::ranges::iterator_t<Product>;
 
@@ -267,6 +268,23 @@ struct RandomTreeGenerator
         std::vector<size_t> &actions_vec,
         std::vector<size_t> &chance_action_vec,
         std::vector<double> &chance_threshold_vec,
+        size_t trials)
+        : device{d},
+          depth_bound_vec{depth_bound_vec},
+          actions_vec{actions_vec},
+          chance_action_vec{chance_action_vec},
+          chance_threshold_vec{chance_threshold_vec},
+          trials{trials}
+    {
+        seed = device.uniform_64();
+    }
+
+    RandomTreeGenerator(
+        prng d,
+        std::vector<size_t> &&depth_bound_vec,
+        std::vector<size_t> &&actions_vec,
+        std::vector<size_t> &&chance_action_vec,
+        std::vector<double> &&chance_threshold_vec,
         size_t trials)
         : device{d},
           depth_bound_vec{depth_bound_vec},
@@ -301,12 +319,12 @@ struct RandomTreeGenerator
             return (*this);
         }
 
-        RandomTree operator*()
+        W::StateWrapper<RandomTree> operator*()
         {
 
             Tuple tuple = It::operator*();
 
-            return RandomTree{
+            return W::StateWrapper<RandomTree>{
                 prng{ptr->seed},
                 static_cast<int>(std::get<0>(tuple)),
                 std::get<1>(tuple),

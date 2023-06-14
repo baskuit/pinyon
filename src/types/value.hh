@@ -71,3 +71,5 @@ struct ValueStruct<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN> {
         return os;
     }
 };
+
+using PairDouble = ValueStruct<double, false, 0, 1>;

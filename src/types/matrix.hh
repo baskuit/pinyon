@@ -15,6 +15,9 @@ public:
     {
     }
 
+    template <typename U>
+    constexpr Matrix (const Matrix<U>& other); // TODO conversion operator
+
     void fill(size_t rows, size_t cols)
     {
         this->rows = rows;
