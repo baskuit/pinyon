@@ -22,7 +22,7 @@ template <class State>
 
 class DoubleOracleModel : public AbstractModel<State>
 {
-    static_assert(std::derived_from<State, PerfectInfoState<typename State::Types::TypeList>>);
+    // static_assert(std::derived_from<State, PerfectInfoState<typename State::Types::TypeList>>);
 
 public:
     struct ModelOutput;

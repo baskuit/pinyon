@@ -92,8 +92,9 @@ namespace W
         TreeData tree_data;
         virtual void run(size_t iterations, State &state, Model &model) = 0;
         virtual double exploitability(State &state) = 0;
-        virtual std::vector<double> row_strategy () = 0;
-        virtual std::vector<double> col_strategy () = 0;
+        virtual void get_empirical_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy) = 0;
+        // virtual std::vector<double> row_strategy() = 0;
+        // virtual std::vector<double> col_strategy() = 0;
         virtual void reset() = 0;
         template <typename T>
         std::shared_ptr<T> deref()
@@ -147,13 +148,17 @@ namespace W
         {
             ptr->get_actions();
             rows = ptr->row_actions.size();
-            rows = ptr->col_actions.size();
+            cols = ptr->col_actions.size();
         };
         void apply_actions(int row_idx, int col_idx)
         {
             if (row_idx < ptr->row_actions.size() && col_idx < ptr->col_actions.size())
             {
                 ptr->apply_actions(ptr->row_actions[row_idx], ptr->col_actions[col_idx]);
+            }
+            else
+            {
+                throw(std::exception());
             }
         };
         bool is_terminal()
@@ -256,7 +261,7 @@ namespace W
             row_strategy.clear();
             col_strategy.clear();
             typename _Algorithm::Types::VectorReal r{root->row_actions.size()}, c{root->col_actions.size()};
-            ptr->get_emprical_strategies(*&root, r, c);
+            ptr->get_empirical_strategies(&*root, r, c);
             for (int i = 0; i < r.size(); ++i)
             {
                 row_strategy.push_back(static_cast<double>(r[i]));
@@ -280,12 +285,6 @@ namespace W
             double expl = static_cast<double>(math::exploitability<typename _Algorithm::Types>(matrix, r, c));
             return expl;
         }; // aka expected regret because we use empirical strategies
-        std::vector<double> row_strategy () {
-            return {1.0};
-        }
-        std::vector<double> col_strategy () {
-            return {1.0};
-        }
     };
 
     // SEARCH_PARAMS(State_, Model_, BanditAlgo_, TreeAlgo_)
