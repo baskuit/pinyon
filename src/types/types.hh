@@ -177,23 +177,22 @@ using RandomTreeTypes = Types<
     Matrix<double>,
     Matrix<int>>;
 
-// template <
-//     typename _Rational,
-//     typename _Real,
-//     typename _Float,
+using ArenaTypes = Types<
+    Rational<int>,
+    float,
+    float,
+    uint8_t,
+    std::vector<uint8_t>, // train data here TODO
+    float,
+    uint64_t,
+    prng,
+    Vector,
+    A<9>::Array,
+    Vector,
+    Matrix<float>,
+    Matrix<float>,
+    Matrix<int>>;
 
-//     typename _Action,
-//     typename _Observation,
-//     typename _Probability,
-//     typename _Seed,
-//     typename _PRNG,
-//     typename _VectorReal,
-//     typename _VectorAction,
-//     typename _VectorInt,
-//     typename _MatrixReal,
-//     typename _MatrixFloat,
-//     typename _MatrixInt
-// >
 
 template <size_t LogSize>
 using BattleTypes = Types<

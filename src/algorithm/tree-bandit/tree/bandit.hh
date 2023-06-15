@@ -1,10 +1,8 @@
 #pragma once
 
 #include <types/types.hh>
-// #include <tree/tree.hh>
 #include <algorithm/algorithm.hh>
 
-#include <thread>
 #include <chrono>
 
 using namespace std::chrono;
@@ -34,7 +32,7 @@ struct PolicyOutcome
 };
 
 template <class Model, class BanditAlgorithm, 
-    template <class M> class _Outcome, template <class A> class MatrixNode, template <class A> class ChanceNode>
+    template <class> class _Outcome, template <class> class MatrixNode, template <class> class ChanceNode>
 class TreeBandit : public AbstractAlgorithm<Model>
 {
 public:
@@ -44,7 +42,7 @@ public:
     };
 
     void run(
-        size_t iterations,
+        const size_t iterations,
         typename Types::PRNG &device,
         const typename Types::State &state,
         typename Types::Model &model,
@@ -55,7 +53,7 @@ public:
         for (int iteration = 0; iteration < iterations; ++iteration)
         {
             typename Types::State state_copy = state;
-            state_copy.reseed(device.template new_seed<uint64_t>());
+            state_copy.reseed(device.template new_seed<typename Types::Seed>());
             this->run_iteration(device, state_copy, model, &matrix_node, inference);
         }
     }

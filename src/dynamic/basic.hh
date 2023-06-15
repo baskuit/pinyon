@@ -228,9 +228,6 @@ namespace W
         };
     };
 
-    // template <typename... Args>
-    // struct SearchWrapper;
-
     template <typename _Algorithm>
     struct SearchWrapper : Search
     {
@@ -253,7 +250,7 @@ namespace W
 
         void reset()
         {
-            *root = MatrixNode<_Algorithm>{};
+            root = std::make_shared<MatrixNode<_Algorithm>>();
         }
 
         void get_empirical_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy)
@@ -286,28 +283,6 @@ namespace W
             return expl;
         }; // aka expected regret because we use empirical strategies
     };
-
-    // SEARCH_PARAMS(State_, Model_, BanditAlgo_, TreeAlgo_)
-    // using Search = SearchWrapper<BanditAlgo_<Model_<State_>, TreeAlgo_, MatrixNode, ChanceNode>>;
-
-    // template <typename _Model, template <typename> typename __Algorithm>
-    // struct SearchWrapper<__Algorithm<_Model>>
-    // {
-    //     using _Algorithm = __Algorithm<_Model>;
-    //     std::shared_ptr<_Algorithm> ptr;
-    //     SearchWrapper(const _Algorithm &state) : ptr{std::make_shared<_Algorithm>(state)} {}
-    //     SearchWrapper(const _Algorithm &&state) : ptr{std::make_shared<_Algorithm>(state)} {}
-    //     SearchWrapper(const SearchWrapper &state_wrapper) : ptr{std::make_shared<_Algorithm>(*state_wrapper.ptr)} {}
-    //     template <typename... Args>
-    //     SearchWrapper(Args... args) : ptr(std::make_shared<_Algorithm>(args...)) {}
-    //     // SearchWrapper<Battle,
-
-    //     void run(size_t iterations, State &state, Model &model){};
-    //     void get_empirical_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy){};
-    //     void get_refined_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy){};
-    //     void get_emprical_value(double &row_value, double &col_value){};
-    //     double get_exploitability() { return 0; }; // aka expected regret because we use empirical strategies
-    // };
 
     template <typename _MatrixNode>
     struct MatrixNodeWrapper
