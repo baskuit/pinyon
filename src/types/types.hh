@@ -75,28 +75,21 @@ struct Types
     template <typename T>
     struct ActionType : Wrapper<T>
     {
-        constexpr explicit ActionType(const T &value) : Wrapper<T>{value} {}
-        constexpr explicit ActionType() : Wrapper<T>{} {}
-        operator T()
-        {
-            return this->value;
-        }
-        T *operator&()
-        {
-            return &(this->value);
-        }
+        constexpr ActionType(const T &value) : Wrapper<T>{value} {}
+        constexpr ActionType() : Wrapper<T>{} {}
     };
 
     template <typename T>
     struct ObservationType : Wrapper<T>
     {
-        constexpr explicit ObservationType(const T &value) : Wrapper<T>{value} {}
-        constexpr explicit ObservationType() : Wrapper<T>{} {}
+        constexpr ObservationType(const T &value) : Wrapper<T>{value} {}
+        constexpr ObservationType() : Wrapper<T>{} {}
         bool operator==(const ObservationType &other) const
         {
             return this->value == other.value;
         }
 
+        // TODO only here for Pokemon logs
         template <typename U, size_t size>
         U* data () {
             return this->value.data();

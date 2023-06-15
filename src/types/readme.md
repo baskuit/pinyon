@@ -7,11 +7,23 @@
 
 * Strong Typing
 
-# "Primitive" Types
+# Wrapped Types
+
+The following types are given wrappers for type correctness, but otherwise gain little to no functionality.
+
+This is to prevent `int row_idx, col_idx` being accidently misused e.g. `apply_actions(row_idx, col_idx)` when the `Action` type is simply `int`.
+
+Implicit coversions from `T` to `Wrapped<T>` are allowed, but not the otherway. The idea is that `row_actions[row_idx] = 0` is permissible (when `Action` is just `int`) is fine but unwrapping is forbidden.
+
+* Action
+* Observation
 
 ## Arithmetic
 
-Strong typing wrappers for Probability vs Real, e.g.
+The following types are similarly wrapped but we want to keep their arithmetic operations
+
+* Real
+* Probability
 
 ## Matrix
 

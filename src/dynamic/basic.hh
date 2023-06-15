@@ -91,6 +91,7 @@ namespace W
 
         TreeData tree_data;
         virtual void run(size_t iterations, State &state, Model &model) = 0;
+        virtual void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model) = 0;
         virtual double exploitability(State &state) = 0;
         virtual void get_empirical_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy) = 0;
         // virtual std::vector<double> row_strategy() = 0;
@@ -246,7 +247,28 @@ namespace W
             auto model_ptr = model.deref<typename _Algorithm::Types::Model>();
             typename _Algorithm::Types::PRNG device{};
             ptr->run(iterations, device, *state_ptr, *model_ptr, *root);
-        };
+        }
+
+        void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model) {
+            auto state_ptr = state.deref<typename _Algorithm::Types::State>();
+            auto model_ptr = model.deref<typename _Algorithm::Types::Model>();
+            typename _Algorithm::Types::PRNG device{};
+            MatrixNode<_Algorithm> root_temp;
+            ptr->run(iterations, device, *state_ptr, *model_ptr, root_temp);
+
+            row_strategy.clear();
+            col_strategy.clear();
+            typename _Algorithm::Types::VectorReal r{root->row_actions.size()}, c{root->col_actions.size()};
+            ptr->get_empirical_strategies(&root_temp, r, c);
+            for (int i = 0; i < r.size(); ++i)
+            {
+                row_strategy.push_back(static_cast<double>(r[i]));
+            }
+            for (int i = 0; i < c.size(); ++i)
+            {
+                col_strategy.push_back(static_cast<double>(c[i]));
+            }
+        }
 
         void reset()
         {
