@@ -33,21 +33,18 @@ public:
     typename Types::Value payoff{};
     typename Types::Observation obs{};
     typename Types::Probability prob{};
-
+    // TODO where is seed member?
     void get_actions();
 
     void apply_actions(
         typename Types::Action row_action,
         typename Types::Action col_action);
 
-    // void reseed(typename Types::PRNG &device){};
+    void reseed(typename Types::PRNG &device){};
 
     void apply_action_indices(
         ActionIndex row_idx,
-        ActionIndex col_idx)
-    {
-        apply_actions(row_actions[row_idx], col_actions[col_idx]);
-    };
+        ActionIndex col_idx);
 };
 
 template <class _Types>
