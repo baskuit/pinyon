@@ -117,27 +117,89 @@ Much like Vectors, we have specially denominated types for common data types: `M
 > The following requirements apply to all Matrix types
 
 ```cpp
-void fill(size_t rows, size_t cols);
+	void fill(size_t rows, size_t cols);
 ```
 This also serves the purpose of initializing a matrix, ensuring it has at least `rows * cols` entries. This method also sets the `rows` and `cols` dimensions.
 
-## Random
+```cpp
+	void fill(size_t rows, size_t cols, T value);
+```
+Same as above, but also sets all entries to `value`.
 
-Simple Mersenne Twister wrapper. Once this and several other things that were in /libsurskit were made modular I moved them into /types
+```cpp
+	T& get(size_t row_idx, size_t col_idx)
+```
+2-D accessor, similar to `operator[]`
 
-## Rational
 
-Simple rational type for exact prob, value calculation. Lsrlib needs `mpz_t` to work under the hood so we make those rationals available as well.
+``` cpp
+    Matrix operator*(T t) const
+    Matrix operator+(T t) const
+    Matrix operator+(const Matrix &t) const
+```
+Only scalar multiplication/addition and matrix addition are needed.
 
-## Strategy
+```cpp
+	T max() const
+	T min() const
+```
+The gambit solver normalizes the entries in the payoff matrix. These methods are used to assist that.
 
-Smaller representation for strategies. E.g. `uint8_t` as base represents fractions `x / 256`. Use `n - 1` dimensions, since the last is implied `\sigma = 1`.
-Mostly desired for smaller matrix nodes, hence only bandits that store strategies (e.g. p_uct) will need this.
+## Remaining Types
 
-## Value
+* `PRNG`
+* `Seed`
 
-Way to accomodate faster constant-sum and more general sum states with the least amount of refactor
+The core search functions are designed to be deterministic.
 
-## Vector
+State transitions are determined by their `seed` member, which is randomized at the start of the forward phase of tree bandit search.
 
-Use std vector or array!
+```cpp
+	PRNG();
+	PRNG(Seed seed);
+	Seed new_seed ();
+```
+
+The provided pseudo-random number generator  is `prng`, which is just a simple wrapper around `std::mt19937`. Users may want to replace this with something faster.
+
+* `Rational`
+
+Simple rational type for exact prob, value calculation. Rationals are the preferred way of initializing `Real`, `Probability` and other arithmetic values since may also be a precise representation!
+The library provides a global accessible type `Rational<T>`, where `T` is the underlying integral type for the numerator and denominator. 
+In the named Type structs, `Rational<int>` is the default `Rational` type.
+
+```cpp
+	Rational(T p);
+	Rational(T p, T q);
+```
+
+* Strategy
+
+TODO
+This type is currently unused. For bandit algorithms that use the model's policy inference (MatrixPUCB), the policy for both players is stored in the matrix node stats. Using even a vector of doubles here would explode the size of the matrix nodes, resulting in a significant performance drop. 
+
+Since probability distributions satisfy `0 < p_i < 1` for all entries `p_i` and precision is not terribly important, we can quantize the distribution using unsigned integers.
+
+For example, `uint8_t` has 256 possible values. Thus  the distro `{0.3, 0.3, 0.4}` could be represented as
+```cpp
+uint8_t strategy[3] = {76, 76, 104};
+```
+
+This is a 4x reduction in size from `float` already and we could even omit the last entry, since the probabilities must sum to 1.
+
+* `Value`
+
+Surskit does not make the assumption that games are constant sum. Although all games of interest have this property, it is not always satisfied by every ansillary game.
+
+In each matrix node, MatrixUCB must store a cumulative score for each of the `rows * cols` joint actions. Without the constant sum assumption, this requirement doubles.
+
+Thus we use a special struct to payoffs/value estimates for a game. This struct stores a `Real` type member for the row player, and if the game is not constant sum then stores an additional `Real` for the column player.
+
+```cpp
+Real Value::get_row_value() const;
+Real Value::get_col_value() const;
+static Real Value::PAYOFF_SUM;  
+```
+
+
+> Warning: Although the constant sum version of the struct is smaller, it usually result in slightly less performance than its more general counterpart. The reason for this lies in the backward phase of tree bandit, where we update the matrix and chance nodes using `get_col_value()`. In the non constant sum version, the column players value estimate at the leaf node is simply retrieved. In the constant sum version, it must be recalculated at each visited node via `PAYOFF_SUM - get_row_value()`.
