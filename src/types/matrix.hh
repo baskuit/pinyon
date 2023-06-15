@@ -16,7 +16,14 @@ public:
     }
 
     template <typename U>
-    constexpr Matrix (const Matrix<U>& other); // TODO conversion operator
+    Matrix(const Matrix<U>& matrix)
+    {
+        rows = matrix.rows;
+        cols = matrix.cols;
+        std::transform(matrix.begin(), matrix.end(), std::back_inserter(*this), [](const U& element) {
+            return static_cast<T>(element);
+        });
+    } // TODO check lol
 
     void fill(size_t rows, size_t cols)
     {
@@ -39,7 +46,7 @@ public:
         return (*this)[i * cols + j];
     }
 
-    Matrix operator*(T t)
+    Matrix operator*(T t) const
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
@@ -48,7 +55,7 @@ public:
                        { return a * t; });
         return output;
     }
-    Matrix operator+(T t)
+    Matrix operator+(T t) const
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
@@ -64,17 +71,17 @@ public:
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, t.begin(), output.begin(),
                        [](T a, T b)
-                       { return a + b; }); // Perform element-wise addition
+                       { return a + b; });
         return output;
     }
 
-    T max()
+    T max() const
     {
-        const size_t entries = rows * cols; // TODO remove entires calculation?
+        const size_t entries = rows * cols;
         return *std::max_element(this->begin(), this->begin() + entries);
     }
 
-    T min()
+    T min() const
     {
         const size_t entries = rows * cols;
         return *std::min_element(this->begin(), this->begin() + entries);
@@ -113,7 +120,7 @@ public:
         return (*this)[i * cols + j];
     }
 
-    Matrix operator*(ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> t)
+    Matrix operator*(ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> t) const
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
@@ -122,7 +129,7 @@ public:
                        { return a * t; });
         return output;
     }
-    Matrix operator+(ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> t)
+    Matrix operator+(ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> t) const
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
@@ -138,11 +145,11 @@ public:
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, t.begin(), output.begin(),
                        [](ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> a, ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> b)
-                       { return a + b; }); // Perform element-wise addition
+                       { return a + b; });
         return output;
     }
 
-    U max()
+    U max() const
     {
         const size_t entries = rows * cols;
         auto max_row = std::max_element(this->begin(), this->begin() + entries,
@@ -156,7 +163,7 @@ public:
         return std::max(max_row->get_row_value(), max_col->get_col_value());
     }
 
-    U min()
+    U min() const
     {
         const size_t entries = rows * cols;
         auto min_row = std::min_element(this->begin(), this->begin() + entries,
