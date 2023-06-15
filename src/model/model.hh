@@ -35,8 +35,8 @@ public:
     struct ModelOutput
     {
         typename Types::Value value;
-        typename Types::Strategy row_policy;
-        typename Types::Strategy col_policy;
+        typename Types::VectorReal row_policy;
+        typename Types::VectorReal col_policy;
     };
 };
 
