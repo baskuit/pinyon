@@ -16,7 +16,7 @@ Any model derived from `DoubleOracleModel` is expected to define 4 new types to 
 * `ModelBatchInput`
 * `ModelBatchOutput`
 
-These types are used in the inference and helper methods below:
+Their definitions vary considerably depending on the derived class. In the monte-carlo, the input is a 
 
 ```cpp
     void get_input(
@@ -38,6 +38,10 @@ These types are used in the inference and helper methods below:
     void get_inference(
         typename Types::ModelBatchInput &inputs,
         typename Types::ModelBatchOutput &outputs);
+
+    void get_inference(
+        const std::vector<typename Types::State> &states,
+        typename Types::ModelBatchOutput &outputs); // TODO add this!
 ```
 
 * `get_input`
