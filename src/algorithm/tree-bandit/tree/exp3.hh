@@ -2,7 +2,7 @@
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
-template <class Model, class MatrixNode, class ChanceNode>
+template <class Model>
 class Exp3 : AbstractAlgorithm<Model>
 {
 
@@ -92,18 +92,19 @@ public:
         get_empirical_values(stats, row_value, col_value);
     }
 
+private:
     void initialize_stats(
         int iterations,
         const typename Types::State &state,
         typename Types::Model &model,
-        _MatrixNode<Exp3> *matrix_node)
+        MatrixStats& stats)
     {
     }
 
     void expand(
         typename Types::State &state,
         typename Types::Model &model,
-        _MatrixNode<Exp3> *matrix_node)
+        MatrixStats& stats)
     {
         stats.row_visits.fill(state.row_actions.size(), 0);
         stats.col_visits.fill(state.col_actions.size(), 0);
@@ -158,7 +159,7 @@ public:
         outcome.col_mu = static_cast<typename Types::Real>(col_forecast[col_idx]);
     }
 
-    void update_matrix_node(
+    void update_matrix_stats(
         MatrixStats &stats
         Outcome &outcome)
     {
@@ -170,13 +171,13 @@ public:
         stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu;
     }
 
-    void update_chance_node(
+    void update_chance_stats(
         ChanceStats &stats,
         Outcome &outcome)
     {
     }
 
-    void update_matrix_node(
+    void update_matrix_stats(
         MatrixStats &stats
         Outcome &outcome,
         typename Types::Real learning_rate)
@@ -189,7 +190,7 @@ public:
         stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu * learning_rate;
     }
 
-    void update_chance_node(
+    void update_chance_stats(
         ChanceStats &stats,
         Outcome &outcome,
         typename Types::Real learning_rate)

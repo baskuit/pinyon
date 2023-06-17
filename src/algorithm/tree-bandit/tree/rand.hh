@@ -6,7 +6,7 @@
 Minimal model for benchmarking purposes (Test speed of state and tree structure)
 */
 
-template <class Model, class MatrixNode, class ChanceNode>
+template <class Model>
 class Rand : public AbstractAlgorithm<Model>
 {
 
@@ -35,37 +35,52 @@ public:
     }
 
     void get_empirical_strategies(
-        MatrixNode<Rand> *matrix_node,
+        MatrixStats &stats
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
     }
 
     void get_empirical_values(
-        MatrixNode<Rand> *matrix_node,
+        MatrixStats &stats
         typename Types::Real &row_value,
         typename Types::Real &col_value)
     {
     }
 
+    void get_refined_strategies(
+        MatrixStats &stats
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy)
+    {
+    }
+
+    void get_refined_values(
+        MatrixStats &stats
+        typename Types::Real &row_value,
+        typename Types::Real &col_value)
+    {
+    }
+protected:
+
     void initialize_stats(
         int iterations,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Rand> *matrix_node)
+        MatrixStats &stats)
     {
     }
 
     void expand(
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<Rand> *matrix_node)
+        MatrixStats &stats)
     {
     }
 
     void select(
         typename Types::PRNG &device,
-        MatrixNode<Rand> *matrix_node,
+        MatrixStats &stats
         typename Types::Outcome &outcome)
     {
         const int rows = matrix_node->row_actions.size();
@@ -76,14 +91,14 @@ public:
         outcome.col_idx = col_idx;
     }
 
-    void update_matrix_node(
-        MatrixNode<Rand> *matrix_node,
+    void update_matrix_stats(
+        MatrixStats &stats
         typename Types::Outcome &outcome)
     {
     }
 
-    void update_chance_node(
-        ChanceNode<Rand> *chance_node,
+    void update_chance_stats(
+        ChanceStats &stats
         typename Types::Outcome &outcome)
     {
     }

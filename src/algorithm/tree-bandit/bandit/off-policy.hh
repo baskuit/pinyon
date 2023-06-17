@@ -5,11 +5,8 @@
 #include <algorithm/algorithm.hh>
 #include <algorithm/tree-bandit/tree/bandit.hh>
 
-// #include <torch/torch.h>
 #include <thread>
 #include <chrono>
-
-constexpr int BATTLE_INPUT_DIM = 370;
 
 using namespace std::chrono;
 
@@ -19,22 +16,20 @@ TODO still no chance node updates (does any algo actually NEED this?)
 
 */
 
-template <class Model, class BanditAlgorithm, 
-    template <class M> class _Outcome, template <class Algo> class MatrixNode, template <class Algo> class ChanceNode>
-class OffPolicy : public AbstractAlgorithm<Model>
+template <class BanditAlgorithm>
+class OffPolicy : public BanditAlgorithm
 {
 public:
-    struct Types : AbstractAlgorithm<Model>::Types
+    struct Types : BanditAlgorithm::Types
     {
-        using Outcome = _Outcome<Model>;
     };
 
     struct Frame {
         Types::Outcome outcome;
-        MatrixNode<BanditAlgorithm>* matrix_node;
+        MatrixNode<OffPolicy>* matrix_node;
         Frame (
             typename Types::Real outcome,
-            MatrixNode<BanditAlgorithm>* matrix_node
+            MatrixNode<OffPolicy>* matrix_node
         ) : outcome{outcome}, matrix_node{matrix_node} {}
         Frame () {}
     };
@@ -42,12 +37,12 @@ public:
 
 
     void run(
-        size_t learner_iterations,
-        size_t actor_iterations_per,
+        const size_t learner_iterations,
+        const size_t actor_iterations_per,
         typename Types::PRNG &device,
         std::vector<typename Types::State> &states,
         typename Types::Model &model,
-        std::vector<MatrixNode<BanditAlgorithm>*> &matrix_nodes)
+        std::vector<MatrixNode<OffPolicy>*> &matrix_nodes)
     {
 
         // Perform batched inference on all trees
@@ -56,7 +51,7 @@ public:
 
         for (auto matrix_node : matrix_nodes)
         {
-            this->_initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
+            this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
         }
 
         typename Types::ModelBatchInput input{};   // vector of states - Tensor
@@ -83,7 +78,7 @@ public:
         typename Types::PRNG &device,
         std::vector<typename Types::State> &states,
         typename Types::Model &model,
-        std::vector<MatrixNode<BanditAlgorithm>*> &matrix_nodes)
+        std::vector<MatrixNode<OffPolicy>*> &matrix_nodes)
     {
 
         // One inference step
@@ -121,13 +116,13 @@ public:
                 typename Types::VectorReal row_policy;
                 typename Types::VectorReal col_policy;
 
-                _get_policy(matrix_node, row_policy, col_policy);
+                get_policy(matrix_node, row_policy, col_policy);
 
                 double learning_rate = (row_policy[outcome.row_idx] * col_policy[outcome.col_idx]) / (outcome.row_mu * outcome.col_mu);
 
                 std::cout << learning_rate << " lr" << std::endl;
 
-                _update_matrix_node(
+                update_matrix_stats(
                     matrix_node,
                     outcome,
                     learning_rate
@@ -138,70 +133,13 @@ public:
     }
 
 protected:
-    void _get_policy(
-        MatrixNode<BanditAlgorithm> *matrix_node,
-        typename Types::VectorReal &row_policy,
-        typename Types::VectorReal &col_policy)
-    {
-        return static_cast<BanditAlgorithm *>(this)->get_policy(
-            matrix_node,
-            row_policy,
-            col_policy);
-    }
-
-    void _select(
-        typename Types::PRNG &device,
-        MatrixNode<BanditAlgorithm> *matrix_node,
-        typename Types::Outcome &outcome)
-    {
-        return static_cast<BanditAlgorithm *>(this)->select(
-            device,
-            matrix_node,
-            outcome);
-    }
-
-    void _initialize_stats(
-        size_t iterations,
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixNode<BanditAlgorithm> *root)
-    {
-        return static_cast<BanditAlgorithm *>(this)->initialize_stats(
-            iterations,
-            state,
-            model,
-            root);
-    }
-
-    void _expand(
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixNode<BanditAlgorithm> *matrix_node)
-    {
-        state.get_actions();
-        matrix_node->is_terminal = state.is_terminal;
-        if (state.is_terminal)
-        {
-            matrix_node->is_terminal = true;
-            return;
-        }
-
-        matrix_node->row_actions = state.row_actions;
-        matrix_node->col_actions = state.col_actions;
-        matrix_node->is_expanded = true;
-
-        static_cast<BanditAlgorithm *>(this)->expand(
-            state,
-            model,
-            matrix_node);
-    }
 
     void get_trajectory(
         Trajectory& trajectory,
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<BanditAlgorithm> *matrix_node)
+        MatrixNode<OffPolicy> *matrix_node)
     {
         if (!matrix_node->is_terminal)
         {
@@ -212,21 +150,21 @@ protected:
                 frame.matrix_node = matrix_node;
 
                 typename Types::Outcome &outcome = frame.outcome;
-                _select(device, matrix_node, outcome);
+                select(device, matrix_node, outcome);
 
                 typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
                 typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
                 state.apply_actions(row_action, col_action);
 
-                ChanceNode<BanditAlgorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<BanditAlgorithm> *matrix_node_next = chance_node->access(state.obs);
+                ChanceNode<OffPolicy> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                MatrixNode<OffPolicy> *matrix_node_next = chance_node->access(state.obs);
 
                 get_trajectory(trajectory, device, state, model, matrix_node_next);
                 return;
             }
             else
             {
-                this->_expand(state, model, matrix_node);
+                this->expand(state, model, matrix_node);
                 return;
             }
         }
@@ -234,27 +172,5 @@ protected:
         {
             return;
         }
-    }
-
-    void _update_matrix_node(
-        MatrixNode<BanditAlgorithm> *matrix_node,
-        typename Types::Outcome &outcome,
-        double learning_rate)
-    {
-        return static_cast<BanditAlgorithm *>(this)->update_matrix_node(
-            matrix_node,
-            outcome,
-            learning_rate);
-    }
-
-    void _update_chance_node(
-        ChanceNode<BanditAlgorithm> *chance_node,
-        typename Types::Outcome &outcome,
-        double learning_rate)
-    {
-        return static_cast<BanditAlgorithm *>(this)->update_chance_node(
-            chance_node,
-            outcome,
-            learning_rate);
     }
 };

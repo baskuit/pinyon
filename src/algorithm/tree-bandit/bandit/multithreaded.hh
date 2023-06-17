@@ -125,8 +125,8 @@ protected:
                 outcome.value = inference.value;
 
                 mtx.lock();
-                update_matrix_node(matrix_node->stats, outcome);
-                update_chance_node(chance_node.stats, outcome);
+                update_matrix_stats(matrix_node->stats, outcome);
+                update_chance_stats(chance_node.stats, outcome);
                 mtx.unlock();
 
                 return matrix_node_leaf;
@@ -171,8 +171,8 @@ protected:
                 run_iteration_average(device, state, model, matrix_node_next);
 
                 get_empirical_values(matrix_node_next, outcome.row_value, outcome.col_value);
-                update_matrix_node(matrix_node, outcome);
-                update_chance_node(chance_node, outcome);
+                update_matrix_stats(matrix_node, outcome);
+                update_chance_stats(chance_node, outcome);
                 return;
             }
             else
@@ -307,8 +307,8 @@ public:
                 outcome.value = inference.value;
 
                 mtx.lock();
-                update_matrix_node(matrix_node->stats, outcome);
-                update_chance_node(chance_node.stats, outcome);
+                update_matrix_stats(matrix_node->stats, outcome);
+                update_chance_stats(chance_node.stats, outcome);
                 mtx.unlock();
 
                 return matrix_node_leaf;
