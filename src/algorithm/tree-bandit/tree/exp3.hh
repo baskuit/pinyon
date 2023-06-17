@@ -52,27 +52,44 @@ public:
     }
 
     void get_empirical_strategies(
-        _MatrixNode<Exp3> *matrix_node,
+        MatrixStats &stats
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
-        row_strategy.fill(matrix_node->stats.row_visits.size());
-        col_strategy.fill(matrix_node->stats.col_visits.size());
-        // denoise? TODO
-        denoise(row_strategy, col_strategy); // uses this->gamma;
-        math::power_norm(matrix_node->stats.row_visits, row_strategy.size(), 1, row_strategy);
-        math::power_norm(matrix_node->stats.col_visits, col_strategy.size(), 1, col_strategy);
+        row_strategy.fill(stats.row_visits.size());
+        col_strategy.fill(stats.col_visits.size());
+        math::power_norm(stats.row_visits, row_strategy.size(), 1, row_strategy);
+        math::power_norm(stats.col_visits, col_strategy.size(), 1, col_strategy);
     }
 
     void get_empirical_values(
-        _MatrixNode<Exp3> *matrix_node,
+        MatrixStats &stats
         typename Types::Real &row_value,
         typename Types::Real &col_value)
     {
-        // auto stats = matrix_node->stats;
-        // const typename Types::Real den = 1 / (stats.total_visits + (stats.total_visits == 0));
-        // row_value = stats.row_value_total * den;
-        // col_value = stats.col_value_total * den;
+        const typename Types::Real den = 1 / (stats.total_visits + (stats.total_visits == 0));
+        row_value = stats.row_value_total * den;
+        col_value = stats.col_value_total * den;
+    }
+
+    void get_refined_strategies(
+        MatrixStats &stats
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy)
+    {
+        row_strategy.fill(stats.row_visits.size());
+        col_strategy.fill(stats.col_visits.size());
+        denoise(row_strategy, col_strategy); // TODO
+        math::power_norm(stats.row_visits, row_strategy.size(), 1, row_strategy);
+        math::power_norm(stats.col_visits, col_strategy.size(), 1, col_strategy);
+    }
+
+    void get_refined_values(
+        MatrixStats &stats
+        typename Types::Real &row_value,
+        typename Types::Real &col_value)
+    {
+        get_empirical_values(stats, row_value, col_value);
     }
 
     void initialize_stats(
@@ -88,64 +105,23 @@ public:
         typename Types::Model &model,
         _MatrixNode<Exp3> *matrix_node)
     {
-        matrix_node->stats.row_visits.fill(state.row_actions.size(), 0);
-        matrix_node->stats.col_visits.fill(state.col_actions.size(), 0);
-        matrix_node->stats.row_gains.fill(state.row_actions.size(), 0);
-        matrix_node->stats.col_gains.fill(state.col_actions.size(), 0);
-    }
-
-    void get_policy(
-        _MatrixNode<Exp3> *matrix_node,
-        typename Types::VectorReal &row_policy,
-        typename Types::VectorReal &col_policy)
-    {
-        /*
-        Softmaxing of the gains to produce forecasts/strategies for the row and col players.
-        The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
-        */
-        const int rows = matrix_node->row_actions.size();
-        const int cols = matrix_node->col_actions.size();
-        row_policy.fill(rows);
-        col_policy.fill(cols);
-        if (rows == 1)
-        {
-            row_policy[0] = 1;
-        }
-        else
-        {
-            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
-            softmax(row_policy, matrix_node->stats.row_gains, rows, eta);
-            for (int row_idx = 0; row_idx < rows; ++row_idx)
-            {
-                row_policy[row_idx] = (1 - gamma) * row_policy[row_idx] + eta;
-            }
-        }
-        if (cols == 1)
-        {
-            col_policy[0] = 1;
-        }
-        else
-        {
-            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
-            softmax(col_policy, matrix_node->stats.col_gains, cols, eta);
-            for (int col_idx = 0; col_idx < cols; ++col_idx)
-            {
-                col_policy[col_idx] = (1 - gamma) * col_policy[col_idx] + eta;
-            }
-        }
+        stats.row_visits.fill(state.row_actions.size(), 0);
+        stats.col_visits.fill(state.col_actions.size(), 0);
+        stats.row_gains.fill(state.row_actions.size(), 0);
+        stats.col_gains.fill(state.col_actions.size(), 0);
     }
 
     void select(
         typename Types::PRNG &device,
-        _MatrixNode<Exp3> *matrix_node,
+        MatrixStats &stats
         Outcome &outcome)
     {
         /*
         Softmaxing of the gains to produce forecasts/strategies for the row and col players.
         The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
         */
-        const int rows = matrix_node->row_actions.size();
-        const int cols = matrix_node->col_actions.size();
+        const int rows = stats.row_gains.size();
+        const int cols = stats.col_gains.size();
         typename Types::VectorReal row_forecast(rows);
         typename Types::VectorReal col_forecast(cols);
         if (rows == 1)
@@ -155,7 +131,7 @@ public:
         else
         {
             const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
-            softmax(row_forecast, matrix_node->stats.row_gains, rows, eta);
+            softmax(row_forecast, stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
                 row_forecast[row_idx] = (1 - gamma) * row_forecast[row_idx] + eta;
@@ -168,7 +144,7 @@ public:
         else
         {
             const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
-            softmax(col_forecast, matrix_node->stats.col_gains, cols, eta);
+            softmax(col_forecast, stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
                 col_forecast[col_idx] = (1 - gamma) * col_forecast[col_idx] + eta;
@@ -183,41 +159,78 @@ public:
     }
 
     void update_matrix_node(
-        _MatrixNode<Exp3> *matrix_node,
+        MatrixStats &stats
         Outcome &outcome)
     {
-        matrix_node->stats.value_total += outcome.value;
-        matrix_node->stats.visits += 1;
-        matrix_node->stats.row_visits[outcome.row_idx] += 1;
-        matrix_node->stats.col_visits[outcome.col_idx] += 1;
-        matrix_node->stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu;
-        matrix_node->stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu;
+        stats.value_total += outcome.value;
+        stats.visits += 1;
+        stats.row_visits[outcome.row_idx] += 1;
+        stats.col_visits[outcome.col_idx] += 1;
+        stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu;
+        stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu;
     }
 
     void update_chance_node(
-        _ChanceNode<Exp3> *chance_node,
+        ChanceStats &stats,
         Outcome &outcome)
     {
     }
 
     void update_matrix_node(
-        _MatrixNode<Exp3> *matrix_node,
+        MatrixStats &stats
         Outcome &outcome,
         typename Types::Real learning_rate)
     {
-        matrix_node->stats.value_total += outcome.value * learning_rate;
-        matrix_node->stats.visits += 1;
-        matrix_node->stats.row_visits[outcome.row_idx] += 1;
-        matrix_node->stats.col_visits[outcome.col_idx] += 1;
-        matrix_node->stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu * learning_rate;
-        matrix_node->stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu * learning_rate;
+        stats.value_total += outcome.value * learning_rate;
+        stats.visits += 1;
+        stats.row_visits[outcome.row_idx] += 1;
+        stats.col_visits[outcome.col_idx] += 1;
+        stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu * learning_rate;
+        stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu * learning_rate;
     }
 
     void update_chance_node(
-        _ChanceNode<Exp3> *chance_node,
+        ChanceStats &stats,
         Outcome &outcome,
         typename Types::Real learning_rate)
     {
+    }
+
+    void get_policy(
+        MatrixStats &stats
+        typename Types::VectorReal &row_policy,
+        typename Types::VectorReal &col_policy)
+    {
+        const int rows = stats.row_gains.size();
+        const int cols = stats.col_gains.size();
+        row_policy.fill(rows);
+        col_policy.fill(cols);
+        if (rows == 1)
+        {
+            row_policy[0] = 1;
+        }
+        else
+        {
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
+            softmax(row_policy, stats.row_gains, rows, eta);
+            for (int row_idx = 0; row_idx < rows; ++row_idx)
+            {
+                row_policy[row_idx] = (1 - gamma) * row_policy[row_idx] + eta;
+            }
+        }
+        if (cols == 1)
+        {
+            col_policy[0] = 1;
+        }
+        else
+        {
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
+            softmax(col_policy, stats.col_gains, cols, eta);
+            for (int col_idx = 0; col_idx < cols; ++col_idx)
+            {
+                col_policy[col_idx] = (1 - gamma) * col_policy[col_idx] + eta;
+            }
+        }
     }
 
 private:
