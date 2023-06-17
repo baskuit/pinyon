@@ -1,12 +1,64 @@
-The algorithms in the folder are variations of MCTS (Called "TreeBandit" herein) that follow this pattern
+# Tree Bandit
 
+The algorithms in the folder are generalizations of MCTS, which we call 'tree bandit'.
+
+> In mathematics, "Monte Carlo" refers to estimation via random process. MCTS gets its name sake from the random rollout method of value estimation.
+
+ The tree bandit algorithms are defined in two parts. 
+
+* First there is the bandit algorithm, which takes the model type is its sole template parameter. The tree component takes the bandit type as its first template parameter, as well as the types of the nodes and ...
+
+* The tree component wraps the bandit component. It derives its own `MatrixStats`, `ChanceStats` from those in the former, to add any necessary info.
+
+## BanditAlgorithm
+
+The Exp3 and MatrixUCB algorithms are already provided. Not all bandits algorithms (i.e. stochastic bandit algorithms) are sound choices. Refer to "Analysis of Hannan Consistent Selection for Monte Carlo Tree Search in Simultaneous Move Games".
+
+The interface that a bandit algorithm must have is best explained by looking at Exp3:
+
+```cpp
+template <class Model>
+class Exp3 : AbstractAlgorithm<Model>
+{
+public:
+    struct MatrixStats;
+    struct ChanceStats;
+    struct Outcome;
+    struct Types : AbstractAlgorithm<Model>::Types
+    {
+        using MatrixStats = Exp3::MatrixStats;
+        using ChanceStats = Exp3::ChanceStats;
+        using Outcome = Exp3::Outcome;
+    };
+    struct MatrixStats
+    {
+        typename Types::VectorReal row_gains;
+        typename Types::VectorReal col_gains;
+        typename Types::VectorInt row_visits;
+        typename Types::VectorInt col_visits;
+        int visits = 0;
+        typename Types::Value value_total;
+    };
+    struct ChanceStats {};
+    struct Outcome
+    {
+        ActionIndex row_idx, col_idx;
+        typename Model::Types::Value value;
+        typename Types::Real row_mu, col_mu;
+    };
+ //...
+};
 ```
-BanditAlgorithm<Model, BaseAlgorithm>
-```
 
-where `BanditAlgorithm` refers to the selection process that we apply at each node of the forward phase, and `Base` is some modifier that changes the search process. This is essentially a distinction of scope between the states/nodes and tree.
+There are three structs that all bandit algorithms must define:
 
-The Exp3 and MatrixUCB algorithms are provided. Not all bandits (i.e. stochastic bandit algorithms) are sound choices. Refer to "Analysis of Hannan Consistent Selection for Monte Carlo Tree Search in Simultaneous Move Games".
+* `MatrixStats`
+* `ChanceStats`
+* `Outcome`
+
+The following methods are expected.
+
+## TreeAlgorithm
 
 The base algorithms are:
 
