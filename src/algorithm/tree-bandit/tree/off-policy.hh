@@ -16,7 +16,12 @@ TODO still no chance node updates (does any algo actually NEED this?)
 
 */
 
-template <class BanditAlgorithm>
+template <
+    class BanditAlgorithm, 
+    template <class> class MatrixNode,
+    template <class> class ChanceNode,
+    bool StopEarly = false
+>
 class OffPolicy : public BanditAlgorithm
 {
 public:

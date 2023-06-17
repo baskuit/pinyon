@@ -5,7 +5,12 @@
 
 #include <chrono>
 
-template <class BanditAlgorithm, bool StopEarly = false>
+template <
+    class BanditAlgorithm, 
+    template <class> class MatrixNode,
+    template <class> class ChanceNode,
+    bool StopEarly = false
+>
 class TreeBandit : public BanditAlgorithm
 {
 public:
@@ -48,9 +53,9 @@ public:
         typename Types::Model &model,
         MatrixNode<TreeBandit> &matrix_node)
     {
-        auto start = std::chronohigh_resolution_clock::now();
-        auto end = std::chronohigh_resolution_clock::now();
-        auto duration = std::chronoduration_cast<microseconds>(end - start);
+        auto start = std::chrono::high_resolution_clock::now();
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<microseconds>(end - start);
 
         while (duration.count() < duration_us)
         {
@@ -58,8 +63,8 @@ public:
             state_copy.reseed(device);
             this->run_iteration(device, state_copy, model, &matrix_node);
 
-            end = std::chronohigh_resolution_clock::now();
-            duration = std::chronoduration_cast<microseconds>(end - start);
+            end = std::chrono::high_resolution_clock::now();
+            duration = std::chrono::duration_cast<microseconds>(end - start);
         }
     }
 
@@ -131,8 +136,8 @@ protected:
                 run_iteration_average(device, state, model, matrix_node_next);
 
                 get_empirical_values(matrix_node_next, outcome.row_value, outcome.col_value);
-                update_matrix_stats(matrix_node, outcome);
-                update_chance_stats(chance_node, outcome);
+                update_matrix_stats(matrix_node->stats, outcome);
+                update_chance_stats(chance_node->stats, outcome);
                 return;
             }
             else
