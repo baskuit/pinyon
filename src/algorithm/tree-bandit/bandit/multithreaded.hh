@@ -8,6 +8,8 @@
 #include <mutex>
 #include <atomic>
 
+// TODO TODO check speed with read write lock
+
 template <class BanditAlgorithm, bool StopEarly = false>
 class TreeBanditThreaded : public BanditAlgorithm
 {
@@ -92,30 +94,6 @@ public:
     }
 
 protected:
-    void expand(
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixNode<TreeBanditThreaded> *matrix_node,
-        typename Types::ModelOutput &inference)
-    {
-        state.get_actions();
-        matrix_node->row_actions = state.row_actions;
-        matrix_node->col_actions = state.col_actions;
-        matrix_node->is_expanded = true;
-        matrix_node->is_terminal = state.is_terminal;
-
-        expand(state, model, matrix_node->stats);
-
-        if (matrix_node->is_terminal)
-        {
-            inference.value = state.payoff;
-        }
-        else
-        {
-            model.get_inference(state, inference);
-        }
-    }
-
     MatrixNode<TreeBanditThreaded> *run_iteration(
         typename Types::PRNG &device,
         typename Types::State &state,
@@ -169,8 +147,6 @@ protected:
         }
     }
 
-    // TODO rename. MCTS-A style search where you return the empirical average values of the next node instead of the leaf node value.
-
     void run_iteration_average(
         typename Types::PRNG &device,
         typename Types::State &state,
@@ -212,9 +188,11 @@ protected:
     }
 };
 
+
 /*
 TreeBandit with a mutex pool
 */
+
 
 template <class BanditAlgorithm, bool StopEarly = false, size_t pool_size = 128>
 class TreeBanditThreadPool : public BanditAlgorithm
