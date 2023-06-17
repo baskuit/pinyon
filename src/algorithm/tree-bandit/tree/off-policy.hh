@@ -117,14 +117,14 @@ public:
                 typename Types::VectorReal row_policy;
                 typename Types::VectorReal col_policy;
 
-                get_policy(matrix_node, row_policy, col_policy);
+                this->get_policy(matrix_node->stats, row_policy, col_policy);
 
                 double learning_rate = (row_policy[outcome.row_idx] * col_policy[outcome.col_idx]) / (outcome.row_mu * outcome.col_mu);
 
                 std::cout << learning_rate << " lr" << std::endl;
 
-                update_matrix_stats(
-                    matrix_node,
+                this->update_matrix_stats(
+                    matrix_node->stats,
                     outcome,
                     learning_rate);
             }
@@ -149,7 +149,7 @@ protected:
                 frame.matrix_node = matrix_node;
 
                 typename Types::Outcome &outcome = frame.outcome;
-                select(device, matrix_node, outcome);
+                this->select(device, matrix_node->stats, outcome);
 
                 typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
                 typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];

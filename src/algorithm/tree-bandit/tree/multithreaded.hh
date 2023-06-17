@@ -11,24 +11,25 @@
 
 // TODO TODO check speed with read write lock
 
-template <class BanditAlgorithm, bool StopEarly = false>
+template <
+    class BanditAlgorithm,
+    template <class> class MNode = MatrixNode,
+    template <class> class CNode = ChanceNode,
+    bool StopEarly = false>
 class TreeBanditThreaded : public BanditAlgorithm
 {
 public:
     struct MatrixStats;
-    struct ChanceStats;
     struct Types : BanditAlgorithm::Types
     {
         using MatrixStats = TreeBanditThreaded::MatrixStats;
-        using ChanceStats = TreeBanditThreaded::ChanceStats;
+        using MatrixNode = MNode<TreeBanditThreaded>;
+        using ChanceNode = CNode<TreeBanditThreaded>;
     };
 
     struct MatrixStats : BanditAlgorithm::MatrixStats
     {
         std::mutex mtx{};
-    };
-    struct ChanceStats : BanditAlgorithm::ChanceStats
-    {
     };
 
     size_t threads = 1;
@@ -40,7 +41,7 @@ public:
         typename Types::Model &model,
         MatrixNode<TreeBanditThreaded> &matrix_node)
     {
-        this->_initialize_stats(iterations, state, model, &matrix_node);
+        this->initialize_stats(iterations, state, model, matrix_node.stats);
         std::thread thread_pool[threads];
         const size_t iterations_per_thread = iterations / threads;
         for (int i = 0; i < threads; ++i)
@@ -110,7 +111,7 @@ protected:
                 typename Types::Outcome outcome;
 
                 mtx.lock();
-                select(device, matrix_node->stats, outcome);
+                this->select(device, matrix_node->stats, outcome);
                 mtx.unlock();
 
                 typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
@@ -125,8 +126,8 @@ protected:
                 outcome.value = inference.value;
 
                 mtx.lock();
-                update_matrix_stats(matrix_node->stats, outcome);
-                update_chance_stats(chance_node.stats, outcome);
+                this->update_matrix_stats(matrix_node->stats, outcome);
+                this->update_chance_stats(chance_node->stats, outcome);
                 mtx.unlock();
 
                 return matrix_node_leaf;
@@ -134,8 +135,22 @@ protected:
             else
             {
                 mtx.lock();
-                this->expand(state, model, matrix_node->stats, inference);
+                state.get_actions();
+                matrix_node->row_actions = state.row_actions;
+                matrix_node->col_actions = state.col_actions;
+                matrix_node->is_expanded = true;
+                matrix_node->is_terminal = state.is_terminal;
+                this->expand(state, model, matrix_node->stats);
                 mtx.unlock();
+
+                if (state.is_terminal)
+                {
+                    inference.value = state.payoff;
+                }
+                else
+                {
+                    model.get_inference(state, inference);
+                }
 
                 return matrix_node;
             }
@@ -146,53 +161,18 @@ protected:
             return matrix_node;
         }
     }
-
-    void run_iteration_average(
-        typename Types::PRNG &device,
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixNode<TreeBanditThreaded> *matrix_node)
-    {
-        if (!matrix_node->is_terminal)
-        {
-            if (matrix_node->is_expanded)
-            {
-                typename Types::Outcome outcome;
-
-                select(device, matrix_node, outcome);
-
-                typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
-                typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
-                state.apply_actions(row_action, col_action);
-
-                ChanceNode<TreeBanditThreaded> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<TreeBanditThreaded> *matrix_node_next = chance_node->access(state.transition);
-
-                run_iteration_average(device, state, model, matrix_node_next);
-
-                get_empirical_values(matrix_node_next, outcome.row_value, outcome.col_value);
-                update_matrix_stats(matrix_node, outcome);
-                update_chance_stats(chance_node, outcome);
-                return;
-            }
-            else
-            {
-                this->expand(state, model, matrix_node);
-                return;
-            }
-        }
-        else
-        {
-            return;
-        }
-    }
 };
 
 /*
 TreeBandit with a mutex pool
 */
 
-template <class BanditAlgorithm, bool StopEarly = false, size_t pool_size = 128>
+template <
+    class BanditAlgorithm,
+    template <class> class MNode,
+    template <class> class CNode,
+    size_t pool_size = 128,
+    bool StopEarly = false>
 class TreeBanditThreadPool : public BanditAlgorithm
 {
 public:
@@ -200,6 +180,8 @@ public:
     struct Types : BanditAlgorithm::Types
     {
         using MatrixStats = TreeBanditThreadPool::MatrixStats;
+        using MatrixNode = MNode<TreeBanditThreadPool>;
+        using ChanceNode = CNode<TreeBanditThreadPool>;
     };
 
     struct MatrixStats
@@ -318,8 +300,8 @@ public:
                 matrix_node->col_actions = state.col_actions;
                 matrix_node->is_expanded = true;
                 matrix_node->is_terminal = state.is_terminal;
-
                 this->expand(state, model, matrix_node->stats);
+                mtx.unlock();
 
                 if (state.is_terminal)
                 {
@@ -329,7 +311,6 @@ public:
                 {
                     model.get_inference(state, inference);
                 }
-                mtx.unlock();
 
                 return matrix_node;
             }
