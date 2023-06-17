@@ -11,11 +11,10 @@ TODO still no chance node updates (does any algo actually NEED this?)
 */
 
 template <
-    class BanditAlgorithm, 
+    class BanditAlgorithm,
     template <class> class MNode,
     template <class> class CNode,
-    bool StopEarly = false
->
+    bool StopEarly = false>
 class OffPolicy : public BanditAlgorithm
 {
 public:
@@ -25,17 +24,16 @@ public:
         using ChanceNode = CNode<OffPolicy>;
     };
 
-    struct Frame {
+    struct Frame
+    {
         Types::Outcome outcome;
-        MatrixNode<OffPolicy>* matrix_node;
-        Frame (
+        MatrixNode<OffPolicy> *matrix_node;
+        Frame(
             typename Types::Real outcome,
-            MatrixNode<OffPolicy>* matrix_node
-        ) : outcome{outcome}, matrix_node{matrix_node} {}
-        Frame () {}
+            MatrixNode<OffPolicy> *matrix_node) : outcome{outcome}, matrix_node{matrix_node} {}
+        Frame() {}
     };
     using Trajectory = std::vector<Frame>;
-
 
     void run(
         const size_t learner_iterations,
@@ -43,7 +41,7 @@ public:
         typename Types::PRNG &device,
         std::vector<typename Types::State> &states,
         typename Types::Model &model,
-        std::vector<MatrixNode<OffPolicy>*> &matrix_nodes)
+        std::vector<MatrixNode<OffPolicy> *> &matrix_nodes)
     {
 
         // Perform batched inference on all trees
@@ -62,8 +60,8 @@ public:
         for (int learner_iteration = 0; learner_iteration < learner_iterations; ++learner_iteration)
         {
             trajectories.clear();
-            get_trajectories(trajectories, input, 
-                actor_iterations_per, device, states, model, matrix_nodes);
+            get_trajectories(trajectories, input,
+                             actor_iterations_per, device, states, model, matrix_nodes);
             // populate trajectories vector and batch input
 
             model.get_inference(input, output);
@@ -79,7 +77,7 @@ public:
         typename Types::PRNG &device,
         std::vector<typename Types::State> &states,
         typename Types::Model &model,
-        std::vector<MatrixNode<OffPolicy>*> &matrix_nodes)
+        std::vector<MatrixNode<OffPolicy> *> &matrix_nodes)
     {
 
         // One inference step
@@ -96,7 +94,7 @@ public:
 
                 auto state_copy = state;
                 get_trajectory(trajectory, device, state_copy, model, matrix_node);
-                model.add_to_batch_input(state_copy, input); //push_back TODO
+                model.add_to_batch_input(state_copy, input); // push_back TODO
             }
             ++state_index;
         }
@@ -104,12 +102,14 @@ public:
 
     void update_using_trajectories(
         std::vector<Trajectory> &trajectories,
-        typename Types::ModelBatchOutput &output
-    ) {
+        typename Types::ModelBatchOutput &output)
+    {
         int index = 0;
-        for (Trajectory &trajectory : trajectories) {
+        for (Trajectory &trajectory : trajectories)
+        {
             typename Types::ModelOutput &out = output[index];
-            for (Frame &frame : trajectory) {
+            for (Frame &frame : trajectory)
+            {
                 auto matrix_node = frame.matrix_node;
                 auto &outcome = frame.outcome;
                 outcome.value = out.value;
@@ -126,17 +126,15 @@ public:
                 update_matrix_stats(
                     matrix_node,
                     outcome,
-                    learning_rate
-                );
+                    learning_rate);
             }
             ++index;
         }
     }
 
 protected:
-
     void get_trajectory(
-        Trajectory& trajectory,
+        Trajectory &trajectory,
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
@@ -165,7 +163,13 @@ protected:
             }
             else
             {
-                this->expand(state, model, matrix_node);
+                state.get_actions();
+                matrix_node->row_actions = state.row_actions;
+                matrix_node->col_actions = state.col_actions;
+                matrix_node->is_expanded = true;
+                matrix_node->is_terminal = state.is_terminal;
+
+                this->expand(state, model, matrix_node->stats);
                 return;
             }
         }

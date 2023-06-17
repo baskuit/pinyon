@@ -6,11 +6,10 @@
 #include <chrono>
 
 template <
-    class BanditAlgorithm, 
+    class BanditAlgorithm,
     template <class> class MNode,
     template <class> class CNode,
-    bool StopEarly = false
->
+    bool StopEarly = false>
 class TreeBandit : public BanditAlgorithm
 {
 public:
@@ -103,7 +102,23 @@ protected:
             }
             else
             {
+
+                state.get_actions();
+                matrix_node->row_actions = state.row_actions;
+                matrix_node->col_actions = state.col_actions;
+                matrix_node->is_expanded = true;
+                matrix_node->is_terminal = state.is_terminal;
+
                 this->expand(state, model, matrix_node->stats);
+
+                if (state.is_terminal)
+                {
+                    inference.value = state.payoff;
+                }
+                else
+                {
+                    model.get_inference(state, inference);
+                }
                 return matrix_node;
             }
         }
@@ -120,7 +135,8 @@ protected:
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBandit> *matrix_node)
+        MatrixNode<TreeBandit> *matrix_node,
+        typename Types::ModelOutput &inference)
     {
         if (!matrix_node->is_terminal)
         {
@@ -137,7 +153,7 @@ protected:
                 ChanceNode<TreeBandit> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode<TreeBandit> *matrix_node_next = chance_node->access(state.transition);
 
-                run_iteration_average(device, state, model, matrix_node_next);
+                run_iteration_average(device, state, model, matrix_node_next, inference);
 
                 get_empirical_values(matrix_node_next, outcome.row_value, outcome.col_value);
                 update_matrix_stats(matrix_node->stats, outcome);
@@ -146,7 +162,22 @@ protected:
             }
             else
             {
-                this->expand(state, model, matrix_node);
+                state.get_actions();
+                matrix_node->row_actions = state.row_actions;
+                matrix_node->col_actions = state.col_actions;
+                matrix_node->is_expanded = true;
+                matrix_node->is_terminal = state.is_terminal;
+
+                this->expand(state, model, matrix_node->stats);
+
+                if (state.is_terminal)
+                {
+                    inference.value = state.payoff;
+                }
+                else
+                {
+                    model.get_inference(state, inference);
+                }
                 return;
             }
         }
@@ -160,7 +191,7 @@ protected:
 // template <class BanditAlgorithm>
 // class TreeBanditBase {
 // public:
-    
+
 //     struct Types : BanditAlgorithm::Types
 //     {
 //     };

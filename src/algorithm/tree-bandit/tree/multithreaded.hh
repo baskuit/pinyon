@@ -83,7 +83,7 @@ public:
         MatrixNode<TreeBanditThreaded> *matrix_node)
     {
         typename Types::PRNG device_thread(device->uniform_64()); // TODO deterministically provide new seed
-        typename Types::Model model_thread{*model}; // TODO go back to not making new ones? Perhaps only device needs new instance
+        typename Types::Model model_thread{*model};               // TODO go back to not making new ones? Perhaps only device needs new instance
         typename Types::ModelOutput inference;
         for (size_t iteration = 0; iteration < iterations; ++iteration)
         {
@@ -188,11 +188,9 @@ protected:
     }
 };
 
-
 /*
 TreeBandit with a mutex pool
 */
-
 
 template <class BanditAlgorithm, bool StopEarly = false, size_t pool_size = 128>
 class TreeBanditThreadPool : public BanditAlgorithm
@@ -315,7 +313,22 @@ public:
             else
             {
                 mtx.lock();
-                this->expand(state, model, matrix_node->stats, inference);
+                state.get_actions();
+                matrix_node->row_actions = state.row_actions;
+                matrix_node->col_actions = state.col_actions;
+                matrix_node->is_expanded = true;
+                matrix_node->is_terminal = state.is_terminal;
+
+                this->expand(state, model, matrix_node->stats);
+
+                if (state.is_terminal)
+                {
+                    inference.value = state.payoff;
+                }
+                else
+                {
+                    model.get_inference(state, inference);
+                }
                 mtx.unlock();
 
                 return matrix_node;
