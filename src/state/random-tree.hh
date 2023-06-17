@@ -88,9 +88,9 @@ public:
         get_chance_strategies();
     }
 
-    void reseed(typename Types::Seed seed)
+    void reseed(typename Types::PRNG &device)
     {
-        this->seed = seed;
+        seed = device.uniform_64();
     }
 
     void get_actions()

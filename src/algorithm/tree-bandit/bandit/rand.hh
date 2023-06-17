@@ -20,6 +20,7 @@ public:
     };
     struct MatrixStats
     {
+        int rows, cols;
     };
 
     struct ChanceStats
@@ -35,28 +36,28 @@ public:
     }
 
     void get_empirical_strategies(
-        MatrixStats &stats
+        MatrixStats &stats,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
     }
 
     void get_empirical_values(
-        MatrixStats &stats
+        MatrixStats &stats,
         typename Types::Real &row_value,
         typename Types::Real &col_value)
     {
     }
 
     void get_refined_strategies(
-        MatrixStats &stats
+        MatrixStats &stats,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
     }
 
     void get_refined_values(
-        MatrixStats &stats
+        MatrixStats &stats,
         typename Types::Real &row_value,
         typename Types::Real &col_value)
     {
@@ -76,29 +77,29 @@ protected:
         typename Types::Model &model,
         MatrixStats &stats)
     {
+        stats.rows = state.row_actions.size();
+        stats.cols = state.col_actions.size();
     }
 
     void select(
         typename Types::PRNG &device,
-        MatrixStats &stats
+        MatrixStats &stats,
         typename Types::Outcome &outcome)
     {
-        const int rows = matrix_node->row_actions.size();
-        const int cols = matrix_node->col_actions.size();
-        const int row_idx = device.random_int(rows);
-        const int col_idx = device.random_int(cols);
+        const int row_idx = device.random_int(stats.rows);
+        const int col_idx = device.random_int(stats.cols);
         outcome.row_idx = row_idx;
         outcome.col_idx = col_idx;
     }
 
     void update_matrix_stats(
-        MatrixStats &stats
+        MatrixStats &stats,
         typename Types::Outcome &outcome)
     {
     }
 
     void update_chance_stats(
-        ChanceStats &stats
+        ChanceStats &stats,
         typename Types::Outcome &outcome)
     {
     }

@@ -1,12 +1,13 @@
 #pragma once
 
-#include <algorithm/tree-bandit/tree/bandit.hh>
+#include <algorithm/tree-bandit/tree/tree-bandit.hh>
 
 #include <tree/tree.hh>
 
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <chrono>
 
 // TODO TODO check speed with read write lock
 
@@ -44,7 +45,7 @@ public:
         const size_t iterations_per_thread = iterations / threads;
         for (int i = 0; i < threads; ++i)
         {
-            thread_pool[i] = std::thread(&TreeBanditThreadedThreaded::runThread, this, iterations_per_thread, &device, &state, &model, &matrix_node);
+            thread_pool[i] = std::thread(&TreeBanditThreaded::runThread, this, iterations_per_thread, &device, &state, &model, &matrix_node);
         }
         for (int i = 0; i < threads; ++i)
         {
@@ -59,19 +60,18 @@ public:
         typename Types::Model &model,
         MatrixNode<TreeBanditThreaded> &matrix_node)
     {
-        auto start = high_resolution_clock::now();
-        auto end = high_resolution_clock::now();
-        auto duration = duration_cast<microseconds>(end - start);
+        auto start = std::chrono::high_resolution_clock::now();
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = duration_cast<std::chrono::microseconds>(end - start);
 
-        this->initialize_stats(iterations, state, model, matrix_node.stats);
         while (duration.count() < duration_us)
         {
             typename Types::State state_copy = state;
             state_copy.reseed(device.template new_seed<typename Types::Seed>());
             this->run_iteration(device, state_copy, model, &matrix_node);
 
-            end = high_resolution_clock::now();
-            duration = duration_cast<microseconds>(end - start);
+            end = std::chrono::high_resolution_clock::now();
+            duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         }
     }
 
@@ -80,10 +80,10 @@ public:
         typename Types::PRNG *device,
         typename Types::State *state,
         typename Types::Model *model,
-        MatrixNode<TreeBanditThreadPool> *matrix_node)
+        MatrixNode<TreeBanditThreaded> *matrix_node)
     {
         typename Types::PRNG device_thread(device->uniform_64()); // TODO deterministically provide new seed
-        typename Types::Model model_thread{*model};
+        typename Types::Model model_thread{*model}; // TODO go back to not making new ones? Perhaps only device needs new instance
         typename Types::ModelOutput inference;
         for (size_t iteration = 0; iteration < iterations; ++iteration)
         {
@@ -107,7 +107,7 @@ protected:
         {
             if (matrix_node->is_expanded)
             {
-                Outcome outcome;
+                typename Types::Outcome outcome;
 
                 mtx.lock();
                 select(device, matrix_node->stats, outcome);
@@ -120,7 +120,7 @@ protected:
                 ChanceNode<TreeBanditThreaded> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode<TreeBanditThreaded> *matrix_node_next = chance_node->access(state.obs);
 
-                MatrixNode<BanditAlTreeBanditThreadedgorithm> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
+                MatrixNode<TreeBanditThreaded> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
 
                 outcome.value = inference.value;
 
@@ -157,7 +157,7 @@ protected:
         {
             if (matrix_node->is_expanded)
             {
-                Outcome outcome;
+                typename Types::Outcome outcome;
 
                 select(device, matrix_node, outcome);
 
@@ -240,21 +240,20 @@ public:
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBanditThreaded> &matrix_node)
+        MatrixNode<TreeBanditThreadPool> &matrix_node)
     {
-        auto start = high_resolution_clock::now();
-        auto end = high_resolution_clock::now();
-        auto duration = duration_cast<microseconds>(end - start);
+        auto start = std::chrono::high_resolution_clock::now();
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-        this->initialize_stats(iterations, state, model, matrix_node.stats);
         while (duration.count() < duration_us)
         {
             typename Types::State state_copy = state;
             state_copy.reseed(device.template new_seed<typename Types::Seed>());
             this->run_iteration(device, state_copy, model, &matrix_node);
 
-            end = high_resolution_clock::now();
-            duration = duration_cast<microseconds>(end - start);
+            end = std::chrono::high_resolution_clock::now();
+            duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         }
     }
 
@@ -276,11 +275,11 @@ public:
         }
     }
 
-    MatrixNode<TreeBanditThreaded> *run_iteration(
+    MatrixNode<TreeBanditThreadPool> *run_iteration(
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBanditThreaded> *matrix_node,
+        MatrixNode<TreeBanditThreadPool> *matrix_node,
         typename Types::ModelOutput &inference)
     {
         std::mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
@@ -289,7 +288,7 @@ public:
         {
             if (matrix_node->is_expanded)
             {
-                Outcome outcome;
+                typename Types::Outcome outcome;
 
                 mtx.lock();
                 select(device, matrix_node->stats, outcome);
@@ -299,10 +298,10 @@ public:
                 typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
                 state.apply_actions(row_action, col_action);
 
-                ChanceNode<TreeBanditThreaded> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<TreeBanditThreaded> *matrix_node_next = chance_node->access(state.obs);
+                ChanceNode<TreeBanditThreadPool> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                MatrixNode<TreeBanditThreadPool> *matrix_node_next = chance_node->access(state.obs);
 
-                MatrixNode<BanditAlTreeBanditThreadedgorithm> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
+                MatrixNode<TreeBanditThreadPool> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
 
                 outcome.value = inference.value;
 

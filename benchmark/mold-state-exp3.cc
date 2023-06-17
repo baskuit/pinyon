@@ -10,7 +10,7 @@ int main () {
 
     using MoldState = MoldState<2>;
     using MonteCarlo = MonteCarloModel<MoldState>;
-    using Exp3 = Exp3<MonteCarlo>;
+    using Exp3 = TreeBandit<Exp3<MonteCarlo>, MatrixNode, ChanceNode>;
     
     uint64_t seed = 0;
     prng device(seed);

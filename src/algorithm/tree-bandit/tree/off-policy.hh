@@ -3,12 +3,6 @@
 #include <types/types.hh>
 #include <tree/tree.hh>
 #include <algorithm/algorithm.hh>
-#include <algorithm/tree-bandit/tree/bandit.hh>
-
-#include <thread>
-#include <chrono>
-
-using namespace std::chrono;
 
 /*
 

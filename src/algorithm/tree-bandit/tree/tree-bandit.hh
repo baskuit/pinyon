@@ -7,8 +7,8 @@
 
 template <
     class BanditAlgorithm, 
-    template <class> class MatrixNode,
-    template <class> class ChanceNode,
+    template <class> class MNode,
+    template <class> class CNode,
     bool StopEarly = false
 >
 class TreeBandit : public BanditAlgorithm
@@ -20,6 +20,8 @@ public:
     {
         using MatrixStats = TreeBandit::MatrixStats;
         using ChanceStats = TreeBandit::ChanceStats;
+        using MatrixNode = MNode<TreeBandit>;
+        using ChanceNode = CNode<TreeBandit>;
     };
 
     struct MatrixStats : BanditAlgorithm::MatrixStats
@@ -29,6 +31,8 @@ public:
     {
     };
 
+    using BanditAlgorithm::BanditAlgorithm;
+
     void run(
         const size_t iterations,
         typename Types::PRNG &device,
@@ -36,7 +40,7 @@ public:
         typename Types::Model &model,
         MatrixNode<TreeBandit> &matrix_node)
     {
-        this->initialize_stats(iterations, state, model, matrix_node.stats);
+        // this->initialize_stats(iterations, state, model, matrix_node.stats);
         typename Types::ModelOutput inference;
         for (size_t iteration = 0; iteration < iterations; ++iteration)
         {
@@ -55,7 +59,7 @@ public:
     {
         auto start = std::chrono::high_resolution_clock::now();
         auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<microseconds>(end - start);
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
         while (duration.count() < duration_us)
         {
@@ -64,7 +68,7 @@ public:
             this->run_iteration(device, state_copy, model, &matrix_node);
 
             end = std::chrono::high_resolution_clock::now();
-            duration = std::chrono::duration_cast<microseconds>(end - start);
+            duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         }
     }
 
@@ -80,8 +84,8 @@ protected:
         {
             if (matrix_node->is_expanded)
             {
-                Outcome outcome;
-                select(device, matrix_node->stats, outcome);
+                typename Types::Outcome outcome;
+                this->select(device, matrix_node->stats, outcome);
 
                 const typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
                 const typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
@@ -93,8 +97,8 @@ protected:
                 MatrixNode<TreeBandit> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
 
                 outcome.value = inference.value;
-                update_matrix_stats(matrix_node->stats, outcome);
-                update_chance_stats(chance_node.stats, outcome);
+                this->update_matrix_stats(matrix_node->stats, outcome);
+                this->update_chance_stats(chance_node->stats, outcome);
                 return matrix_node_leaf;
             }
             else
@@ -122,7 +126,7 @@ protected:
         {
             if (matrix_node->is_expanded)
             {
-                Outcome outcome;
+                typename Types::Outcome outcome;
 
                 select(device, matrix_node, outcome);
 

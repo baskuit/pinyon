@@ -52,7 +52,7 @@ public:
     }
 
     void get_empirical_strategies(
-        MatrixStats &stats
+        MatrixStats &stats,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
@@ -63,7 +63,7 @@ public:
     }
 
     void get_empirical_values(
-        MatrixStats &stats
+        MatrixStats &stats,
         typename Types::Real &row_value,
         typename Types::Real &col_value)
     {
@@ -73,7 +73,7 @@ public:
     }
 
     void get_refined_strategies(
-        MatrixStats &stats
+        MatrixStats &stats,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
@@ -85,14 +85,14 @@ public:
     }
 
     void get_refined_values(
-        MatrixStats &stats
+        MatrixStats &stats,
         typename Types::Real &row_value,
         typename Types::Real &col_value)
     {
         get_empirical_values(stats, row_value, col_value);
     }
 
-private:
+protected:
     void initialize_stats(
         int iterations,
         const typename Types::State &state,
@@ -114,7 +114,7 @@ private:
 
     void select(
         typename Types::PRNG &device,
-        MatrixStats &stats
+        MatrixStats &stats,
         Outcome &outcome)
     {
         /*
@@ -160,7 +160,7 @@ private:
     }
 
     void update_matrix_stats(
-        MatrixStats &stats
+        MatrixStats &stats,
         Outcome &outcome)
     {
         stats.value_total += outcome.value;
@@ -178,7 +178,7 @@ private:
     }
 
     void update_matrix_stats(
-        MatrixStats &stats
+        MatrixStats &stats,
         Outcome &outcome,
         typename Types::Real learning_rate)
     {
@@ -198,7 +198,7 @@ private:
     }
 
     void get_policy(
-        MatrixStats &stats
+        MatrixStats &stats,
         typename Types::VectorReal &row_policy,
         typename Types::VectorReal &col_policy)
     {

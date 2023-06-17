@@ -9,7 +9,7 @@ Intended to test mostly tree traversal speed
 int main () {
 
     using MonteCarlo = MonteCarloModel<RandomTree>;
-    using Exp3 = Exp3<MonteCarlo>;
+    using Exp3 = TreeBandit<Exp3<MonteCarlo>, MatrixNode, ChanceNode>;
     
     uint64_t seed = 0;
     prng device(seed);
