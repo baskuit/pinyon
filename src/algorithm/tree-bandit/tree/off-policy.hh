@@ -12,8 +12,8 @@ TODO still no chance node updates (does any algo actually NEED this?)
 
 template <
     class BanditAlgorithm, 
-    template <class> class MatrixNode,
-    template <class> class ChanceNode,
+    template <class> class MNode,
+    template <class> class CNode,
     bool StopEarly = false
 >
 class OffPolicy : public BanditAlgorithm
@@ -21,6 +21,8 @@ class OffPolicy : public BanditAlgorithm
 public:
     struct Types : BanditAlgorithm::Types
     {
+        using MatrixNode = MNode<OffPolicy>;
+        using ChanceNode = CNode<OffPolicy>;
     };
 
     struct Frame {
@@ -50,7 +52,7 @@ public:
 
         for (auto matrix_node : matrix_nodes)
         {
-            this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
+            // this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
         }
 
         typename Types::ModelBatchInput input{};   // vector of states - Tensor
