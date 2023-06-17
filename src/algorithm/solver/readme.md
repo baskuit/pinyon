@@ -1,25 +1,39 @@
-These algorithms solve for Nash equilibrium payoffs and/or strategies on a (sub)tree
 
-# `FullTraversal` 
+These algorithms perform the simultaneous-move analog of minimax; They **solve** for Nash equilibrium payoffs and strategies on a sub-tree. The calculated Nash equilibrium payoffs and strategies are stored in the `MatrixStats`.
 
-expands the entire game tree with a single recursive function call. 
+The sub-tree is expanded up to `depth=-1`, meaning infinite depth by default.
 
-* It assumes the game is 1-sum (TODO: Consider adding MIN_PAYOFF, IS_CONSTANT_SUM, etc to States)
+The payoffs at a 'terminal' node (terminal in the sub-tree, perhaps not in the entire game) are given by model inference. The same models that are used in tree-bandit search can be used for this purpose. Since these algorithms are intended to be used in offline contexts, like deep analysis, the user may want to consider wrapping a short tree-bandit search as its own model. This will provide stronger value estimation at the cost of speed.
 
-* The payoffs and strategies are stored in the matrix stats.
+These algorithms are run in a one-shot fashion, rather than online like tree-bandit. They cannot be terminated early, however they can still be run incrementally.  
 
-* State of requirement for the `TraversedState` wrapper. This is simply a `SolvedState` (it also satisfies conditions of a `ChanceState` but I'm not allowing multiple inheritance, and being solved is much less common.)
+Modern alpha-beta chess engines will perform incrementally deeper search like so:
+```cpp
+while (true) {
+	solve_to_depth(n++);
+}
+```
+while also using information from the last `solve_to_depth` call, such as move orderings, to expedite the current call. This kind of 'iterative deepening' as it is often called has yet to be implemented although it should be straightforward (TODO).
 
- # `AlphaBeta` 
+# FullTraversal
 
-is an implementation of Branislav Boˇsansk ́y, et al. for stochastic games
+The simplest possible solver: expands the entire game tree with a single recursive function call and solves every matrix node.
 
-* The code and annotations reflect the paper's pseudo-code
+It assumes the game is 1-sum (TODO: ~~Consider adding MIN_PAYOFF, IS_CONSTANT_SUM, etc to States~~ Done, but this still needs to be changed)
 
-* TODO: The MinVal, MaxVal put bounds on a chance node's value (the u_i,j of the paper) that tighten as the explored probability reaches 1. It is straightforward to check for this as you iterate through the chance node's branches, to terminate calculation early if the chance node can be pruned.
+# AlphaBeta (aka SMAB)
 
-* Line 7 "p'_i,j" might be the wrong expression? TODO
+This algorithm is an implementation of Bošanský, et al. (2013), modified for stochastic games. The paper optionally uses a sub-algorithm called 'Serialized AlphaBeta', which further tightens the bounds on the value of a matrix node. Serialized AlphaBeta is currently not implemented (TODO), and the paper admits it does not always improve performance, due to the increased tree traversal.
 
-* Serialized AlphaBeta is currently not implemented, not a priority.
+The paper should be the primary source on the exact workings of SMAB. Accommodating stochastic games is straightforward, and mirrors how 'Expectiminimax' extends the usual Minimax. The code and inline comments were written to reflect the paper as much as possible.
 
-* Expands the tree up to `depth=-1`, meaning infinite depth by default. The payoffs for nodes that are forced to be terminal (`depth=d` for some `d >= 0`) are given by `Model<>::get_inference()`, where `Model<>` derives from `DoubleOracleModel<>`.
+There is a simple trick to optimize SMAB for stochastic games. When we are calculating the entry `s_ij` in the payoff matrix, we are actually calculating the expected payoff of the chance node for that entry, which is simply calculating the expected value of all matrix nodes that chance node points to.
+Since we know the chance actions and their associated probabilty, we can use that and the MinVal, MaxVal to put bounds on the value of a chance node.
+If `0 < p < 1` is the total probability of the *explored* chance actions, and the sum of the calculated the values is `v`, then value of the chance node `V` is bounded by
+
+$$v + (1 - p) * \text{MinVal} < V < v + (1 - p) * \text{MaxVal}$$
+
+This allows us to perform the feasiblity check after each update to the value of `s_ij` instead of when its totally computed, to see if we can terminate early. (TODO)
+
+
+> NOTE: Line 7 "p'_i,j" might be the wrong expression, as in an error in the paper? TODO

@@ -8,6 +8,15 @@
 #include <ranges>
 #include <string>
 
+/*
+
+TODO - make general
+
+This is just a copy of the random tree generator. 
+The idea is that we want a way to lazily apply a function/constructor to the output of cartesian_product
+
+*/
+
 template <typename ...Args>
 struct RandomTreeGenerator
 {
