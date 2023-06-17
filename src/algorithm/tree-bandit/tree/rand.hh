@@ -6,29 +6,23 @@
 Minimal model for benchmarking purposes (Test speed of state and tree structure)
 */
 
-template <
-    class Model, 
-    template <class _Model, class _BanditAlgorithm, template <class M> class Outcome, template <class A> class MNode, template <class A> class CNode> 
-        class _TreeBandit = TreeBandit,
-    template <class Algo> class _MatrixNode = MatrixNode,
-    template <class Algo> class _ChanceNode = ChanceNode
->
-class Rand : public _TreeBandit<Model, Exp3<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>
+template <class Model, class MatrixNode, class ChanceNode>
+class Rand : public AbstractAlgorithm<Model>
 {
 
 public:
     struct MatrixStats;
     struct ChanceStats;
-    struct Types : _TreeBandit<Model, Rand<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>::Types
+    struct Types : AbstractAlgorithm<Model>::Types
     {
         using MatrixStats = Rand::MatrixStats;
         using ChanceStats = Rand::ChanceStats;
     };
-    struct MatrixStats : _TreeBandit<Model, Rand<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>::MatrixStats
+    struct MatrixStats
     {
     };
 
-    struct ChanceStats : _TreeBandit<Model, Rand<Model, _TreeBandit>, ChoicesOutcome, _MatrixNode, _ChanceNode>::ChanceStats
+    struct ChanceStats
     {
     };
 
