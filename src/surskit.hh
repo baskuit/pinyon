@@ -16,7 +16,7 @@
 
 #include <model/model.hh>
 
-#include <algorithm/tree-bandit/tree/bandit.hh>
+#include <algorithm/tree-bandit/tree/tree-bandit.hh>
 #include <algorithm/tree-bandit/tree/multithreaded.hh>
 #include <algorithm/tree-bandit/tree/off-policy.hh>
 
