@@ -9,10 +9,12 @@ class Exp3 : AbstractAlgorithm<Model>
 public:
     struct MatrixStats;
     struct ChanceStats;
+    struct Outcome;
     struct Types : AbstractAlgorithm<Model>::Types
     {
         using MatrixStats = Exp3::MatrixStats;
         using ChanceStats = Exp3::ChanceStats;
+        using Outcome = Exp3::Outcome;
     };
 
     struct MatrixStats
@@ -24,11 +26,17 @@ public:
 
         int visits = 0;
         typename Types::Value value_total;
-
     };
 
     struct ChanceStats
     {
+    };
+
+    struct Outcome
+    {
+        ActionIndex row_idx, col_idx;
+        typename Model::Types::Value value;
+        typename Types::Real row_mu, col_mu;
     };
 
     typename Types::Real gamma{.01};
@@ -105,7 +113,7 @@ public:
         }
         else
         {
-            const typename Types::Real eta {gamma / static_cast<typename Types::Real>(rows)};
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
             softmax(row_policy, matrix_node->stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
@@ -118,7 +126,7 @@ public:
         }
         else
         {
-            const typename Types::Real eta {gamma / static_cast<typename Types::Real>(cols)};
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
             softmax(col_policy, matrix_node->stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
@@ -130,7 +138,7 @@ public:
     void select(
         typename Types::PRNG &device,
         _MatrixNode<Exp3> *matrix_node,
-        typename Types::Outcome &outcome)
+        Outcome &outcome)
     {
         /*
         Softmaxing of the gains to produce forecasts/strategies for the row and col players.
@@ -146,7 +154,7 @@ public:
         }
         else
         {
-            const typename Types::Real eta {gamma / static_cast<typename Types::Real>(rows)};
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
             softmax(row_forecast, matrix_node->stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
@@ -159,7 +167,7 @@ public:
         }
         else
         {
-            const typename Types::Real eta {gamma / static_cast<typename Types::Real>(cols)};
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
             softmax(col_forecast, matrix_node->stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
@@ -176,7 +184,7 @@ public:
 
     void update_matrix_node(
         _MatrixNode<Exp3> *matrix_node,
-        typename Types::Outcome &outcome)
+        Outcome &outcome)
     {
         matrix_node->stats.value_total += outcome.value;
         matrix_node->stats.visits += 1;
@@ -188,13 +196,13 @@ public:
 
     void update_chance_node(
         _ChanceNode<Exp3> *chance_node,
-        typename Types::Outcome &outcome)
+        Outcome &outcome)
     {
     }
 
     void update_matrix_node(
         _MatrixNode<Exp3> *matrix_node,
-        typename Types::Outcome &outcome,
+        Outcome &outcome,
         typename Types::Real learning_rate)
     {
         matrix_node->stats.value_total += outcome.value * learning_rate;
@@ -207,7 +215,7 @@ public:
 
     void update_chance_node(
         _ChanceNode<Exp3> *chance_node,
-        typename Types::Outcome &outcome,
+        Outcome &outcome,
         typename Types::Real learning_rate)
     {
     }
@@ -246,10 +254,10 @@ private:
         }
     };
 
-    inline void denoise (
+    inline void denoise(
         typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy
-    ) {
+        typename Types::VectorReal &col_strategy)
+    {
         // TODO
     }
 };
