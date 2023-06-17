@@ -64,8 +64,16 @@ Monte Carlo inference is very weak. It is outperformed by any decent heuristic m
 
 ## Libtorch
 
-The 
+> This section was written after completion of the multithreaded inference wrapper but before integration of the wrapper with surskit
 
+The fastest way to use a neural network depends on its size. Small neural networks can work very well on modern CPUs, but larger networks run fastest on GPU. There is however a high cost to sending data between the CPU and GPU, so the only way to realize this performance benefit with large networks is to do inference in batches.
 
+This requires a change in the search paradigm as well, and that is implemented in the `OffPolicy` tree algorithm. Details are discussed here [TODO relative link]
 
 ## WrappedSearch
+
+This is not currently implemented by the library, but it is straightforward to do:
+
+The bandit algorithms are expected to have methods `get_empirical_strategies`, `get_emprical_values`, and these can be treated as the policy and value output of a model, after some number of search iterations or course.
+
+One immediate application of this is for the solver, where we can use this 'wrapped search' as the model. When the tree expanded to its maximum depth, this model's inference is called, which is the same as running a quick search instead.
