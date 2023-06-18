@@ -150,8 +150,8 @@ public:
       this->col_actions = t.col_actions;
    }
 
-   void reseed (typename Types::Seed seed) {
-      engine::RBY::set_seed(battle_, seed);
+   void reseed (typename Types::PRNG &device) {
+      engine::RBY::set_seed(battle_, device.uniform_64());
    }
 
    void get_actions()

@@ -68,7 +68,7 @@ public:
         while (duration.count() < duration_us)
         {
             typename Types::State state_copy = state;
-            state_copy.reseed(device.template new_seed<typename Types::Seed>());
+            state_copy.reseed(device);
             this->run_iteration(device, state_copy, model, &matrix_node);
 
             end = std::chrono::high_resolution_clock::now();
@@ -89,7 +89,7 @@ public:
         for (size_t iteration = 0; iteration < iterations; ++iteration)
         {
             typename Types::State state_copy = *state;
-            state_copy.reseed(device_thread.template new_seed<typename Types::Seed>());
+            state_copy.reseed(device_thread);
             this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
         }
     }
@@ -102,59 +102,56 @@ protected:
         MatrixNode<TreeBanditThreaded> *matrix_node,
         typename Types::ModelOutput &inference)
     {
-        std::mutex &mtx = matrix_node->stats.mtx;
+
+        std::mutex &mtx{matrix_node->stats.mtx};
 
         if (!matrix_node->is_terminal)
         {
-            if (matrix_node->is_expanded)
+            if (!matrix_node->is_expanded)
             {
-                typename Types::Outcome outcome;
-
-                mtx.lock();
-                this->select(device, matrix_node->stats, outcome);
-                mtx.unlock();
-
-                typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
-                typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
-                state.apply_actions(row_action, col_action);
-
-                ChanceNode<TreeBanditThreaded> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<TreeBanditThreaded> *matrix_node_next = chance_node->access(state.obs);
-
-                MatrixNode<TreeBanditThreaded> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
-
-                outcome.value = inference.value;
-
-                mtx.lock();
-                this->update_matrix_stats(matrix_node->stats, outcome);
-                this->update_chance_stats(chance_node->stats, outcome);
-                mtx.unlock();
-
-                return matrix_node_leaf;
-            }
-            else
-            {
-                mtx.lock();
-                state.get_actions();
-                matrix_node->row_actions = state.row_actions;
-                matrix_node->col_actions = state.col_actions;
-                matrix_node->is_expanded = true;
-                matrix_node->is_terminal = state.is_terminal;
-                typename Types::ModelOutput inference;
-                this->expand(state, matrix_node->stats, inference);
-                mtx.unlock();
-
-                if (state.is_terminal)
+                if (matrix_node->is_terminal = state.is_terminal)
                 {
                     inference.value = state.payoff;
                 }
                 else
                 {
+                    state.get_actions();
                     model.get_inference(state, inference);
+
+                    mtx.lock();
+                    matrix_node->row_actions = state.row_actions;
+                    matrix_node->col_actions = state.col_actions;
+                    matrix_node->is_expanded = true;
+                    this->expand(state, matrix_node->stats, inference);
+                    mtx.unlock();
                 }
 
-                return matrix_node;
+                if constexpr (return_if_expand)
+                {
+                    return matrix_node;
+                }
             }
+
+            typename Types::Outcome outcome;
+            mtx.lock();
+            this->select(device, matrix_node->stats, outcome);
+            mtx.unlock();
+
+            const typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
+            const typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
+            state.apply_actions(row_action, col_action);
+
+            ChanceNode<TreeBanditThreaded> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+            MatrixNode<TreeBanditThreaded> *matrix_node_next = chance_node->access(state.obs);
+
+            MatrixNode<TreeBanditThreaded> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
+
+            outcome.value = inference.value;
+            mtx.lock();
+            this->update_matrix_stats(matrix_node->stats, outcome);
+            this->update_chance_stats(chance_node->stats, outcome);
+            mtx.unlock();
+            return matrix_node_leaf;
         }
         else
         {
