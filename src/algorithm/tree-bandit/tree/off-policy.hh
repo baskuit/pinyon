@@ -169,7 +169,8 @@ protected:
                 matrix_node->is_expanded = true;
                 matrix_node->is_terminal = state.is_terminal;
 
-                this->expand(state, model, matrix_node->stats);
+                typename Types::ModelOutput inference;
+                this->expand(matrix_node->stats, inference);
                 return;
             }
         }
