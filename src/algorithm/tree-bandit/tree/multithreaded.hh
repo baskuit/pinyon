@@ -15,7 +15,7 @@ template <
     class BanditAlgorithm,
     template <class> class MNode = MatrixNode,
     template <class> class CNode = ChanceNode,
-    bool StopEarly = false>
+    bool return_if_expand = true>
 class TreeBanditThreaded : public BanditAlgorithm
 {
 public:

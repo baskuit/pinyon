@@ -88,9 +88,8 @@ protected:
         typename Types::Model &model,
         MatrixStats &stats) {}
     void expand(
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixStats &stats)
+        MatrixStats& stats,
+        typename Types::ModelOutput &inference)
     {
         stats.rows = state.row_actions.size();
         stats.cols = state.col_actions.size();
@@ -176,7 +175,7 @@ Natrually this is where you specify the matrix and chance node structures. There
 
 ### Tree Search and RL Analogy
 
-The default `StopEarly` template parameter is a good moment to introduce this design principle of surskit.
+The default `return_if_expand` template parameter is a good moment to introduce this design principle of surskit.
 
 ### Defaults
 

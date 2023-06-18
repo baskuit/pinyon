@@ -14,7 +14,7 @@ template <
     class BanditAlgorithm,
     template <class> class MNode,
     template <class> class CNode,
-    bool StopEarly = false>
+    bool return_if_expand = true>
 class OffPolicy : public BanditAlgorithm
 {
 public:

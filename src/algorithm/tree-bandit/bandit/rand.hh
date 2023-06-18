@@ -76,12 +76,11 @@ protected:
     }
 
     void expand(
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixStats &stats)
+        MatrixStats& stats,
+        typename Types::ModelOutput &inference)
     {
-        stats.rows = state.row_actions.size();
-        stats.cols = state.col_actions.size();
+        stats.rows = inference.row_policy.size();
+        stats.cols = inference.col_policy.size();
     }
 
     void select(
@@ -126,35 +125,35 @@ protected:
         typename Types::VectorReal &row_policy,
         typename Types::VectorReal &col_policy)
     {
-        const int rows = stats.row_gains.size();
-        const int cols = stats.col_gains.size();
-        row_policy.fill(rows);
-        col_policy.fill(cols);
-        if (rows == 1)
-        {
-            row_policy[0] = 1;
-        }
-        else
-        {
-            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
-            softmax(row_policy, stats.row_gains, rows, eta);
-            for (int row_idx = 0; row_idx < rows; ++row_idx)
-            {
-                row_policy[row_idx] = (1 - gamma) * row_policy[row_idx] + eta;
-            }
-        }
-        if (cols == 1)
-        {
-            col_policy[0] = 1;
-        }
-        else
-        {
-            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
-            softmax(col_policy, stats.col_gains, cols, eta);
-            for (int col_idx = 0; col_idx < cols; ++col_idx)
-            {
-                col_policy[col_idx] = (1 - gamma) * col_policy[col_idx] + eta;
-            }
-        }
+        // const int rows = stats.row_gains.size();
+        // const int cols = stats.col_gains.size();
+        // row_policy.fill(rows);
+        // col_policy.fill(cols);
+        // if (rows == 1)
+        // {
+        //     row_policy[0] = 1;
+        // }
+        // else
+        // {
+        //     const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
+        //     softmax(row_policy, stats.row_gains, rows, eta);
+        //     for (int row_idx = 0; row_idx < rows; ++row_idx)
+        //     {
+        //         row_policy[row_idx] = (1.0 - gamma) * row_policy[row_idx] + eta;
+        //     }
+        // }
+        // if (cols == 1)
+        // {
+        //     col_policy[0] = 1;
+        // }
+        // else
+        // {
+        //     const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
+        //     softmax(col_policy, stats.col_gains, cols, eta);
+        //     for (int col_idx = 0; col_idx < cols; ++col_idx)
+        //     {
+        //         col_policy[col_idx] = (1.0 - gamma) * col_policy[col_idx] + eta;
+        //     }
+        // }
     }
 };
