@@ -88,6 +88,7 @@ protected:
         typename Types::Model &model,
         MatrixStats &stats) {}
     void expand(
+        typename Types::State &state,
         MatrixStats& stats,
         typename Types::ModelOutput &inference)
     {

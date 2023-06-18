@@ -76,11 +76,12 @@ protected:
     }
 
     void expand(
+        typename Types::State &state,
         MatrixStats& stats,
         typename Types::ModelOutput &inference)
     {
-        stats.rows = inference.row_policy.size();
-        stats.cols = inference.col_policy.size();
+        stats.rows = state.row_actions.size();
+        stats.cols = state.col_actions.size();
     }
 
     void select(

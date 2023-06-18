@@ -95,7 +95,7 @@ protected:
                     matrix_node->is_expanded = true;
 
                     model.get_inference(state, inference);
-                    this->expand(matrix_node->stats, inference);
+                    this->expand(state, matrix_node->stats, inference);
                 }
 
                 if constexpr (return_if_expand)
@@ -167,7 +167,7 @@ protected:
                 matrix_node->is_expanded = true;
                 matrix_node->is_terminal = state.is_terminal;
 
-                this->expand(state, model, matrix_node->stats);
+                this->expand(state, matrix_node->stats, inference);
 
                 if (state.is_terminal)
                 {

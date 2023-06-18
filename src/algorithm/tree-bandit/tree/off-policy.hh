@@ -170,7 +170,7 @@ protected:
                 matrix_node->is_terminal = state.is_terminal;
 
                 typename Types::ModelOutput inference;
-                this->expand(matrix_node->stats, inference);
+                this->expand(state, matrix_node->stats, inference);
                 return;
             }
         }

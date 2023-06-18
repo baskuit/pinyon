@@ -102,13 +102,14 @@ protected:
     }
 
     void expand(
+        typename Types::State &state,
         MatrixStats& stats,
         typename Types::ModelOutput &inference)
     {
-        stats.row_visits.fill(inference.row_policy.size(), 0);
-        stats.col_visits.fill(inference.col_policy.size(), 0);
-        stats.row_gains.fill(inference.row_policy.size(), 0);
-        stats.col_gains.fill(inference.col_policy.size(), 0);
+        stats.row_visits.fill(state.row_actions.size(), 0);
+        stats.col_visits.fill(state.col_actions.size(), 0);
+        stats.row_gains.fill(state.row_actions.size(), 0);
+        stats.col_gains.fill(state.col_actions.size(), 0);
     }
 
     void select(
