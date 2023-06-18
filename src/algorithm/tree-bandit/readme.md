@@ -1,3 +1,4 @@
+
 # Tree Bandit
 
 The algorithms in the folder are generalizations of MCTS, which we call 'tree bandit'.
@@ -10,55 +11,176 @@ The algorithms in the folder are generalizations of MCTS, which we call 'tree ba
 
 * The tree component wraps the bandit component. It derives its own `MatrixStats`, `ChanceStats` from those in the former, to add any necessary info.
 
-## BanditAlgorithm
+## `BanditAlgorithm`
+
+Bandit algorithms get their name from 'multi-armed bandits'. To quote Wikipedia:
+
+> The multi-armed bandit problem models an agent that simultaneously attempts to acquire new knowledge (called "exploration") and optimize their decisions based on existing knowledge (called "exploitation"). The agent attempts to balance these competing tasks in order to maximize their total value over the period of time considered.
+
+### A Terse Theoretical Overview
+
+There is an entire field of mathematics devoted to describing and analyzing algorithms for multi-armed bandits. This field is itself split depending on the assumptions that are made about the nature of the problem. The two most studied of these sub-fields are *stochastic bandits* and *adversarial bandits*.
+ 
+ The standard formula in Monte Carlo tree search
+
+\,
+
+$$ \frac{w_i}{n_i} + c \sqrt{\frac{\ln N_i}{n_i}} $$
+
+is often called UCB (Upper Confidence Bounds). It is a solution to the stochastic problem, in the following sense:
+
+
+
+
 
 The Exp3 and MatrixUCB algorithms are already provided. Not all bandits algorithms (i.e. stochastic bandit algorithms) are sound choices. Refer to "Analysis of Hannan Consistent Selection for Monte Carlo Tree Search in Simultaneous Move Games".
 
-The interface that a bandit algorithm must have is best explained by looking at Exp3:
+### Interface
+
+To work with all the default tree algorithms, there is a lightweight interface that is expected from bandit algorithms. This interface can be exampled by the implementation of `Rand`, which is basically a bench-marking algorithm that chooses randomly and maintains basically no statistics.
+
+The entire class is defined below.
 
 ```cpp
 template <class Model>
-class Exp3 : AbstractAlgorithm<Model>
+class Rand : public AbstractAlgorithm<Model>
 {
 public:
     struct MatrixStats;
     struct ChanceStats;
-    struct Outcome;
     struct Types : AbstractAlgorithm<Model>::Types
     {
-        using MatrixStats = Exp3::MatrixStats;
-        using ChanceStats = Exp3::ChanceStats;
-        using Outcome = Exp3::Outcome;
+        using MatrixStats = Rand::MatrixStats;
+        using ChanceStats = Rand::ChanceStats;
     };
     struct MatrixStats
     {
-        typename Types::VectorReal row_gains;
-        typename Types::VectorReal col_gains;
-        typename Types::VectorInt row_visits;
-        typename Types::VectorInt col_visits;
-        int visits = 0;
-        typename Types::Value value_total;
+        int rows, cols;
     };
     struct ChanceStats {};
-    struct Outcome
+    struct Outcome {};
+    friend std::ostream &operator<<(std::ostream &os, const Rand &session)
     {
-        ActionIndex row_idx, col_idx;
-        typename Model::Types::Value value;
-        typename Types::Real row_mu, col_mu;
-    };
- //...
+        os << "Rand";
+        return os;
+    }
+    void get_empirical_strategies(
+        MatrixStats &stats,
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy) {}
+    void get_empirical_values(
+        MatrixStats &stats,
+        typename Types::Real &row_value,
+        typename Types::Real &col_value) {}
+    void get_refined_strategies(
+        MatrixStats &stats,
+        typename Types::VectorReal &row_strategy,
+        typename Types::VectorReal &col_strategy) {}
+    void get_refined_values(
+        MatrixStats &stats,
+        typename Types::Real &row_value,
+        typename Types::Real &col_value) {}
+
+protected:
+    void initialize_stats(
+        int iterations,
+        typename Types::State &state,
+        typename Types::Model &model,
+        MatrixStats &stats) {}
+    void expand(
+        typename Types::State &state,
+        typename Types::Model &model,
+        MatrixStats &stats)
+    {
+        stats.rows = state.row_actions.size();
+        stats.cols = state.col_actions.size();
+    }
+    void select(
+        typename Types::PRNG &device,
+        MatrixStats &stats,
+        typename Types::Outcome &outcome)
+    {
+        const int row_idx = device.random_int(stats.rows);
+        const int col_idx = device.random_int(stats.cols);
+        outcome.row_idx = row_idx;
+        outcome.col_idx = col_idx;
+    }
+    void update_matrix_stats(
+        MatrixStats &stats,
+        typename Types::Outcome &outcome) {}
+    void update_chance_stats(
+        ChanceStats &stats,
+        typename Types::Outcome &outcome) {}
+    void update_matrix_stats(
+        MatrixStats &stats,
+        typename Types::Outcome &outcome,
+        typename Types::Real learning_rate) {}
+    void update_chance_stats(
+        ChanceStats &stats,
+        typename Types::Outcome &outcome,
+        typename Types::Real learning_rate) {}
+    void get_policy(
+        MatrixStats &stats,
+        typename Types::VectorReal &row_policy,
+        typename Types::VectorReal &col_policy) {}
 };
+
 ```
+#### Explanation of the Above
 
 There are three structs that all bandit algorithms must define:
 
 * `MatrixStats`
+Contains the stats the algorithm needs to use for the selection and update process. This minimal example only needs to store the number of actions for the players, but something like `exp3` would need to store the exponential weights and probably also some other hyper-parameters.
+This struct should be as small as possible, as it has the most impact on cache-efficiency. The MatrixUCB algorithm is problematic in this regard, since it has to store $n^2$ statistics for the matrix instead of $2 n$  like most adversarial bandits, with respect to the number of actions $n$.
 * `ChanceStats`
+This storage is not needed by the provided algorithms, but it could be useful in the future. It's worth mentioning that if the struct is empty and its associated methods are no-ops, it should be entirely optimized away by the compiler.
 * `Outcome`
+A struct that is used for storage of any data or observations that need to be shared between the selection and update phases. For virtually all bandit algorithms, this will need to include the action (indices) that were selected. `Rand` does not store even these simply because its update is a no-op.
+
+An `ostream` operator is useful but not essential.
 
 The following methods are expected.
 
+
+* `get_empirical_strategies`
+* `get_empirical_values`
+* `get_refined_strategies`
+* `get_refined_values`
+
+Used as the 'final answer' interface. All bandit methods can off emprical value and policies for that purpose, and in most RL schemes this is taken to be the training target. There are many cases where you may want to use other estimates instead, hence the 'refined' version.
+e.g. alpha zero stuff using `q` over `z`, or a mix of the two.
+
+* `initializes_stats`
+* `expand`
+* `select`
+
+
+* `update_matrix_stats`
+* `update_chance_stats` 
+
+
+* `get_policy`
+Off policy only
+
+
+
+
 ## TreeAlgorithm
+
+Derives from Bandit so it has access to structs from before
+
+Derives its own matrix stats to add new stuff on there. The methods from the base class that refer to struct are talking about the type sliced prefixes of the TreeAlgorithm's. For example mt search will add mutexes for locking the stats during update and selection.
+
+Natrually this is where you specify the matrix and chance node structures. There are multiple ones available for performance reasons.
+
+### Tree Search and RL Analogy
+
+The default `StopEarly` template parameter is a good moment to introduce this design principle of surskit.
+
+### Defaults
+
+Unlike the bandit algorithms, it is expected that the provided tree algorithms should accommodate most experiments.
 
 The base algorithms are:
 
