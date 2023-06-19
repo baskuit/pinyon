@@ -20,14 +20,20 @@ class TreeBanditThreaded : public BanditAlgorithm
 {
 public:
     struct MatrixStats;
+    struct ChanceStats;
     struct Types : BanditAlgorithm::Types
     {
         using MatrixStats = TreeBanditThreaded::MatrixStats;
+        using ChanceStats = TreeBanditThreaded::ChanceStats;
         using MatrixNode = MNode<TreeBanditThreaded>;
         using ChanceNode = CNode<TreeBanditThreaded>;
     };
 
     struct MatrixStats : BanditAlgorithm::MatrixStats
+    {
+        std::mutex mtx{};
+    };
+    struct ChanceStats : BanditAlgorithm::ChanceStats
     {
         std::mutex mtx{};
     };
@@ -39,7 +45,7 @@ public:
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBanditThreaded> &matrix_node)
+        MNode<TreeBanditThreaded> &matrix_node)
     {
         this->initialize_stats(iterations, state, model, matrix_node.stats);
         std::thread thread_pool[threads];
@@ -59,7 +65,7 @@ public:
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBanditThreaded> &matrix_node)
+        MNode<TreeBanditThreaded> &matrix_node)
     {
         auto start = std::chrono::high_resolution_clock::now();
         auto end = std::chrono::high_resolution_clock::now();
@@ -81,7 +87,7 @@ public:
         typename Types::PRNG *device,
         typename Types::State *state,
         typename Types::Model *model,
-        MatrixNode<TreeBanditThreaded> *matrix_node)
+        MNode<TreeBanditThreaded> *matrix_node)
     {
         typename Types::PRNG device_thread(device->uniform_64()); // TODO deterministically provide new seed
         typename Types::Model model_thread{*model};               // TODO go back to not making new ones? Perhaps only device needs new instance
@@ -95,11 +101,11 @@ public:
     }
 
 protected:
-    MatrixNode<TreeBanditThreaded> *run_iteration(
+    MNode<TreeBanditThreaded> *run_iteration(
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBanditThreaded> *matrix_node,
+        MNode<TreeBanditThreaded> *matrix_node,
         typename Types::ModelOutput &inference)
     {
 
@@ -119,9 +125,7 @@ protected:
                     model.get_inference(state, inference);
 
                     mtx.lock();
-                    matrix_node->row_actions = state.row_actions;
-                    matrix_node->col_actions = state.col_actions;
-                    matrix_node->is_expanded = true;
+                    matrix_node->expand(state);
                     this->expand(state, matrix_node->stats, inference);
                     mtx.unlock();
                 }
@@ -141,10 +145,14 @@ protected:
             const typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
             state.apply_actions(row_action, col_action);
 
-            ChanceNode<TreeBanditThreaded> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-            MatrixNode<TreeBanditThreaded> *matrix_node_next = chance_node->access(state.obs);
+            CNode<TreeBanditThreaded> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+            // chance_node->stats.mtx.lock();
+            MNode<TreeBanditThreaded> *matrix_node_next = chance_node->access(state.obs);
+            // chance_node->stats.mtx.unlock();
+            
 
-            MatrixNode<TreeBanditThreaded> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
+
+            MNode<TreeBanditThreaded> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
 
             outcome.value = inference.value;
             mtx.lock();
@@ -198,7 +206,7 @@ public:
         typename Types::PRNG &device,
         const typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBanditThreadPool> &matrix_node)
+        MNode<TreeBanditThreadPool> &matrix_node)
     {
         this->_initialize_stats(iterations, state, model, &matrix_node);
         std::thread thread_pool[threads];
@@ -218,7 +226,7 @@ public:
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBanditThreadPool> &matrix_node)
+        MNode<TreeBanditThreadPool> &matrix_node)
     {
         auto start = std::chrono::high_resolution_clock::now();
         auto end = std::chrono::high_resolution_clock::now();
@@ -240,7 +248,7 @@ public:
         typename Types::PRNG *device,
         typename Types::State *state,
         typename Types::Model *model,
-        MatrixNode<TreeBanditThreadPool> *matrix_node)
+        MNode<TreeBanditThreadPool> *matrix_node)
     {
         typename Types::PRNG device_thread{device.template new_seed<typename Types::Seed>()}; // TODO deterministically provide new seed
         typename Types::Model model_thread{*model};
@@ -253,11 +261,11 @@ public:
         }
     }
 
-    MatrixNode<TreeBanditThreadPool> *run_iteration(
+    MNode<TreeBanditThreadPool> *run_iteration(
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBanditThreadPool> *matrix_node,
+        MNode<TreeBanditThreadPool> *matrix_node,
         typename Types::ModelOutput &inference)
     {
         std::mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
@@ -276,10 +284,10 @@ public:
                 typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
                 state.apply_actions(row_action, col_action);
 
-                ChanceNode<TreeBanditThreadPool> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<TreeBanditThreadPool> *matrix_node_next = chance_node->access(state.obs);
+                CNode<TreeBanditThreadPool> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                MNode<TreeBanditThreadPool> *matrix_node_next = chance_node->access(state.obs);
 
-                MatrixNode<TreeBanditThreadPool> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
+                MNode<TreeBanditThreadPool> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
 
                 outcome.value = inference.value;
 
@@ -322,7 +330,7 @@ public:
 
 private:
     void get_mutex_index(
-        MatrixNode<TreeBanditThreadPool> *matrix_node)
+        MNode<TreeBanditThreadPool> *matrix_node)
     {
         matrix_node->stats.mutex_index = (this->current_index++) % pool_size;
     }

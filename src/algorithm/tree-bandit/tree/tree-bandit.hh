@@ -83,20 +83,11 @@ protected:
         {
             if (!matrix_node->is_expanded)
             {
-                if (matrix_node->is_terminal = state.is_terminal)
-                {
-                    inference.value = state.payoff;
-                }
-                else
-                {
-                    state.get_actions();
-                    matrix_node->row_actions = state.row_actions;
-                    matrix_node->col_actions = state.col_actions;
-                    matrix_node->is_expanded = true;
 
-                    model.get_inference(state, inference);
-                    this->expand(state, matrix_node->stats, inference);
-                }
+                state.get_actions();
+                model.get_inference(state, inference);
+                matrix_node->expand(state);
+                this->expand(state, matrix_node->stats, inference);
 
                 if constexpr (return_if_expand)
                 {

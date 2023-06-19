@@ -53,11 +53,13 @@ struct Types
         constexpr RealType(const T &val) : ArithmeticType<T>{val} {}
         constexpr RealType() : ArithmeticType<T>{} {}
         constexpr RealType(const ArithmeticType<T> &val) : ArithmeticType<T>{val} {}
-        RealType& operator=(const T& val) {
+        RealType &operator=(const T &val)
+        {
             this->value = RealType(val);
             return *this;
         }
-        RealType& operator=(const ArithmeticType<T>& val) {
+        RealType &operator=(const ArithmeticType<T> &val)
+        {
             this->value = val.value;
             return *this;
         }
@@ -90,11 +92,22 @@ struct Types
         }
 
         // TODO only here for Pokemon logs
-        template <typename U, size_t size>
-        U* data () {
-            return this->value.data();
-        }
+    };
 
+    template <typename T>
+    struct ObservationHash
+    {
+        std::size_t operator()(const ObservationType<T> &t) {
+            return std::hash(t.value);
+        }
+    };
+
+    template <>
+    struct ObservationHash<std::array<uint8_t, 64>>
+    {
+        std::size_t operator()(const ObservationType<std::array<uint8_t, 64>> &t) {
+            return std::hash(t.value[0]);
+        }
     };
 
     template <typename T>
@@ -119,6 +132,7 @@ struct Types
 
     using Action = ActionType<_Action>;
     using Observation = ObservationType<_Observation>;
+    using ObservationHash = ObservationHash<_Observation>;
     using Probability = ProbabilityType<_Probability>;
 
     using Seed = _Seed;
@@ -185,7 +199,6 @@ using ArenaTypes = Types<
     Matrix<float>,
     Matrix<float>,
     Matrix<int>>;
-
 
 template <size_t LogSize>
 using BattleTypes = Types<

@@ -34,6 +34,14 @@ public:
         typename Types::Observation obs) : obs(obs) {}
     ~MatrixNode();
 
+    inline void expand(typename Types::State &state)
+    {
+        is_expanded = true;
+        row_actions = state.row_actions;
+        col_actions = state.col_actions;
+        // state.get_actions (row_actions, col_actions); TODO
+    }
+
     ChanceNode<Algorithm> *access(ActionIndex row_idx, int col_idx)
     {
         if (this->child == nullptr)
