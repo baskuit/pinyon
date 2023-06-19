@@ -7,9 +7,9 @@ The algorithms in the folder are generalizations of MCTS, which we call 'tree ba
 
  The tree bandit algorithms are defined in two parts. 
 
-* First there is the bandit algorithm, which takes the model type is its sole template parameter. The tree component takes the bandit type as its first template parameter, as well as the types of the nodes and ...
+* First there is the bandit algorithm, which takes the model type is its sole template parameter. This component decides how the algorithm chooses the next node in the tree to visit.
 
-* The tree component wraps the bandit component. It derives its own `MatrixStats`, `ChanceStats` from those in the former, to add any necessary info.
+* Secondly, there is the tree algorithm. This component wraps the bandit algorithm by accepting it as its first template parameter (The State and basic types are deduced from that). It also accepts template parameters for the types/implementation of the matrix and chance nodes, as well as a boolean that determines whether the algorithms stops exploring the tree when it reaches an unexpanded node.
 
 ## `BanditAlgorithm`
 
@@ -23,15 +23,9 @@ There is an entire field of mathematics devoted to describing and analyzing algo
  
  The standard formula in Monte Carlo tree search
 
-\,
-
 $$ \frac{w_i}{n_i} + c \sqrt{\frac{\ln N_i}{n_i}} $$
 
-is often called UCB (Upper Confidence Bounds). It is a solution to the stochastic problem, in the following sense:
-
-
-
-
+is often called UCB (Upper Confidence Bounds). It is a solution to the stochastic bandits problem. By this, we mean that the rewards that are recieved 
 
 The Exp3 and MatrixUCB algorithms are already provided. Not all bandits algorithms (i.e. stochastic bandit algorithms) are sound choices. Refer to "Analysis of Hannan Consistent Selection for Monte Carlo Tree Search in Simultaneous Move Games".
 
@@ -152,27 +146,39 @@ Used as the 'final answer' interface. All bandit methods can off emprical value 
 e.g. alpha zero stuff using `q` over `z`, or a mix of the two.
 
 * `initializes_stats`
-* `expand`
-* `select`
+This method may be removed in the future. The vanilla MatrixUCB algorithm assumes that we know the number of episodes/playouts in advance, which is only true for the root node. This method was used to set the total number of playouts in the `MatrixStats` of the root node. Any other node would use the expected episodes/playouts of its parent matrix node to estimate its own expected episodes. 
 
+* `expand`
+This method properly initializes the statistics of the matrix stats. In exp3 for example, it zero-initializes the gains and visit count vectors for both players.
+
+* `select`
+Chooses the joint actions for both players to commit and hence the associated chance node to visit.
 
 * `update_matrix_stats`
 * `update_chance_stats` 
-
+Updates the stats in the matrix and selected chance node for the next episode. Uses the value observed at the end of the forward phase.
 
 * `get_policy`
 Off policy only
 
 
-
-
 ## TreeAlgorithm
 
-Derives from Bandit so it has access to structs from before
+The bandit algorithm decides how the tree is expanded and explored, which is outside the scope of the bandit algorithm.
 
-Derives its own matrix stats to add new stuff on there. The methods from the base class that refer to struct are talking about the type sliced prefixes of the TreeAlgorithm's. For example mt search will add mutexes for locking the stats during update and selection.
+**This class is derived from the bandit algorithm.**
 
-Natrually this is where you specify the matrix and chance node structures. There are multiple ones available for performance reasons.
+Because of this, the tree algorithm inherits all of the methods of the bandit algorithm.
+
+It will also inherit the three structs `MatrixStats`, `ChanceStats`, and `Outcome` from before. Inheriting the methods and data structures of the bandit algorithms is what allows the interchangeability of latter.
+
+But the tree algorithm will not use the `MatrixStats` and `ChanceStats` just as inherited. Instead, it will derive its own classes to add extra, necessary data. For the multi-threaded tree algorithms, a mutex or mutex id is added to protect the data in the stats from race conditions.
+
+```cpp
+
+```
+
+The matrix and chance nodes are templates that accept algorithms as parameters. It is the *tree* algorithms that is passed as arguments for this, so that the augmented `TreeAlgorithm::MatrixStats` and `TreeAlgorithm::ChanceStats` are used in the tree structure, not their respective base classes.
 
 ### Tree Search and RL Analogy
 
