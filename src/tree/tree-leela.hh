@@ -87,7 +87,7 @@ public:
     {
     };
 
-    std::unordered_map<typename Types::Observation, MatrixNodeLeela<Algorithm, >*, typename Types::ObservationHash> edges{};
+    std::unordered_map<typename Types::Observation, MatrixNodeLeela<Algorithm>*, typename Types::ObservationHash> edges{};
     typename Types::ChanceStats stats{};
 
     ChanceNodeLeela() {}

@@ -95,18 +95,15 @@ struct Types
     };
 
     template <typename T>
-    struct ObservationHash
+    struct _ObservationHash
     {
-        std::size_t operator()(const ObservationType<T> &t) {
-            return std::hash(t.value);
-        }
-    };
-
-    template <>
-    struct ObservationHash<std::array<uint8_t, 64>>
-    {
-        std::size_t operator()(const ObservationType<std::array<uint8_t, 64>> &t) {
-            return std::hash(t.value[0]);
+        std::size_t operator()(const ObservationType<T> &t)
+        {
+            if constexpr (!std::is_same<T, std::array<uint64_t, 64>>::value) {
+                return std::hash(t.value);
+            } else {
+                return 0;
+            }
         }
     };
 
@@ -132,7 +129,7 @@ struct Types
 
     using Action = ActionType<_Action>;
     using Observation = ObservationType<_Observation>;
-    using ObservationHash = ObservationHash<_Observation>;
+    using ObservationHash = _ObservationHash<_Observation>;
     using Probability = ProbabilityType<_Probability>;
 
     using Seed = _Seed;
