@@ -86,23 +86,37 @@ struct Types
     {
         constexpr ObservationType(const T &value) : Wrapper<T>{value} {}
         constexpr ObservationType() : Wrapper<T>{} {}
+        constexpr operator T () const {
+            return Wrapper<T>::value;
+        }
         bool operator==(const ObservationType &other) const
         {
             return this->value == other.value;
         }
 
         // TODO only here for Pokemon logs
+        template <typename U, size_t size>
+        U *data()
+        {
+            return this->value.data();
+        }
     };
 
     template <typename T>
     struct _ObservationHash
     {
-        std::size_t operator()(const ObservationType<T> &t)
+        std::size_t operator()(const ObservationType<T> &t) const
         {
-            if constexpr (!std::is_same<T, std::array<uint64_t, 64>>::value) {
-                return std::hash(t.value);
+            if constexpr (std::is_same<T, std::array<uint8_t, 64>>::value == true) {
+                const std::array<uint8_t, 64> x = t;
+                const uint64_t *a = reinterpret_cast<const uint64_t*>(x.data());
+                size_t hash = 0;
+                for (int i = 0; i < 8; ++i) {
+                    hash ^= a[i];
+                }
+                return hash;
             } else {
-                return 0;
+                return std::hash(static_cast<T>(t));
             }
         }
     };

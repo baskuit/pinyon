@@ -137,9 +137,7 @@ protected:
             }
 
             typename Types::Outcome outcome;
-            mtx.lock();
-            this->select(device, matrix_node->stats, outcome);
-            mtx.unlock();
+            this->select(device, matrix_node->stats, outcome, mtx);
 
             const typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
             const typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];

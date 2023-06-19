@@ -159,6 +159,54 @@ protected:
         outcome.col_mu = static_cast<typename Types::Real>(col_forecast[col_idx]);
     }
 
+    void select(
+        typename Types::PRNG &device,
+        MatrixStats &stats,
+        Outcome &outcome,
+        std::mutex &mtx)
+    {
+        /*
+        Softmaxing of the gains to produce forecasts/strategies for the row and col players.
+        The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
+        */
+        mtx.lock();
+        typename Types::VectorReal row_forecast{stats.row_gains};
+        typename Types::VectorReal col_forecast{stats.col_gains};
+        mtx.unlock();
+        int rows = row_forecast.size();
+        int cols = col_forecast.size();
+        const auto gamma = this->gamma;
+
+        if (rows == 1)
+        {
+            row_forecast[0] = 1;
+        }
+        else
+        {
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
+            softmax(row_forecast, row_forecast, rows, eta);
+            std::transform(row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
+                   [gamma, eta](typename Types::Real value) { return (1 - gamma) * value + eta; });
+        }
+        if (cols == 1)
+        {
+            col_forecast[0] = 1;
+        }
+        else
+        {
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
+            softmax(col_forecast, col_forecast, cols, eta);
+            std::transform(col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
+                   [gamma, eta](typename Types::Real value) { return (1 - gamma) * value + eta; });
+        }
+        const int row_idx = device.sample_pdf(row_forecast, rows);
+        const int col_idx = device.sample_pdf(col_forecast, cols);
+        outcome.row_idx = row_idx;
+        outcome.col_idx = col_idx;
+        outcome.row_mu = static_cast<typename Types::Real>(row_forecast[row_idx]);
+        outcome.col_mu = static_cast<typename Types::Real>(col_forecast[col_idx]);
+    }
+
     void update_matrix_stats(
         MatrixStats &stats,
         Outcome &outcome)
@@ -167,8 +215,18 @@ protected:
         stats.visits += 1;
         stats.row_visits[outcome.row_idx] += 1;
         stats.col_visits[outcome.col_idx] += 1;
-        stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu;
-        stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu;
+        if ((stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu) >= 0) {
+            const auto max = stats.row_gains[outcome.row_idx];
+            for (auto &v : stats.row_gains) {
+                v -= max;
+            }
+        }
+        if ((stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu) >= 0) {
+            const auto max = stats.col_gains[outcome.col_idx];
+            for (auto &v : stats.col_gains) {
+                v -= max;
+            }
+        }
     }
 
     void update_chance_stats(
@@ -241,24 +299,10 @@ private:
         int k,
         typename Types::Real eta)
     {
-        /*
-        Softmax helper function with logit scaling.
-        */
-        typename Types::Real max{0};
-        for (int i = 0; i < k; ++i)
-        {
-            typename Types::Real x{gains[i]};
-            if (x > max)
-            {
-                max = x;
-            }
-        }
         typename Types::Real sum{0};
         for (int i = 0; i < k; ++i)
         {
-            gains[i] -= max;
-            typename Types::Real x{gains[i]};
-            typename Types::Real y{std::exp(x * eta)};
+            const typename Types::Real y{std::exp(gains[i] * eta)};
             forecast[i] = y;
             sum += y;
         }
