@@ -13,7 +13,7 @@ for Pruning in Simultaneous Move Games>
 
 */
 
-template <typename Model>
+template <class Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
 class AlphaBeta : public AbstractAlgorithm<Model>
 {
 public:
@@ -26,7 +26,7 @@ public:
     };
     struct MatrixStats
     {
-        typename Types::Real value;
+        typename Types::Real row_value;
         // value for the maximizing/row player.
         typename Types::MatrixReal p;
         typename Types::MatrixReal o;
@@ -35,7 +35,6 @@ public:
         std::vector<int> I{}, J{}; 
         // vector of row_idx, col_idx in the substage
         int depth = 0;
-        MatrixNode<FullTraversal<Model>> *teacher = nullptr;
         typename Types::VectorReal row_strategy, col_strategy;
         int row_br_idx, col_br_idx;
         bool ok = true;
@@ -44,13 +43,14 @@ public:
     }; 
     struct ChanceStats
     {
-        typename Types::Probability explored = Rational(0);
+        typename Types::Probability explored = Rational{0};
     };
 
     const typename Types::Real min_val = 0;
     const typename Types::Real max_val = 1;
+
     int max_depth = -1;
-    typename Types::Real epsilon = Rational(1, 1 << 24);
+    typename Types::Real epsilon = Rational{1, 1 << 24};
 
     AlphaBeta(typename Types::Real min_val, typename Types::Real max_val) : 
         min_val(min_val), max_val(max_val) {}
@@ -58,10 +58,8 @@ public:
     void run (
         typename Types::State &state,
         Model &model,
-        MatrixNode<AlphaBeta> *root,
-        MatrixNode<FullTraversal<Model>> *teacher
+        MNode<AlphaBeta> *root
     ) {
-        root->stats.teacher = teacher;
         double_oracle(state, model, root, min_val, max_val);
     }
 
@@ -69,27 +67,25 @@ public:
     typename Types::Real double_oracle(
         typename Types::State &state,
         Model &model,
-        MatrixNode<AlphaBeta> *matrix_node,
+        MNode<AlphaBeta> *matrix_node,
         typename Types::Real alpha,
         typename Types::Real beta)
     {
-        state.get_actions();
-        matrix_node->expand(state);
         auto &stats = matrix_node->stats;
 
-        // if s is terminal state then
+        state.get_actions();
+        matrix_node->expand(state);
+
         if (state.is_terminal) {
             matrix_node->set_terminal();
-            stats.value = state.row_payoff;
-            teacher_check(matrix_node);
+            stats.row_value = state.row_payoff;
             return state.row_payoff;
         }
         if (max_depth > 0 && stats.depth >= max_depth) {
             matrix_node->set_terminal();
             model.get_inference(state, matrix_node->inference);
-            stats.value = matrix_node->inference.row_value;
-            teacher_check(matrix_node);
-            return stats.value;
+            stats.row_value = matrix_node->inference.row_value;
+            return stats.row_value;
         }
 
         // 6: initialize restricted action sets I and J with a first action in stage s
@@ -123,8 +119,7 @@ public:
                     if (p_ij < o_ij) {
                         // 12: u(si, j ) ← double-oracle(si, j , pi, j, oi, j )
                         typename Types::Real u_ij = 0;
-                        ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-                        ChanceNode<FullTraversal<Model>> *chance_node_teacher = stats.teacher->access(row_idx, col_idx);
+                        CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
 
                         const typename Types::Action row_action = state.row_actions[row_idx];
                         const typename Types::Action col_action = state.col_actions[col_idx];
@@ -135,8 +130,7 @@ public:
 
                             auto state_copy = state;
                             state_copy.apply_actions(row_action, col_action, chance_action);
-                            MatrixNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.transition);
-                            matrix_node_next->stats.teacher = chance_node_teacher->access(state_copy.transition);
+                            MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.transition);
 
                             u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.transition.prob;
                             // u_ij is the value of chance node, i.e. expected score over all child matrix nodes
@@ -153,7 +147,7 @@ public:
             // 14: <u(s), (x,y)> ← ComputeNE(I, J)
             typename Types::MatrixReal matrix;
             typename Types::VectorReal row_strategy, col_strategy;
-            stats.value = solve_submatrix(matrix, matrix_node, row_strategy, col_strategy);
+            stats.row_value = solve_submatrix(matrix, matrix_node, row_strategy, col_strategy);
             // 15: hi0, vMaxi ← BRMax (s, α, y)
             auto iv = best_response_row(state, model, matrix_node, alpha, col_strategy);
             // 16: h j0 , vMini ← BRMin(s, β, x)
@@ -166,13 +160,11 @@ public:
 
             // 17 - 20
             if (iv.first == -1) {
-                stats.value = min_val;
-                teacher_check(matrix_node);
+                stats.row_value = min_val;
                 return min_val;
             }
             if (jv.first == -1) {
-                stats.value = max_val;
-                teacher_check(matrix_node);
+                stats.row_value = max_val;
                 return max_val;
             }
             // 21: α ← max(α, vMin); β ← min(β, v Max )
@@ -186,47 +178,15 @@ public:
             if (std::find(J.begin(), J.end(), jv.first) == J.end()) {
                 J.push_back(jv.first);
             }
-            stats.value = alpha;
+            stats.row_value = alpha;
         }
-        teacher_check(matrix_node);
-        return stats.value;
-    }
-
-    void teacher_check(MatrixNode<AlphaBeta> *matrix_node) {
-        auto &stats = matrix_node->stats;
-        for (int entry_idx = 0; entry_idx < matrix_node->actions.rows * matrix_node->actions.cols; ++entry_idx) {
-            stats.total_calls += stats.function_calls.data[entry_idx];
-        }
-        if (!equals(stats.value, stats.teacher->stats.row_payoff)) {
-            // std::cout << "p:\n";
-            // stats.p.print();
-            // std::cout << "o:\n";
-            // stats.o.print();
-            // std::cout << "I:\n";
-            // math::print(stats.I, stats.I.size());
-            // std::cout << "J:\n";
-            // math::print(stats.J, stats.J.size());
-            // std::cout << "row_strategy:\n";
-            // math::print(stats.row_strategy, stats.I.size());
-            // std::cout << "col_strategy:\n";
-            // math::print(stats.col_strategy, stats.J.size());
-            // std::cout << "nash_payoff_matrix:\n";
-            // auto npm = stats.teacher->stats.nash_payoff_matrix;
-            // npm.print();
-            // std::cout << "row_solution:\n";
-            // math::print(stats.teacher->stats.row_solution, npm.rows);
-            // std::cout << "col_solution:\n";
-            // math::print(stats.teacher->stats.col_solution, npm.cols);
-
-
-            stats.ok = false;
-        }
+        return stats.row_value;
     }
 
     std::pair<int, typename Types::Real> best_response_row(
         typename Types::State &state,
         Model &model,
-        MatrixNode<AlphaBeta> *matrix_node,
+        MNode<AlphaBeta> *matrix_node,
         typename Types::Real alpha,
         typename Types::VectorReal &col_strategy)
     {
@@ -274,8 +234,7 @@ public:
 
                         // 11: u(s_ij) = double_oracle (s_ij, p_ij, o_ij)
                         typename Types::Real u_ij = 0;
-                        ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-                        ChanceNode<FullTraversal<Model>> *chance_node_teacher = matrix_node->stats.teacher->access(row_idx, col_idx);
+                        CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
                         
                         const typename Types::Action row_action = state.row_actions[row_idx];
                         const typename Types::Action col_action = state.col_actions[col_idx];
@@ -285,8 +244,7 @@ public:
                         for (const auto chance_action : chance_actions) {
                             auto state_copy = state;
                             state_copy.apply_actions(row_action, col_action, chance_action);
-                            MatrixNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.transition);
-                            matrix_node_next->stats.teacher = chance_node_teacher->access(state_copy.transition);
+                            MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.transition);
                             u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.transition.prob;
                         }
 
@@ -320,7 +278,7 @@ public:
     std::pair<int, typename Types::Real> best_response_col(
         typename Types::State &state,
         Model &model,
-        MatrixNode<AlphaBeta> *matrix_node,
+        MNode<AlphaBeta> *matrix_node,
         typename Types::Real beta,
         typename Types::VectorReal &row_strategy)
     {
@@ -355,8 +313,7 @@ public:
                         break;
                     } else {
                         typename Types::Real u_ij = 0;
-                        ChanceNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-                        ChanceNode<FullTraversal<Model>> *chance_node_teacher = matrix_node->stats.teacher->access(row_idx, col_idx);
+                        CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
 
                         const typename Types::Action row_action = state.row_actions[row_idx];
                         const typename Types::Action col_action = state.col_actions[col_idx];
@@ -366,8 +323,7 @@ public:
                         for (const auto chance_action : chance_actions) {
                             auto state_copy = state;
                             state_copy.apply_actions(row_action, col_action, chance_action);
-                            MatrixNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.transition);
-                            matrix_node_next->stats.teacher = chance_node_teacher->access(state_copy.transition);
+                            MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.transition);
                             u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.transition.prob;
                             chance_node->stats.explored += state_copy.transition.prob;
                         }
@@ -406,7 +362,7 @@ private:
 
     typename Types::Real solve_submatrix(
         typename Types::MatrixReal &M,
-        MatrixNode<AlphaBeta> *matrix_node,
+        MNode<AlphaBeta> *matrix_node,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy) 
     {
@@ -434,7 +390,7 @@ private:
     typename Types::Real row_alpha_beta(
         typename Types::State &state,
         Model &model,
-        MatrixNode<AlphaBeta> *matrix_node,
+        MNode<AlphaBeta> *matrix_node,
         typename Types::Real alpha,
         typename Types::Real beta)
     {
@@ -444,7 +400,7 @@ private:
     typename Types::Real col_alpha_beta(
         typename Types::State &state,
         Model &model,
-        MatrixNode<AlphaBeta> *matrix_node,
+        MNode<AlphaBeta> *matrix_node,
         typename Types::Real alpha,
         typename Types::Real beta)
     {
