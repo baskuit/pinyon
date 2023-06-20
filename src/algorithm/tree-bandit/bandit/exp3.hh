@@ -40,11 +40,11 @@ public:
     };
 
     const typename Types::Real gamma{.01};
-    const typename Types::Real one_minus_gamma{gamma * -1  + 1};
+    const typename Types::Real one_minus_gamma{gamma * -1 + 1};
 
     Exp3() {}
 
-    Exp3(typename Types::Real gamma) : gamma(gamma) {}
+    Exp3(typename Types::Real gamma) : gamma(gamma), one_minus_gamma{gamma * -1 + 1} {}
 
     friend std::ostream &operator<<(std::ostream &os, const Exp3 &session)
     {
@@ -63,14 +63,12 @@ public:
         math::power_norm(stats.col_visits, col_strategy.size(), 1, col_strategy);
     }
 
-    void get_empirical_values(
+    void get_empirical_value(
         MatrixStats &stats,
-        typename Types::Real &row_value,
-        typename Types::Real &col_value)
+        typename Types::Value &value)
     {
         const typename Types::Real den = 1 / (stats.total_visits + (stats.total_visits == 0));
-        row_value = stats.row_value_total * den;
-        col_value = stats.col_value_total * den;
+        value = stats.value_total * den;
     }
 
     void get_refined_strategies(
@@ -85,12 +83,11 @@ public:
         math::power_norm(stats.col_visits, col_strategy.size(), 1, col_strategy);
     }
 
-    void get_refined_values(
+    void get_refined_value(
         MatrixStats &stats,
-        typename Types::Real &row_value,
-        typename Types::Real &col_value)
+        typename Types::Value &value)
     {
-        get_empirical_values(stats, row_value, col_value);
+        get_empirical_value(stats, value);
     }
 
 protected:
@@ -98,13 +95,13 @@ protected:
         int iterations,
         const typename Types::State &state,
         typename Types::Model &model,
-        MatrixStats& stats)
+        MatrixStats &stats)
     {
     }
 
     void expand(
         typename Types::State &state,
-        MatrixStats& stats,
+        MatrixStats &stats,
         typename Types::ModelOutput &inference)
     {
         stats.row_visits.fill(state.row_actions.size(), 0);
@@ -118,12 +115,9 @@ protected:
         MatrixStats &stats,
         Outcome &outcome)
     {
-        /*
-        Softmaxing of the gains to produce forecasts/strategies for the row and col players.
-        The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
-        */
         const int rows = stats.row_gains.size();
         const int cols = stats.col_gains.size();
+        const auto &one_minus_gamma = this->one_minus_gamma;
         typename Types::VectorReal row_forecast(rows);
         typename Types::VectorReal col_forecast(cols);
         if (rows == 1)
@@ -134,10 +128,9 @@ protected:
         {
             const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
             softmax(row_forecast, stats.row_gains, rows, eta);
-            for (int row_idx = 0; row_idx < rows; ++row_idx)
-            {
-                row_forecast[row_idx] = one_minus_gamma * row_forecast[row_idx] + eta;
-            }
+            std::transform(row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
+                           [eta, one_minus_gamma](typename Types::Real value)
+                           { return one_minus_gamma * value + eta; });
         }
         if (cols == 1)
         {
@@ -147,59 +140,9 @@ protected:
         {
             const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
             softmax(col_forecast, stats.col_gains, cols, eta);
-            for (int col_idx = 0; col_idx < cols; ++col_idx)
-            {
-                col_forecast[col_idx] = one_minus_gamma * col_forecast[col_idx] + eta;
-            }
-        }
-        const int row_idx = device.sample_pdf(row_forecast, rows);
-        const int col_idx = device.sample_pdf(col_forecast, cols);
-        outcome.row_idx = row_idx;
-        outcome.col_idx = col_idx;
-        outcome.row_mu = static_cast<typename Types::Real>(row_forecast[row_idx]);
-        outcome.col_mu = static_cast<typename Types::Real>(col_forecast[col_idx]);
-    }
-
-    void select(
-        typename Types::PRNG &device,
-        MatrixStats &stats,
-        Outcome &outcome,
-        std::mutex &mtx)
-    {
-        /*
-        Softmaxing of the gains to produce forecasts/strategies for the row and col players.
-        The constants eta, gamma, beta are from (arXiv:1204.5721), Theorem 3.3.
-        */
-        mtx.lock();
-        typename Types::VectorReal row_forecast{stats.row_gains};
-        typename Types::VectorReal col_forecast{stats.col_gains};
-        mtx.unlock();
-        int rows = row_forecast.size();
-        int cols = col_forecast.size();
-        const auto gamma = this->gamma;
-        const auto one_minus_gamma = this->one_minus_gamma;
-
-        if (rows == 1)
-        {
-            row_forecast[0] = 1;
-        }
-        else
-        {
-            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
-            softmax(row_forecast, row_forecast, rows, eta);
-            std::transform(row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
-                   [gamma, eta, one_minus_gamma](typename Types::Real value) { return one_minus_gamma * value + eta; });
-        }
-        if (cols == 1)
-        {
-            col_forecast[0] = 1;
-        }
-        else
-        {
-            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
-            softmax(col_forecast, col_forecast, cols, eta);
             std::transform(col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
-                   [gamma, eta, one_minus_gamma](typename Types::Real value) { return one_minus_gamma * value + eta; });
+                           [eta, one_minus_gamma](typename Types::Real value)
+                           { return one_minus_gamma * value + eta; });
         }
         const int row_idx = device.sample_pdf(row_forecast, rows);
         const int col_idx = device.sample_pdf(col_forecast, cols);
@@ -217,15 +160,19 @@ protected:
         stats.visits += 1;
         stats.row_visits[outcome.row_idx] += 1;
         stats.col_visits[outcome.col_idx] += 1;
-        if ((stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu) >= 0) {
+        if ((stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu) >= 0)
+        {
             const auto max = stats.row_gains[outcome.row_idx];
-            for (auto &v : stats.row_gains) {
+            for (auto &v : stats.row_gains)
+            {
                 v -= max;
             }
         }
-        if ((stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu) >= 0) {
+        if ((stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu) >= 0)
+        {
             const auto max = stats.col_gains[outcome.col_idx];
-            for (auto &v : stats.col_gains) {
+            for (auto &v : stats.col_gains)
+            {
                 v -= max;
             }
         }
@@ -236,6 +183,92 @@ protected:
         Outcome &outcome)
     {
     }
+
+    // multithreaded
+
+    void select(
+        typename Types::PRNG &device,
+        MatrixStats &stats,
+        Outcome &outcome,
+        std::mutex &mtx)
+    {
+        mtx.lock();
+        typename Types::VectorReal row_forecast{stats.row_gains};
+        typename Types::VectorReal col_forecast{stats.col_gains};
+        mtx.unlock();
+        const int rows = row_forecast.size();
+        const int cols = col_forecast.size();
+        const auto &one_minus_gamma = this->one_minus_gamma;
+
+        if (rows == 1)
+        {
+            row_forecast[0] = 1;
+        }
+        else
+        {
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
+            softmax(row_forecast, row_forecast, rows, eta);
+            std::transform(row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
+                           [eta, one_minus_gamma](typename Types::Real value)
+                           { return one_minus_gamma * value + eta; });
+        }
+        if (cols == 1)
+        {
+            col_forecast[0] = 1;
+        }
+        else
+        {
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
+            softmax(col_forecast, col_forecast, cols, eta);
+            std::transform(col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
+                           [eta, one_minus_gamma](typename Types::Real value)
+                           { return one_minus_gamma * value + eta; });
+        }
+        const int row_idx = device.sample_pdf(row_forecast, rows);
+        const int col_idx = device.sample_pdf(col_forecast, cols);
+        outcome.row_idx = row_idx;
+        outcome.col_idx = col_idx;
+        outcome.row_mu = static_cast<typename Types::Real>(row_forecast[row_idx]);
+        outcome.col_mu = static_cast<typename Types::Real>(col_forecast[col_idx]);
+    }
+
+    void update_matrix_stats(
+        MatrixStats &stats,
+        Outcome &outcome,
+        std::mutex &mtx)
+    {
+        mtx.lock();
+        stats.value_total += outcome.value;
+        stats.visits += 1;
+        stats.row_visits[outcome.row_idx] += 1;
+        stats.col_visits[outcome.col_idx] += 1;
+        if ((stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu) >= 0)
+        {
+            const auto max = stats.row_gains[outcome.row_idx];
+            for (auto &v : stats.row_gains)
+            {
+                v -= max;
+            }
+        }
+        if ((stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu) >= 0)
+        {
+            const auto max = stats.col_gains[outcome.col_idx];
+            for (auto &v : stats.col_gains)
+            {
+                v -= max;
+            }
+        }
+        mtx.unlock();
+    }
+
+    void update_chance_stats(
+        ChanceStats &stats,
+        Outcome &outcome,
+        std::mutex &mtx)
+    {
+    }
+
+    // off-policy
 
     void update_matrix_stats(
         MatrixStats &stats,
@@ -264,8 +297,7 @@ protected:
     {
         const int rows = stats.row_gains.size();
         const int cols = stats.col_gains.size();
-        row_policy.fill(rows);
-        col_policy.fill(cols);
+        const auto &one_minus_gamma = this->one_minus_gamma;
         if (rows == 1)
         {
             row_policy[0] = 1;
@@ -274,10 +306,9 @@ protected:
         {
             const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
             softmax(row_policy, stats.row_gains, rows, eta);
-            for (int row_idx = 0; row_idx < rows; ++row_idx)
-            {
-                row_policy[row_idx] = one_minus_gamma * row_policy[row_idx] + eta;
-            }
+            std::transform(row_policy.begin(), row_policy.begin() + rows, row_policy.begin(),
+                           [eta, one_minus_gamma](typename Types::Real value)
+                           { return one_minus_gamma * value + eta; });
         }
         if (cols == 1)
         {
@@ -287,10 +318,9 @@ protected:
         {
             const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
             softmax(col_policy, stats.col_gains, cols, eta);
-            for (int col_idx = 0; col_idx < cols; ++col_idx)
-            {
-                col_policy[col_idx] = one_minus_gamma * col_policy[col_idx] + eta;
-            }
+            std::transform(col_policy.begin(), col_policy.begin() + cols, col_policy.begin(),
+                           [eta, one_minus_gamma](typename Types::Real value)
+                           { return one_minus_gamma * value + eta; });
         }
     }
 
@@ -298,7 +328,7 @@ private:
     inline void softmax(
         typename Types::VectorReal &forecast,
         typename Types::VectorReal &gains,
-        int k,
+        const int k,
         typename Types::Real eta)
     {
         typename Types::Real sum{0};
@@ -318,6 +348,22 @@ private:
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy)
     {
-        // TODO
-    }
+        const int rows = row_strategy.size();
+        const int cols = col_strategy.size();
+        const auto &one_minus_gamma = this->one_minus_gamma;
+        if (rows > 1)
+        {
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
+            std::transform(row_strategy.begin(), row_strategy.begin() + rows, row_strategy.begin(),
+                           [eta, one_minus_gamma](typename Types::Real value)
+                           { return (value - eta) / one_minus_gamma; });
+        }
+        if (cols > 1)
+        {
+            const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
+            std::transform(col_strategy.begin(), col_strategy.begin() + cols, col_strategy.begin(),
+                           [eta, one_minus_gamma](typename Types::Real value)
+                           { return (value - eta) / one_minus_gamma; });
+        }
+    } // TODO can produce negative values but this shouldnt cause problems I think.
 };

@@ -14,6 +14,9 @@ template <typename Algorithm>
 class MatrixNodeL : public AbstractNode<Algorithm>
 {
 public:
+
+    static constexpr bool STORES_VALUE = false;
+
     struct Types : AbstractNode<Algorithm>::Types
     {
     };

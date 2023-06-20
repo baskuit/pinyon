@@ -62,18 +62,16 @@ public:
         MatrixStats &stats,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy) {}
-    void get_empirical_values(
+    void get_empirical_value(
         MatrixStats &stats,
-        typename Types::Real &row_value,
-        typename Types::Real &col_value) {}
+        typename Types::Value &value) {}
     void get_refined_strategies(
         MatrixStats &stats,
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy) {}
-    void get_refined_values(
+    void get_refined_value(
         MatrixStats &stats,
-        typename Types::Real &row_value,
-        typename Types::Real &col_value) {}
+        typename Types::Value &value) {}
 
 protected:
     void initialize_stats(
@@ -138,9 +136,9 @@ The following methods are expected.
 
 
 * `get_empirical_strategies`
-* `get_empirical_values`
+* `get_empirical_value`
 * `get_refined_strategies`
-* `get_refined_values`
+* `get_refined_value`
 
 Used as the 'final answer' interface. All bandit methods can off emprical value and policies for that purpose, and in most RL schemes this is taken to be the training target. There are many cases where you may want to use other estimates instead, hence the 'refined' version.
 e.g. alpha zero stuff using `q` over `z`, or a mix of the two.

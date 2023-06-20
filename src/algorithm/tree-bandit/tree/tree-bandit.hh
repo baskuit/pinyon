@@ -83,10 +83,9 @@ protected:
         {
             if (!matrix_node->is_expanded())
             {
-
                 state.get_actions();
-                model.get_inference(state, inference);
                 matrix_node->expand(state);
+                model.get_inference(state, inference);
                 this->expand(state, matrix_node->stats, inference);
 
                 if constexpr (return_if_expand)
@@ -112,14 +111,16 @@ protected:
         }
         else
         {
-            inference.value = state.payoff;
+            if constexpr (MatrixNode<TreeBandit>::STORES_VALUE) {
+                matrix_node->get_value(inference.value);
+            } else {
+                inference.value = state.payoff;
+            }  
             return matrix_node;
         }
     }
 
-    // TODO rename. MCTS-A style search where you return the empirical average values of the next node instead of the leaf node value.
-
-    void run_iteration_average(
+    MatrixNode<TreeBandit> *run_iteration_average(
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
@@ -128,46 +129,43 @@ protected:
     {
         if (!matrix_node->is_terminal())
         {
-            if (matrix_node->is_expanded)
-            {
-                typename Types::Outcome outcome;
-
-                select(device, matrix_node, outcome);
-
-                matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
-
-                ChanceNode<TreeBandit> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<TreeBandit> *matrix_node_next = chance_node->access(state.transition);
-
-                run_iteration_average(device, state, model, matrix_node_next, inference);
-
-                get_empirical_values(matrix_node_next, outcome.row_value, outcome.col_value);
-                update_matrix_stats(matrix_node->stats, outcome);
-                update_chance_stats(chance_node->stats, outcome);
-                return;
-            }
-            else
+            if (!matrix_node->is_expanded())
             {
                 state.get_actions();
                 matrix_node->expand(state);
-                matrix_node->set_terminal(state.is_terminal);
-
+                model.get_inference(state, inference);
                 this->expand(state, matrix_node->stats, inference);
 
-                if (state.is_terminal)
+                if constexpr (return_if_expand)
                 {
-                    inference.value = state.payoff;
+                    return matrix_node;
                 }
-                else
-                {
-                    model.get_inference(state, inference);
-                }
-                return;
             }
+
+            typename Types::Outcome outcome;
+            this->select(device, matrix_node->stats, outcome);
+
+            matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
+
+            ChanceNode<TreeBandit> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+            MatrixNode<TreeBandit> *matrix_node_next = chance_node->access(state.obs);
+
+            MatrixNode<TreeBandit> *matrix_node_leaf = run_iteration_average(device, state, model, matrix_node_next, inference);
+
+            this->get_empirical_value(matrix_node_next->stats, outcome.value);
+            // TODO use chance node? Breaks if matrix_node_next is terminal?
+            this->update_matrix_stats(matrix_node->stats, outcome);
+            this->update_chance_stats(chance_node->stats, outcome);
+            return matrix_node_leaf;
         }
         else
         {
-            return;
+            if constexpr (MatrixNode<TreeBandit>::STORES_VALUE) {
+                matrix_node->get_value(inference.value);
+            } else {
+                inference.value = state.payoff;
+            }  
+            return matrix_node;
         }
     }
 };

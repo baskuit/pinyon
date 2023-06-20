@@ -14,6 +14,9 @@ template <typename Algorithm>
 class MatrixNodeDebug : public AbstractNode<Algorithm>
 {
 public:
+
+    static constexpr bool STORES_VALUE = false;
+
     struct Types : AbstractNode<Algorithm>::Types
     {
     };

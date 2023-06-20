@@ -45,7 +45,7 @@ public:
     {
     }
 
-    void get_empirical_values(
+    void get_empirical_value(
         MatrixStats &stats,
         typename Types::Real &row_value,
         typename Types::Real &col_value)
@@ -59,7 +59,7 @@ public:
     {
     }
 
-    void get_refined_values(
+    void get_refined_value(
         MatrixStats &stats,
         typename Types::Real &row_value,
         typename Types::Real &col_value)
@@ -77,7 +77,7 @@ protected:
 
     void expand(
         typename Types::State &state,
-        MatrixStats& stats,
+        MatrixStats &stats,
         typename Types::ModelOutput &inference)
     {
         stats.rows = state.row_actions.size();
@@ -107,6 +107,32 @@ protected:
     {
     }
 
+    void select(
+        typename Types::PRNG &device,
+        MatrixStats &stats,
+        typename Types::Outcome &outcome,
+        std::mutex &mtx)
+    {
+        const int row_idx = device.random_int(stats.rows);
+        const int col_idx = device.random_int(stats.cols);
+        outcome.row_idx = row_idx;
+        outcome.col_idx = col_idx;
+    }
+
+    void update_matrix_stats(
+        MatrixStats &stats,
+        typename Types::Outcome &outcome,
+        std::mutex &mtx)
+    {
+    }
+
+    void update_chance_stats(
+        ChanceStats &stats,
+        typename Types::Outcome &outcome,
+        std::mutex &mtx)
+    {
+    }
+
     void update_matrix_stats(
         MatrixStats &stats,
         typename Types::Outcome &outcome,
@@ -126,35 +152,9 @@ protected:
         typename Types::VectorReal &row_policy,
         typename Types::VectorReal &col_policy)
     {
-        // const int rows = stats.row_gains.size();
-        // const int cols = stats.col_gains.size();
-        // row_policy.fill(rows);
-        // col_policy.fill(cols);
-        // if (rows == 1)
-        // {
-        //     row_policy[0] = 1;
-        // }
-        // else
-        // {
-        //     const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
-        //     softmax(row_policy, stats.row_gains, rows, eta);
-        //     for (int row_idx = 0; row_idx < rows; ++row_idx)
-        //     {
-        //         row_policy[row_idx] = (1.0 - gamma) * row_policy[row_idx] + eta;
-        //     }
-        // }
-        // if (cols == 1)
-        // {
-        //     col_policy[0] = 1;
-        // }
-        // else
-        // {
-        //     const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
-        //     softmax(col_policy, stats.col_gains, cols, eta);
-        //     for (int col_idx = 0; col_idx < cols; ++col_idx)
-        //     {
-        //         col_policy[col_idx] = (1.0 - gamma) * col_policy[col_idx] + eta;
-        //     }
-        // }
+        const typename Types::Real row_uniform{Rational{1, stats.rows}};
+        row_policy.fill(stats.rows, row_uniform);
+        const typename Types::Real col_uniform{Rational{1, stats.cols}};
+        col_policy.fill(stats.cols, col_uniform);
     }
 };
