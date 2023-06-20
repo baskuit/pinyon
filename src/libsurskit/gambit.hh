@@ -189,8 +189,8 @@ namespace LibGambit
         Gambit::Matrix<double> A2(1, cols,
                                   1, rows);
 
-        const double row_payoff_max = payoff_matrix.max();
-        const double row_payoff_min = payoff_matrix.min();
+        const double row_payoff_max = static_cast<double>(payoff_matrix.max());
+        const double row_payoff_min = static_cast<double>(payoff_matrix.min());
         double max = std::max(row_payoff_max, static_cast<double>(payoff_sum - row_payoff_max));
         double min = std::min(row_payoff_min, static_cast<double>(payoff_sum - row_payoff_min));
 
@@ -210,9 +210,10 @@ namespace LibGambit
         {
             for (size_t j = 1; j <= cols; j++)
             {
-                const double row_payoff = payoff_matrix.get(i - 1, j - 1).get_row_value();
+                const double row_payoff = static_cast<double>(payoff_matrix.get(i - 1, j - 1).get_row_value());
+                const double col_payoff = static_cast<double>(payoff_matrix.get(i - 1, j - 1).get_col_value());
                 A1(i, j) = fac * (row_payoff - min);
-                A2(j, i) = fac * (payoff_sum - row_payoff - min);
+                A2(j, i) = fac * (col_payoff - min);
             }
         }
 

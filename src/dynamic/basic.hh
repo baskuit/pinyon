@@ -168,11 +168,11 @@ namespace W
         };
         double row_payoff()
         {
-            return ptr->payoff.get_row_value();
+            return static_cast<double>(ptr->payoff.get_row_value());
         };
         double col_payoff()
         {
-            return ptr->payoff.get_col_value();
+            return static_cast<double>(ptr->payoff.get_col_value());
         };
         bool is_solved()
         {

@@ -15,14 +15,14 @@
     which is a way of turning any StateChance into a SolvedState
 */
 
-template <typename Model>
+template <class Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
 class FullTraversal : public AbstractAlgorithm<Model>
 {
-    // static_assert(std::derived_from<typename Model::Types::State, ChanceState<typename Model::Types::TypeList>>,
-    //     "This algorithm must be based on State type derived from ChanceState");
+    static_assert(std::derived_from<typename Model::Types::State, ChanceState<typename Model::Types::TypeList>>,
+                  "This algorithm must be based on State type derived from ChanceState");
 
-    // static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
-    //     "The Inference type of the DoubleOracleModel is used to store Nash strategies and payoff");
+    static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
+                  "The Inference type of the DoubleOracleModel is used to store Nash strategies and payoff");
 
 public:
     struct MatrixStats;
@@ -34,34 +34,36 @@ public:
     };
     struct MatrixStats : AbstractAlgorithm<Model>::MatrixStats
     {
-        typename Types::Value payoff;
+        typename Types::Value payoff{};
         typename Types::VectorReal row_solution, col_solution;
         typename Types::MatrixValue nash_payoff_matrix;
+
         size_t matrix_node_count = 1;
         unsigned int depth = 0;
         typename Types::Probability prob;
     };
     struct ChanceStats : AbstractAlgorithm<Model>::ChanceStats
     {
-        std::vector<typename Types::Observation> chance_actions; // we use vector here since this is general
-        std::vector<typename Types::Probability> chance_strategy;
+        // std::vector<typename Types::Observation> chance_actions;
+        // std::vector<typename Types::Probability> chance_strategy; TODO are these used?
     };
 
-    int max_depth = -1;
+    const int max_depth = -1;
 
     FullTraversal() {}
+    FullTraversal(const int max_depth) : max_depth{max_depth} {}
 
     void run(
         typename Types::State &state,
         Model &model,
-        MatrixNode<FullTraversal> *matrix_node)
+        MNode<FullTraversal> *matrix_node)
     {
 
         // expand node
         state.get_actions();
         matrix_node->expand(state);
-        
-        auto &stats = matrix_node->stats;
+
+        MatrixStats &stats = matrix_node->stats;
         stats.prob = state.prob;
 
         if (state.is_terminal)
@@ -70,11 +72,9 @@ public:
             matrix_node->set_terminal();
             return;
         }
-        if (max_depth > 0 && stats.depth >= max_depth) 
+        if (max_depth > 0 && stats.depth >= max_depth)
         {
-            typename Types::ModelOutput model_output;
-            model.get_inference(state, model_output);
-            stats.payoff = model_output.value;
+            model.get_value(state, stats.payoff);
             matrix_node->set_terminal();
             return;
         }
@@ -82,7 +82,7 @@ public:
         const int rows = state.row_actions.size();
         const int cols = state.col_actions.size();
 
-        stats.nash_payoff_matrix.fill(rows, cols, typename Types::Value{Rational{0}, Rational{0}});
+        stats.nash_payoff_matrix.fill(rows, cols); // TODO check it is zero initialized
 
         // recurse
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
@@ -95,12 +95,12 @@ public:
                 std::vector<typename Types::Observation> chance_actions;
                 state.get_chance_actions(chance_actions, row_action, col_action);
 
-                ChanceNode<FullTraversal> *chance_node = matrix_node->access(row_idx, col_idx);
+                CNode<FullTraversal> *chance_node = matrix_node->access(row_idx, col_idx);
                 for (auto chance_action : chance_actions)
                 {
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, chance_action);
-                    MatrixNode<FullTraversal> *matrix_node_next = chance_node->access(state_copy.obs);
+                    MNode<FullTraversal> *matrix_node_next = chance_node->access(state_copy.obs);
                     matrix_node_next->stats.depth = stats.depth + 1;
 
                     run(state_copy, model, matrix_node_next);
@@ -118,7 +118,6 @@ public:
             stats.nash_payoff_matrix,
             stats.row_solution,
             stats.col_solution);
-        stats.payoff = typename Types::Value{Rational{0}, Rational{0}};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < cols; ++col_idx)
@@ -126,7 +125,6 @@ public:
                 stats.payoff +=
                     stats.nash_payoff_matrix.get(row_idx, col_idx) *
                     (stats.row_solution[row_idx] * stats.col_solution[col_idx]);
-                // stats.col_payoff = 1 - stats.row_payoff;
             }
         }
         return;

@@ -80,9 +80,9 @@ public:
         typename Types::ModelInput &input,
         typename Types::ModelOutput &output)
     {
-        const typename Types::Real row_uniform{1 / (typename Types::Real)input.row_actions.size()};
+        const typename Types::Real row_uniform{Rational{1, static_cast<int>(input.row_actions.size())}};
         output.row_policy.fill(input.row_actions.size(), row_uniform);
-        const typename Types::Real col_uniform{1 / (typename Types::Real)input.col_actions.size()};
+        const typename Types::Real col_uniform{Rational{1, static_cast<int>(input.col_actions.size())}};
         output.col_policy.fill(input.col_actions.size(), col_uniform);
 
         rollout(input);
@@ -95,17 +95,26 @@ public:
     {
         outputs.resize(inputs.size());
         // add empty structs
-        for (int i = 0; i < inputs.size(); ++i) {
+        for (int i = 0; i < inputs.size(); ++i)
+        {
             auto &input = inputs[i];
             auto &output = outputs[i];
             get_inference(input, output);
         }
     }
 
-    void add_to_batch_input (
+    void get_value(
+        typename Types::ModelInput &input,
+        typename Types::Value &value)
+    {
+        rollout(input);
+        value = input.payoff;
+    }
+
+    void add_to_batch_input(
         typename Types::State &state,
-        typename Types::ModelBatchInput &input
-    ) {
+        typename Types::ModelBatchInput &input)
+    {
         input.push_back(state);
     }
 
@@ -137,9 +146,7 @@ public:
         using ModelInput = State;
     };
 
-    typename Types::PRNG device;
-
-    EmptyModel(typename Types::PRNG &device) : device(device) {}
+    EmptyModel () {}
 
     void get_input(
         const typename Types::State &state,

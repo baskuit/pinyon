@@ -60,7 +60,7 @@ namespace math
     {
         for (int i = 0; i < input.size(); ++i)
         {
-            std::cout << input[i] << ", ";
+            // std::cout << input[i] << ", ";
         }
         std::cout << '\n';
     }
@@ -121,8 +121,8 @@ namespace math
             for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
             {
                 const auto value = value_matrix[data_idx];
-                const typename Types::Real u{value.get_row_value() * col_strategy[col_idx]};
-                const typename Types::Real v{value.get_col_value() * row_strategy[row_idx]};
+                const typename Types::Real u{value.get_row_value() * static_cast<double>(col_strategy[col_idx])};
+                const typename Types::Real v{value.get_col_value() * static_cast<double>(row_strategy[row_idx])};
                 row_payoff += u * row_strategy[row_idx];
                 col_payoff += v * col_strategy[col_idx];
                 row_response[row_idx] += u;

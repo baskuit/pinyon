@@ -40,8 +40,7 @@ public:
     {
         this->tree = std::make_shared<MatrixNode<FullTraversal<Model>>>();
         this->current_node = &*tree;
-        FullTraversal<Model> session;
-        session.max_depth = max_depth;
+        FullTraversal<Model> session{max_depth};
         session.run(state, model, current_node);
         update_solved_state_info();
     }

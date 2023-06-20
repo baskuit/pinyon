@@ -52,10 +52,13 @@ struct Types
         // constexpr RealType(const T val) : ArithmeticType<T>{val} {}
         constexpr RealType(const T &val) : ArithmeticType<T>{val} {}
         constexpr RealType() : ArithmeticType<T>{} {}
-        constexpr RealType(const ArithmeticType<T> &val) : ArithmeticType<T>{val} {}
+        constexpr RealType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {}
+        constexpr explicit operator T () const {
+            return this->value;
+        }
         RealType &operator=(const T &val)
         {
-            this->value = RealType(val);
+            this->value = val;
             return *this;
         }
         RealType &operator=(const ArithmeticType<T> &val)

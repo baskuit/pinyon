@@ -35,7 +35,8 @@ template <size_t MaxSize>
 struct A
 {
     template <typename T>
-    struct Array : std::array<T, MaxSize> {
+    struct Array : std::array<T, MaxSize>
+    {
 
         Array() {}
 
@@ -43,25 +44,28 @@ struct A
         {
         }
 
-        int _size = 0; // TODO does array already have a size member?
+        int _size = 0;
 
         void fill(int n, T value)
         {
             std::fill(this->begin(), this->begin() + n, value);
             _size = n;
         }
+
         void fill(int n)
         {
             _size = n;
         }
-        int size () {
+
+        int size()
+        {
             return _size;
         }
 
         template <typename U, template <typename U_> typename W>
-        U* data() {
-            return reinterpret_cast<U*>(this->std::array<T, MaxSize>::data());
+        U *data()
+        {
+            return reinterpret_cast<U *>(this->std::array<T, MaxSize>::data());
         }
-
     };
 };

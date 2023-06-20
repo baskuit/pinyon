@@ -9,8 +9,12 @@ struct ArithmeticType
     
     constexpr ArithmeticType (const T &val) : value{val} {}
 
-    operator T() const
+    constexpr explicit operator T() const
     {
+        return value;
+    }
+
+    constexpr T unwrap () const {
         return value;
     }
 

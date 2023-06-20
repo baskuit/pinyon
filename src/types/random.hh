@@ -58,7 +58,7 @@ public:
         double p = uniform();
         for (int i = 0; i < k; ++i)
         {
-            p -= input[i];
+            p -= input[i].unwrap();
             if (p <= 0)
             {
                 return i;

@@ -25,7 +25,7 @@ public:
         typename Types::VectorInt col_visits;
 
         int visits = 0;
-        typename Types::Value value_total;
+        typename Types::Value value_total{};
     };
 
     struct ChanceStats
@@ -39,7 +39,8 @@ public:
         typename Types::Real row_mu, col_mu;
     };
 
-    typename Types::Real gamma{.01};
+    const typename Types::Real gamma{.01};
+    const typename Types::Real one_minus_gamma{gamma * -1  + 1};
 
     Exp3() {}
 
@@ -135,7 +136,7 @@ protected:
             softmax(row_forecast, stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
-                row_forecast[row_idx] = (1 - gamma) * row_forecast[row_idx] + eta;
+                row_forecast[row_idx] = one_minus_gamma * row_forecast[row_idx] + eta;
             }
         }
         if (cols == 1)
@@ -148,7 +149,7 @@ protected:
             softmax(col_forecast, stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                col_forecast[col_idx] = (1 - gamma) * col_forecast[col_idx] + eta;
+                col_forecast[col_idx] = one_minus_gamma * col_forecast[col_idx] + eta;
             }
         }
         const int row_idx = device.sample_pdf(row_forecast, rows);
@@ -176,6 +177,7 @@ protected:
         int rows = row_forecast.size();
         int cols = col_forecast.size();
         const auto gamma = this->gamma;
+        const auto one_minus_gamma = this->one_minus_gamma;
 
         if (rows == 1)
         {
@@ -186,7 +188,7 @@ protected:
             const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
             softmax(row_forecast, row_forecast, rows, eta);
             std::transform(row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
-                   [gamma, eta](typename Types::Real value) { return (1 - gamma) * value + eta; });
+                   [gamma, eta, one_minus_gamma](typename Types::Real value) { return one_minus_gamma * value + eta; });
         }
         if (cols == 1)
         {
@@ -197,7 +199,7 @@ protected:
             const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
             softmax(col_forecast, col_forecast, cols, eta);
             std::transform(col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
-                   [gamma, eta](typename Types::Real value) { return (1 - gamma) * value + eta; });
+                   [gamma, eta, one_minus_gamma](typename Types::Real value) { return one_minus_gamma * value + eta; });
         }
         const int row_idx = device.sample_pdf(row_forecast, rows);
         const int col_idx = device.sample_pdf(col_forecast, cols);
@@ -274,7 +276,7 @@ protected:
             softmax(row_policy, stats.row_gains, rows, eta);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
-                row_policy[row_idx] = (1 - gamma) * row_policy[row_idx] + eta;
+                row_policy[row_idx] = one_minus_gamma * row_policy[row_idx] + eta;
             }
         }
         if (cols == 1)
@@ -287,7 +289,7 @@ protected:
             softmax(col_policy, stats.col_gains, cols, eta);
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                col_policy[col_idx] = (1 - gamma) * col_policy[col_idx] + eta;
+                col_policy[col_idx] = one_minus_gamma * col_policy[col_idx] + eta;
             }
         }
     }
@@ -302,7 +304,7 @@ private:
         typename Types::Real sum{0};
         for (int i = 0; i < k; ++i)
         {
-            const typename Types::Real y{std::exp(gains[i] * eta)};
+            const typename Types::Real y(std::exp((gains[i] * eta).unwrap()));
             forecast[i] = y;
             sum += y;
         }

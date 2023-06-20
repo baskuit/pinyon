@@ -119,9 +119,7 @@ public:
 
                 this->get_policy(matrix_node->stats, row_policy, col_policy);
 
-                double learning_rate = (row_policy[outcome.row_idx] * col_policy[outcome.col_idx]) / (outcome.row_mu * outcome.col_mu);
-
-                std::cout << learning_rate << " lr" << std::endl;
+                const auto learning_rate = row_policy[outcome.row_idx] * col_policy[outcome.col_idx] / (outcome.row_mu * outcome.col_mu);
 
                 this->update_matrix_stats(
                     matrix_node->stats,

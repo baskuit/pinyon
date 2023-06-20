@@ -30,9 +30,9 @@ public:
 
     constexpr Rational() {}
 
-    constexpr Rational(const T p) : p(p), q(1) {}
+    constexpr Rational(const T p) : p{p}, q{1} {}
 
-    constexpr Rational(const T p, const T q) : p(p), q(q) {}
+    constexpr Rational(const T p, const T q) : p{p}, q{q} {}
 
     constexpr Rational operator+(const Rational y) const
     {
@@ -43,14 +43,14 @@ public:
 
     constexpr Rational operator*(const Rational y) const
     {
-        Rational z = {p * y.p, q * y.q};
+        Rational z{p * y.p, q * y.q};
         z.reduce();
         return z;
     }
 
     constexpr Rational operator/(const Rational y) const
     {
-        Rational z = {p * y.q, q * y.p};
+        Rational z{p * y.q, q * y.p};
         z.reduce();
         return z;
     }

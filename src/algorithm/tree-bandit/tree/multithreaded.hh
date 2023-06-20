@@ -113,7 +113,7 @@ protected:
 
         if (!matrix_node->is_terminal())
         {
-            if (!matrix_node->is_expanded)
+            if (!matrix_node->is_expanded())
             {
                 if (state.is_terminal)
                 {
