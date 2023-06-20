@@ -12,8 +12,8 @@ TODO still no chance node updates (does any algo actually NEED this?)
 
 template <
     class BanditAlgorithm,
-    template <class> class MNode,
-    template <class> class CNode,
+    template <class> class MNode = MatrixNode,
+    template <class> class CNode = ChanceNode,
     bool return_if_expand = true>
 class OffPolicy : public BanditAlgorithm
 {

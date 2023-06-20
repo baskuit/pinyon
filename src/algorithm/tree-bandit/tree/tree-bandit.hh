@@ -7,8 +7,8 @@
 
 template <
     class BanditAlgorithm,
-    template <class> class MNode,
-    template <class> class CNode,
+    template <class> class MNode = MatrixNode,
+    template <class> class CNode = ChanceNode,
     bool return_if_expand = true>
 class TreeBandit : public BanditAlgorithm
 {
@@ -92,6 +92,8 @@ protected:
                 {
                     return matrix_node;
                 }
+
+                // TODO do we still have to return if it expands and finds its terminal? Is that what caused that bug?
             }
 
             typename Types::Outcome outcome;

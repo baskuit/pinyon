@@ -137,4 +137,36 @@ namespace math
         return (row_best_response - row_payoff) + (col_best_response - col_payoff);
     }
 
+    double exploitability(
+        Matrix<PairDouble> &value_matrix,
+        std::vector<double> &row_strategy,
+        std::vector<double> &col_strategy)
+    {
+        const int rows = value_matrix.rows;
+        const int cols = value_matrix.cols;
+
+        double row_payoff{Rational(0)}, col_payoff{Rational(0)}; // TODO rationals?
+        std::vector<double> row_response(rows), col_response(cols);
+        size_t data_idx = 0;
+        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
+            {
+                const auto value = value_matrix[data_idx];
+                const double u{value.get_row_value() * static_cast<double>(col_strategy[col_idx])};
+                const double v{value.get_col_value() * static_cast<double>(row_strategy[row_idx])};
+                row_payoff += u * row_strategy[row_idx];
+                col_payoff += v * col_strategy[col_idx];
+                row_response[row_idx] += u;
+                col_response[col_idx] += v;
+                ++data_idx;
+            }
+        }
+
+        double row_best_response{*std::max_element(row_response.begin(), row_response.end())};
+        double col_best_response{*std::max_element(col_response.begin(), col_response.end())};
+
+        return (row_best_response - row_payoff) + (col_best_response - col_payoff);
+    }
+
 } // end 'math'

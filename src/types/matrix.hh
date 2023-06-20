@@ -99,6 +99,15 @@ public:
     {
     }
 
+    operator Matrix<PairDouble>() const {
+        Matrix<PairDouble> output{this->rows, this->cols};
+        for (int entry_idx = 0; entry_idx < rows * cols; ++entry_idx) {
+            auto value = (*this)[entry_idx];
+            output[entry_idx] = PairDouble{static_cast<double>(value.get_row_value()), static_cast<double>(value.get_col_value())};
+        }
+        return output;
+    }
+
     void fill(size_t rows, size_t cols)
     {
         this->rows = rows;

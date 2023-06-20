@@ -9,27 +9,6 @@
 #include <types/matrix.hh>
 #include <tree/tree.hh>
 
-#define SEARCH_PARAMS(State, Model, BanditAlgorithm, TreeBandit)                                            \
-    template <                                                                                              \
-        class State,                                                                                        \
-        template <                                                                                          \
-            class>                                                                                          \
-        class Model,                                                                                        \
-        template <                                                                                          \
-            class,                                                                                          \
-            template <class, class, template <class> class, template <class> class, template <class> class> \
-            class,                                                                                          \
-            template <class> class,                                                                         \
-            template <class> class>                                                                         \
-        class BanditAlgorithm,                                                                              \
-        template <                                                                                          \
-            class,                                                                                          \
-            class,                                                                                          \
-            template <class> class,                                                                         \
-            template <class> class,                                                                         \
-            template <class> class>                                                                         \
-        class TreeBandit>
-
 namespace W
 {
 
@@ -53,18 +32,19 @@ namespace W
         virtual void get_payoff_matrix(Matrix<PairDouble> &payoff_matrix) = 0;
 
         template <typename T>
-        std::shared_ptr<T> deref()
+        std::shared_ptr<T> derive_ptr()
         {
             StateWrapper<T> *self = dynamic_cast<StateWrapper<T> *>(this);
             return self->ptr;
         }
     };
-    template <class State>
+
     struct StateGenerator
     {
         StateGenerator() {}
-        virtual StateWrapper<State> operator*() = 0;
+        virtual State operator*() = 0;
     };
+
     struct Model
     {
         struct Output
@@ -74,12 +54,13 @@ namespace W
         };
         virtual Output get_inference(State &state) = 0;
         template <typename T>
-        std::shared_ptr<T> deref()
+        std::shared_ptr<T> derive_ptr()
         {
             ModelWrapper<T> *self = dynamic_cast<ModelWrapper<T> *>(this);
             return self->ptr;
         }
     };
+
     struct Search // = Algorithm + Tree
     {
         struct TreeData
@@ -93,12 +74,13 @@ namespace W
         virtual void run(size_t iterations, State &state, Model &model) = 0;
         virtual void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model) = 0;
         virtual double exploitability(State &state) = 0;
+        virtual double exploitability (Matrix<PairDouble> &matrix) = 0;
         virtual void get_empirical_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy) = 0;
         // virtual std::vector<double> row_strategy() = 0;
         // virtual std::vector<double> col_strategy() = 0;
         virtual void reset() = 0;
         template <typename T>
-        std::shared_ptr<T> deref()
+        std::shared_ptr<T> derive_ptr()
         {
             SearchWrapper<T> *self = dynamic_cast<SearchWrapper<T> *>(this);
             return self->ptr;
@@ -205,6 +187,19 @@ namespace W
         }
     };
 
+    template <typename _Generator>
+    struct StateGeneratorWrapper : StateGenerator {
+
+        std::shared_ptr<_Generator> ptr;
+
+        StateGeneratorWrapper(const _Generator &generator) : ptr{std::make_shared<_Generator>(generator)} {}
+
+        template <typename... Args>
+        StateGeneratorWrapper(Args... args) : ptr(std::make_shared<_Generator>(args...)) {}
+
+
+    };
+
     template <typename _Model>
     struct ModelWrapper : Model
     {
@@ -223,7 +218,7 @@ namespace W
 
         Output get_inference(State &state)
         {
-            auto raw_state = *state.deref<typename _Model::Types::State>();
+            auto raw_state = *state.derive_ptr<typename _Model::Types::State>();
             ptr->get_inference(raw_state, output);
             return Output{std::vector<double>{}, std::vector<double>{}, 0, 0};
         };
@@ -234,24 +229,23 @@ namespace W
     {
         std::shared_ptr<_Algorithm> ptr;
         std::shared_ptr<MatrixNode<_Algorithm>> root;
-        // SearchWrapper(const _Algorithm &state) :  ptr{std::make_shared<_Algorithm>(state)}, root{std::make_shared<MatrixNode<_Algorithm>>{}} {}
+
         SearchWrapper(const _Algorithm &state) : ptr{std::make_shared<_Algorithm>(state)}, root{std::make_shared<MatrixNode<_Algorithm>>()} {}
-        // SearchWrapper(const _Algorithm &&state) : ptr{std::make_shared<_Algorithm>(state)}, root{std::make_shared<MatrixNode<_Algorithm>>{}} {}
-        // SearchWrapper(const SearchWrapper &state_wrapper) : ptr{state_wrapper.ptr}, root{std::make_shared<MatrixNode<_Algorithm>>{}} {}
+        
         template <typename... Args>
         SearchWrapper(Args... args) : ptr(std::make_shared<_Algorithm>(args...)), root{std::make_shared<MatrixNode<_Algorithm>>()} {}
 
         void run(size_t iterations, State &state, Model &model)
         {
-            auto state_ptr = state.deref<typename _Algorithm::Types::State>();
-            auto model_ptr = model.deref<typename _Algorithm::Types::Model>();
+            auto state_ptr = state.derive_ptr<typename _Algorithm::Types::State>();
+            auto model_ptr = model.derive_ptr<typename _Algorithm::Types::Model>();
             typename _Algorithm::Types::PRNG device{};
             ptr->run(iterations, device, *state_ptr, *model_ptr, *root);
         }
 
         void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model) {
-            auto state_ptr = state.deref<typename _Algorithm::Types::State>();
-            auto model_ptr = model.deref<typename _Algorithm::Types::Model>();
+            auto state_ptr = state.derive_ptr<typename _Algorithm::Types::State>();
+            auto model_ptr = model.derive_ptr<typename _Algorithm::Types::Model>();
             typename _Algorithm::Types::PRNG device{};
             MatrixNode<_Algorithm> root_temp;
             ptr->run(iterations, device, *state_ptr, *model_ptr, root_temp);
@@ -304,6 +298,13 @@ namespace W
             double expl = static_cast<double>(math::exploitability<typename _Algorithm::Types>(matrix, r, c));
             return expl;
         }; // aka expected regret because we use empirical strategies
+
+        double exploitability (Matrix<PairDouble> &matrix) {
+            typename _Algorithm::Types::VectorReal r{root->row_actions.size()}, c{root->col_actions.size()};
+            ptr->get_empirical_strategies(root->stats, r, c);
+            double expl = static_cast<double>(math::exploitability<typename _Algorithm::Types>(matrix, r, c));
+            return expl;
+        }
     };
 
     template <typename _MatrixNode>

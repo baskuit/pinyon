@@ -188,10 +188,10 @@ private:
 
 template <
     class BanditAlgorithm,
-    template <class> class MNode,
-    template <class> class CNode,
+    template <class> class MNode = MatrixNode,
+    template <class> class CNode = ChanceNode,
     size_t pool_size = 128,
-    bool return_if_expand = false>
+    bool return_if_expand = true>
 class TreeBanditThreadPool : public BanditAlgorithm
 {
 public:
@@ -271,13 +271,13 @@ private:
         const typename Types::Model *model,
         MNode<TreeBanditThreadPool> *matrix_node)
     {
-        typename Types::PRNG device_thread{device.template new_seed<typename Types::Seed>()};
+        typename Types::PRNG device_thread(device->uniform_64());
         typename Types::Model model_thread{*model};
         typename Types::ModelOutput inference;
         for (size_t iteration = 0; iteration < iterations; ++iteration)
         {
             typename Types::State state_copy = *state;
-            state_copy.reseed(device_thread.template new_seed<typename Types::Seed>());
+            state_copy.reseed(device_thread);
             this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
         }
     }
