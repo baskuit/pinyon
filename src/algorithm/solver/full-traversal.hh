@@ -83,6 +83,8 @@ public:
         const int cols = state.col_actions.size();
 
         stats.nash_payoff_matrix.fill(rows, cols); // TODO check it is zero initialized
+        stats.row_solution.fill(rows);
+        stats.col_solution.fill(cols);
 
         // recurse
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
@@ -111,16 +113,13 @@ public:
             }
         }
 
-        stats.row_solution.fill(rows);
-        stats.col_solution.fill(cols);
+        // solve
 
-        LibGambit::solve_matrix<Types>(
-            stats.nash_payoff_matrix,
-            stats.row_solution,
-            stats.col_solution);
-        for (int row_idx = 0; row_idx < rows; ++row_idx)
+        LibGambit::solve_matrix<Types>(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
+
+        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
-            for (int col_idx = 0; col_idx < cols; ++col_idx)
+            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
             {
                 stats.payoff +=
                     stats.nash_payoff_matrix.get(row_idx, col_idx) *
@@ -130,4 +129,4 @@ public:
         return;
     }
 
-}; // TODO TODO review changes!!!!!
+};
