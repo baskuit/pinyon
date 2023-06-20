@@ -140,9 +140,9 @@ protected:
         typename Types::Model &model,
         MatrixNode<OffPolicy> *matrix_node)
     {
-        if (!matrix_node->is_terminal)
+        if (!matrix_node->is_terminal())
         {
-            if (matrix_node->is_expanded)
+            if (matrix_node->is_expanded())
             {
                 trajectory.emplace_back();
                 auto &frame = trajectory.back();
@@ -151,9 +151,7 @@ protected:
                 typename Types::Outcome &outcome = frame.outcome;
                 this->select(device, matrix_node->stats, outcome);
 
-                typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
-                typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
-                state.apply_actions(row_action, col_action);
+                matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
                 ChanceNode<OffPolicy> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode<OffPolicy> *matrix_node_next = chance_node->access(state.obs);
@@ -164,10 +162,8 @@ protected:
             else
             {
                 state.get_actions();
-                matrix_node->row_actions = state.row_actions;
-                matrix_node->col_actions = state.col_actions;
-                matrix_node->is_expanded = true;
-                matrix_node->is_terminal = state.is_terminal;
+                matrix_node->expand(state);
+                matrix_node->set_terminal(state.is_terminal);
 
                 typename Types::ModelOutput inference;
                 this->expand(state, matrix_node->stats, inference);

@@ -59,9 +59,7 @@ public:
 
         // expand node
         state.get_actions();
-        matrix_node->row_actions = state.row_actions;
-        matrix_node->col_actions = state.col_actions;
-        matrix_node->is_expanded = true;
+        matrix_node->expand(state);
         
         auto &stats = matrix_node->stats;
         stats.prob = state.prob;
@@ -69,7 +67,7 @@ public:
         if (state.is_terminal)
         {
             stats.payoff = state.payoff;
-            matrix_node->is_terminal = true;
+            matrix_node->set_terminal();
             return;
         }
         if (max_depth > 0 && stats.depth >= max_depth) 
@@ -77,7 +75,7 @@ public:
             typename Types::ModelOutput model_output;
             model.get_inference(state, model_output);
             stats.payoff = model_output.value;
-            matrix_node->is_terminal = true;
+            matrix_node->set_terminal();
             return;
         }
 

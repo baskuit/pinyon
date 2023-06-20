@@ -79,9 +79,9 @@ protected:
         MatrixNode<TreeBandit> *matrix_node,
         typename Types::ModelOutput &inference)
     {
-        if (!matrix_node->is_terminal)
+        if (!matrix_node->is_terminal())
         {
-            if (!matrix_node->is_expanded)
+            if (!matrix_node->is_expanded())
             {
 
                 state.get_actions();
@@ -98,9 +98,7 @@ protected:
             typename Types::Outcome outcome;
             this->select(device, matrix_node->stats, outcome);
 
-            const typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
-            const typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
-            state.apply_actions(row_action, col_action);
+            matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
             ChanceNode<TreeBandit> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
             MatrixNode<TreeBandit> *matrix_node_next = chance_node->access(state.obs);
@@ -128,7 +126,7 @@ protected:
         MatrixNode<TreeBandit> *matrix_node,
         typename Types::ModelOutput &inference)
     {
-        if (!matrix_node->is_terminal)
+        if (!matrix_node->is_terminal())
         {
             if (matrix_node->is_expanded)
             {
@@ -136,9 +134,7 @@ protected:
 
                 select(device, matrix_node, outcome);
 
-                typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
-                typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
-                state.apply_actions(row_action, col_action);
+                matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
                 ChanceNode<TreeBandit> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode<TreeBandit> *matrix_node_next = chance_node->access(state.transition);
@@ -153,10 +149,8 @@ protected:
             else
             {
                 state.get_actions();
-                matrix_node->row_actions = state.row_actions;
-                matrix_node->col_actions = state.col_actions;
-                matrix_node->is_expanded = true;
-                matrix_node->is_terminal = state.is_terminal;
+                matrix_node->expand(state);
+                matrix_node->set_terminal(state.is_terminal);
 
                 this->expand(state, matrix_node->stats, inference);
 

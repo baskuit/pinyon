@@ -20,8 +20,8 @@ public:
 
     ChanceNodeL<Algorithm> *child = nullptr;
 
-    bool is_terminal = false;
-    bool is_expanded = false;
+    bool terminal = false;
+    bool expanded = false;
 
     typename Types::VectorAction row_actions;
     typename Types::VectorAction col_actions;
@@ -29,6 +29,48 @@ public:
 
     MatrixNodeL(){};
     ~MatrixNodeL();
+
+    inline void expand(typename Types::State &state)
+    {
+        expanded = true;
+        row_actions = state.row_actions;
+        col_actions = state.col_actions;
+    }
+
+    void apply_actions(typename Types::State &state, const ActionIndex row_idx, const ActionIndex col_idx) const
+    {
+        state.apply_actions(row_actions[row_idx], col_actions[col_idx]);
+    }
+
+    typename Types::Action get_row_action(const ActionIndex row_idx) const
+    {
+        return row_actions[row_idx];
+    }
+
+    typename Types::Action get_col_action(const ActionIndex col_idx) const
+    {
+        return col_actions[col_idx];
+    }
+
+    inline bool is_terminal() const
+    {
+        return terminal;
+    }
+
+    inline bool is_expanded() const
+    {
+        return expanded;
+    }
+
+    inline void set_terminal()
+    {
+        terminal = true;
+    }
+
+    inline void set_expanded()
+    {
+        expanded = true;
+    }
 
     ChanceNodeL<Algorithm> *access(ActionIndex row_idx, int col_idx)
     {

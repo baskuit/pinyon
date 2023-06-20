@@ -23,8 +23,8 @@ public:
     MatrixNodeDebug<Algorithm> *prev = nullptr;
     MatrixNodeDebug<Algorithm> *next = nullptr;
 
-    bool is_terminal = false;
-    bool is_expanded = false;
+    bool terminal = false;
+    bool expanded = false;
 
     typename Types::VectorAction row_actions;
     typename Types::VectorAction col_actions;
@@ -39,6 +39,48 @@ public:
         MatrixNodeDebug<Algorithm> *prev,
         typename Types::Observation obs) : parent(parent), prev(prev), obs(obs) {}
     ~MatrixNodeDebug();
+
+    inline void expand(typename Types::State &state)
+    {
+        expanded = true;
+        row_actions = state.row_actions;
+        col_actions = state.col_actions;
+    }
+
+    void apply_actions(typename Types::State &state, const ActionIndex row_idx, const ActionIndex col_idx) const
+    {
+        state.apply_actions(row_actions[row_idx], col_actions[col_idx]);
+    }
+
+    typename Types::Action get_row_action(const ActionIndex row_idx) const
+    {
+        return row_actions[row_idx];
+    }
+
+    typename Types::Action get_col_action(const ActionIndex col_idx) const
+    {
+        return col_actions[col_idx];
+    }
+
+    inline bool is_terminal() const
+    {
+        return terminal;
+    }
+
+    inline bool is_expanded() const
+    {
+        return expanded;
+    }
+
+    inline void set_terminal()
+    {
+        terminal = true;
+    }
+
+    inline void set_expanded()
+    {
+        expanded = true;
+    }
 
     ChanceNodeDebug<Algorithm> *access(ActionIndex row_idx, int col_idx)
     {
@@ -114,7 +156,7 @@ public:
 
     typename Types::ChanceStats stats;
 
-    ChanceNodeDebug () {}
+    ChanceNodeDebug() {}
     ChanceNodeDebug(
         ActionIndex row_idx,
         ActionIndex col_idx) : row_idx(row_idx), col_idx(col_idx) {}

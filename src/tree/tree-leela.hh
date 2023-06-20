@@ -18,8 +18,8 @@ public:
     {
     };
 
-    bool is_terminal = false;
-    bool is_expanded = false;
+    bool terminal = false;
+    bool expanded = false;
     typename Types::Observation obs;
 
     typename Types::VectorAction row_actions;
@@ -35,23 +35,44 @@ public:
 
     inline void expand(typename Types::State &state)
     {
-        is_expanded = true;
+        expanded = true;
         row_actions = state.row_actions;
         col_actions = state.col_actions;
-        // state.get_actions (row_actions, col_actions); TODO
-        const size_t n_children = row_actions.size() * col_actions.size();
-        edges = new ChanceNodeLeela<Algorithm> *[n_children];
-        std::fill_n(edges, n_children, nullptr);
     }
 
-    inline bool _is_terminal()
+    void apply_actions(typename Types::State &state, const ActionIndex row_idx, const ActionIndex col_idx) const
     {
-        return is_terminal;
+        state.apply_actions(row_actions[row_idx], col_actions[col_idx]);
     }
 
-    inline bool _is_expanded()
+    typename Types::Action get_row_action(const ActionIndex row_idx) const
     {
-        return is_expanded;
+        return row_actions[row_idx];
+    }
+
+    typename Types::Action get_col_action(const ActionIndex col_idx) const
+    {
+        return col_actions[col_idx];
+    }
+
+    inline bool is_terminal() const
+    {
+        return terminal;
+    }
+
+    inline bool is_expanded() const
+    {
+        return expanded;
+    }
+
+    inline void set_terminal()
+    {
+        terminal = true;
+    }
+
+    inline void set_expanded()
+    {
+        expanded = true;
     }
 
     ChanceNodeLeela<Algorithm> *access(ActionIndex row_idx, int col_idx)
@@ -87,7 +108,7 @@ public:
     {
     };
 
-    std::unordered_map<typename Types::Observation, MatrixNodeLeela<Algorithm>*, typename Types::ObservationHash> edges{};
+    std::unordered_map<typename Types::Observation, MatrixNodeLeela<Algorithm> *, typename Types::ObservationHash> edges{};
     typename Types::ChanceStats stats{};
 
     ChanceNodeLeela() {}

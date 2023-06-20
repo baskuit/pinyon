@@ -111,12 +111,13 @@ protected:
 
         std::mutex &mtx{matrix_node->stats.mtx};
 
-        if (!matrix_node->is_terminal)
+        if (!matrix_node->is_terminal())
         {
             if (!matrix_node->is_expanded)
             {
-                if (matrix_node->is_terminal = state.is_terminal)
+                if (state.is_terminal)
                 {
+                    matrix_node->set_terminal(true);
                     inference.value = state.payoff;
                 }
                 else
@@ -139,9 +140,7 @@ protected:
             typename Types::Outcome outcome;
             this->select(device, matrix_node->stats, outcome, mtx);
 
-            const typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
-            const typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
-            state.apply_actions(row_action, col_action);
+            matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
             CNode<TreeBanditThreaded> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
             // chance_node->stats.mtx.lock();
@@ -268,7 +267,7 @@ public:
     {
         std::mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
 
-        if (!matrix_node->is_terminal)
+        if (!matrix_node->is_terminal())
         {
             if (matrix_node->is_expanded)
             {
@@ -300,10 +299,8 @@ public:
             {
                 mtx.lock();
                 state.get_actions();
-                matrix_node->row_actions = state.row_actions;
-                matrix_node->col_actions = state.col_actions;
-                matrix_node->is_expanded = true;
-                matrix_node->is_terminal = state.is_terminal;
+                matrix_node->expand(state);
+                matrix_node->set_terminal(state.is_terminal);
                 this->expand(state, matrix_node->stats, inference);
                 mtx.unlock();
 

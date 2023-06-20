@@ -74,19 +74,18 @@ public:
         typename Types::Real beta)
     {
         state.get_actions();
-        matrix_node->row_actions = state.row_actions;
-        matrix_node->col_actions = state.col_actions;
+        matrix_node->expand(state);
         auto &stats = matrix_node->stats;
 
         // if s is terminal state then
         if (state.is_terminal) {
-            matrix_node->is_terminal = true;
+            matrix_node->set_terminal();
             stats.value = state.row_payoff;
             teacher_check(matrix_node);
             return state.row_payoff;
         }
         if (max_depth > 0 && stats.depth >= max_depth) {
-            matrix_node->is_terminal = true;
+            matrix_node->set_terminal();
             model.get_inference(state, matrix_node->inference);
             stats.value = matrix_node->inference.row_value;
             teacher_check(matrix_node);
