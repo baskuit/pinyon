@@ -266,4 +266,10 @@ struct ArithmeticType
     {
         return value >= other;
     }
+
+    friend std::ostream &operator<<(std::ostream &os, const ArithmeticType &val)
+    {
+        os << val.value;
+        return os;
+    }
 };
