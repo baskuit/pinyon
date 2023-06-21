@@ -39,30 +39,18 @@ public:
     // just a helper for the sample_pdf function in apply_actions
 
     RandomTree(
-        const typename Types::PRNG &device)
-        : device(device),
-          depth_bound(16),
-          rows(4),
-          cols(4),
-          transitions(1),
-          chance_threshold(0)
-    {
-        get_chance_strategies();
-    }
-
-    RandomTree(
         const typename Types::PRNG &device,
         int depth_bound,
         size_t rows,
         size_t cols,
         size_t transitions,
         double chance_threshold)
-        : device(device),
-          depth_bound(depth_bound),
-          rows(rows),
-          cols(cols),
-          transitions(transitions),
-          chance_threshold(chance_threshold)
+        : device{device},
+          depth_bound{depth_bound},
+          rows{rows},
+          cols{cols},
+          transitions{transitions},
+          chance_threshold{chance_threshold}
     {
         get_chance_strategies();
     }
@@ -73,17 +61,19 @@ public:
         size_t rows,
         size_t cols,
         size_t transitions,
+        double chance_threshold,
         int (*depth_bound_func)(RandomTree *, int),
         int (*actions_func)(RandomTree *, int),
         int (*payoff_bias_func)(RandomTree *, int))
-        : device(device),
-          depth_bound(depth_bound),
-          rows(rows),
-          cols(cols),
-          transitions(transitions),
-          depth_bound_func(depth_bound_func),
-          actions_func(actions_func),
-          payoff_bias_func(payoff_bias_func)
+        : device{device},
+          depth_bound{depth_bound},
+          rows{rows},
+          cols{cols},
+          transitions{transitions},
+          chance_threshold{chance_threshold},
+          depth_bound_func{depth_bound_func},
+          actions_func{actions_func},
+          payoff_bias_func{payoff_bias_func}
     {
         get_chance_strategies();
     }
