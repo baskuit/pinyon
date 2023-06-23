@@ -4,10 +4,23 @@
 
 #include <libsurskit/math.hh>
 
+/*
+
+128 bit works just fine for Taurus use case but other games may require mpz_t
+
+TODO:
+
+Make the interface independent of underlying int type
+
+Make it so that changing the type is not done with branches but instead with compiler flag
+
+
+*/
+
 namespace LRSNash
 {
 
-    void eee(
+    void solve_matrix(
         Matrix<PairDouble> &payoff_matrix,
         std::vector<double> &row_strategy,
         std::vector<double> &col_strategy,

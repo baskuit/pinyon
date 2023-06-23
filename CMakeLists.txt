@@ -12,6 +12,10 @@ add_subdirectory(extern/gambit) # creats static library 'gambit'
 add_subdirectory(extern/lrslib) # creates library 'lrsnashlib'
 target_include_directories(lrsnashlib PUBLIC extern/lrslib/src)
 
+target_link_libraries(surskit INTERFACE lrsnashlib)
+target_link_libraries(surskit INTERFACE gambit)
+
+
 # # Testing
 # file(GLOB TEST_FILES tests/*.cc)
 
