@@ -4,8 +4,6 @@
 
 #include <libsurskit/math.hh>
 
-#include <algorithm>
-
 namespace LRSNash
 {
 
@@ -23,13 +21,20 @@ namespace LRSNash
 
         const auto min = payoff_matrix.min();
         const auto max = payoff_matrix.max();
-        const auto delta = max - min;
+        auto delta = (max - min);
 
-        const auto normalized = (payoff_matrix + (min * -1)) / delta;
-
-        std::array<int, rows + cols + 2> row_num, row_den{n_discrete}, col_num, col_den{n_discrete};
-
+        Matrix<PairDouble> normalized{rows, cols};
         int idx = 0;
+        for (const auto value : payoff_matrix)
+        {
+            normalized[idx].row_value = static_cast<double>((value.get_row_value() - min) / delta);
+            normalized[idx].col_value = static_cast<double>((value.get_col_value() - min) / delta);
+            ++idx;
+        }
+
+        std::array<int, 18> row_num, row_den{n_discrete}, col_num, col_den{n_discrete};
+
+        idx = 0;
         for (const auto value : normalized)
         {
             row_num[idx] = floor(value.get_row_value() * n_discrete);
@@ -38,27 +43,91 @@ namespace LRSNash
         }
 
         game g;
-        init_game(&g, rows, cols, row_num, row_den, col_num, col_den);
+        init_game(&g, rows, cols, row_num.data(), row_den.data(), col_num.data(), col_den.data());
 
         auto row_data = alloc_data(rows + 2);
         auto col_data = alloc_data(cols + 2);
 
         solve(&g, row_data, col_data);
 
-        typename Types::Real x{row_data[0]};
-        x = 1 / x;
-        for (int row_idx = 0; row_idx < rows; ++row_idx) {
-            row_strategy[row_idx] = row_data[row_idx + 1] * x;
+        double x{1 / mpz_get_d(row_data[0])};
+        for (int row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            row_strategy[row_idx] = mpz_get_d(row_data[row_idx + 1]) * x;
         }
 
-        typename Types::Real y{col_data[0]};
-        y = 1 / y;
-        for (int col_idx = 0; col_idx < cols; ++col_idx) {
-            col_strategy[col_idx] = col_data[col_idx + 1] * y;
+        double y{1 / mpz_get_d(col_data[0])};
+
+        for (int col_idx = 0; col_idx < cols; ++col_idx)
+        {
+            col_strategy[col_idx] = mpz_get_d(col_data[col_idx + 1]) * y;
         }
 
         dealloc_data(row_data, rows + 2);
         dealloc_data(col_data, cols + 2);
     }
+
+    void eee(
+        Matrix<PairDouble> &payoff_matrix,
+        std::vector<double> &row_strategy,
+        std::vector<double> &col_strategy,
+        const size_t n_discrete = 100)
+    {
+        const int rows = payoff_matrix.rows;
+        const int cols = payoff_matrix.cols;
+        row_strategy.resize(rows);
+        col_strategy.resize(cols);
+
+        const auto min = payoff_matrix.min();
+        const auto max = payoff_matrix.max();
+        auto delta = (max - min);
+
+        Matrix<PairDouble> normalized{rows, cols};
+        int idx = 0;
+        for (const auto value : payoff_matrix)
+        {
+            normalized[idx].row_value = static_cast<double>((value.get_row_value() - min) / delta);
+            normalized[idx].col_value = static_cast<double>((value.get_col_value() - min) / delta);
+            ++idx;
+        }
+
+        std::array<int, 81> row_num, row_den, col_num, col_den;
+
+        idx = 0;
+        for (const auto value : normalized)
+        {
+            row_num[idx] = floor(value.get_row_value() * n_discrete);
+            col_num[idx] = floor(value.get_col_value() * n_discrete);
+            row_den[idx] = n_discrete;
+            col_den[idx] = n_discrete;
+
+            ++idx;
+        }
+
+        game g;
+        init_game(&g, rows, cols, row_num.data(), row_den.data(), col_num.data(), col_den.data());
+
+        auto row_data = alloc_data(rows + 2);
+        auto col_data = alloc_data(cols + 2);
+
+        solve(&g, row_data, col_data);
+
+        double x{1 / mpz_get_d(row_data[0])};
+        for (int row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            row_strategy[row_idx] = mpz_get_d(row_data[row_idx + 1]) * x;
+        }
+
+        double y{1 / mpz_get_d(col_data[0])};
+
+        for (int col_idx = 0; col_idx < cols; ++col_idx)
+        {
+            col_strategy[col_idx] = mpz_get_d(col_data[col_idx + 1]) * y;
+        }
+
+        dealloc_data(row_data, rows + 2);
+        dealloc_data(col_data, cols + 2);
+    }
+
 
 }; // End namespace Gambit

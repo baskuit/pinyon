@@ -194,12 +194,12 @@ public:
         auto min_row = std::min_element(this->begin(), this->begin() + entries,
                                         [](const auto &a, const auto &b)
                                         {
-                                            return a.get_row_value() > b.get_row_value();
+                                            return a.get_row_value() < b.get_row_value();
                                         });
         auto min_col = std::min_element(this->begin(), this->begin() + entries,
                                         [](const auto &a, const auto &b)
                                         {
-                                            return a.get_col_value() > b.get_col_value();
+                                            return a.get_col_value() < b.get_col_value();
                                         });
         return std::min(min_row->get_row_value(), min_col->get_col_value());
     } // TODO specialize for constant sum? LMAO
