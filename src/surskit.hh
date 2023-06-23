@@ -2,7 +2,7 @@
 
 #include <libsurskit/gambit.hh>
 #include <libsurskit/math.hh>
-#include <libsurskit/gmp.hh>
+#include <libsurskit/lrslib.hh>
 
 #include <types/random.hh>
 #include <types/random.hh>
