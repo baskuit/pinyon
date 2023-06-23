@@ -19,6 +19,8 @@
 #include <state/random-tree.hh>
 #include <state/traversed.hh>
 
+#include <state/arena.hh>
+
 // Model
 
 #include <model/model.hh>
