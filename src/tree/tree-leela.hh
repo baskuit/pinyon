@@ -3,6 +3,8 @@
 #include <libsurskit/math.hh>
 #include <tree/node.hh>
 
+#include <unordered_map>
+
 template <typename Algorithm>
 class ChanceNodeLeela;
 

@@ -1,13 +1,9 @@
 #pragma once
 
-#include <memory>
-#include <vector>
-#include <string>
-#include <any>
-#include <unordered_map>
-
 #include <types/matrix.hh>
 #include <tree/tree.hh>
+
+#include <memory>
 
 namespace W
 {
@@ -18,6 +14,10 @@ namespace W
     struct ModelWrapper;
     template <typename>
     struct SearchWrapper;
+
+    /*
+    State
+    */
 
     struct State
     {
@@ -38,61 +38,6 @@ namespace W
             return self->ptr;
         }
     };
-
-    struct StateGenerator
-    {
-        StateGenerator() {}
-        virtual State operator*() = 0;
-    };
-
-    struct Model
-    {
-        struct Output
-        {
-            std::vector<double> row_policy, col_policy;
-            double row_value, col_value;
-        };
-        virtual Output get_inference(State &state) = 0;
-        template <typename T>
-        std::shared_ptr<T> derive_ptr()
-        {
-            ModelWrapper<T> *self = dynamic_cast<ModelWrapper<T> *>(this);
-            return self->ptr;
-        }
-    };
-
-    struct Search // = Algorithm + Tree
-    {
-        struct TreeData
-        {
-            // num nodes, branch factor etc
-            // dont specialize into functions because its calculated by traversing tree
-            // thus why not calculate everything. faster if we every need more than one piece of info..
-        };
-
-        TreeData tree_data;
-        virtual void run(size_t iterations, State &state, Model &model) = 0;
-        virtual void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model) = 0;
-        virtual double exploitability(State &state) = 0;
-        virtual double exploitability (Matrix<PairDouble> &matrix) = 0;
-        virtual void get_empirical_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy) = 0;
-        // virtual std::vector<double> row_strategy() = 0;
-        // virtual std::vector<double> col_strategy() = 0;
-        virtual void reset() = 0;
-        template <typename T>
-        std::shared_ptr<T> derive_ptr()
-        {
-            SearchWrapper<T> *self = dynamic_cast<SearchWrapper<T> *>(this);
-            return self->ptr;
-        }
-        // expensive to calculate, so store as member
-    };
-
-    /*
-
-    Derived - Type Specific Wrappers
-
-    */
 
     template <typename _State>
     struct StateWrapper : State
@@ -187,17 +132,24 @@ namespace W
         }
     };
 
-    template <typename _Generator>
-    struct StateGeneratorWrapper : StateGenerator {
+    /*
+    Model
+    */
 
-        std::shared_ptr<_Generator> ptr;
-
-        StateGeneratorWrapper(const _Generator &generator) : ptr{std::make_shared<_Generator>(generator)} {}
-
-        template <typename... Args>
-        StateGeneratorWrapper(Args... args) : ptr(std::make_shared<_Generator>(args...)) {}
-
-
+    struct Model
+    {
+        struct Output
+        {
+            std::vector<double> row_policy, col_policy;
+            double row_value, col_value;
+        };
+        virtual Output get_inference(State &state) = 0;
+        template <typename T>
+        std::shared_ptr<T> derive_ptr()
+        {
+            ModelWrapper<T> *self = dynamic_cast<ModelWrapper<T> *>(this);
+            return self->ptr;
+        }
     };
 
     template <typename _Model>
@@ -224,6 +176,37 @@ namespace W
         };
     };
 
+    /*
+    Algorithm
+    */
+
+    struct Search
+    {
+        struct TreeData
+        {
+            // num nodes, branch factor etc
+            // dont specialize into functions because its calculated by traversing tree
+            // thus why not calculate everything. faster if we every need more than one piece of info..
+        };
+
+        TreeData tree_data;
+        virtual void run(size_t iterations, State &state, Model &model) = 0;
+        virtual void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model) = 0;
+        virtual double exploitability(State &state) = 0;
+        virtual double exploitability(Matrix<PairDouble> &matrix) = 0;
+        virtual void get_empirical_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy) = 0;
+        // virtual std::vector<double> row_strategy() = 0;
+        // virtual std::vector<double> col_strategy() = 0;
+        virtual void reset() = 0;
+        template <typename T>
+        std::shared_ptr<T> derive_ptr()
+        {
+            SearchWrapper<T> *self = dynamic_cast<SearchWrapper<T> *>(this);
+            return self->ptr;
+        }
+        // expensive to calculate, so store as member
+    };
+
     template <typename _Algorithm>
     struct SearchWrapper : Search
     {
@@ -231,7 +214,7 @@ namespace W
         std::shared_ptr<MatrixNode<_Algorithm>> root;
 
         SearchWrapper(const _Algorithm &state) : ptr{std::make_shared<_Algorithm>(state)}, root{std::make_shared<MatrixNode<_Algorithm>>()} {}
-        
+
         template <typename... Args>
         SearchWrapper(Args... args) : ptr(std::make_shared<_Algorithm>(args...)), root{std::make_shared<MatrixNode<_Algorithm>>()} {}
 
@@ -243,7 +226,8 @@ namespace W
             ptr->run(iterations, device, *state_ptr, *model_ptr, *root);
         }
 
-        void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model) {
+        void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model)
+        {
             auto state_ptr = state.derive_ptr<typename _Algorithm::Types::State>();
             auto model_ptr = model.derive_ptr<typename _Algorithm::Types::Model>();
             typename _Algorithm::Types::PRNG device{};
@@ -299,20 +283,13 @@ namespace W
             return expl;
         }; // aka expected regret because we use empirical strategies
 
-        double exploitability (Matrix<PairDouble> &matrix) {
+        double exploitability(Matrix<PairDouble> &matrix)
+        {
             typename _Algorithm::Types::VectorReal r{root->row_actions.size()}, c{root->col_actions.size()};
             ptr->get_empirical_strategies(root->stats, r, c);
             double expl = static_cast<double>(math::exploitability<typename _Algorithm::Types>(matrix, r, c));
             return expl;
         }
-    };
-
-    template <typename _MatrixNode>
-    struct MatrixNodeWrapper
-    {
-        std::shared_ptr<_MatrixNode> ptr;
-        std::unordered_map<std::string, std::any> stats() = 0;
-        void get_metadata() = 0;
     };
 };
 
