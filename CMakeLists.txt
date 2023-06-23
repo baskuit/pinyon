@@ -9,8 +9,8 @@ target_include_directories(surskit INTERFACE src)
 
 add_subdirectory(extern/gambit) # creats static library 'gambit'
 
-# add_subdirectory(extern/lrslib) # creates library 'lrsnashlib'
-# target_include_directories(lrsnashlib PUBLIC extern/lrslib/src)
+add_subdirectory(extern/lrslib) # creates library 'lrsnashlib'
+target_include_directories(lrsnashlib PUBLIC extern/lrslib/src)
 
 # Testing
 file(GLOB TEST_FILES tests/*.cc)

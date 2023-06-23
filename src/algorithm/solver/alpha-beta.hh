@@ -93,7 +93,7 @@ public:
         std::vector<int> &J = stats.J;
         // TODO first action using info from last expansion, if possible
         I.push_back(0);
-        J.push_back(0);
+        J.push_back(0); // we assume index 0 in the chance actions is 'principal'
 
         typename Types::MatrixReal &p = stats.p;
         typename Types::MatrixReal &o = stats.o;
