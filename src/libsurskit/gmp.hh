@@ -26,8 +26,8 @@ namespace LRSNash
         std::vector<double> &col_strategy,
         const size_t n_discrete = 100)
     {
-        const int rows = payoff_matrix.rows;
-        const int cols = payoff_matrix.cols;
+        const size_t rows = payoff_matrix.rows;
+        const size_t cols = payoff_matrix.cols;
         row_strategy.resize(rows);
         col_strategy.resize(cols);
 
@@ -65,13 +65,13 @@ namespace LRSNash
 
         solve(&g, row_data, col_data);
 
-        double x{1 / *row_data[0]};
+        double x{1 / static_cast<double>(*row_data[0])};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             row_strategy[row_idx] = *row_data[row_idx + 1] * x;
         }
 
-        double y{1 / *col_data[0]};
+        double y{1 / static_cast<double>(*col_data[0])};
 
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
@@ -83,4 +83,4 @@ namespace LRSNash
     }
 
 
-}; // End namespace Gambit
+}; // End namespace LRSNash
