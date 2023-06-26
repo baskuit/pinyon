@@ -3,8 +3,9 @@
 #include "../../extern/lrslib/include/lib-gmp.h"
 #include "../../extern/lrslib/include/lib-long.h"
 
-
 #include <libsurskit/math.hh>
+
+#include <gmpxx.h>
 
 /*
 
@@ -21,7 +22,6 @@ Make it so that changing the type is not done with branches but instead with com
 
 namespace LRSNash
 {
-
 
     void solve_matrix(
         Matrix<PairDouble> &payoff_matrix,
@@ -85,67 +85,47 @@ namespace LRSNash
         dealloc_data_long(col_data, cols + 2);
     }
 
-    // void solve_matrix(
-    //     Matrix<PairDouble> &payoff_matrix,
-    //     std::vector<double> &row_strategy,
-    //     std::vector<double> &col_strategy,
-    //     const size_t n_discrete = 100)
-    // {
-    //     const size_t rows = payoff_matrix.rows;
-    //     const size_t cols = payoff_matrix.cols;
-    //     row_strategy.resize(rows);
-    //     col_strategy.resize(cols);
+    void solve_matrix(
+        Matrix<PairRational> &payoff_matrix,
+        std::vector<mpq_class> &row_strategy,
+        std::vector<mpq_class> &col_strategy)
+    {
+        const size_t rows = payoff_matrix.rows;
+        const size_t cols = payoff_matrix.cols;
+        row_strategy.resize(rows);
+        col_strategy.resize(cols);
 
-    //     const auto min = payoff_matrix.min();
-    //     const auto max = payoff_matrix.max();
-    //     auto delta = (max - min);
+        std::array<mpq_t, 81> row_payoff_data, col_payoff_data;
 
-    //     Matrix<PairDouble> normalized{rows, cols};
-    //     int idx = 0;
-    //     for (const auto value : payoff_matrix)
-    //     {
-    //         normalized[idx].row_value = static_cast<double>((value.get_row_value() - min) / delta);
-    //         normalized[idx].col_value = static_cast<double>((value.get_col_value() - min) / delta);
-    //         ++idx;
-    //     }
+        for (int i = 0; i < rows * cols; ++i) {
+            *row_payoff_data[i] = *payoff_matrix[i].get_row_value().get_mpq_t();
+            *col_payoff_data[i] = *payoff_matrix[i].get_col_value().get_mpq_t();
+        }
 
-    //     std::array<int, 81> row_num, row_den, col_num, col_den;
+        auto row_data = alloc_data_gmp(rows + 2);
+        auto col_data = alloc_data_gmp(cols + 2);
 
-    //     idx = 0;
-    //     for (const auto value : normalized)
-    //     {
-    //         row_num[idx] = floor(value.get_row_value() * n_discrete);
-    //         col_num[idx] = floor(value.get_col_value() * n_discrete);
-    //         row_den[idx] = n_discrete;
-    //         col_den[idx] = n_discrete;
+        game g;
 
-    //         ++idx;
-    //     }
+        solve_gmp_2(&g, rows, cols, row_payoff_data.data(), col_payoff_data.data(), row_data, col_data);
 
-    //     game g;
-    //     init_game(&g, rows, cols, row_num.data(), row_den.data(), col_num.data(), col_den.data());
+        mpz_class x{row_data[0]};
+        for (int row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            mpz_class x_{row_data[row_idx + 1]};
+            row_strategy[row_idx] = mpq_class{x_, x};
+        }
 
-    //     auto row_data = alloc_data(rows + 2);
-    //     auto col_data = alloc_data(cols + 2);
+        mpz_class y{col_data[0]};
 
-    //     solve(&g, row_data, col_data);
+        for (int col_idx = 0; col_idx < cols; ++col_idx)
+        {
+            mpz_class y_{col_data[col_idx + 1]};
+            col_strategy[col_idx] = mpq_class{y_, y};
+        }
 
-    //     double x{1 / static_cast<double>(*row_data[0])};
-    //     for (int row_idx = 0; row_idx < rows; ++row_idx)
-    //     {
-    //         row_strategy[row_idx] = *row_data[row_idx + 1] * x;
-    //     }
-
-    //     double y{1 / static_cast<double>(*col_data[0])};
-
-    //     for (int col_idx = 0; col_idx < cols; ++col_idx)
-    //     {
-    //         col_strategy[col_idx] = *col_data[col_idx + 1] * y;
-    //     }
-
-    //     dealloc_data(row_data, rows + 2);
-    //     dealloc_data(col_data, cols + 2);
-    // }
-
+        dealloc_data_gmp(row_data, rows + 2);
+        dealloc_data_gmp(col_data, cols + 2);
+    }
 
 }; // End namespace LRSNash

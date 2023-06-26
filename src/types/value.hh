@@ -79,6 +79,29 @@ struct ValueStruct<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN> {
     }
 };
 
-using PairDouble = ValueStruct<double, false, 0, 1>;
+struct PairRational {
 
-using PairRational = ValueStruct<mpq_class, false, 0, 1>;
+    mpq_class row_value{};
+    mpq_class col_value{};
+
+    PairRational () {}
+    PairRational (const mpq_class row_value) : row_value{row_value}, col_value{1 - row_value} {}
+    PairRational (const mpq_class row_value, const mpq_class col_value) : row_value{row_value} {}
+    // template <typename T>
+    // ValueStruct(T row_value, T col_value) : row_value{row_value} {}
+
+    inline mpq_class get_row_value () const {
+        return row_value;
+    }
+    inline mpq_class get_col_value () const {
+        return col_value;
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const PairRational &session)
+    {
+        os << session.row_value;
+        return os;
+    }
+};
+
+using PairDouble = ValueStruct<double, false, 0, 1>;
