@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gmpxx.h>
+
 /*
 
 Exp3 is faster rn without assuming constant sum because then it saves the col_value, instead of recomputing each node lol
@@ -78,3 +80,5 @@ struct ValueStruct<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN> {
 };
 
 using PairDouble = ValueStruct<double, false, 0, 1>;
+
+using PairRational = ValueStruct<mpq_class, false, 0, 1>;

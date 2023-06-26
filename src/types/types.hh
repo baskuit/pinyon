@@ -32,9 +32,9 @@ template <
     template <typename _R> typename _VectorReal,
     template <typename _A> typename _VectorAction,
     template <typename _I> typename _VectorInt,
-    typename _MatrixReal,
-    typename _MatrixFloat,
-    typename _MatrixInt>
+    template <typename _R> typename _MatrixReal,
+    template <typename _F> typename _MatrixFloat,
+    template <typename _I> typename _MatrixInt>
 
 struct Types
 {
@@ -152,15 +152,15 @@ struct Types
     using Seed = _Seed;
     using PRNG = _PRNG;
 
-    using Value = ValueStruct<Real, true, 1, 1>;
+    using Value = ValueStruct<Real, true>;
 
     using VectorReal = _VectorReal<Real>;
     using VectorAction = _VectorAction<Action>;
     using VectorInt = _VectorInt<int>;
 
-    using MatrixReal = _MatrixReal;
-    using MatrixFloat = _MatrixFloat;
-    using MatrixInt = _MatrixInt;
+    using MatrixReal = _MatrixReal<Real>;
+    using MatrixFloat = _MatrixFloat<_Float>;
+    using MatrixInt = _MatrixInt<int>;
     using MatrixValue = Matrix<Value>;
 
     using Strategy = VectorReal;
@@ -178,9 +178,9 @@ using SimpleTypes = Types<
     Vector,
     Vector,
     Vector,
-    Matrix<double>,
-    Matrix<double>,
-    Matrix<int>>;
+    Matrix,
+    Matrix,
+    Matrix>;
 
 using RandomTreeTypes = Types<
     Rational<int>,
@@ -194,9 +194,9 @@ using RandomTreeTypes = Types<
     Vector,
     Vector,
     Vector,
-    Matrix<double>,
-    Matrix<double>,
-    Matrix<int>>;
+    Matrix,
+    Matrix,
+    Matrix>;
 
 using ArenaTypes = Types<
     Rational<int>,
@@ -210,9 +210,9 @@ using ArenaTypes = Types<
     Vector,
     A<9>::Array,
     Vector,
-    Matrix<float>,
-    Matrix<float>,
-    Matrix<int>>;
+    Matrix,
+    Matrix,
+    Matrix>;
 
 template <size_t LogSize>
 using BattleTypes = Types<
@@ -227,6 +227,6 @@ using BattleTypes = Types<
     Vector,
     A<9>::Array,
     Vector,
-    Matrix<float>,
-    Matrix<float>,
-    Matrix<int>>;
+    Matrix,
+    Matrix,
+    Matrix>;
