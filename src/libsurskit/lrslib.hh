@@ -1,6 +1,8 @@
 #pragma once
 
-#include "../../extern/lrslib/src/lib.h"
+#include "../../extern/lrslib/include/lib-gmp.h"
+#include "../../extern/lrslib/include/lib-long.h"
+
 
 #include <libsurskit/math.hh>
 
@@ -59,12 +61,12 @@ namespace LRSNash
         }
 
         game g;
-        init_game(&g, rows, cols, row_num.data(), row_den.data(), col_num.data(), col_den.data());
+        init_game_long(&g, rows, cols, row_num.data(), row_den.data(), col_num.data(), col_den.data());
 
-        auto row_data = alloc_data(rows + 2);
-        auto col_data = alloc_data(cols + 2);
+        auto row_data = alloc_data_long(rows + 2);
+        auto col_data = alloc_data_long(cols + 2);
 
-        solve(&g, row_data, col_data);
+        solve_long(&g, row_data, col_data);
 
         double x{1 / static_cast<double>(*row_data[0])};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
@@ -79,8 +81,8 @@ namespace LRSNash
             col_strategy[col_idx] = *col_data[col_idx + 1] * y;
         }
 
-        dealloc_data(row_data, rows + 2);
-        dealloc_data(col_data, cols + 2);
+        dealloc_data_long(row_data, rows + 2);
+        dealloc_data_long(col_data, cols + 2);
     }
 
     // void solve_matrix(
