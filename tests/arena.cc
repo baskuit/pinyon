@@ -3,19 +3,19 @@
 int main()
 {
 
-    using State = Arena<RandomTree, MonteCarloModel<RandomTree>>;
+    using State = Arena<RandomTree<>, MonteCarloModel<RandomTree<>>>;
     using Model = MonteCarloModel<State>;
     using Algorithm = TreeBanditThreaded<Exp3<Model>, MatrixNode, ChanceNode>;
-    std::vector<W::SearchWrapper<TreeBandit<Exp3<MonteCarloModel<RandomTree>>, MatrixNode, ChanceNode>>> agents = {
+    std::vector<W::SearchWrapper<TreeBandit<Exp3<MonteCarloModel<RandomTree<>>>, MatrixNode, ChanceNode>>> agents = {
         {.01}, {.1}, {.2}};
 
     prng device{0};
-    W::ModelWrapper<MonteCarloModel<RandomTree>> model{device};
+    W::ModelWrapper<MonteCarloModel<RandomTree<>>> model{device};
 
-    // RandomTreeGenerator generator{0, {1, 2}, {2, 3, 4}, {1}, {0.0}, 10};
+    // RandomTree<>Generator generator{0, {1, 2}, {2, 3, 4}, {1}, {0.0}, 10};
     RandomTreeGenerator generator{0, {1}, {4}, {1}, {0.0}, 1};
 
-    for (RandomTree &&random_tree : generator)
+    for (RandomTree<> &&random_tree : generator)
     {
 
         State arena{random_tree, model, agents};

@@ -98,8 +98,8 @@ namespace LRSNash
         std::array<mpq_t, 81> row_payoff_data, col_payoff_data;
 
         for (int i = 0; i < rows * cols; ++i) {
-            *row_payoff_data[i] = *payoff_matrix[i].get_row_value().get_mpq_t();
-            *col_payoff_data[i] = *payoff_matrix[i].get_col_value().get_mpq_t();
+            mpq_set(row_payoff_data[i], payoff_matrix[i].get_row_value().get_mpq_t()); // TODOTODOTODO this is it
+            mpq_set(col_payoff_data[i], payoff_matrix[i].get_col_value().get_mpq_t());
         }
 
         auto row_data = alloc_data_gmp(rows + 2);

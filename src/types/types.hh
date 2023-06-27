@@ -198,6 +198,23 @@ using RandomTreeTypes = Types<
     Matrix,
     Matrix>;
 
+    
+using RatTypes = Types<
+    Rational<int>,
+    mpq_class,
+    mpq_class,
+    int,
+    int,
+    mpq_class,
+    uint64_t,
+    prng,
+    Vector,
+    Vector,
+    Vector,
+    Matrix,
+    Matrix,
+    Matrix>;
+
 using ArenaTypes = Types<
     Rational<int>,
     float,

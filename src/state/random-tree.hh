@@ -8,14 +8,11 @@
 #include <vector>
 #include <ranges>
 
-/*
-RandomTree is a well-defined P-game.
-*/
-
-class RandomTree : public ChanceState<RandomTreeTypes>
+template <typename _Types = RandomTreeTypes>
+class RandomTree : public ChanceState<_Types>
 {
 public:
-    struct Types : ChanceState<RandomTreeTypes>::Types
+    struct Types : ChanceState<_Types>::Types
     {
     };
 
@@ -29,9 +26,9 @@ public:
     typename Types::Probability chance_threshold{typename Types::Rational(1, transitions + 1)};
     std::vector<typename Types::Probability> chance_strategies;
 
-    int (*depth_bound_func)(RandomTree *, int) = &(RandomTree::dbf);
-    int (*actions_func)(RandomTree *, int) = &(RandomTree::af);
-    int (*payoff_bias_func)(RandomTree *, int) = &(RandomTree::pbf);
+    int (*depth_bound_func)(RandomTree *, int) = &(RandomTree::depth_bound_default);
+    int (*actions_func)(RandomTree *, int) = &(RandomTree::actions_default);
+    int (*payoff_bias_func)(RandomTree *, int) = &(RandomTree::payoff_bias_default);
 
     // everything above determines the abstract game tree exactly
 
@@ -85,7 +82,6 @@ public:
 
     void get_actions()
     {
-        // TODO optimize? Init actions in constr and only update entries when row/col increases
         this->row_actions.fill(rows);
         this->col_actions.fill(cols);
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
@@ -159,15 +155,15 @@ public:
     Default Growth Functions
     */
 
-    static int dbf(RandomTree *state, int depth)
+    static int depth_bound_default(RandomTree *state, int depth)
     {
         return (depth - 1) * (depth >= 0);
     }
-    static int af(RandomTree *state, int n_actions)
+    static int actions_default(RandomTree *state, int n_actions)
     {
         return n_actions;
     }
-    static int pbf(RandomTree *state, int payoff_bias)
+    static int payoff_bias_default(RandomTree *state, int payoff_bias)
     {
         const int bias = 1;
         return payoff_bias + state->device.random_int(2 * bias + 1) - bias;
@@ -309,12 +305,12 @@ struct RandomTreeGenerator
             return (*this);
         }
 
-        W::StateWrapper<RandomTree> operator*()
+        W::StateWrapper<RandomTree<>> operator*()
         {
 
             Tuple tuple = It::operator*();
 
-            return W::StateWrapper<RandomTree>{
+            return W::StateWrapper<RandomTree<>>{
                 prng{ptr->seed},
                 static_cast<int>(std::get<0>(tuple)),
                 std::get<1>(tuple),

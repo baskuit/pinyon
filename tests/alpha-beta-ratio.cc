@@ -45,8 +45,8 @@ int main()
     {
         uint64_t seed = 14258145225070533415;//prng{}.uniform_64();
         RandomTree state{seed, 1, 3, 3, 2, 0.0};
-        MonteCarloModel<RandomTree> model{0};
-        Solve<MonteCarloModel<RandomTree>> solve{state, model};
+        MonteCarloModel<RandomTree<>> model{0};
+        Solve<MonteCarloModel<RandomTree<>>> solve{state, model};
 
         auto error = solve.root_ab.stats.row_value - solve.root_full.stats.payoff.get_row_value();
         if (error > .05)

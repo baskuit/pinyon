@@ -19,7 +19,7 @@ int main()
 
     const double expl_threshold = 1;
 
-    using Model = MonteCarloModel<RandomTree>;
+    using Model = MonteCarloModel<RandomTree<>>;
     Model model(device);
     W::ModelWrapper<Model> model_wrapper(model);
 
@@ -33,14 +33,14 @@ int main()
 
     const size_t iterations = 1000;
 
-    for (RandomTree &&state : generator)
+    for (RandomTree<> &&state : generator)
     {
         state.get_actions();
 
         TraversedState<Model> traversed_state(state, model);
         Matrix<PairDouble> payoff_matrix{traversed_state.current_node->stats.nash_payoff_matrix};
 
-        W::StateWrapper<RandomTree> state_wrapper{state};
+        W::StateWrapper<RandomTree<>> state_wrapper{state};
 
         for (W::Search *session_ptr : sessions)
         {

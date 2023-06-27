@@ -17,4 +17,9 @@ int main () {
         std::cout << row_strategy[row_idx] << std::endl;
     }
 
+    for (int row_idx = 0; row_idx < 2; ++row_idx) {
+        std::cout << col_strategy[row_idx] << std::endl;
+    }
+
+
 };
