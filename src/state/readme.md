@@ -42,17 +42,14 @@ Simple boolean that is flipped in the `apply_actions` method as needed. Initiali
 * `row_actions`
 * `col_actions`
 
-> TODO TODO TODO Honestly, as  I write this, it may be better to not store these in the state and instead use a `get_actions` method that takes a reference to the data instead. This is because we only care about the actions in the state when we are copying them over to the matrix_node.
-
-> Just thinking about this, I can't see why it wouldn't be faster. This also applies to all the other uninitialized members too
+> Not that much slower that using `get_actions(typename Types::VectorAction &, Types::VectorAction &)`. General case of expanding a node in tree-bandit justifies allocating the space for every  state.
 
 * `payoff`
-Following the convention of many other games, a reward is only received at a terminal state. This reward is of `Types::Value` type. It's value is only set inside the `apply_actions` method, and is garbage until the state is terminal.
+Following the convention of many other games, a reward is only received at a terminal state. This reward is of `Types::Value` type. Its value could be set inside the `apply_actions` method, for example. Its value is garbage until the state is terminal.
 
 * `obs`
 * `probs`
 The `Observation` after transitioning and its associated `Probability` are assumed to mutated after every `apply_actions` call.
-
 
 * `get_actions` 
 Updates the `row_actions`, `col_actions` members of the state. The number of actions for either player can be retrieved by `row_actions.size()` etc, as they are of the `VectorAction` type. Calculation of all actions for both players is assumed to be expensive (as is often the case), so the search does it only when necesssary
@@ -62,12 +59,8 @@ Thus the actions vectors are not assumed to be initialized on creation of a stat
 * `apply_actions`
 Transitions the state, and updates the `obs`, `prob` members. 
 
-
 * `reseed`
 **States are deterministic**. Copying a state does not alter the behavior either. In order to transition stochastically, the `reseed` method must be applied first. In tree bandit search, this is done just after copying the state object provided in the  arguments. With deterministic states, this function is just a no-op. In the case of battles, we use the PRNG device to update the battle's seed.
-
-* `apply_action_indices`
-TODO Remove?. Unfortunately this method can't be implemented here even though it has the same behavior for all states.
 
 # Test States
 
@@ -78,7 +71,7 @@ This is basically the simplest possible state in implementation. It's main purpo
 
 ### RandomTree
 
-This class is a powerful and expressive way to create a random game.
+TODO This class is a powerful and expressive way to create a random game.
 
 The biggest advantage of them is probably the fact that they are determined by their `PRNG` member.
 
@@ -94,7 +87,9 @@ The default behaviour of a tree is that of a P-game.
 
 # SolvedState
 
-A state that is solved does not necessarily have to have the same interface as `ChanceState`. However being a chance state for the solvers to work, so it is common to 'upgrade' a ChanceState to a SolvedState. In practice, by this process all solved states are also chance states. 
+A state that is solved does not necessarily have to have the same interface as `ChanceState`. However being a chance state is required for the solvers to work, and it is common to 'upgrade' a ChanceState to a SolvedState using the `FullTraversal` class. In practice, by this process all solved states are also chance states, and so deriving `SolvedState : public ChanceState` is justified.
+
+
 
 # Wrapping a State
 
@@ -110,12 +105,16 @@ public:
    {
    };
 
-   typename Types::PRNG device;
-   pkmn_gen1_battle battle_{};
-   typename Types::Seed seed = 0;
+   // row_actions, obs, prob, etc are all inherited and accessed via this->
+
+   pkmn_gen1_battle battle_{}; 
+   // This is around 370 bytes, so only 6 cache lines on most cpu? Either way very fast to copy.
+   // typename Types::Seed seed = 0;
+   // because we use the interface this->reseed(PRNG), we don't have to store a seed member besides the defacto seed in the battle
    pkmn_psrng random = {};
    pkmn_result result = PKMN_RESULT_NONE;
    std::array<pkmn_choice, 9> options{0};
+   // things I just copied from the C++ wrapper for engine.
 
    Battle(const engine::RBY::Side<engine::Gen::RBY> &side1, const engine::RBY::Side<engine::Gen::RBY> &side2)
    {
@@ -142,16 +141,20 @@ public:
       }
       pkmn_psrng_init(&random, seed);
       this->prob = true;
+      // we set prob to 1 in the constructor since we currently do not have probs from engine. pre is working hard on this
    }
 
    Battle(const Battle &t) : battle_(t.battle_), random(t.random), result(t.result) // TODO
    {
       this->row_actions = t.row_actions;
       this->col_actions = t.col_actions;
+      // the base class `PerfectInfoState` is not called, so we don't automatically copy over is_terminal, etc
+      // however the only base data of any use is the actions, and we really only copy it because it cased a bug. Its not needed because in all searches you only copy a state to advance it, and then call apply_actions() and get_actions(), which overwrites everything else 
    }
 
    void reseed (typename Types::PRNG &device) {
       engine::RBY::set_seed(battle_, device.uniform_64());
+      // we can check BattleTypes<> if we really want to confirm that the PRNG type is just prng
    }
 
    void get_actions()
@@ -160,6 +163,7 @@ public:
       const size_t cols = pkmn_gen1_battle_choices(&battle_, PKMN_PLAYER_P2, pkmn_result_p2(result), this->col_actions.template data<pkmn_choice, A<9>::Array>(), PKMN_CHOICES_SIZE);
       this->row_actions.fill(rows);
       this->col_actions.fill(cols);
+      // similarly to last function we know the `VectorActions` type is array based, so these last two methods just set the size parameter
    }
 
    void apply_actions(
@@ -176,10 +180,13 @@ public:
       const pkmn_result_kind r = pkmn_result_type(result);
       if (r)
       {
+         // set is_terminal and payoff, as indicated
          this->is_terminal = true;
          if (r == PKMN_RESULT_WIN)
          {
             this->payoff.row_value = typename::Types::Value{Rational(1)};
+            // Rational<> has implicit conversions to double, float, and mpq_class, so its a 'universal' initializing type for all Types::Real and Types::Probability values.
+            // Value struct in Types assumes constant sum, so we only provide the row payoff.
          }
          else if (r == PKMN_RESULT_LOSE)
          {
