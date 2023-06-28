@@ -1,5 +1,6 @@
 #pragma once
 
+#include <libsurskit/generator.hh>
 #include <types/types.hh>
 #include <types/random.hh>
 #include <state/state.hh>
@@ -230,108 +231,41 @@ Helper class to generate random tree instances for testing
 
 */
 
-struct RandomTreeGenerator
+struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTree<>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<double>, std::vector<size_t>>
 {
 
-
-    prng device;
-    uint64_t seed;
     const std::vector<size_t> depth_bound_vec;
     const std::vector<size_t> actions_vec;
     const std::vector<size_t> chance_action_vec;
     const std::vector<double> chance_threshold_vec;
-    const size_t trials;
+    const std::vector<size_t> trial_vec;
 
-    using Tuple = std::tuple<size_t, size_t, size_t, double>;
-    using Product = decltype(std::views::cartesian_product(depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec));
-    using It = std::ranges::iterator_t<Product>;
+    prng device;
+    uint64_t seed;
 
-    Product view = std::views::cartesian_product(depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec);
-
-    RandomTreeGenerator(
-        prng &d,
-        std::vector<size_t> &depth_bound_vec,
-        std::vector<size_t> &actions_vec,
-        std::vector<size_t> &chance_action_vec,
-        std::vector<double> &chance_threshold_vec,
-        size_t trials)
-        : device{d},
-          depth_bound_vec{depth_bound_vec},
-          actions_vec{actions_vec},
-          chance_action_vec{chance_action_vec},
-          chance_threshold_vec{chance_threshold_vec},
-          trials{trials}
+    static W::StateWrapper<RandomTree<>> constr(std::tuple<size_t, size_t, size_t, double, size_t> tuple) // static otherwise implcit this arg messes up signature
     {
-        seed = device.uniform_64();
-    }
-
-    RandomTreeGenerator(
-        prng d,
-        std::vector<size_t> &&depth_bound_vec,
-        std::vector<size_t> &&actions_vec,
-        std::vector<size_t> &&chance_action_vec,
-        std::vector<double> &&chance_threshold_vec,
-        size_t trials)
-        : device{d},
-          depth_bound_vec{depth_bound_vec},
-          actions_vec{actions_vec},
-          chance_action_vec{chance_action_vec},
-          chance_threshold_vec{chance_threshold_vec},
-          trials{trials}
-    {
-        seed = device.uniform_64();
-    }
-
-    class Iterator : public It
-    {
-    public:
-        RandomTreeGenerator *ptr;
-        size_t trial = 0;
-
-        Iterator(const It &it, RandomTreeGenerator *ptr) : It{it}, ptr{ptr}
-        {
-        }
-
-        Iterator &operator++()
-        {
-            if (trial == 0) {
-                It::operator++();
-            }
-            ptr->seed = ptr->device.uniform_64();
-
-            ++trial;
-            trial %= ptr->trials;
-
-            return (*this);
-        }
-
-        W::StateWrapper<RandomTree<>> operator*()
-        {
-
-            Tuple tuple = It::operator*();
-
-            return W::StateWrapper<RandomTree<>>{
-                prng{ptr->seed},
-                static_cast<int>(std::get<0>(tuple)),
-                std::get<1>(tuple),
-                std::get<1>(tuple),
-                std::get<2>(tuple),
-                std::get<3>(tuple)};
-        }
-
-        bool operator==(const Iterator &other) const
-        {
-            return static_cast<const It &>(*this) == static_cast<const It &>(other) && trial == other.trial;
-        }
+        return W::StateWrapper<RandomTree<>>{
+            prng{0},
+            static_cast<int>(std::get<0>(tuple)),
+            std::get<1>(tuple),
+            std::get<1>(tuple),
+            std::get<2>(tuple),
+            std::get<3>(tuple)};
     };
 
-    Iterator begin()
+    RandomTreeGenerator(
+        prng device,
+        std::vector<size_t> depth_bound_vec,
+        std::vector<size_t> actions_vec,
+        std::vector<size_t> chance_action_vec,
+        std::vector<double> chance_threshold_vec,
+        std::vector<size_t> trial_vec)
+        : CartesianProductGenerator<W::StateWrapper<RandomTree<>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<double>, std::vector<size_t>>{
+              constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec},
+            device{device}
     {
-        return Iterator(view.begin(), this);
-    }
-
-    Iterator end()
-    {
-        return Iterator(view.end(), this);
+        seed = device.uniform_64();
     }
 };
+// 
