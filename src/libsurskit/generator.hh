@@ -1,10 +1,7 @@
 #include <tuple>
-#include <vector>
 #include <type_traits>
 #include <ranges>
 #include <functional>
-#include <iostream>
-
 
 template <typename Output, typename... Containers>
 struct CartesianProductGenerator
@@ -67,33 +64,3 @@ struct CartesianProductGenerator
         }
     };
 };
-
-// Dummy class to generate
-
-struct A {
-    size_t sum;
-    A (std::tuple<size_t, size_t> a) {
-        sum = std::get<0>(a) + std::get<1>(a);
-    }
-
-};
-
-std::ostream& operator<<(std::ostream& os, const A& a) {
-    os << a.sum;
-    return os;
-}
-
-int main()
-{
-    std::vector<size_t> a = {0, 1, 2};
-    std::vector<size_t> b = {0, 1};
-
-    auto constr_lambda = [](auto tuple) { return A{tuple}; };
-
-    CartesianProductGenerator<A, std::vector<size_t>, std::vector<size_t>> x{constr_lambda, a, b};
-
-    for (const auto &value : x)
-    {
-        std::cout << value << std::endl;
-    }
-}
