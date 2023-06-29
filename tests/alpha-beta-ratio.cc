@@ -44,7 +44,7 @@ int main()
     for (int i = 0; i < tries; ++i)
     {
         uint64_t seed = 14258145225070533415;//prng{}.uniform_64();
-        RandomTree state{seed, 1, 3, 3, 2, 0.0};
+        RandomTree state{seed, 1, 3, 3, 2, 0};
         MonteCarloModel<RandomTree<>> model{0};
         Solve<MonteCarloModel<RandomTree<>>> solve{state, model};
 

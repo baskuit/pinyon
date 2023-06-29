@@ -47,7 +47,7 @@ struct ValueStruct {
 template <typename Real, int PAYOFF_SUM_NUM, int PAYOFF_SUM_DEN>
 struct ValueStruct<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN> {
 
-    static constexpr Real PAYOFF_SUM{Rational{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN}};
+    static constexpr Rational<int> PAYOFF_SUM{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN};
     Real row_value{Rational{0}};
 
     ValueStruct () {}
@@ -60,7 +60,7 @@ struct ValueStruct<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN> {
         return row_value;
     }
     inline Real get_col_value () const {
-        return PAYOFF_SUM - row_value;
+        return Real{PAYOFF_SUM} - row_value;
     }
     ValueStruct& operator+=(const ValueStruct& other) {
         row_value += other.row_value;

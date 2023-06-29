@@ -26,6 +26,7 @@ public:
     int payoff_bias = 0;
     typename Types::Probability chance_threshold{typename Types::Rational(1, transitions + 1)};
     std::vector<typename Types::Probability> chance_strategies;
+    int chance_denominator = 10;
 
     int (*depth_bound_func)(RandomTree *, int) = &(RandomTree::depth_bound_default);
     int (*actions_func)(RandomTree *, int) = &(RandomTree::actions_default);
@@ -42,7 +43,7 @@ public:
         size_t rows,
         size_t cols,
         size_t transitions,
-        double chance_threshold)
+        typename Types::Rational chance_threshold)
         : device{device},
           depth_bound{depth_bound},
           rows{rows},
@@ -59,7 +60,7 @@ public:
         size_t rows,
         size_t cols,
         size_t transitions,
-        double chance_threshold,
+        typename Types::Rational chance_threshold,
         int (*depth_bound_func)(RandomTree *, int),
         int (*actions_func)(RandomTree *, int),
         int (*payoff_bias_func)(RandomTree *, int))
@@ -131,8 +132,7 @@ public:
         if (depth_bound == 0)
         {
             this->is_terminal = true;
-            const typename Types::Real sigsum_bias{static_cast<double>((payoff_bias > 0) - (payoff_bias < 0))};
-            this->payoff.row_value = static_cast<typename Types::Real>((sigsum_bias + 1.0) / 2.0);
+            this->payoff.row_value = Rational<>{(payoff_bias > 0) - (payoff_bias < 0) + 1, 2};
         }
         else
         {
@@ -197,7 +197,7 @@ private:
                 typename Types::Probability prob_sum{typename Types::Rational(0)};
                 for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
                 {
-                    const typename Types::Probability p{device.uniform()}; // Prob = double
+                    const typename Types::Probability p{typename Types::Rational{device.random_int(chance_denominator), chance_denominator}};
                     chance_strategies[start_idx + chance_idx] = p;
                     prob_sum += p;
                 }
@@ -240,13 +240,12 @@ struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTre
     const std::vector<double> chance_threshold_vec;
     const std::vector<size_t> trial_vec;
 
-    prng device;
-    uint64_t seed;
+    inline static prng device;
 
     static W::StateWrapper<RandomTree<>> constr(std::tuple<size_t, size_t, size_t, double, size_t> tuple) // static otherwise implcit this arg messes up signature
     {
         return W::StateWrapper<RandomTree<>>{
-            prng{0},
+            RandomTreeGenerator::device.uniform_64(),
             static_cast<int>(std::get<0>(tuple)),
             std::get<1>(tuple),
             std::get<1>(tuple),
@@ -262,10 +261,9 @@ struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTre
         std::vector<double> chance_threshold_vec,
         std::vector<size_t> trial_vec)
         : CartesianProductGenerator<W::StateWrapper<RandomTree<>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<double>, std::vector<size_t>>{
-              constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec},
-            device{device}
+              constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec}
     {
-        seed = device.uniform_64();
+        RandomTreeGenerator::device = prng{device};
     }
 };
 // 

@@ -4,7 +4,7 @@
 Surskit was designed to test search algorithms ... This requires interchangeability 
 
 * `State`
-Development on Surskit began before there were any fast Pokemon simulators, so already there is no concrete game that we can assume. Additionally, there are many different generation and formats of interest, and the techniques and algorithms we want to investigate are not limited to any specific game.
+Development on Surskit began before there were any fast Pokemon simulators, so already there is no concrete game that we can assume as a base. Additionally, within pokemon there are many different generation and formats of interest, and the techniques and algorithms we want to investigate are not limited to any specific game.
 * `Model`
 We borrow this term from machine learning, where it typically refers to a trained neural network.
 Search is simply looking ahead, we still need a way to estimate the game value of the future states our search algorithm visits. This is left to the 'Model'
@@ -15,6 +15,10 @@ Ancillary types:
 * `TypeList`
 
 * `Node`
+
+## Hierarchy
+
+The families of types above can be arranged in 
 
 ## Advantages of Modularity
 

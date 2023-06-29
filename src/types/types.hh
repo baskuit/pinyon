@@ -11,12 +11,121 @@
 
 #include <vector>
 
-class EmptyClass
+template <typename T>
+struct RealType : ArithmeticType<T>
 {
-public:
-    EmptyClass() {}
-    ~EmptyClass() {}
-    EmptyClass(const EmptyClass &t) {}
+    // constexpr RealType(const T val) : ArithmeticType<T>{val} {}
+    constexpr RealType(const T &val) : ArithmeticType<T>{val} {}
+    constexpr RealType() : ArithmeticType<T>{} {}
+    constexpr RealType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {}
+    constexpr explicit operator T() const
+    {
+        return this->value;
+    }
+    RealType &operator=(const T &val)
+    {
+        this->value = val;
+        return *this;
+    }
+    RealType &operator=(const ArithmeticType<T> &val)
+    {
+        this->value = val.value;
+        return *this;
+    }
+};
+
+template <>
+struct RealType<mpq_class> : ArithmeticType<mpq_class>
+{
+    RealType(const mpq_class &val) : ArithmeticType<mpq_class>{val} {}
+    RealType() : ArithmeticType<mpq_class>{} {}
+    RealType(const ArithmeticType<mpq_class> val) : ArithmeticType<mpq_class>{val} {}
+    RealType(const Rational<> &val) : ArithmeticType<mpq_class>{mpq_class{val.p, val.q}} {}
+    explicit operator mpq_class () const {
+        return this->value;
+    }
+    RealType &operator=(const mpq_class &val)
+    {
+        this->value = val;
+        return *this;
+    }
+    RealType &operator=(const ArithmeticType<mpq_class> &val)
+    {
+        this->value = val.value;
+        return *this;
+    }
+};
+
+template <typename T>
+struct ProbabilityType : ArithmeticType<T>
+{
+    constexpr ProbabilityType(T val) : ArithmeticType<T>{val} {}
+    constexpr ProbabilityType() : ArithmeticType<T>{1} {} // prob default init to 1 instead of 0
+    constexpr ProbabilityType(const ArithmeticType<T> &val) : ArithmeticType<T>{val} {}
+    constexpr ProbabilityType &operator=(const ProbabilityType &other)
+    {
+        this->value = other.value;
+        return *this;
+    }
+};
+
+template <>
+struct ProbabilityType<mpq_class> : ArithmeticType<mpq_class>
+{
+    ProbabilityType(mpq_class val) : ArithmeticType<mpq_class>{val} {}
+    ProbabilityType() : ArithmeticType<mpq_class>{1} {} // prob default init to 1 instead of 0
+    ProbabilityType(const ArithmeticType<mpq_class> &val) : ArithmeticType<mpq_class>{val} {}
+    ProbabilityType(const Rational<> &val) : ArithmeticType<mpq_class>{mpq_class{val.p, val.q}} {}
+    ProbabilityType &operator=(const ProbabilityType &other)
+    {
+        this->value = other.value;
+        return *this;
+    }
+};
+
+template <typename T>
+struct ObservationType : Wrapper<T>
+{
+    constexpr ObservationType(const T &value) : Wrapper<T>{value} {}
+    constexpr ObservationType() : Wrapper<T>{} {}
+    constexpr operator T() const
+    {
+        return Wrapper<T>::value;
+    }
+    bool operator==(const ObservationType &other) const
+    {
+        return this->value == other.value;
+    }
+
+    // TODO only here for Pokemon logs
+    template <typename U, size_t size>
+    U *data()
+    {
+        return this->value.data();
+    }
+};
+
+template <typename T>
+struct _ObservationHash
+{
+    std::size_t operator()(const ObservationType<T> &t) const
+    {
+        if constexpr (std::is_same<T, std::array<uint8_t, 64>>::value == true)
+        {
+            const std::array<uint8_t, 64> x = t;
+            const uint64_t *a = reinterpret_cast<const uint64_t *>(x.data());
+            size_t hash = 0;
+            for (int i = 0; i < 8; ++i)
+            {
+                hash ^= a[i];
+            }
+            return hash;
+        }
+        else
+        {
+            return std::hash(static_cast<T>(t));
+        }
+    }
 };
 
 template <
@@ -38,36 +147,6 @@ template <
 
 struct Types
 {
-
-    // template <typename T>
-    // struct RationalType : ArithmeticType<T> {
-    //     explicit RationalType(T val) : ArithmeticType<T>{val} {}
-    //     explicit RationalType () : ArithmeticType<T>{} {}
-    // };
-    // Rational is basically a primitive, yeah?
-
-    template <typename T>
-    struct RealType : ArithmeticType<T>
-    {
-        // constexpr RealType(const T val) : ArithmeticType<T>{val} {}
-        constexpr RealType(const T &val) : ArithmeticType<T>{val} {}
-        constexpr RealType() : ArithmeticType<T>{} {}
-        constexpr RealType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {}
-        constexpr explicit operator T () const {
-            return this->value;
-        }
-        RealType &operator=(const T &val)
-        {
-            this->value = val;
-            return *this;
-        }
-        RealType &operator=(const ArithmeticType<T> &val)
-        {
-            this->value = val.value;
-            return *this;
-        }
-    };
-
     template <typename T>
     struct FloatType : ArithmeticType<T>
     {
@@ -75,66 +154,12 @@ struct Types
         constexpr FloatType() : ArithmeticType<T>{} {}
         constexpr FloatType(const ArithmeticType<T> &val) : ArithmeticType<T>{val} {}
     };
-    // These must not be explicit since their operators are defined on Base Class
 
     template <typename T>
     struct ActionType : Wrapper<T>
     {
         constexpr ActionType(const T &value) : Wrapper<T>{value} {}
         constexpr ActionType() : Wrapper<T>{} {}
-    };
-
-    template <typename T>
-    struct ObservationType : Wrapper<T>
-    {
-        constexpr ObservationType(const T &value) : Wrapper<T>{value} {}
-        constexpr ObservationType() : Wrapper<T>{} {}
-        constexpr operator T () const {
-            return Wrapper<T>::value;
-        }
-        bool operator==(const ObservationType &other) const
-        {
-            return this->value == other.value;
-        }
-
-        // TODO only here for Pokemon logs
-        template <typename U, size_t size>
-        U *data()
-        {
-            return this->value.data();
-        }
-    };
-
-    template <typename T>
-    struct _ObservationHash
-    {
-        std::size_t operator()(const ObservationType<T> &t) const
-        {
-            if constexpr (std::is_same<T, std::array<uint8_t, 64>>::value == true) {
-                const std::array<uint8_t, 64> x = t;
-                const uint64_t *a = reinterpret_cast<const uint64_t*>(x.data());
-                size_t hash = 0;
-                for (int i = 0; i < 8; ++i) {
-                    hash ^= a[i];
-                }
-                return hash;
-            } else {
-                return std::hash(static_cast<T>(t));
-            }
-        }
-    };
-
-    template <typename T>
-    struct ProbabilityType : ArithmeticType<T>
-    {
-        constexpr ProbabilityType(T val) : ArithmeticType<T>{val} {}
-        constexpr ProbabilityType() : ArithmeticType<T>{1} {} // prob default init to 1 instead of 0
-        constexpr ProbabilityType(const ArithmeticType<T> &val) : ArithmeticType<T>{val} {}
-        constexpr ProbabilityType &operator=(const ProbabilityType &other)
-        {
-            this->value = other.value;
-            return *this;
-        }
     };
 
     template <typename T>
@@ -198,7 +223,6 @@ using RandomTreeTypes = Types<
     Matrix,
     Matrix>;
 
-    
 using RatTypes = Types<
     Rational<int>,
     mpq_class,

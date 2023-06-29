@@ -20,7 +20,7 @@ struct CartesianProductGenerator
     using Function = std::function<Output(Tuple)>;
     Function function;
 
-    CartesianProductGenerator(Function function, Containers &...args)
+    CartesianProductGenerator(Function function, Containers ...args)
         : function{function}, containers(std::forward<Containers>(args)...)
     {
     }
