@@ -12,18 +12,15 @@
 
 This state is a wrapper for the tree produced by the FullTraversal algorithm
 
-What should template type be? Just model? TODO
-nah I want it to wrap a state basically, 
-
 */
 
-template <class Model> // TODO add specialization that takes State, assumes MonteCarlo...
+template <class Model>
 class TraversedState : public SolvedState<typename Model::Types>
 {
-    // static_assert(std::derived_from<typename Model::Types::State, StateChance<typename Model::Types::TypeList>>,
-    //     "TraversedState must be based on State type derived from StateChance");
-    // static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
-    //     "FullTraversal algorithm requires Model must be derived from DoubleOracleModel");
+    static_assert(std::derived_from<typename Model::Types::State, ChanceState<typename Model::Types::TypeList>>,
+        "TraversedState must be based on State type derived from ChanceState");
+    static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
+        "FullTraversal algorithm requires Model must be derived from DoubleOracleModel");
 
 public:
     struct Types : SolvedState<typename Model::Types>::Types

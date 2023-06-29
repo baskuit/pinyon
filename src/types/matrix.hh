@@ -20,9 +20,9 @@ public:
     {
         rows = matrix.rows;
         cols = matrix.cols;
-        std::transform(matrix.begin(), matrix.end(), std::back_inserter(*this), [](const U &element)
+        std::transform(matrix.begin(), matrix.end(), this->begin(), [](const U &element)
                        { return static_cast<T>(element); });
-    } // TODO check lol
+    }
 
     void fill(size_t rows, size_t cols)
     {
@@ -202,5 +202,17 @@ public:
                                             return a.get_col_value() < b.get_col_value();
                                         });
         return std::min(min_row->get_row_value(), min_col->get_col_value());
-    } // TODO specialize for constant sum? LMAO
+    }
+
+    void print() const
+    {
+        for (size_t row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            for (size_t col_idx = 0; col_idx < cols; ++col_idx)
+            {
+                std::cout << (*this)[row_idx * cols + col_idx] << ' ';
+            }
+            std::cout << std::endl;
+        }
+    }
 };

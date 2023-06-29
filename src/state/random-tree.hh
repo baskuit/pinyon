@@ -197,7 +197,7 @@ private:
                 typename Types::Probability prob_sum{typename Types::Rational(0)};
                 for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
                 {
-                    const typename Types::Probability p{typename Types::Rational{device.random_int(chance_denominator), chance_denominator}};
+                    const typename Types::Probability p{typename Types::Rational{device.random_int(chance_denominator) + 1, chance_denominator}};
                     chance_strategies[start_idx + chance_idx] = p;
                     prob_sum += p;
                 }

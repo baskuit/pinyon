@@ -46,15 +46,15 @@ public:
     };
     struct ChanceStats
     {
-        typename Types::Probability explored{Rational{0}}; // TODO rid of static_cast
+        typename Types::Probability explored{Rational{0}};
         size_t matrix_node_count = 0;
     };
 
-    const typename Types::Real min_val = 0;
-    const typename Types::Real max_val = 1;
+    const typename Types::Real min_val{0};
+    const typename Types::Real max_val{1};
 
     int max_depth = -1;
-    typename Types::Real epsilon = static_cast<double>(Rational{1, 1 << 24});
+    typename Types::Real epsilon{Rational{1, 1 << 24}};
 
     AlphaBeta(typename Types::Real min_val, typename Types::Real max_val) : min_val(min_val), max_val(max_val) {}
 
@@ -102,9 +102,9 @@ public:
         typename Types::MatrixReal &p = stats.p;
         typename Types::MatrixReal &o = stats.o;
         // 7: pI,J ← alpha-betaMin (sI,J , minval, maxval)
-        p.fill(state.row_actions.size(), state.col_actions.size(), static_cast<double>(min_val));
+        p.fill(state.row_actions.size(), state.col_actions.size(), min_val);
         // 8: oI,J ← alpha-betaMax (sI,J , minval, maxval)
-        o.fill(state.row_actions.size(), state.col_actions.size(), static_cast<double>(max_val));
+        o.fill(state.row_actions.size(), state.col_actions.size(), max_val);
         stats.chance_actions_solved.fill(state.row_actions.size(), state.col_actions.size(), 0);
         // Note: this implementation does not use serialized alpha beta
         // Just seems like too much tree traversal?

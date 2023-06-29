@@ -20,8 +20,6 @@ namespace math
 
     template <typename VectorIn, typename VectorOut>
     void power_norm(VectorIn &input, int length, double power, VectorOut &output)
-
-    // TODO modernize
     {
         double sum = 0;
         for (int i = 0; i < length; ++i)
@@ -38,8 +36,6 @@ namespace math
 
     template <typename VectorIn>
     void power_norm(VectorIn &input, double power = 1.0)
-
-    // TODO modernize
     {
         double sum = 0;
         const size_t length = input.size();
@@ -80,7 +76,7 @@ namespace math
         const int rows = value_matrix.rows;
         const int cols = value_matrix.cols;
 
-        typename Types::Real row_payoff{Rational(0)}, col_payoff{Rational(0)}; // TODO rationals?
+        typename Types::Real row_payoff{typename Types::Rational{0}}, col_payoff{typename Types::Rational{0}};
         typename Types::VectorReal row_response(rows), col_response(cols);
         size_t data_idx = 0;
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
@@ -113,7 +109,7 @@ namespace math
         const int rows = value_matrix.rows;
         const int cols = value_matrix.cols;
 
-        typename Types::Real row_payoff{Rational(0)}, col_payoff{Rational(0)}; // TODO rationals?
+        typename Types::Real row_payoff{typename Types::Rational{0}}, col_payoff{typename Types::Rational{0}};
         typename Types::VectorReal row_response(rows), col_response(cols);
         size_t data_idx = 0;
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
@@ -145,7 +141,7 @@ namespace math
         const int rows = value_matrix.rows;
         const int cols = value_matrix.cols;
 
-        double row_payoff{Rational(0)}, col_payoff{Rational(0)}; // TODO rationals?
+        double row_payoff{0}, col_payoff{0};
         std::vector<double> row_response(rows), col_response(cols);
         size_t data_idx = 0;
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
