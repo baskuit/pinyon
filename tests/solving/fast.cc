@@ -1,5 +1,13 @@
 #include <surskit.hh>
 
+/*
+
+Fast solving on Matrix<PairDouble> using 128bit lrsnash.
+Normalizes each matrix into [0, 1] and the quantizes.
+Exploitability is bounded by 1 / n_discrete
+
+*/
+
 Matrix<PairDouble> random_matrix(prng &device, const size_t rows, const size_t cols)
 {
     Matrix<PairDouble> payoff_matrix{rows, cols};
@@ -24,10 +32,7 @@ void test(prng &device, const size_t num_matrices, const size_t n_discrete)
                 LRSNash::solve_matrix(payoff_matrix, row_strategy, col_strategy, n_discrete);
 
                 const double expl = math::exploitability(payoff_matrix, row_strategy, col_strategy);
-                if (expl * n_discrete > 1)
-                {
-                    exit(1);
-                }
+                assert(expl * n_discrete > 1);
             }
         }
     }
