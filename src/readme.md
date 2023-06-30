@@ -1,6 +1,7 @@
 
 
-# Types
+
+# Generic Search
 
 Surskit was designed to test search algorithms, which means it must accomodate all the well-studied approaches to game playing in the perfect information regime.
 I chose to emulate proven methods in chess. For this, [LeelaChessZero](https://lczero.org/) and [Stockfish](https://stockfishchess.org/) were the inspiration. Both have achieved fantastic results in computer chess while taking drastically different approaches to search.
@@ -46,11 +47,11 @@ Algorithm::run(State& state, Model& model);
 
 ### Tuning
 
-# Implementing
+# Realizing
 
 The above is a useful framework for thinking about search abstractly, but it must be implemented in a performant manner to be useful
 
-## Language
+## C++
 
 For many reasons, C++ was a natural choice for this library.
 
@@ -68,15 +69,14 @@ The paradigm of type families at the start of this document must be codified in 
 
 C++ provides a simple scheme for polymorphism using class inheritance.
 
-This involves defining an abstract base class for each of the families of types.
-
+As a way to refer to a family of types in general, we define an abstract base class for each family. Each actual type in the family will derive from that abstract class, which establishes a shared interface (`get_actions` for states, `get_inference` for models, etc.)
 ```cpp
 class State {
-	virtual void get_actions ();
+	virtual void get_actions () = 0;
 };
 
 class Battle : public State {
-	void get_actions () {
+	void get_actions () override {
 		// ...
 	}
 };
@@ -98,21 +98,52 @@ int main () {
 }
 ```
 This pseudo code demonstrates how the random rollout process, which is used in the Monte Carlo model, could be implemented so that it applies to any state. 
-The `get_actions` method of the base class is marked `virtual`, which means its intended to be called on an instance of a *derived* class, and that class will have its own implementation.
+
+The `get_actions` method of the base class is marked `virtual`, which means it's intended to be called on an instance of a class *derived* from `State`, and that class will have its own implementation of the method.
+
+This approach has a fatal flaw however. This kind of polymorphism is called *dynamic* because type checking is performed at run-time. Each time the program encounters a virtual method, it must lookup the implementation in a *v-table*. This operation takes time and seriously compromises performance due to the high number of virtual function calls in generic code.
 
 ## Templates to the Rescue
 
-# Organization
+Templates in C++ allow a generic class or function to be defined with a type or multiple types as a parameter.
+```cpp
+template <typename State>
+void rollout (State &state) {
+	while (!state.is_terminal) {
+		// state.apply_actions(); etc
+	}
+}
+```
+Thus instead of the program performing a vtable lookup at runtime, the different invocations or *specializations* of the template are determined during compilation.
+```cpp
+int main () {
+	Battle battle{};
+	rollout(battle); // bound to the function rollout<Battle> at compile-time.
+``` 
+This feature is extremely powerful and besides solving the demands of type-correctness, **it allows many classes to act as generic implementations of high level transformations**
+E.g.
+```cpp
+	using Model = MonteCarloModel<Battle>;
+	// type alias for brevity
+	Model model{};
+```
+The Monte Carlo estimation method is encapsulated as a model and can be applied to *any* type with the state interface. If a class is missing the method `void apply_action(Action, Action)` or the property `is_terminal`, etc. then there will be a compilation error.
+```cpp
+	const int depth_to_solve = 3;
+	TraversedState<Model> solved_battle {battle, model, depth_to_solve};
+	// Expands the game tree rooted at the battle up to depth 3 
+	// and solves for Nash Equilibrium strategies and payoff.
+```
+These generic transformations and classes have the same performance as if they were hard-coded for just one type.
+	
+# Implementation Details
 
-Every object in surskit is given a subobject called Types which inherits
 
-`typename Types::VectorAction`
+The expressiveness of templates allows for many different solutions. When applied to an entire library of code, these solutions become conventions that should be followed as functionality as added. 
 
-`TypeList`
-`AbstractState<TypeList>`
-`PerfectInfoState<TypeList>`
+One of the simplest conventions and the one adopted here follows from considering the ordering we gave the families of types earlier.
 
-
+> When 
 # Idioms
 
 
