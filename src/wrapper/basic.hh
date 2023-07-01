@@ -24,10 +24,16 @@ namespace W
         State() {}
         virtual void get_actions() = 0;
         virtual void get_actions(size_t &rows, size_t &cols) = 0;
-        virtual void apply_actions(int row_idx, int col_idx) = 0;
+        virtual void apply_actions(size_t row_idx, size_t col_idx) = 0;
         virtual bool is_terminal() = 0;
+
+        virtual bool is_constant_sum() = 0;
+        virtual double payoff_sum() = 0;
+
+        virtual PairDouble payoff() = 0;
         virtual double row_payoff() = 0;
         virtual double col_payoff() = 0;
+
         virtual bool is_solved() = 0;
         virtual void get_payoff_matrix(Matrix<PairDouble> &payoff_matrix) = 0;
 
@@ -43,9 +49,9 @@ namespace W
     struct StateWrapper : State
     {
         std::shared_ptr<_State> ptr;
+
         StateWrapper(const _State &state) : ptr{std::make_shared<_State>(state)} {}
-        StateWrapper(const _State &&state) : ptr{std::make_shared<_State>(state)} {}
-        StateWrapper(const StateWrapper &state_wrapper) : ptr{state_wrapper.ptr} {}
+
         template <typename... Args>
         StateWrapper(Args... args) : ptr(std::make_shared<_State>(args...)) {}
 
@@ -59,15 +65,6 @@ namespace W
             return StateWrapper{*ptr};
         }
 
-        bool is_constant_sum()
-        {
-            return typename _State::Types::Value::IS_CONSTANT_SUM();
-        };
-        double payoff_sum()
-        {
-            return typename _State::Types::Value::PAYOFF_SUM();
-        };
-
         void get_actions()
         {
             ptr->get_actions();
@@ -78,7 +75,7 @@ namespace W
             rows = ptr->row_actions.size();
             cols = ptr->col_actions.size();
         };
-        void apply_actions(int row_idx, int col_idx)
+        void apply_actions(size_t row_idx, size_t col_idx)
         {
             if (row_idx < ptr->row_actions.size() && col_idx < ptr->col_actions.size())
             {
@@ -93,6 +90,19 @@ namespace W
         {
             return ptr->is_terminal;
         };
+
+        bool is_constant_sum()
+        {
+            return typename _State::Types::Value::IS_CONSTANT_SUM();
+        };
+        double payoff_sum()
+        {
+            return typename _State::Types::Value::PAYOFF_SUM();
+        };
+        PairDouble payoff()
+        {
+            return PairDouble { static_cast<double>(ptr->payoff.get_row_value()), static_cast<double>(ptr->payoff.get_col_value()) }
+        }
         double row_payoff()
         {
             return static_cast<double>(ptr->payoff.get_row_value());
@@ -119,15 +129,16 @@ namespace W
             {
                 typename _State::Types::MatrixValue matrix;
                 ptr->get_payoff_matrix(matrix);
-                payoff_matrix.rows = matrix.rows;
-                payoff_matrix.cols = matrix.cols;
-                size_t entry_idx = 0;
-                for (auto value : matrix)
-                {
-                    payoff_matrix[entry_idx].row_value = static_cast<double>(value.get_row_payoff());
-                    payoff_matrix[entry_idx].col_value = static_cast<double>(value.get_col_payoff());
-                    ++entry_idx;
-                }
+                payoff_matrix = matrix;
+                // payoff_matrix.rows = matrix.rows;
+                // payoff_matrix.cols = matrix.cols;
+                // size_t entry_idx = 0;
+                // for (auto value : matrix)
+                // {
+                //     payoff_matrix[entry_idx].row_value = static_cast<double>(value.get_row_payoff());
+                //     payoff_matrix[entry_idx].col_value = static_cast<double>(value.get_col_payoff());
+                //     ++entry_idx;
+                // }
             }
         }
     };
@@ -213,10 +224,15 @@ namespace W
         std::shared_ptr<_Algorithm> ptr;
         std::shared_ptr<MatrixNode<_Algorithm>> root;
 
-        SearchWrapper(const _Algorithm &state) : ptr{std::make_shared<_Algorithm>(state)}, root{std::make_shared<MatrixNode<_Algorithm>>()} {}
+        SearchWrapper(const _Algorithm &session) : ptr{std::make_shared<_Algorithm>{session}}, root{std::make_shared<MatrixNode<_Algorithm>>{}} {}
 
         template <typename... Args>
         SearchWrapper(Args... args) : ptr(std::make_shared<_Algorithm>(args...)), root{std::make_shared<MatrixNode<_Algorithm>>()} {}
+
+        SearchWrapper clone()
+        {
+            return SearchWrapper{*ptr};
+        }
 
         void run(size_t iterations, State &state, Model &model)
         {
@@ -250,7 +266,7 @@ namespace W
 
         void reset()
         {
-            root = std::make_shared<MatrixNode<_Algorithm>>();
+            root = std::make_shared<MatrixNode<_Algorithm>>{};
         }
 
         void get_empirical_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy)

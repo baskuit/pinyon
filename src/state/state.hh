@@ -41,10 +41,6 @@ public:
         typename Types::Action col_action);
 
     void reseed(typename Types::PRNG &device);
-
-    void apply_action_indices(
-        ActionIndex row_idx,
-        ActionIndex col_idx);
 };
 
 template <class _Types>
@@ -57,18 +53,13 @@ public:
 
     void get_chance_actions(
         std::vector<typename Types::Observation> &chance_actions,
-        int row_action,
+        typename Types::Action row_action,
         typename Types::Action col_action);
 
     void apply_actions(
         typename Types::Action row_action,
         typename Types::Action col_action,
         typename Types::Observation chance_action);
-
-    void apply_actions(
-        typename Types::Action row_action,
-        typename Types::Action col_action,
-        typename Types::Seed seed);
 };
 
 template <class _Types>
