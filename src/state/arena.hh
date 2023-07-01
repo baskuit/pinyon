@@ -15,25 +15,27 @@ public:
     W::StateWrapper<_State> state{device};
     W::ModelWrapper<_Model> model{device};
     // TODO add generator for States
-    std::vector<W::Search *> searches;
+    std::vector<W::Search *> searches{};
 
-    template <typename _Algorithm>
+    template <typename... Containers>
     Arena(
         const _State &state,
         const _Model &model,
-        std::vector<W::SearchWrapper<_Algorithm>> &searches) : state{state}, model{model}
+        const Containers... &containers) : state{state}, model{model}
     {
+        (std::transform(containers.begin(), containers.end(), searches.back_inserter(),
+            [](auto &search){return &search;}) , ...);
+        // append pointer to search wrapper to this->searches
+
         const size_t size = searches.size();
-        this->searches.resize(size);
         this->row_actions.fill(size);
         this->col_actions.fill(size);
-
         for (int i = 0; i < size; ++i)
         {
-            this->searches[i] = &searches[i];
             this->row_actions[i] = typename Types::Action{i};
             this->col_actions[i] = typename Types::Action{i};
         }
+
     }
 
     void get_actions() {}
