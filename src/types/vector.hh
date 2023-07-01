@@ -19,13 +19,13 @@ struct Vector : std::vector<T>
         this->resize(n);
     }
 
-    void fill(int n, T value)
+    void fill(size_t n, T value)
     {
         this->resize(n);
         std::fill(this->begin(), this->begin() + n, value);
     }
 
-    void fill(int n)
+    void fill(size_t n)
     {
         this->resize(n);
     }
@@ -44,22 +44,32 @@ struct A
         {
         }
 
-        int _size = 0;
+        size_t _size = 0;
 
-        void fill(int n, T value)
+        void fill(size_t n, T value)
         {
             std::fill(this->begin(), this->begin() + n, value);
             _size = n;
         }
 
-        void fill(int n)
+        void fill(size_t n)
         {
             _size = n;
         }
 
-        int size()
+        size_t size()
         {
             return _size;
+        }
+
+        std::array<T, MaxSize>::iterator end()
+        {
+            return std::array<T, MaxSize>::begin() + _size;
+        }
+
+        std::array<T, MaxSize>::const_iterator end() const
+        {
+            return std::array<T, MaxSize>::begin() + _size;
         }
 
         template <typename U, template <typename U_> typename W>

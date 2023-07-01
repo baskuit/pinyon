@@ -25,7 +25,7 @@ public:
         typename Types::VectorInt col_visits;
 
         int visits = 0;
-        typename Types::Value value_total{Rational{0}, Rational{0}};
+        typename Types::Value value_total{0};
     };
 
     struct ChanceStats
@@ -329,21 +329,19 @@ private:
         typename Types::VectorReal &forecast,
         typename Types::VectorReal &gains,
         const size_t k,
-        typename Types::Real eta)
+        typename Types::Real eta) const
     {
-        typename Types::Real l1_norm = 0;
-        std::transform(gains.begin(), gains.begin() + k, forecast.begin(),
-                       [&l1_norm](typename Types::Real logit)
-                       {
-                           const typename Types::Real y(std::exp((logit * eta).unwrap()));
-                           l1_norm += y;
-                           return y;
-                       });
-        std::transform(forecast.begin(), forecast.begin() + k, forecast.begin(),
-                       [l1_norm](typename Types::Real probability)
-                       {
-                            return probability / l1_norm;
-                       });
+        typename Types::Real sum = 0;
+        for (size_t i = 0; i < k; ++i)
+        {
+            const typename Types::Real y(std::exp((gains[i] * eta).unwrap()));
+            forecast[i] = y;
+            sum += y;
+        }
+        for (size_t i = 0; i < k; ++i)
+        {
+            forecast[i] /= sum;
+        }
     };
 
     inline void denoise(

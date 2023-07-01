@@ -11,7 +11,7 @@ public:
     };
 
     size_t iterations;
-    W::State (*init_state_generator)(typename Types::Seed){nullptr};
+    W::StateWrapper<_State> (*init_state_generator)(typename Types::Seed){nullptr};
     W::ModelWrapper<_Model> model{device};
 
     typename Types::Seed init_state_seed{};
@@ -23,11 +23,11 @@ public:
     template <typename... Containers>
     Arena(
         const size_t iterations,
-        W::State (*init_state_generator)(typename Types::Seed),
+        W::StateWrapper<_State> (*init_state_generator)(typename Types::Seed),
         const _Model &model,
-        const Containers... &containers) : iterations{iterations}, init_state_generator{init_state_generator}, model{model}
+        Containers&... containers) : iterations{iterations}, init_state_generator{init_state_generator}, model{model}
     {
-        (std::transform(containers.begin(), containers.end(), searches.back_inserter(),
+        (std::transform(containers.begin(), containers.end(), std::back_inserter(searches),
                         [](auto &search)
                         { return &search; }),
          ...);
@@ -36,7 +36,7 @@ public:
         const size_t size = searches.size();
         this->row_actions.fill(size);
         this->col_actions.fill(size);
-        for (size_t i = 0; i < size; ++i)
+        for (int i = 0; i < size; ++i)
         {
             this->row_actions[i] = typename Types::Action{i};
             this->col_actions[i] = typename Types::Action{i};
@@ -54,18 +54,21 @@ public:
         typename Types::Action row_action,
         typename Types::Action col_action)
     {
-        auto row_search = searches[static_cast<int>(row_action)].clone();
-        auto col_search = searches[static_cast<int>(col_action)].clone();
+        W::Search *row_search = searches[static_cast<int>(row_action)]->clone();
+        W::Search *col_search = searches[static_cast<int>(col_action)]->clone();
 
-        auto state_copy = *init_state_generator(init_state_seed);
+        W::StateWrapper<_State> state_copy = (*init_state_generator)(init_state_seed);
         PairDouble row_first_payoff = play_vs(row_search, col_search, state_copy, model);
-        auto state_copy_ = state_copy.clone();
-        PairDouble col_first_payoff = play_vs(col_search, row_search, state_copy_, model);
+        state_copy = (*init_state_generator)(init_state_seed);
+        PairDouble col_first_payoff = play_vs(col_search, row_search, state_copy, model);
 
-        PairDouble avg_payoff = (row_first_payoff + col_first_payoff) / 2;
-        this->payoff = typename Types::Value{avg_payoff.row_value()};
+        PairDouble avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
+        this->payoff = typename Types::Value{avg_payoff.get_row_value()};
         this->is_terminal = true;
         this->obs = typename Types::Observation{device.random_int(1 << 16)};
+
+        delete row_search;
+        delete col_search;
     }
 
     PairDouble play_vs(

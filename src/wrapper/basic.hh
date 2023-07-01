@@ -93,15 +93,15 @@ namespace W
 
         bool is_constant_sum()
         {
-            return typename _State::Types::Value::IS_CONSTANT_SUM();
+            return _State::Types::Value::IS_CONSTANT_SUM;
         };
         double payoff_sum()
         {
-            return typename _State::Types::Value::PAYOFF_SUM();
+            return _State::Types::Value::PAYOFF_SUM;
         };
         PairDouble payoff()
         {
-            return PairDouble { static_cast<double>(ptr->payoff.get_row_value()), static_cast<double>(ptr->payoff.get_col_value()) }
+            return PairDouble{static_cast<double>(ptr->payoff.get_row_value()), static_cast<double>(ptr->payoff.get_col_value())};
         }
         double row_payoff()
         {
@@ -201,6 +201,7 @@ namespace W
         };
 
         TreeData tree_data;
+        virtual Search* clone () = 0;
         virtual void run(size_t iterations, State &state, Model &model) = 0;
         virtual void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model) = 0;
         virtual double exploitability(State &state) = 0;
@@ -215,7 +216,6 @@ namespace W
             SearchWrapper<T> *self = dynamic_cast<SearchWrapper<T> *>(this);
             return self->ptr;
         }
-        // expensive to calculate, so store as member
     };
 
     template <typename _Algorithm>
@@ -224,14 +224,14 @@ namespace W
         std::shared_ptr<_Algorithm> ptr;
         std::shared_ptr<MatrixNode<_Algorithm>> root;
 
-        SearchWrapper(const _Algorithm &session) : ptr{std::make_shared<_Algorithm>{session}}, root{std::make_shared<MatrixNode<_Algorithm>>{}} {}
+        SearchWrapper(const _Algorithm &session) : ptr{std::make_shared<_Algorithm>(session)}, root{std::make_shared<MatrixNode<_Algorithm>>()} {}
 
         template <typename... Args>
         SearchWrapper(Args... args) : ptr(std::make_shared<_Algorithm>(args...)), root{std::make_shared<MatrixNode<_Algorithm>>()} {}
 
-        SearchWrapper clone()
+        Search* clone()
         {
-            return SearchWrapper{*ptr};
+            return new SearchWrapper{*ptr};
         }
 
         void run(size_t iterations, State &state, Model &model)
@@ -266,7 +266,7 @@ namespace W
 
         void reset()
         {
-            root = std::make_shared<MatrixNode<_Algorithm>>{};
+            root = std::make_shared<MatrixNode<_Algorithm>>();
         }
 
         void get_empirical_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy)

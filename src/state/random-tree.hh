@@ -19,7 +19,7 @@ public:
 
     typename Types::PRNG device;
     typename Types::Seed seed{};
-    int depth_bound = 0;
+    size_t depth_bound = 0;
     size_t rows = 0;
     size_t cols = 0;
     size_t transitions = 1;
@@ -39,7 +39,7 @@ public:
 
     RandomTree(
         const typename Types::PRNG &device,
-        int depth_bound,
+        size_t depth_bound,
         size_t rows,
         size_t cols,
         size_t transitions,
@@ -56,7 +56,7 @@ public:
 
     RandomTree(
         const typename Types::PRNG &device,
-        int depth_bound,
+        size_t depth_bound,
         size_t rows,
         size_t cols,
         size_t transitions,
@@ -233,14 +233,7 @@ Helper class to generate random tree instances for testing
 
 struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTree<>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<double>, std::vector<size_t>>
 {
-
-    const std::vector<size_t> depth_bound_vec;
-    const std::vector<size_t> actions_vec;
-    const std::vector<size_t> chance_action_vec;
-    const std::vector<double> chance_threshold_vec;
-    const std::vector<size_t> trial_vec;
-
-    inline static prng device;
+    inline static prng device{};
 
     static W::StateWrapper<RandomTree<>> constr(std::tuple<size_t, size_t, size_t, double, size_t> tuple) // static otherwise implcit this arg messes up signature
     {

@@ -2,10 +2,10 @@
 
 #include <gmpxx.h>
 
-template <typename Real, bool IS_CONSTANT_SUM, int PAYOFF_SUM_NUM = 1, int PAYOFF_SUM_DEN = 1>
+template <typename Real, bool _IS_CONSTANT_SUM, int PAYOFF_SUM_NUM = 1, int PAYOFF_SUM_DEN = 1>
 struct ValueStruct
 {
-
+    static constexpr bool IS_CONSTANT_SUM{_IS_CONSTANT_SUM};
     static constexpr Real PAYOFF_SUM{Rational{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN}};
     Real row_value{Rational{0}};
     Real col_value{Rational{0}};
@@ -14,9 +14,9 @@ struct ValueStruct
     ValueStruct(Real row_value, Real col_value) : row_value{row_value}, col_value{col_value} {}
 
     template <typename T>
-    operator ValueStruct<T, IS_CONSTANT_SUM, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN>() const
+    operator ValueStruct<T, _IS_CONSTANT_SUM, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN>() const
     {
-        return ValueStruct<T, IS_CONSTANT_SUM, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN>{static_cast<T> row_value, static_cast<T> col_value};
+        return ValueStruct<T, _IS_CONSTANT_SUM, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN>{static_cast<T>(row_value), static_cast<T>(col_value)};
     }
 
     inline Real get_row_value() const
@@ -34,6 +34,11 @@ struct ValueStruct
         return *this;
     }
 
+    ValueStruct operator+(const ValueStruct other)
+    {
+        return ValueStruct{row_value + other.row_value, col_value + other.col_value};
+    }
+
     ValueStruct operator*(const Real val)
     {
         return ValueStruct{row_value * val, col_value * val};
@@ -49,8 +54,8 @@ struct ValueStruct
 template <typename Real, int PAYOFF_SUM_NUM, int PAYOFF_SUM_DEN>
 struct ValueStruct<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN>
 {
-
-    static constexpr Rational<int> PAYOFF_SUM{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN};
+    static constexpr bool IS_CONSTANT_SUM{true};
+    static constexpr Rational<> PAYOFF_SUM{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN};
     Real row_value{Rational{0}};
 
     ValueStruct() {}

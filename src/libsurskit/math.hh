@@ -61,12 +61,6 @@ namespace math
         std::cout << '\n';
     }
 
-    template <typename Real>
-    Real sigmoid(Real x)
-    {
-        return 1 / (1 + exp(x));
-    }
-
     template <class Types>
     typename Types::Real exploitability(
         typename Types::MatrixValue &value_matrix,
