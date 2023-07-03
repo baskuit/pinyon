@@ -114,10 +114,11 @@ public:
         }
 
         // solve
-        std::cout << '!' << std::endl;
+        std::cout << "matrix: " << std::endl;
         stats.nash_payoff_matrix.print();
 
         LRSNash::solve_matrix<Types>(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
+        std::cout << "strats: " << std::endl;
         math::print(stats.row_solution);
         math::print(stats.col_solution);
 

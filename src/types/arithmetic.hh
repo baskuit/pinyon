@@ -7,7 +7,7 @@ struct ArithmeticType
 
     constexpr ArithmeticType() {}
     
-    constexpr ArithmeticType (const T &val) : value{val} {}
+    constexpr ArithmeticType (const T val) : value{val} {}
 
     constexpr explicit operator T() const
     {

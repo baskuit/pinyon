@@ -17,7 +17,6 @@ public:
     typename Types::Seed init_state_seed{};
 
     prng device{};
-    // TODO add generator for States
     std::vector<W::Search *> searches{};
 
     template <typename... Containers>

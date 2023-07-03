@@ -36,6 +36,8 @@ public:
         std::mutex mtx{};
     };
 
+    using BanditAlgorithm::BanditAlgorithm;
+
     size_t threads = 1;
 
     void run(
@@ -212,6 +214,8 @@ public:
     struct ChanceStats : BanditAlgorithm::ChanceStats
     {
     };
+
+    using BanditAlgorithm::BanditAlgorithm;
 
     size_t threads = 1;
     std::array<std::mutex, pool_size> mutex_pool;

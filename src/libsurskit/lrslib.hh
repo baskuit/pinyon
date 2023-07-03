@@ -139,9 +139,12 @@ namespace LRSNash
         row_strategy.resize(rows);
         col_strategy.resize(cols);
 
-        std::array<mpq_t, 81> row_payoff_data, col_payoff_data;
+        mpq_t* row_payoff_data = new mpq_t[rows * cols];
+        mpq_t* col_payoff_data = new mpq_t[rows * cols];
 
         for (int i = 0; i < rows * cols; ++i) {
+            mpq_init(row_payoff_data[i]);
+            mpq_init(col_payoff_data[i]);
             mpq_set(row_payoff_data[i], payoff_matrix[i].get_row_value().unwrap().get_mpq_t());
             mpq_set(col_payoff_data[i], payoff_matrix[i].get_col_value().unwrap().get_mpq_t());
         }
@@ -151,7 +154,7 @@ namespace LRSNash
 
         game g;
 
-        solve_gmp_2(&g, rows, cols, row_payoff_data.data(), col_payoff_data.data(), row_data, col_data);
+        solve_gmp_2(&g, rows, cols, row_payoff_data, col_payoff_data, row_data, col_data);
 
         mpz_class x{row_data[0]};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
@@ -170,6 +173,9 @@ namespace LRSNash
 
         dealloc_data_gmp(row_data, rows + 2);
         dealloc_data_gmp(col_data, cols + 2);
+
+        delete[] row_payoff_data;
+        delete[] col_payoff_data;
     }
 
 }; // End namespace LRSNash
