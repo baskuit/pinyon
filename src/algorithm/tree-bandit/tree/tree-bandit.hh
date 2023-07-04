@@ -32,6 +32,8 @@ public:
 
     using BanditAlgorithm::BanditAlgorithm;
 
+    TreeBandit (BanditAlgorithm& base) : BanditAlgorithm{base} {}
+
     void run(
         const size_t iterations,
         typename Types::PRNG &device,
