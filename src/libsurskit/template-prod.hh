@@ -12,41 +12,66 @@ struct type_list
 {
 };
 
+template <template <typename> typename... Ts>
+struct template_list
+{
+};
+
 namespace detail
 {
 
-    template <template <typename> typename Template, typename... Ts, typename ArgTuple>
-    auto cartesian_product_one(std::tuple<Ts...>, ArgTuple &&args) -> std::tuple<Template<Ts>...>
+    template <template <typename> typename Template, typename... ParamTs, typename ArgTuple>
+    auto cartesian_product_per_template_helper(type_list<ParamTs...>, ArgTuple &&arg_tuple) -> std::tuple<Template<ParamTs>...>
     {
-        return {std::make_from_tuple<Template<Ts>>(args)...};
+        return {std::make_from_tuple<Template<ParamTs>>(arg_tuple)...};
     }
 
-    template <template <typename> typename Template, typename... Ts, typename ArgTuple>
-    auto cartesian_product_one(type_list<Ts...>, ArgTuple &&args) -> std::tuple<Template<Ts>...>
+    // same as above, but uses tuple for param_pack
+    template <template <typename> typename Template, typename... ParamTs, typename ArgTuple>
+    auto cartesian_product_per_template_helper(std::tuple<ParamTs...>, ArgTuple &&arg_tuple) -> std::tuple<Template<ParamTs>...>
     {
-        return {std::make_from_tuple<Template<Ts>>(args)...};
+        return {std::make_from_tuple<Template<ParamTs>>(arg_tuple)...};
     }
 
-    template <template <typename> typename Template, typename... Ts>
-    auto cartesian_product_one_(std::tuple<Ts...> &&args) -> std::tuple<Template<Ts>...>
+    template <typename ParamT, template <typename> typename... Templates, typename ArgTuple>
+    auto cartesian_product_per_param_helper(template_list<Templates...>, ArgTuple &&arg_tuple) -> std::tuple<Templates<ParamT>...>
     {
-        return std::apply([](auto... elems)
-                          { return std::make_tuple(Template<Ts>(elems)...); },
-                          args);
+        return {std::make_from_tuple<Templates<ParamT>>(arg_tuple)...};
+        // return std::apply([](auto... elems)
+        //                   { return std::make_tuple(Template<Ts>(elems)...); },
+        //                   args);
     }
 
 }
 
-template <template <typename> typename... Templates, typename Tuple, typename... Args>
-auto cartesian_product(Tuple tuple, Args &&...args)
+template <template <typename> typename... Templates, typename ParamPack, typename... Args>
+auto cartesian_product_per_template(ParamPack param_pack, Args &&...args_per_template)
 {
-    // std::tuple(arg) wraps each arg in a tuple, unless it already is a tuple -- problematic if you ever want a constructor that actually takes a tuple!
-    return std::tuple_cat(detail::cartesian_product_one<Templates>(tuple, std::tuple(args))...);
+    // returns a tuple of 
+    // TemplatesFirst<ParamPackFirst>{args_first}, ..., TemplatesFirst<ParamPackLast>{args_first}, ... 
+    // ...
+    // TemplateLast<ParamPackFirst>(args_last), ..., TemplateLast<ParamPackLast>(args_last)
+    return std::tuple_cat(detail::cartesian_product_per_template_helper<Templates>(param_pack, std::tuple(args_per_template))...);
 }
 
-template <template <typename> typename... Templates, typename Tuple>
-auto cartesian_product(Tuple &&tuple)
+template <typename... Params, typename TemplatePack, typename... Args>
+auto cartesian_product_per_param(TemplatePack template_pack, Args &&...args_per_param)
 {
-    // std::tuple(arg) wraps each arg in a tuple, unless it already is a tuple -- problematic if you ever want a constructor that actually takes a tuple!
-    return std::tuple_cat(detail::cartesian_product_one_<Templates>(std::move(tuple))...);
+    // returns a tuple of 
+    // TemplatesFirst<ParamPackFirst>{args_first}, ..., TemplatesFirst<ParamPackLast>{args_last}, ... 
+    // ...
+    // TemplateLast<ParamPackFirst>(args_first), ..., TemplateLast<ParamPackLast>(args_last)
+    return std::tuple_cat(detail::cartesian_product_per_param_helper<Params>(template_pack, std::tuple(args_per_param))...);
+}
+
+template <typename... Params, typename TemplatePack, typename... Args>
+auto cartesian_product_per_param(TemplatePack template_pack, std::tuple<Args...>& args_per_param)
+{
+    return std::tuple_cat(detail::cartesian_product_per_param_helper<Params>(template_pack, std::make_tuple(args_per_param))...);
+}
+
+template <typename TemplatePack, typename... Args>
+auto cartesian_product_per_param(TemplatePack template_pack, std::tuple<Args...>& args_per_param)
+{
+    return std::tuple_cat(detail::cartesian_product_per_param_helper<Args>(template_pack, std::make_tuple(args_per_param))...);
 }
