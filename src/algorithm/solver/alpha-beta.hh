@@ -86,7 +86,7 @@ public:
         if (max_depth > 0 && stats.depth >= max_depth)
         {
             matrix_node->set_terminal();
-            typename Model::Types::ModelOutput inference;
+            typename Types::ModelOutput inference;
             model.get_inference(state, inference);
             stats.row_value = inference.value.get_row_value();
             return stats.row_value;

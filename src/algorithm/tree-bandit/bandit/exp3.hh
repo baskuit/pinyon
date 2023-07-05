@@ -35,7 +35,7 @@ public:
     struct Outcome
     {
         ActionIndex row_idx, col_idx;
-        typename Model::Types::Value value;
+        typename Types::Value value;
         typename Types::Real row_mu, col_mu;
     };
 
