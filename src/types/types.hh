@@ -8,6 +8,7 @@
 #include <types/arithmetic.hh>
 #include <types/value.hh>
 #include <types/wrapper.hh>
+#include <types/mutex.hh>
 
 #include <vector>
 
@@ -186,6 +187,7 @@ struct Types
     using MatrixValue = Matrix<Value>;
 
     using Strategy = VectorReal;
+    using Mutex = std::mutex;
 };
 
 using SimpleTypes = Types<

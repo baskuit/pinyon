@@ -190,7 +190,7 @@ protected:
         typename Types::PRNG &device,
         MatrixStats &stats,
         Outcome &outcome,
-        std::mutex &mtx) const
+        typename Types::Mutex &mtx) const
     {
         mtx.lock();
         typename Types::VectorReal row_forecast{stats.row_gains};
@@ -235,7 +235,7 @@ protected:
     void update_matrix_stats(
         MatrixStats &stats,
         Outcome &outcome,
-        std::mutex &mtx) const
+        typename Types::Mutex &mtx) const
     {
         mtx.lock();
         stats.value_total += outcome.value;
@@ -264,7 +264,7 @@ protected:
     void update_chance_stats(
         ChanceStats &stats,
         Outcome &outcome,
-        std::mutex &mtx)
+        typename Types::Mutex &mtx)
     {
     }
 

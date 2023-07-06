@@ -29,11 +29,11 @@ public:
 
     struct MatrixStats : BanditAlgorithm::MatrixStats
     {
-        std::mutex mtx{};
+        typename Types::Mutex mtx{};
     };
     struct ChanceStats : BanditAlgorithm::ChanceStats
     {
-        std::mutex mtx{};
+        typename Types::Mutex mtx{};
     };
 
     using BanditAlgorithm::BanditAlgorithm;
@@ -133,7 +133,7 @@ private:
         typename Types::ModelOutput &inference)
     {
 
-        std::mutex &mtx{matrix_node->stats.mtx};
+        typename Types::Mutex &mtx{matrix_node->stats.mtx};
 
         if (!matrix_node->is_terminal())
         {
@@ -218,7 +218,7 @@ public:
     using BanditAlgorithm::BanditAlgorithm;
 
     size_t threads = 1;
-    std::array<std::mutex, pool_size> mutex_pool;
+    std::array<typename Types::Mutex, pool_size> mutex_pool;
     std::atomic<unsigned int> current_index{0};
 
     void run(
@@ -293,7 +293,7 @@ private:
         MNode<TreeBanditThreadPool> *matrix_node,
         typename Types::ModelOutput &inference)
     {
-        std::mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
+        typename Types::Mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
 
         if (!matrix_node->is_terminal())
         {

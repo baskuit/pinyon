@@ -111,7 +111,7 @@ protected:
         typename Types::PRNG &device,
         MatrixStats &stats,
         typename Types::Outcome &outcome,
-        std::mutex &mtx)
+        typename Types::Mutex &mtx)
     {
         const int row_idx = device.random_int(stats.rows);
         const int col_idx = device.random_int(stats.cols);
@@ -122,14 +122,14 @@ protected:
     void update_matrix_stats(
         MatrixStats &stats,
         typename Types::Outcome &outcome,
-        std::mutex &mtx)
+        typename Types::Mutex &mtx)
     {
     }
 
     void update_chance_stats(
         ChanceStats &stats,
         typename Types::Outcome &outcome,
-        std::mutex &mtx)
+        typename Types::Mutex &mtx)
     {
     }
 
