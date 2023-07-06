@@ -1,12 +1,12 @@
 # What is This
 
-Surskit is a highly extensible and heavily abstracted library for applying/testing search and solving algorithms for perfect-info, simultaneous move, stochastic games.
+Surskit is a highly extensible and heavily abstracted library for applying search and solving algorithms for perfect-info, simultaneous move, stochastic games.
 
 ## Intended Use
 
 This library is really attempt at reconciling two disparate realities
 
-* Pokemon is an incredibly popular intellectual property with 2 major competitve formats.
+* Pokemon is the highest grossing intellectual property of all time with over 20 years of competitve play in officially sanctioned and community organized formats.
 
 * There are no agents that have been shown to be as strong as the best human players. In fact, most of the milestone developments of machine learning in other domains: (situational) tactical superiority, sound analysis, and computationally feasible search, have yet to be replicated here.
 
@@ -41,23 +41,49 @@ The following code snippet is the execution of monte-carlo style tree search usi
 ```cpp
 using Battle = PkmnRBY<SmallTypes>;
 using Model = Libtorch<Battle, Raw>;
-using Algo = Exp3<Model, BatchInference>;
+using Search = OffPolicy<Exp3<Model>>;
 
-Battle battle(PkmnRBY::RandomTeams);
-Model model();
 typename Battle::Types::Seed seed = 42;
-prng device(seed);
-Algo session(device);
+prng device{seed};
 
-const int playouts = 1000;
-session.run(playouts, battle, model);
+Battle battle{PkmnRBY::RandomTeams};
+
+Model model{};
+
+const double gamma = .1;
+Search session{gamma};
+MatrixNode<Search> root{};
+
+const size_t playouts = 1000;
+session.run(playouts, device, battle, model, root);
+
+typename Battle::Types::VectorReal row_strategy, col_strategy;
+session.get_empirical_strategies(root.stats, row_strategy, col_strategy);
 ```
 
 
 and the following is the execution of simultaneous move AlphaBeta with depth=2.
 
 ```
-TODO
+using Battle = PkmnRBY<SmallTypes>;
+using Model = Libtorch<Battle, Raw>;
+using Search = OffPolicy<Exp3<Model>>;
+
+typename Battle::Types::Seed seed = 42;
+prng device{seed};
+
+Battle battle{PkmnRBY::RandomTeams};
+
+Model model{};
+
+const int depth = 2;
+Search session{depth};
+MatrixNode<Search> root{};
+
+session.run(battle, model, root);
+
+typename Battle::Types::VectorReal row_strategy, col_strategy;
+session.get_empirical_strategies(root.stats, row_strategy, col_strategy);
 ```
 
 This level of abstraction makes it straightforward for a user to implement a process like below:

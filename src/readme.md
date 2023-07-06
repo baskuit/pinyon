@@ -141,7 +141,6 @@ These generic transformations and classes have the same performance as if they w
 	
 # Implementation Details
 
-
 The expressiveness of templates allows for many different solutions. When applied to an entire library of code, these solutions become conventions that should be followed as functionality is added. 
 
 One of the simplest conventions and the one adopted here follows from considering the ordering we gave the families of types earlier.
@@ -265,7 +264,7 @@ public:
 	//...
 };
 ```
-In the scope of `RandomTree` the name Types referes to the struct that was just declared (as always) at the top of the class block. This struct does not have any *new* declarations in its body, but it did inherit the declarations from `ChanceState<_Types>::Types`, which is a struct named `Types` that was declared in the scope of `ChanceState`. We can follow this inheritance all the way back to the original.
+In the scope of `RandomTree` the name Types refers to the struct that was just declared (per convention) at the top of the class block. This particular struct does not have any *new* declarations in its body, but it did inherit the declarations from `ChanceState<_Types>::Types`, which is a struct named `Types` that was declared in the scope of `ChanceState`. We can follow this inheritance all the way back to the original `TypeList` class.
 
 ```cpp
 template <class _Types>
@@ -310,11 +309,46 @@ Thus the chain of inhertence for `RandomTree<RandomTreeTypes>::Types` is
 
 `RandomTreeTypes`
 
-which does in fact contain the declarations
+which does in fact contain the declarations.
 
+### In General
 
-# Idioms
+Lets say we have a class `Class_N` which is of some family `F`. Then there is a unique path of inheritence
 
+```cpp
+
+Class_N : Class_N-1
+
+// ...
+
+Class_1 : AbstractClass
+
+```
+
+all the way back to the abstract class for that family. Then the types struct of each class will mirror this inheritence pattern
+
+```cpp
+
+Class_N::Types : Class_N-1::Types
+
+// ...
+
+Class_1::Types : AbstractClass::Types
+
+```
+
+But it does not stop there, as we want to pull the types from the lower families. Recall that AbstractClass, while not derived from any other class, is a template of the form
+
+```cpp
+template <class LowerClass>
+class AbstractClass;
+```
+
+The Types struct of an abstract class will inherit from the types struct of the template parameters. In this way, the inheritence of `Types` will 'jump' levels all the way back to the most primitive `TypeList` class with all the most basic alias declarations.
+
+### Adding New Types
+
+Sometime we have to introduce types other than the basic `Action`, `VectorInt` types. For example, a model
 
 ```cpp
 template <class Lower>
@@ -325,8 +359,3 @@ class UpperDerived : public UpperBase<Lower> {
     };
 };
 ```
-If abstraction is not your preference, we can give a specific example
-
-```cpp
-```
-In `AbstractUpper` we derive the Types struct
