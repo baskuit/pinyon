@@ -16,7 +16,6 @@ template <typename Algorithm>
 class MatrixNodeFlat : public AbstractNode<Algorithm>
 {
 public:
-
     static constexpr bool STORES_VALUE = false;
 
     struct Types : AbstractNode<Algorithm>::Types
@@ -43,6 +42,9 @@ public:
         expanded = true;
         row_actions = state.row_actions;
         col_actions = state.col_actions;
+        const size_t n_children = row_actions.size() * col_actions.size();
+        edges = new ChanceNodeFlat<Algorithm> *[n_children];
+        std::fill_n(edges, n_children, nullptr);
     }
 
     void apply_actions(typename Types::State &state, const ActionIndex row_idx, const ActionIndex col_idx) const
@@ -94,12 +96,16 @@ public:
     size_t count_matrix_nodes()
     {
         size_t c = 1;
-        // ChanceNodeFlat<Algorithm> *current = this->child;
-        // while (current != nullptr)
-        // {
-        //     c += current->count_matrix_nodes();
-        //     current = current->next;
-        // }
+        const size_t n_children = row_actions.size() * col_actions.size();
+
+        for (size_t i = 0; i < n_children; ++i)
+        {
+            ChanceNodeFlat<Algorithm> *&chance_node = edges[i];
+            if (edges[i] != nullptr)
+            {
+                c += chance_node->count_matrix_nodes();
+            }
+        }
         return c;
     }
 };
@@ -133,12 +139,14 @@ public:
     size_t count_matrix_nodes()
     {
         size_t c = 0;
-        // MatrixNodeFlat<Algorithm> *current = this->child;
-        // while (current != nullptr)
-        // {
-        //     c += current->count_matrix_nodes();
-        //     current = current->next;
-        // }
+
+        for (const auto &[obs, matrix_node] : edges)
+        {
+            if (matrix_node != nullptr)
+            {
+                c += matrix_node->count_matrix_nodes();
+            }
+        }
         return c;
     }
 };
@@ -154,10 +162,8 @@ MatrixNodeFlat<Algorithm>::~MatrixNodeFlat()
 template <typename Algorithm>
 ChanceNodeFlat<Algorithm>::~ChanceNodeFlat()
 {
-    while (this->child != nullptr)
+    for (const auto &[obs, matrix_node] : edges)
     {
-        MatrixNodeFlat<Algorithm> *victim = this->child;
-        this->child = this->child->next;
-        delete victim;
+        delete matrix_node;
     }
 };

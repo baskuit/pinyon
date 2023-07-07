@@ -7,14 +7,14 @@ template <typename Algorithm>
 class ChanceNodeL;
 
 /*
-Matrix Node
+Instead of MatrixNodes storing their obs memeber, they are bundled with 'Edge' struct
+which is basically a linked list that the chance node parent owns
 */
 
 template <typename Algorithm>
 class MatrixNodeL : public AbstractNode<Algorithm>
 {
 public:
-
     static constexpr bool STORES_VALUE = false;
 
     struct Types : AbstractNode<Algorithm>::Types
@@ -139,17 +139,16 @@ public:
     {
     };
 
-    struct Edges
+    struct Edge
     {
-
         MatrixNodeL<Algorithm> *matrix_node = nullptr;
         typename Types::Observation obs;
-        Edges *next = nullptr;
-        Edges() {}
-        Edges(
+        Edge *next = nullptr;
+        Edge() {}
+        Edge(
             MatrixNodeL<Algorithm> *matrix_node,
             typename Types::Observation obs) : matrix_node(matrix_node), obs(obs) {}
-        ~Edges()
+        ~Edge()
         {
             delete matrix_node;
             delete next;
@@ -157,7 +156,7 @@ public:
     };
 
     ChanceNodeL<Algorithm> *next = nullptr;
-    Edges edge;
+    Edge edge;
 
     ActionIndex row_idx;
     ActionIndex col_idx;
@@ -179,8 +178,8 @@ public:
             edge.obs = obs;
             return child;
         }
-        Edges *current = &edge;
-        Edges *previous = &edge;
+        Edge *current = &edge;
+        Edge *previous = &edge;
         while (current != nullptr)
         {
             previous = current;
@@ -191,7 +190,7 @@ public:
             current = current->next;
         }
         MatrixNodeL<Algorithm> *child = new MatrixNodeL<Algorithm>();
-        Edges *child_wrapper = new Edges(child, obs);
+        Edge *child_wrapper = new Edge(child, obs);
         previous->next = child_wrapper;
         return child;
     };
