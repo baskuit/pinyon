@@ -1,89 +1,52 @@
 #include <surskit.hh>
 
-#include <tuple>
+template <typename Algorithm>
+using MNode = MatrixNodeFlat<Algorithm>;
+template <typename Algorithm>
+using CNode = ChanceNodeFlat<Algorithm>;
 
-template <template <typename> typename... Template>
-struct TemplatePack {};
-
-template <typename... Type>
-struct TypePack {};
-
-struct NodeWrapper {
-
-    template <typename BanditAlgorithm>
-    using MNode = MatrixNode<BanditAlgorithm>;
-
-    template <typename BanditAlgorithm>
-    using CNode = ChanceNode<BanditAlgorithm>;
-};
-
-struct NodeWrapper2 {
-
-    template <typename BanditAlgorithm>
-    using MNode = MatrixNodeL<BanditAlgorithm>;
-
-    template <typename BanditAlgorithm>
-    using CNode = ChanceNodeL<BanditAlgorithm>;
-};
-
-
-template <
-    template <typename, template <typename> typename, template <typename> typename> typename TreeBanditTemplate,
-    typename NodeTypes,
-    typename... BanditTypes>
-auto buzz(std::tuple<BanditTypes...> bandit_tuple) -> std::tuple<TreeBanditTemplate<BanditTypes, NodeTypes::template MNode, NodeTypes::template CNode>...>
+int main()
 {
-    return std::apply([](auto... bandits) {
-        return std::tuple<TreeBanditTemplate<BanditTypes, NodeTypes::template MNode, NodeTypes::template CNode>...>(
-            TreeBanditTemplate<BanditTypes, NodeTypes::template MNode, NodeTypes::template CNode>(bandits)...
-        );
-    }, bandit_tuple);
-}
 
-template <
-    template <typename, template <typename> typename, template <typename> typename> typename TreeBanditTemplate, 
-    typename BanditTuple, 
-    typename... NodeTypes>
-auto bar (BanditTuple bandit_tuple, TypePack<NodeTypes...> node_type_pack) {
-    return std::tuple_cat((
-        buzz<TreeBanditTemplate, NodeTypes>(bandit_tuple)
-    )...);
-}
+    using Model = MonteCarloModel<MoldState<2>>;
 
 
-template <
-    template <typename, template <typename> typename, template <typename> typename> typename... TreeBanditTemplates, 
-    typename BanditTuple, 
-    typename NodeTypePack>
-auto foo (BanditTuple bandit_tuple, NodeTypePack node_type_pack) {
-    return std::tuple_cat((
-        bar<TreeBanditTemplates>(bandit_tuple, node_type_pack)
-    )...);
-}
+    auto session0 = TreeBandit<Exp3<Model>, MNode, CNode>{};
+    auto session1 = TreeBanditThreaded<Exp3<Model>, MNode, CNode>{};
+    auto session2 = TreeBanditThreadPool<Exp3<Model>, MNode, CNode>{};
 
-int main () {
+    std::tuple<
+        TreeBandit<Exp3<Model>>,
+        TreeBanditThreaded<Exp3<Model>>,
+        TreeBanditThreadPool<Exp3<Model>>>
+        tuple{session0, session1, session2};
 
-    using Model = MonteCarloModel<MoldState<9>>;
+    std::get<1>(tuple).threads = 8;
+    std::get<2>(tuple).threads = 8;
 
-    Exp3<Model> bandit{.01};
+    auto lambda = [](auto &session)
+    {
+        using MatrixNode = typename std::remove_reference<decltype(session)>::type::Types::MatrixNode; // Access the nested A class
+        MatrixNode root{};
 
-    std::tuple<Exp3<Model>, Exp3<Model>> bandit_tuple{bandit, bandit};
-    TypePack<NodeWrapper, NodeWrapper2> node_type_pack{};
+        MoldState<2> state{50};
+        Model model{0};
 
-    auto x = foo<TreeBandit>(bandit_tuple, node_type_pack);
-    auto count = std::tuple_size_v<decltype(x)>;
-    std::cout << count << std::endl;
-    
-    // auto y = std::get<0>(x);
+        const size_t iterations = 1 << 18;
+        prng device{0};
+        session.run(iterations, device, state, model, root);
 
-    // MoldState<9> state{10};
-    // Model model{0};
-    // MatrixNode<TreeBandit<Exp3<Model>, NodeWrapper::MNode, NodeWrapper::CNode>>  root{}; 
+        size_t count = root.count_matrix_nodes();
 
-    // prng device{0};
+        double ratio = count / (double) iterations;
 
-    // y.run(1000, device, state, model, root);
+        std::cout << ratio << std::endl;
+    };
 
+    // Apply the lambda to all elements of the tuple using std::apply
+    std::apply([&lambda](auto &...elements)
+               { (lambda(elements), ...); },
+               tuple);
 
     return 0;
 }
