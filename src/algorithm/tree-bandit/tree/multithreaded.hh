@@ -38,6 +38,8 @@ public:
 
     using BanditAlgorithm::BanditAlgorithm;
 
+    TreeBanditThreaded(BanditAlgorithm &base) : BanditAlgorithm{base} {}
+
     size_t threads = 1;
 
     void run(
@@ -166,10 +168,12 @@ private:
 
             matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
+            // mtx.lock();
             CNode<TreeBanditThreaded> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
             // chance_node->stats.mtx.lock();
             MNode<TreeBanditThreaded> *matrix_node_next = chance_node->access(state.obs);
             // chance_node->stats.mtx.unlock();
+            // mtx.unlock();
 
             MNode<TreeBanditThreaded> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
 
@@ -216,6 +220,8 @@ public:
     };
 
     using BanditAlgorithm::BanditAlgorithm;
+
+    TreeBanditThreadPool(BanditAlgorithm &base) : BanditAlgorithm{base} {}
 
     size_t threads = 1;
     std::array<typename Types::Mutex, pool_size> mutex_pool;
