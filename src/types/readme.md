@@ -18,7 +18,7 @@ There are several reasons for this modularity.
 Using different data types for representation can make a significant impact on performance. For example using `float` instead of `double` significantly reduces the number of bytes needed to represent a matrix node of the tree. Smaller nodes means better cache usage, which is one of the most important considerations regarding performance of a search engine.
 
 * Generality
-    Work on Surskit began before there was a working simulator, and so the required primitive types were unknown. Additionally, different formats and generations of pokemon may use a different simulator.
+    Work on Surskit began before there was a working simulator, and so the required primitive types were unknown. Additionally, different formats and generations of Pokemon may use a different simulator.
 
 * Strong Typing
 Organizing types in this manner makes it simpler to use strong typing. There are many reasons for doing this, but principal among them is the elimination of certain kinds of silents bugs.
@@ -65,9 +65,9 @@ The following types are given wrappers for type correctness, but otherwise gain 
 * Action
 * Observation
 
-This is to prevent `int row_idx, col_idx` being accidently misused e.g. `apply_actions(row_idx, col_idx)` when the `Action` type is simply `int`.
+This is to prevent `int row_idx, col_idx` being accidentally misused e.g. `apply_actions(row_idx, col_idx)` when the `Action` type is simply `int`.
 
-Implicit coversions from `T` to `Wrapped<T>` are allowed, but not the other way. The idea is that `row_actions[row_idx] = 0` is permissible (when `Action` is just `int`) is fine but accidental type mixing due to an implicit `Action` -> `int` -> `Observation` conversion is not possible.
+Implicit conversions from `T` to `Wrapped<T>` are allowed, but not the other way. The idea is that `row_actions[row_idx] = 0` is permissible (when `Action` is just `int`) is fine but accidental type mixing due to an implicit `Action` -> `int` -> `Observation` conversion is not possible.
 
 The `Action` type is merely the type of the inputs to the transition function `apply_actions(Action, Action)`. 
 
@@ -78,7 +78,7 @@ The following types are similarly wrapped but we want to keep their arithmetic o
 * Real
 * Probability
 
-The `Real` type has the same purpose of `double` or `float`. It is the type that is used in the floating point arithmetic of the various bandit algorithms, e.g. softmaxing, UCB scores, etc.
+The `Real` type has the same purpose of `double` or `float`. It is the type that is used in the floating point arithmetic of the various bandit algorithms, e.g. soft-maxing, UCB scores, etc.
 
 The `Probability` type simply represents the probability of a transition occurring. This quantity is stored in each state as `PerfectInfoState::prob`.
 
@@ -189,7 +189,7 @@ This is a 4x reduction in size from `float` already and we could even omit the l
 
 * `Value`
 
-Surskit does not make the assumption that games are constant sum. Although all games of interest have this property, it is not always satisfied by every ansillary game.
+Surskit does not make the assumption that games are constant sum. Although all games of interest have this property, it is not always satisfied by every ancillary game.
 
 In each matrix node, MatrixUCB must store a cumulative score for each of the `rows * cols` joint actions. Without the constant sum assumption, this requirement doubles.
 

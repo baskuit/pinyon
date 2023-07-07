@@ -1,5 +1,4 @@
-
-These algorithms perform the simultaneous-move analog of minimax; They **solve** for Nash equilibrium payoffs and strategies on a sub-tree. The calculated Nash equilibrium payoffs and strategies are stored in the `MatrixStats`.
+These algorithms perform the simultaneous-move analog of mini-max; They **solve** for Nash equilibrium payoffs and strategies on a sub-tree. The calculated Nash equilibrium payoffs and strategies are stored in the `MatrixStats`.
 
 The sub-tree is expanded up to `depth=-1`, meaning infinite depth by default.
 
@@ -25,15 +24,15 @@ It assumes the game is 1-sum (TODO: ~~Consider adding MIN_PAYOFF, IS_CONSTANT_SU
 
 This algorithm is an implementation of Bošanský, et al. (2013), modified for stochastic games. The paper optionally uses a sub-algorithm called 'Serialized AlphaBeta', which further tightens the bounds on the value of a matrix node. Serialized AlphaBeta is currently not implemented (TODO), and the paper admits it does not always improve performance, due to the increased tree traversal.
 
-The paper should be the primary source on the exact workings of SMAB. Accommodating stochastic games is straightforward, and mirrors how 'Expectiminimax' extends the usual Minimax. The code and inline comments were written to reflect the paper as much as possible.
+The paper should be the primary source on the exact workings of SMAB. Accommodating stochastic games is straightforward, and mirrors how 'Expectiminimax' extends the usual mini-max. The code and inline comments were written to reflect the paper as much as possible.
 
 There is a simple trick to optimize SMAB for stochastic games. When we are calculating the entry `s_ij` in the payoff matrix, we are actually calculating the expected payoff of the chance node for that entry, which is simply calculating the expected value of all matrix nodes that chance node points to.
-Since we know the chance actions and their associated probabilty, we can use that and the MinVal, MaxVal to put bounds on the value of a chance node.
+Since we know the chance actions and their associated probability, we can use that and the MinVal, MaxVal to put bounds on the value of a chance node.
 If `0 < p < 1` is the total probability of the *explored* chance actions, and the sum of the calculated the values is `v`, then value of the chance node `V` is bounded by
 
 $$v + (1 - p) * \text{MinVal} < V < v + (1 - p) * \text{MaxVal}$$
 
-This allows us to perform the feasiblity check after each update to the value of `s_ij` instead of when its totally computed, to see if we can terminate early. (TODO)
+This allows us to perform the feasibility check after each update to the value of `s_ij` instead of when its totally computed, to see if we can terminate early. (TODO)
 
 
 > NOTE: Line 7 "p'_i,j" might be the wrong expression, as in an error in the paper? TODO

@@ -9,7 +9,7 @@ That's it. The `AbstractState` class does not make any more assumptions.
 
 In practice, search on general imperfect information games is hard and expensive. Therefore we codify the perfect information requirement and several other niceties with the `PerfectInfoState` class, and we use this class as the basis of all current models, algorithms, and tree structures.
 
-The goal of Surksit is to aid development in an imperfect info game, so eventually we will expand our methods and classes as perfect info milestones are reached.
+The goal of Surskit is to aid development in an imperfect info game, so eventually we will expand our methods and classes as perfect info milestones are reached.
 
 
 # What you need to know
@@ -34,10 +34,10 @@ The goal of Surksit is to aid development in an imperfect info game, so eventual
 
 The simplest way to convey the conventions of a state is explain the inclusion of its members and methods.
 
-The data members are not overriden by derived classes. The methods are the usual decorative declarations to be shadowed in derived classes. 
+The data members are not overridden by derived classes. The methods are the usual decorative declarations to be shadowed in derived classes. 
 
 * `is_terminal`
-Simple boolean that is flipped in the `apply_actions` method as needed. Initialized to `false` since there is no reason not to assume a state isnt live upon its initialization.
+Simple boolean that is flipped in the `apply_actions` method as needed. Initialized to `false` since there is no reason not to assume a state isn't live upon its initialization.
 
 * `row_actions`
 * `col_actions`
@@ -52,7 +52,7 @@ Following the convention of many other games, a reward is only received at a ter
 The `Observation` after transitioning and its associated `Probability` are assumed to mutated after every `apply_actions` call.
 
 * `get_actions` 
-Updates the `row_actions`, `col_actions` members of the state. The number of actions for either player can be retrieved by `row_actions.size()` etc, as they are of the `VectorAction` type. Calculation of all actions for both players is assumed to be expensive (as is often the case), so the search does it only when necesssary
+Updates the `row_actions`, `col_actions` members of the state. The number of actions for either player can be retrieved by `row_actions.size()` etc, as they are of the `VectorAction` type. Calculation of all actions for both players is assumed to be expensive (as is often the case), so the search does it only when necessary
 
 Thus the actions vectors are not assumed to be initialized on creation of a state. The `get_actions` method *must* be called directly to assure there is valid information there. The tree-bandit search is organized so that get_actions is always called prior to accessing that data.
 
@@ -79,15 +79,15 @@ Arbitrarily large games!
 
 Fast!
 
-Customizable with functino pointers and mini-library (TODO) for simulating
+Customizable with function pointers and mini-library (TODO) for simulating
 
-The default behaviour of a tree is that of a P-game.
+The default behavior of a tree is that of a P-game.
 
 # ChanceState
 
 # SolvedState
 
-A state that is solved does not necessarily have to have the same interface as `ChanceState`. However being a chance state is required for the solvers to work, and it is common to 'upgrade' a ChanceState to a SolvedState using the `FullTraversal` class. In practice, by this process all solved states are also chance states, and so deriving `SolvedState : public ChanceState` is justified.
+A state that is solved does not necessarily have to have the same interface as `ChanceState`. However being a chance state is required for the solvers to work, and it is common to 'upgrade' a `ChanceState` to a `SolvedState` using the `FullTraversal` class. In practice, by this process all solved states are also chance states, and so deriving `SolvedState : public ChanceState` is justified.
 
 
 

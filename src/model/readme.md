@@ -1,11 +1,10 @@
-
 # DoubleOracleModel
 
 Currently the only Models supported by Surskit are 'double oracle' models, those that return a value and policy estimate for both players.
 
 A value estimate is required by the tree-bandit algorithms. When a leaf node is expanded at the end of the forward phase, the value of its accompanying state is back-propagated to update the matrix/chance nodes leading up to the leaf node.
 
-On the other hand, a policy estimate is not required by tree-bandit search and is only used in some bandit algorithms. If a model does not typically supply a policy estimate (e.g. monte carlo), then the uniform policy is used as a stand-in.
+On the other hand, a policy estimate is not required by tree-bandit search and is only used in some bandit algorithms. If a model does not typically supply a policy estimate (e.g. Monte Carlo), then the uniform policy is used as a stand-in.
 
 ### Interface
 
@@ -16,7 +15,7 @@ Any model derived from `DoubleOracleModel` is expected to define 4 new types to 
 * `ModelBatchInput`
 * `ModelBatchOutput`
 
-Their definitions vary considerably depending on the derived class. In the monte-carlo, the input is a 
+Their definitions vary considerably depending on the derived class. In the Monte Carlo model, the input is a 
 
 ```cpp
     void get_input(
@@ -45,9 +44,9 @@ Their definitions vary considerably depending on the derived class. In the monte
 ```
 
 * `get_input`
-The pytorch models take a tensor as input, not the raw state itself.
+The Pytorch models take a tensor as input, not the raw state itself.
 * `get_batch_input`
-Essentially the same method as above, but plural. The gist of what it does depends on the model. For example, the monte carlo model simply defines a vector of states as its input, and 
+Essentially the same method as above, but plural. The gist of what it does depends on the model. For example, the Monte Carlo model simply defines a vector of states as its input, and 
 
 Notice the `const` qualifier on the state parameters. Indeed, providing expert knowledge should not alter a state.
 
@@ -64,7 +63,7 @@ Monte Carlo inference is very weak. It is outperformed by any decent heuristic m
 
 ## Libtorch
 
-> This section was written after completion of the multithreaded inference wrapper but before integration of the wrapper with surskit
+> This section was written after completion of the multi-threaded inference wrapper but before integration of the wrapper with Surskit
 
 The fastest way to use a neural network depends on its size. Small neural networks can work very well on modern CPUs, but larger networks run fastest on GPU. There is however a high cost to sending data between the CPU and GPU, so the only way to realize this performance benefit with large networks is to do inference in batches.
 
