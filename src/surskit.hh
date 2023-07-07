@@ -7,6 +7,7 @@
 #include <libsurskit/lrslib.hh>
 #include <libsurskit/generator.hh>
 #include <libsurskit/template-prod.hh>
+#include <libsurskit/algorithm-generator.hh>
 
 // Types
 

@@ -4,7 +4,18 @@
 #include <tree/node.hh>
 
 template <typename Algorithm>
+class MatrixNode;
+
+template <typename Algorithm>
 class ChanceNode;
+
+struct DefaultNodes
+{
+    template <typename Algorithm>
+    using MNode = MatrixNode<Algorithm>;
+    template <typename Algorithm>
+    using CNode = ChanceNode<Algorithm>;
+};
 
 /*
 Matrix Node
@@ -14,7 +25,6 @@ template <typename Algorithm>
 class MatrixNode : public AbstractNode<Algorithm>
 {
 public:
-
     static constexpr bool STORES_VALUE = false;
 
     struct Types : AbstractNode<Algorithm>::Types

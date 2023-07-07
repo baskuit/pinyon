@@ -6,7 +6,18 @@
 #include <unordered_map>
 
 template <typename Algorithm>
+class MatrixNodeFlat;
+
+template <typename Algorithm>
 class ChanceNodeFlat;
+
+struct FlatNodes
+{
+    template <typename Algorithm>
+    using MNode = MatrixNodeFlat<Algorithm>;
+    template <typename Algorithm>
+    using CNode = ChanceNodeFlat<Algorithm>;
+};
 
 /*
 Matrix Node
@@ -16,7 +27,6 @@ template <typename Algorithm>
 class MatrixNodeFlat : public AbstractNode<Algorithm>
 {
 public:
-
     static constexpr bool STORES_VALUE = false;
 
     struct Types : AbstractNode<Algorithm>::Types
