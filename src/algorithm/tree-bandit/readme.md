@@ -1,4 +1,3 @@
-
 # Tree Bandit
 
 The algorithms in the folder are generalizations of MCTS, which we call 'tree bandit'.
@@ -25,7 +24,7 @@ There is an entire field of mathematics devoted to describing and analyzing algo
 
 $$ \frac{w_i}{n_i} + c \sqrt{\frac{\ln N_i}{n_i}} $$
 
-is often called UCB (Upper Confidence Bounds). It is a solution to the stochastic bandits problem. By this, we mean that the rewards that are recieved 
+is often called UCB (Upper Confidence Bounds). It is a solution to the stochastic bandits problem. By this, we mean that the rewards that are received 
 
 The Exp3 and MatrixUCB algorithms are already provided. Not all bandits algorithms (i.e. stochastic bandit algorithms) are sound choices. Refer to "Analysis of Hannan Consistent Selection for Monte Carlo Tree Search in Simultaneous Move Games".
 
@@ -134,17 +133,16 @@ An `ostream` operator is useful but not essential.
 
 The following methods are expected.
 
-
 * `get_empirical_strategies`
 * `get_empirical_value`
 * `get_refined_strategies`
 * `get_refined_value`
 
-Used as the 'final answer' interface. All bandit methods can off emprical value and policies for that purpose, and in most RL schemes this is taken to be the training target. There are many cases where you may want to use other estimates instead, hence the 'refined' version.
+Used as the 'final answer' interface. All bandit methods can off empirical value and policies for that purpose, and in most RL schemes this is taken to be the training target. There are many cases where you may want to use other estimates instead, hence the 'refined' version.
 e.g. alpha zero stuff using `q` over `z`, or a mix of the two.
 
 * `initializes_stats`
-This method may be removed in the future. The vanilla MatrixUCB algorithm assumes that we know the number of episodes/playouts in advance, which is only true for the root node. This method was used to set the total number of playouts in the `MatrixStats` of the root node. Any other node would use the expected episodes/playouts of its parent matrix node to estimate its own expected episodes. 
+This method may be removed in the future. The vanilla MatrixUCB algorithm assumes that we know the number of iterations in advance, which is only true for the root node. This method was used to set the total number of iterations in the `MatrixStats` of the root node. Any other node would use the expected iterations of its parent matrix node to estimate its own expected episodes. 
 
 * `expand`
 This method properly initializes the statistics of the matrix stats. In exp3 for example, it zero-initializes the gains and visit count vectors for both players.
@@ -170,7 +168,7 @@ Because of this, the tree algorithm inherits all of the methods of the bandit al
 
 It will also inherit the three structs `MatrixStats`, `ChanceStats`, and `Outcome` from before. Inheriting the methods and data structures of the bandit algorithms is what allows the interchangeability of latter.
 
-But the tree algorithm will not use the `MatrixStats` and `ChanceStats` just as inherited. Instead, it will derive its own classes to add extra, necessary data. For the multi-threaded tree algorithms, a mutex or mutex id is added to protect the data in the stats from race conditions.
+But the tree algorithm will not use the `MatrixStats` and `ChanceStats` just as inherited. Instead, it will derive its own classes to add extra, necessary data. For the multi-threaded tree algorithms, a mutex or mutex-id is added to protect the data in the stats from race conditions.
 
 ```cpp
 
@@ -180,7 +178,7 @@ The matrix and chance nodes are templates that accept algorithms as parameters. 
 
 ### Tree Search and RL Analogy
 
-The default `return_if_expand` template parameter is a good moment to introduce this design principle of surskit.
+The default `return_if_expand` template parameter is a good moment to introduce this design principle of Surskit.
 
 ### Defaults
 

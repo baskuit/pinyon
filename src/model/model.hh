@@ -173,6 +173,5 @@ public:
         typename Types::ModelBatchInput &inputs,
         typename Types::ModelBatchOutput &outputs)
     {
-        // TODO use transform
     }
 };
