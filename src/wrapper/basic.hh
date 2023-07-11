@@ -30,12 +30,12 @@ namespace W
         virtual bool is_constant_sum() = 0;
         virtual double payoff_sum() = 0;
 
-        virtual PairDouble payoff() = 0;
+        virtual ValueStruct<double, false> payoff() = 0;
         virtual double row_payoff() = 0;
         virtual double col_payoff() = 0;
 
         virtual bool is_solved() = 0;
-        virtual void get_payoff_matrix(Matrix<PairDouble> &payoff_matrix) = 0;
+        virtual void get_payoff_matrix(Matrix<ValueStruct<double, false>> &payoff_matrix) = 0;
 
         template <typename T>
         std::shared_ptr<T> derive_ptr()
@@ -99,9 +99,9 @@ namespace W
         {
             return _State::Types::Value::PAYOFF_SUM;
         };
-        PairDouble payoff()
+        ValueStruct<double, false> payoff()
         {
-            return PairDouble{static_cast<double>(ptr->payoff.get_row_value()), static_cast<double>(ptr->payoff.get_col_value())};
+            return ValueStruct<double, false>{static_cast<double>(ptr->payoff.get_row_value()), static_cast<double>(ptr->payoff.get_col_value())};
         }
         double row_payoff()
         {
@@ -123,7 +123,7 @@ namespace W
         {
             return std::vector<double>{};
         };
-        void get_payoff_matrix(Matrix<PairDouble> &payoff_matrix)
+        void get_payoff_matrix(Matrix<ValueStruct<double, false>> &payoff_matrix)
         {
             if constexpr (std::derived_from<_State, SolvedState<typename _State::Types>>)
             {
@@ -205,7 +205,7 @@ namespace W
         virtual void run(size_t iterations, State &state, Model &model) = 0;
         virtual void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model) = 0;
         virtual double exploitability(State &state) = 0;
-        virtual double exploitability(Matrix<PairDouble> &matrix) = 0;
+        virtual double exploitability(Matrix<ValueStruct<double, false>> &matrix) = 0;
         virtual void get_empirical_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy) = 0;
         // virtual std::vector<double> row_strategy() = 0;
         // virtual std::vector<double> col_strategy() = 0;
@@ -293,17 +293,17 @@ namespace W
         {
             typename _Algorithm::Types::VectorReal r{root->row_actions.size()}, c{root->col_actions.size()};
             ptr->get_empirical_strategies(root->stats, r, c);
-            Matrix<PairDouble> matrix;
+            Matrix<ValueStruct<double, false>> matrix;
             state.get_payoff_matrix(matrix);
-            double expl = static_cast<double>(math::exploitability<typename _Algorithm::Types>(matrix, r, c));
+            double expl = static_cast<double>(math::exploitability(matrix, r, c));
             return expl;
         }; // aka expected regret because we use empirical strategies
 
-        double exploitability(Matrix<PairDouble> &matrix)
+        double exploitability(Matrix<ValueStruct<double, false>> &matrix)
         {
             typename _Algorithm::Types::VectorReal r{root->row_actions.size()}, c{root->col_actions.size()};
             ptr->get_empirical_strategies(root->stats, r, c);
-            double expl = static_cast<double>(math::exploitability<typename _Algorithm::Types>(matrix, r, c));
+            double expl = static_cast<double>(math::exploitability(matrix, r, c));
             return expl;
         }
     };

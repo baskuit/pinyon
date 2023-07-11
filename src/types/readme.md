@@ -55,6 +55,7 @@ Data:
 * `MatrixInt`
 * `MatrixValue`
 
+# Static Cast strips
 
 The motivation and requirements of these type aliases are discussed below.
 

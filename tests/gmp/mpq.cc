@@ -1,8 +1,8 @@
 #include <surskit.hh>
 
-void random_matrix(prng device, const int rows, const int cols, const int discrete = 20)
+void random_matrix(prng device, const size_t rows, const size_t cols, const int discrete = 20)
 {
-    const int entries = rows * cols;
+    const size_t entries = rows * cols;
 
     // mpq_t *row_payoff_data = new mpq_t[entries];
     // mpq_t *col_payoff_data = new mpq_t[entries];
@@ -33,8 +33,8 @@ void random_matrix(prng device, const int rows, const int cols, const int discre
     Vector<RealType<mpq_class>> row_strategy, col_strategy;
     LRSNash::solve(matrix, row_strategy, col_strategy);
 
-    auto expl = math::EXPL(matrix, row_strategy, col_strategy);
-    double expl_ = expl.unwrap().get_d();
+    auto expl = math::exploitability(matrix, row_strategy, col_strategy);
+    double expl_ = static_cast<decltype(expl)::type>(expl).get_d();
 
     if (expl_ > 0)
     {

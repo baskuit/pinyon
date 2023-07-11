@@ -4,7 +4,7 @@
 
 #include <types/types.hh>
 
-namespace LRSNash
+namespace   LRSNash
 {
 
     template <typename Real, template <typename> typename Vector, template <typename> typename Matrix>
@@ -12,24 +12,29 @@ namespace LRSNash
     {
     }
 
-    template <template <typename> typename Vector, template <typename> typename Matrix, int num, int den>
+    template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper, int num, int den>
     void solve(
-        Matrix<ValueStruct<RealType<mpq_class>, false, num, den>> &payoff_matrix, 
-        Vector<RealType<mpq_class>> &row_strategy, 
-        Vector<RealType<mpq_class>> &col_strategy)
+        Matrix<ValueStruct<Wrapper<mpq_class>, false, num, den>> &payoff_matrix,
+        Vector<Wrapper<mpq_class>> &row_strategy,
+        Vector<Wrapper<mpq_class>> &col_strategy)
     {
         const size_t rows = payoff_matrix.rows;
         const size_t cols = payoff_matrix.cols;
         const size_t entries = rows * cols;
 
-        mpq_t *row_payoff_data = new mpq_t[entries];
-        mpq_t *col_payoff_data = new mpq_t[entries];
-        for (size_t i = 0; i < entries; ++i) {
-            mpq_init(row_payoff_data[i]);
-            mpq_init(col_payoff_data[i]);
+        // mpq_t *row_payoff_data = new mpq_t[entries];
+        // mpq_t *col_payoff_data = new mpq_t[entries];
+        std::vector<mpq_t *> rpd{entries}, cpd{entries};
 
-            mpq_set(row_payoff_data[i], payoff_matrix[i].get_row_value().unwrap().get_mpq_t());
-            mpq_set(col_payoff_data[i], payoff_matrix[i].get_col_value().unwrap().get_mpq_t());
+        for (size_t i = 0; i < entries; ++i)
+        {
+            // mpq_init(row_payoff_data[i]);
+            // mpq_init(col_payoff_data[i]);
+
+            // mpq_set(row_payoff_data[i], payoff_matrix[i].get_row_value().unwrap().get_mpq_t());
+            // mpq_set(col_payoff_data[i], payoff_matrix[i].get_col_value().unwrap().get_mpq_t());
+            rpd[i] = reinterpret_cast<mpq_t *>(&payoff_matrix[i].row_value);
+            cpd[i] = reinterpret_cast<mpq_t *>(&payoff_matrix[i].col_value);
         }
 
         mpz_t *row_solution_data = new mpz_t[rows + 2];
@@ -43,7 +48,9 @@ namespace LRSNash
             mpz_init(col_solution_data[col_idx]);
         }
 
-        solve_gmp(rows, cols, row_payoff_data, col_payoff_data, row_solution_data, col_solution_data);
+        // solve_gmp(rows, cols, row_payoff_data, col_payoff_data, row_solution_data, col_solution_data);
+        solve_gmp_pointer(rows, cols, rpd.data(), cpd.data(), row_solution_data, col_solution_data);
+        // use pointer version since otherwise we'd have to copy all the mpq_t's
 
         mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
@@ -56,6 +63,38 @@ namespace LRSNash
         }
         delete[] row_solution_data;
         delete[] col_solution_data;
+    }
+
+    template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper, int num, int den>
+    void solve(
+        Matrix<ValueStruct<Wrapper<mpq_class>, true, num, den>> &payoff_matrix,
+        Vector<Wrapper<mpq_class>> &row_strategy,
+        Vector<Wrapper<mpq_class>> &col_strategy)
+    {
+        const size_t rows = payoff_matrix.rows;
+        const size_t cols = payoff_matrix.cols;
+        const size_t entries = rows * cols;
+
+        // make new constant sum functions in lrsnashlib
+    }
+
+    template <
+        template <typename...> typename Vector,
+        template <typename...> typename Matrix,
+        template <typename> typename Wrapper,
+        typename T, int num, int den>
+    void solve(
+        Matrix<ValueStruct<Wrapper<T>, false, num, den>> &payoff_matrix,
+        Vector<Wrapper<T>> &row_strategy,
+        Vector<Wrapper<T>> &col_strategy,
+        const size_t discrete = 100)
+    {
+        const size_t rows = payoff_matrix.rows;
+        const size_t cols = payoff_matrix.cols;
+        const size_t entries = rows * cols;
+
+        // normalize payoff_matrix to be [0, 1]
+        // use 128 bit
     }
 
 }; // End namespace LRSNash

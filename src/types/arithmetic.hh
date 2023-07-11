@@ -3,6 +3,9 @@
 template <typename T>
 struct ArithmeticType
 {
+
+    using type = T;
+
     T value{};
 
     constexpr ArithmeticType() {}

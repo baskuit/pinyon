@@ -44,8 +44,6 @@ public:
     };
     struct ChanceStats : AbstractAlgorithm<Model>::ChanceStats
     {
-        // std::vector<typename Types::Observation> chance_actions;
-        // std::vector<typename Types::Probability> chance_strategy; TODO are these used?
     };
 
     const int max_depth = -1;
@@ -117,7 +115,7 @@ public:
         // std::cout << "matrix: " << std::endl;
         // stats.nash_payoff_matrix.print();
 
-        // LRSNash::solve_matrix<typename Types::Real>(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
+        LRSNash::solve(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
         // std::cout << "strats: " << std::endl;
         // math::print(stats.row_solution);
         // math::print(stats.col_solution);

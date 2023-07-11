@@ -57,11 +57,11 @@ public:
         W::Search *col_search = searches[static_cast<int>(col_action)]->clone();
 
         W::StateWrapper<_State> state_copy = (*init_state_generator)(init_state_seed);
-        PairDouble row_first_payoff = play_vs(row_search, col_search, state_copy, model);
+        ValueStruct<double, false> row_first_payoff = play_vs(row_search, col_search, state_copy, model);
         state_copy = (*init_state_generator)(init_state_seed);
-        PairDouble col_first_payoff = play_vs(col_search, row_search, state_copy, model);
+        ValueStruct<double, false> col_first_payoff = play_vs(col_search, row_search, state_copy, model);
 
-        PairDouble avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
+        ValueStruct<double, false> avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
         this->payoff = typename Types::Value{avg_payoff.get_row_value()};
         this->is_terminal = true;
         this->obs = typename Types::Observation{device.random_int(1 << 16)};
@@ -70,7 +70,7 @@ public:
         delete col_search;
     }
 
-    PairDouble play_vs(
+    ValueStruct<double, false> play_vs(
         W::Search *row_search,
         W::Search *col_search,
         W::State &state,
@@ -89,6 +89,6 @@ public:
             state.apply_actions(row_idx, col_idx);
             state.get_actions();
         }
-        return PairDouble{state.row_payoff(), state.col_payoff()};
+        return ValueStruct<double, false>{state.row_payoff(), state.col_payoff()};
     }
 };

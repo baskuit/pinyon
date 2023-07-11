@@ -101,24 +101,24 @@ public:
     }
 };
 
-template <typename U, bool IS_CONSTANT_SUM, int NUM, int DEN>
-class Matrix<ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN>> : public std::vector<ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN>>
+template <typename T, bool IS_CONSTANT_SUM, int NUM, int DEN>
+class Matrix<ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN>> : public std::vector<ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN>>
 {
 public:
     size_t rows, cols;
 
     Matrix(){};
-    Matrix(size_t rows, size_t cols) : std::vector<ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN>>(rows * cols), rows(rows), cols(cols)
+    Matrix(size_t rows, size_t cols) : std::vector<ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN>>(rows * cols), rows(rows), cols(cols)
     {
     }
 
-    operator Matrix<PairDouble>() const
+    operator Matrix<ValueStruct<double, false>>() const
     {
-        Matrix<PairDouble> output{this->rows, this->cols};
+        Matrix<ValueStruct<double, false>> output{this->rows, this->cols};
         for (int entry_idx = 0; entry_idx < rows * cols; ++entry_idx)
         {
             auto value = (*this)[entry_idx];
-            output[entry_idx] = PairDouble{static_cast<double>(value.get_row_value()), static_cast<double>(value.get_col_value())};
+            output[entry_idx] = ValueStruct<double, false>{static_cast<double>(value.get_row_value()), static_cast<double>(value.get_col_value())};
         }
         return output;
     }
@@ -130,7 +130,7 @@ public:
         this->resize(rows * cols);
     }
 
-    void fill(size_t rows, size_t cols, ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> value)
+    void fill(size_t rows, size_t cols, ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> value)
     {
         this->rows = rows;
         this->cols = cols;
@@ -139,38 +139,38 @@ public:
         std::fill(this->begin(), this->begin() + n, value);
     }
 
-    ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> &get(size_t i, size_t j)
+    ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> &get(size_t i, size_t j)
     {
         return (*this)[i * cols + j];
     }
 
-    Matrix operator*(ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> t) const
+    Matrix operator*(ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> t) const
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> a)
+                       [t](ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> a)
                        { return a * t; });
         return output;
     }
 
-    Matrix operator+(ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> t) const
+    Matrix operator+(ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> t) const
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> a)
+                       [t](ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> a)
                        { return a + t; });
         return output;
     }
 
-    template <typename T>
-    Matrix operator+(T t) const
+    template <typename U>
+    Matrix operator+(U t) const
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](T a)
+                       [t](U a)
                        { return a + t; });
         return output;
     }
@@ -180,12 +180,12 @@ public:
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, t.begin(), output.begin(),
-                       [](ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> a, ValueStruct<U, IS_CONSTANT_SUM, NUM, DEN> b)
+                       [](ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> a, ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> b)
                        { return a + b; });
         return output;
     }
 
-    U max() const
+    T max() const
     {
         const size_t entries = rows * cols;
         auto max_row = std::max_element(this->begin(), this->begin() + entries,
@@ -201,7 +201,7 @@ public:
         return std::max(max_row->get_row_value(), max_col->get_col_value());
     }
 
-    U min() const
+    T min() const
     {
         const size_t entries = rows * cols;
         auto min_row = std::min_element(this->begin(), this->begin() + entries,
