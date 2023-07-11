@@ -86,6 +86,19 @@ public:
         const size_t entries = rows * cols;
         return *std::min_element(this->begin(), this->begin() + entries);
     }
+
+    void print() const
+    {
+        for (size_t row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            for (size_t col_idx = 0; col_idx < cols; ++col_idx)
+            {
+                char str[10];
+                std::cout << (*this)[row_idx * cols + col_idx].row_value.get_str() << ' ';
+            }
+            std::cout << std::endl;
+        }
+    }
 };
 
 template <typename U, bool IS_CONSTANT_SUM, int NUM, int DEN>

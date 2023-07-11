@@ -34,6 +34,8 @@ struct RealType : ArithmeticType<T>
     }
 };
 
+using PairRat = ValueStruct<RealType<mpq_class>, false, 0, 1>;
+
 template <>
 struct RealType<mpq_class> : ArithmeticType<mpq_class>
 {

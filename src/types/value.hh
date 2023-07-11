@@ -6,7 +6,7 @@ template <typename Real, bool _IS_CONSTANT_SUM, int PAYOFF_SUM_NUM = 1, int PAYO
 struct ValueStruct
 {
     static constexpr bool IS_CONSTANT_SUM{_IS_CONSTANT_SUM};
-    static constexpr Real PAYOFF_SUM{Rational{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN}};
+    static constexpr Rational<> PAYOFF_SUM{Rational{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN}};
     Real row_value{Rational{0}};
     Real col_value{Rational{0}};
 

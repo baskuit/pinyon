@@ -159,4 +159,38 @@ namespace math
         return (row_best_response - row_payoff) + (col_best_response - col_payoff);
     }
 
+    template <typename Real, typename Value, template <typename> typename Vector, template <typename> typename Matrix>
+    Real EXPL(
+        Matrix<Value> &value_matrix,
+        Vector<Real> &row_strategy,
+        Vector<Real> &col_strategy)
+    {
+        const int rows = value_matrix.rows;
+        const int cols = value_matrix.cols;
+
+        Real row_payoff{Rational<>{0}}, col_payoff{Rational<>{0}};
+        Vector<Real> row_response{rows}, col_response{cols};
+
+        size_t data_idx = 0;
+        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
+            {
+                const Value &value = value_matrix[data_idx];
+                const Real u{value.get_row_value() * col_strategy[col_idx]};
+                const Real v{value.get_col_value() * row_strategy[row_idx]};
+                row_payoff += u * row_strategy[row_idx];
+                col_payoff += v * col_strategy[col_idx];
+                row_response[row_idx] += u;
+                col_response[col_idx] += v;
+                ++data_idx;
+            }
+        }
+
+        Real row_best_response{*std::max_element(row_response.begin(), row_response.end())};
+        Real col_best_response{*std::max_element(col_response.begin(), col_response.end())};
+
+        return (row_best_response - row_payoff) + (col_best_response - col_payoff);
+    }
+
 } // end 'math'

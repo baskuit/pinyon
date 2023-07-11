@@ -32,9 +32,33 @@ public:
 
     using BanditAlgorithm::BanditAlgorithm;
 
-    TreeBandit (BanditAlgorithm& base) : BanditAlgorithm{base} {}
+    TreeBandit(BanditAlgorithm &base) : BanditAlgorithm{base} {}
 
-    void run(
+    size_t run(
+        size_t duration_ms,
+        typename Types::PRNG &device,
+        typename Types::State &state,
+        typename Types::Model &model,
+        MatrixNode<TreeBandit> &matrix_node)
+    {
+        auto start = std::chrono::high_resolution_clock::now();
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        typename Types::ModelOutput inference;
+        size_t iterations = 0;
+        for (; duration.count() < duration_ms; ++iterations)
+        {
+            typename Types::State state_copy = state;
+            state_copy.reseed(device);
+            this->run_iteration(device, state_copy, model, &matrix_node, inference);
+
+            end = std::chrono::high_resolution_clock::now();
+            duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        }
+        return iterations;
+    }
+
+    void run_for_iterations(
         const size_t iterations,
         typename Types::PRNG &device,
         const typename Types::State &state,
@@ -48,28 +72,6 @@ public:
             typename Types::State state_copy = state;
             state_copy.reseed(device);
             this->run_iteration(device, state_copy, model, &matrix_node, inference);
-        }
-    }
-
-    void run_for_duration(
-        size_t duration_us,
-        typename Types::PRNG &device,
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixNode<TreeBandit> &matrix_node)
-    {
-        auto start = std::chrono::high_resolution_clock::now();
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        typename Types::ModelOutput inference;
-        while (duration.count() < duration_us)
-        {
-            typename Types::State state_copy = state;
-            state_copy.reseed(device);
-            this->run_iteration(device, state_copy, model, &matrix_node, inference);
-
-            end = std::chrono::high_resolution_clock::now();
-            duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         }
     }
 
@@ -115,11 +117,14 @@ protected:
         }
         else
         {
-            if constexpr (MatrixNode<TreeBandit>::STORES_VALUE) {
+            if constexpr (MatrixNode<TreeBandit>::STORES_VALUE)
+            {
                 matrix_node->get_value(inference.value);
-            } else {
+            }
+            else
+            {
                 inference.value = state.payoff;
-            }  
+            }
             return matrix_node;
         }
     }
@@ -164,11 +169,14 @@ protected:
         }
         else
         {
-            if constexpr (MatrixNode<TreeBandit>::STORES_VALUE) {
+            if constexpr (MatrixNode<TreeBandit>::STORES_VALUE)
+            {
                 matrix_node->get_value(inference.value);
-            } else {
+            }
+            else
+            {
                 inference.value = state.payoff;
-            }  
+            }
             return matrix_node;
         }
     }

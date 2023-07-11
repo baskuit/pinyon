@@ -82,7 +82,7 @@ public:
         const int rows = state.row_actions.size();
         const int cols = state.col_actions.size();
 
-        stats.nash_payoff_matrix.fill(rows, cols, typename Types::Value{Rational<>{0}, Rational<>{0}});
+        stats.nash_payoff_matrix.fill(rows, cols);
         stats.row_solution.fill(rows);
         stats.col_solution.fill(cols);
 
@@ -114,13 +114,13 @@ public:
         }
 
         // solve
-        std::cout << "matrix: " << std::endl;
-        stats.nash_payoff_matrix.print();
+        // std::cout << "matrix: " << std::endl;
+        // stats.nash_payoff_matrix.print();
 
-        LRSNash::solve_matrix<Types>(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
-        std::cout << "strats: " << std::endl;
-        math::print(stats.row_solution);
-        math::print(stats.col_solution);
+        // LRSNash::solve_matrix<typename Types::Real>(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
+        // std::cout << "strats: " << std::endl;
+        // math::print(stats.row_solution);
+        // math::print(stats.col_solution);
 
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
