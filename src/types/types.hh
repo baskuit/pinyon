@@ -76,21 +76,23 @@ struct ObservationHashType
 {
     std::size_t operator()(const ObservationType<T> &t) const
     {
-        if constexpr (std::is_same<T, std::array<uint8_t, 64>>::value == true)
+
+        return std::hash(static_cast<T>(t));
+    }
+};
+
+template <>
+struct ObservationHashType<std::array<uint8_t, 64>>
+{
+    std::size_t operator()(const ObservationType<std::array<uint8_t, 64>> &t) const
+    {
+        const uint64_t *a = reinterpret_cast<const uint64_t *>(static_cast<std::array<uint8_t, 64>>(t).data());
+        size_t hash = 0;
+        for (int i = 0; i < 8; ++i)
         {
-            const std::array<uint8_t, 64> x = t;
-            const uint64_t *a = reinterpret_cast<const uint64_t *>(x.data());
-            size_t hash = 0;
-            for (int i = 0; i < 8; ++i)
-            {
-                hash ^= a[i];
-            }
-            return hash;
+            hash ^= a[i];
         }
-        else
-        {
-            return std::hash(static_cast<T>(t));
-        }
+        return hash;
     }
 };
 
@@ -163,7 +165,8 @@ using RatTypes = DefaultTypes<
     mpq_class,
     int,
     int,
-    mpq_class>;
+    mpq_class,
+    ConstantSum<1, 1>::Value>;
 
 template <size_t LogSize>
 using BattleTypes = DefaultTypes<

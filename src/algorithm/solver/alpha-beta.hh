@@ -124,7 +124,7 @@ public:
                     if (p_ij < o_ij)
                     {
                         // 12: u(si, j ) ← double-oracle(si, j , pi, j, oi, j )
-                        typename Types::Real u_ij = 0;
+                        typename Types::Real u_ij = typename Types::Rational{0};
                         CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
 
                         const typename Types::Action row_action = state.row_actions[row_idx];
@@ -234,7 +234,7 @@ public:
             // We don't perform serialized alpha-beta
             // Furthermore, I'm not sure what this step does that lines 7, 8 in double_oracle don't
 
-            typename Types::Real expected_o_payoff = 0;
+            typename Types::Real expected_o_payoff = typename Types::Rational{0};
             for (int j = 0; j < J.size(); ++j)
             {
                 expected_o_payoff += col_strategy[j] * o.get(row_idx, J[j]);
@@ -264,7 +264,7 @@ public:
                     {
 
                         // 11: u(s_ij) = double_oracle (s_ij, p_ij, o_ij)
-                        typename Types::Real u_ij = 0;
+                        typename Types::Real u_ij = typename Types::Rational{0};
                         CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
 
                         const typename Types::Action row_action = state.row_actions[row_idx];
@@ -314,7 +314,7 @@ public:
             }
 
             // 13 - 14
-            typename Types::Real expected_row_payoff = 0;
+            typename Types::Real expected_row_payoff = typename Types::Rational{0};
             for (int j = 0; j < J.size(); ++j)
             {
                 expected_row_payoff += col_strategy[j] * o.get(row_idx, J[j]);
@@ -326,7 +326,7 @@ public:
             }
         }
 
-        std::pair<int, double> pair{new_action_idx, best_response_row};
+        std::pair<int, typename Types::Real> pair{new_action_idx, best_response_row};
         return pair;
     }
 
@@ -349,7 +349,7 @@ public:
         {
             bool cont = false;
 
-            typename Types::Real expected_p_payoff = 0;
+            typename Types::Real expected_p_payoff = typename Types::Rational{0};
             for (int i = 0; i < I.size(); ++i)
             {
                 expected_p_payoff += row_strategy[i] * p.get(I[i], col_idx);
@@ -374,7 +374,7 @@ public:
                     }
                     else
                     {
-                        typename Types::Real u_ij = 0;
+                        typename Types::Real u_ij = typename Types::Rational{0};
                         CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
 
                         const typename Types::Action row_action = state.row_actions[row_idx];
@@ -412,7 +412,7 @@ public:
                 continue;
             }
 
-            typename Types::Real expected_col_payoff = 0;
+            typename Types::Real expected_col_payoff = typename Types::Rational{0};
             for (int i = 0; i < I.size(); ++i)
             {
                 expected_col_payoff += row_strategy[i] * p.get(I[i], col_idx);
@@ -424,7 +424,7 @@ public:
             }
         }
 
-        std::pair<int, double> pair{new_action_idx, best_response_col};
+        std::pair<int, typename Types::Real> pair{new_action_idx, best_response_col};
         return pair;
     }
 
@@ -432,7 +432,8 @@ private:
     template <typename T>
     bool fuzzy_equals(T x, T y)
     {
-        return epsilon > std::abs((x - y).unwrap());
+        // return epsilon > std::abs((x - y).unwrap());
+        return x == y; // TODO
     }
 
     typename Types::Real solve_submatrix(
@@ -450,15 +451,15 @@ private:
         {
             for (const int col_idx : matrix_node->stats.J)
             {
-                submatrix[entry_idx++] = matrix_node->stats.p.get(row_idx, col_idx);
+                submatrix[entry_idx++] = typename Types::Value{matrix_node->stats.p.get(row_idx, col_idx)};
                 // assert(matrix_node->stats.p.get(row_idx, col_idx) == matrix_node->stats.o.get(row_idx, col_idx));
                 // we can use either p or q here since the substage is solved
             }
         }
 
-        LibGambit::solve_matrix<Types>(submatrix, row_strategy, col_strategy);
+        LRSNash::solve(submatrix, row_strategy, col_strategy);
 
-        typename Types::Real value = 0;
+        typename Types::Real value = typename Types::Rational{0};
         for (int row_idx = 0; row_idx < submatrix.rows; ++row_idx)
         {
             for (int col_idx = 0; col_idx < submatrix.cols; ++col_idx)
