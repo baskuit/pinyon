@@ -1,3 +1,84 @@
+# Types Struct
+As alluded earlier, a TypeList object is just a struct with some alias declarations.  All the `using` declarations found in the `DefaultTypes` template basically define a minimal 'standard' that any other TypeList must satisfy.
+
+### Required
+* Each of the names must be defined at some point in the derivation of the `::Types` helper in order for all features of the library to compile.
+* Each of the type and template aliases must have a certain, usually minimal, interface. These are described in turn further below.
+
+### Not Required
+
+Some of the basic aliases like `Action` are not defined to be exactly what is provided in the template parameter list for `DefaultTypes`. Instead they are wrapped e.g. `using Action = ActionType<_Action>;`
+The benefits of using strong typing for certain primitives are not absolutely necessary to write working search code. More to the case against wrapping, I don't take it for granted that these abstracts are at no cost to run-time performance.
+For this reason the library functions will work just fine if raw types are used instead.
+Also, strictly speaking the required types do not have to be defined all at once at this stage. But the user will have to include the declarations elsewhere if they choose to omit them in their TypeList.
+
+# `DefaultTypes`
+
+The alias declarations below are organized for this dis. Loosely speaking, the are the wrapped types, 
+```cpp
+template <
+    typename _Real,
+    typename _Action,
+    typename _Observation,
+    typename _Probability,
+
+    template <typename...> typename _Value = PairReal,
+    template <typename...> typename _Vector = Vector,
+    template <typename...> typename _Matrix = Matrix,
+
+    typename _Mutex = std::mutex,
+    typename _Seed = uint64_t,
+    typename _PRNG = prng,
+    typename _Rational = Rational<int>>
+struct Types
+{
+    using Real = RealType<_Real>;
+    using Action = ActionType<_Action>;
+    using Observation = ObservationType<_Observation>;
+    using Probability = ProbabilityType<_Probability>;
+
+    using Value = _Value<Real>;
+    using VectorReal = _Vector<Real>;
+    using VectorAction = _Vector<Action>;
+    using VectorInt = _Vector<int>;
+    using MatrixReal = _Matrix<Real>;
+    using MatrixInt = _Matrix<int>;
+    using MatrixValue = _Matrix<Value>;
+    template <typename... Args>
+    using Vector = _Vector<Args...>;
+    template <typename... Args>
+    using Matrix = _Matrix<Args...>;
+
+    using ObservationHash = ObservationHashType<_Observation>;
+    using Mutex = std::mutex;
+    using Seed = _Seed;
+    using PRNG = _PRNG;
+    using Rational = _Rational;
+};
+```
+
+## Wrapped Primitives
+
+### `Wrapper<T>`
+
+All the types in this group are derived from `Wrapper<T>`. If these types were classes, we could derive `Wrapper<T> : T` the wrapper and this would automatically give the wrapper the same data as the `T` but also allow us to use the methods. The usage of `operator[](size_t)` in the default Matrix implementation is one example of this. However primitive types cannot be derived from, so instead 
+> We store the `T` data as a member  (`T Wrapper<T>::value`) of the wrapper class.
+
+* Implicit conversion from `T` to `Wrapper<T>` is allowed
+
+* 
+
+The Real and Probability
+### `ArithmeticType<T>`
+
+### `RealType` and `ProbabilityType`
+
+
+## Template Aliases
+
+## Other Types
+
+
 # Why Use Types Struct
 
 All search functions and higher level families of classes will make use of a variety of primitive and object types. The State family needs a small type to represent the actions the players, and a type to act as the observation or signature of a transition, so that it can be identified. The search algorithms need mathematical types like vectors and matrices, and so on.
@@ -31,7 +112,6 @@ state.apply_actions (row_idx, col_idx); // wrong, but legal since Action = int
 A `Types` struct is expected to have the following aliases defined
 
 Arithmetic:
-
 * `Rational`
 * `Real`
 * `Float`
@@ -55,7 +135,6 @@ Data:
 * `MatrixInt`
 * `MatrixValue`
 
-# Static Cast strips
 
 The motivation and requirements of these type aliases are discussed below.
 
@@ -71,6 +150,10 @@ This is to prevent `int row_idx, col_idx` being accidentally misused e.g. `apply
 Implicit conversions from `T` to `Wrapped<T>` are allowed, but not the other way. The idea is that `row_actions[row_idx] = 0` is permissible (when `Action` is just `int`) is fine but accidental type mixing due to an implicit `Action` -> `int` -> `Observation` conversion is not possible.
 
 The `Action` type is merely the type of the inputs to the transition function `apply_actions(Action, Action)`. 
+
+* `Wrapped<T>`
+* `ArithmeticType`
+* ``
 
 ### Arithmetic
 
