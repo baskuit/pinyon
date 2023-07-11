@@ -2,24 +2,41 @@
 
 #include <gmpxx.h>
 
-template <typename Real, bool _IS_CONSTANT_SUM = false, int PAYOFF_SUM_NUM = 1, int PAYOFF_SUM_DEN = 1>
-struct ValueStruct;
+template <int PAYOFF_SUM_NUM, int PAYOFF_SUM_DEN>
+struct ConstantSum
+{
+    template <typename Real>
+    struct Value
+    {
+        static constexpr bool IS_CONSTANT_SUM{true};
+        static constexpr Rational<> PAYOFF_SUM{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN};
 
-template <typename Real, int PAYOFF_SUM_NUM, int PAYOFF_SUM_DEN>
-struct ValueStruct<Real, false, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN>
+        Real row_value{Rational<>{0}};
+
+        Value() {}
+        Value(const Real row_value) : row_value{row_value} {}
+
+        inline constexpr Real get_row_value() const
+        {
+            return row_value;
+        }
+        inline constexpr Real get_col_value() const
+        {
+            return Real{PAYOFF_SUM} - row_value;
+        }
+    };
+};
+
+template <typename Real>
+struct PairReal
 {
     static constexpr bool IS_CONSTANT_SUM{false};
+
     Real row_value{Rational<>{0}};
     Real col_value{Rational<>{0}};
 
-    ValueStruct() {}
-    ValueStruct(Real row_value, Real col_value) : row_value{row_value}, col_value{col_value} {}
-
-    template <typename T>
-    operator ValueStruct<T, false, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN>() const
-    {
-        return ValueStruct<T, false, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN>{static_cast<T>(row_value), static_cast<T>(col_value)};
-    }
+    PairReal() {}
+    PairReal(Real row_value, Real col_value) : row_value{row_value}, col_value{col_value} {}
 
     inline constexpr Real get_row_value() const
     {
@@ -29,63 +46,75 @@ struct ValueStruct<Real, false, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN>
     {
         return col_value;
     }
-    ValueStruct &operator+=(const ValueStruct &other)
+
+    PairReal &operator+=(const PairReal &other)
     {
         row_value += other.row_value;
         col_value += other.col_value;
         return *this;
     }
 
-    constexpr ValueStruct operator+(const ValueStruct other) const
+    constexpr PairReal operator+(const PairReal other) const
     {
-        return ValueStruct{row_value + other.row_value, col_value + other.col_value};
+        return PairReal{row_value + other.row_value, col_value + other.col_value};
     }
 
-    constexpr ValueStruct operator*(const Real val) const
+    constexpr PairReal operator*(const Real val) const
     {
-        return ValueStruct{row_value * val, col_value * val};
+        return PairReal{row_value * val, col_value * val};
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const ValueStruct &session)
+    friend std::ostream &operator<<(std::ostream &os, const PairReal &value)
     {
-        os << session.row_value << ',' << session.col_value;
+        os << value.row_value << ',' << value.col_value;
         return os;
     }
 };
 
-template <typename Real, int PAYOFF_SUM_NUM, int PAYOFF_SUM_DEN>
-struct ValueStruct<Real, true, PAYOFF_SUM_NUM, PAYOFF_SUM_DEN>
+template <template <typename> typename Wrapper>
+struct PairReal<Wrapper<mpq_class>>
 {
-    static constexpr bool IS_CONSTANT_SUM{true};
-    static constexpr Rational<> PAYOFF_SUM{PAYOFF_SUM_NUM, PAYOFF_SUM_DEN};
-    Real row_value{Rational{0}};
+    static constexpr bool IS_CONSTANT_SUM{false};
 
-    ValueStruct() {}
-    ValueStruct(const Real row_value) : row_value{row_value} {}
-    ValueStruct(const Real row_value, const Real col_value) : row_value{row_value} {}
+    mpq_class x{};
+    Wrapper<int> y;
+    Wrapper<mpq_class> row_value{Rational<>{0}};
+    Wrapper<mpq_class> col_value{Rational<>{0}};
 
-    inline constexpr Real get_row_value() const
+    PairReal() {}
+    PairReal(mpq_class row_value, mpq_class col_value) : row_value{row_value}, col_value{col_value} {}
+    // template <typename T>
+    // PairReal(Rational<T> row_value, Rational<T> col_value) : row_value{row_value}, col_value{col_value} {}
+
+    inline constexpr Wrapper<mpq_class> get_row_value() const
     {
         return row_value;
     }
-    inline constexpr Real get_col_value() const
+    inline constexpr Wrapper<mpq_class> get_col_value() const
     {
-        return Real{PAYOFF_SUM} - row_value;
+        return col_value;
     }
-    ValueStruct &operator+=(const ValueStruct &other)
+
+    PairReal<Wrapper<mpq_class>> &operator+=(const PairReal<Wrapper<mpq_class>> &other)
     {
         row_value += other.row_value;
+        col_value += other.col_value;
         return *this;
     }
-    // TODOTODOTODO fix exp3 it doesnt make sense to add constant sum Values!!!!
-    // constexpr ValueStruct operator*(const Real val) const
-    // {
-    //     return ValueStruct{row_value * val};
-    // }
 
-    friend std::ostream &operator<<(std::ostream &os, const ValueStruct &session)
+    PairReal<Wrapper<mpq_class>> operator+(const PairReal<Wrapper<mpq_class>> other) const
     {
-        os << session.row_value;
+        return PairReal<Wrapper<mpq_class>>{row_value + other.row_value, col_value + other.col_value};
+    }
+
+    PairReal<Wrapper<mpq_class>> operator*(const Wrapper<mpq_class> val) const
+    {
+        return PairReal<Wrapper<mpq_class>>{row_value * val, col_value * val};
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const PairReal<Wrapper<mpq_class>> &value)
+    {
+        os << value.row_value << ',' << value.col_value;
         return os;
     }
 };

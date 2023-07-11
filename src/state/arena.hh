@@ -24,7 +24,7 @@ public:
         const size_t iterations,
         W::StateWrapper<_State> (*init_state_generator)(typename Types::Seed),
         const _Model &model,
-        Containers&... containers) : iterations{iterations}, init_state_generator{init_state_generator}, model{model}
+        Containers &...containers) : iterations{iterations}, init_state_generator{init_state_generator}, model{model}
     {
         (std::transform(containers.begin(), containers.end(), std::back_inserter(searches),
                         [](auto &search)
@@ -57,12 +57,12 @@ public:
         W::Search *col_search = searches[static_cast<int>(col_action)]->clone();
 
         W::StateWrapper<_State> state_copy = (*init_state_generator)(init_state_seed);
-        ValueStruct<double, false> row_first_payoff = play_vs(row_search, col_search, state_copy, model);
+        PairReal<double> row_first_payoff = play_vs(row_search, col_search, state_copy, model);
         state_copy = (*init_state_generator)(init_state_seed);
-        ValueStruct<double, false> col_first_payoff = play_vs(col_search, row_search, state_copy, model);
+        PairReal<double> col_first_payoff = play_vs(col_search, row_search, state_copy, model);
 
-        ValueStruct<double, false> avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
-        this->payoff = typename Types::Value{avg_payoff.get_row_value()};
+        PairReal<double> avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
+        this->payoff = typename Types::Value{avg_payoff.get_row_value(), avg_payoff.get_col_value()};
         this->is_terminal = true;
         this->obs = typename Types::Observation{device.random_int(1 << 16)};
 
@@ -70,7 +70,7 @@ public:
         delete col_search;
     }
 
-    ValueStruct<double, false> play_vs(
+    PairReal<double> play_vs(
         W::Search *row_search,
         W::Search *col_search,
         W::State &state,
@@ -89,6 +89,6 @@ public:
             state.apply_actions(row_idx, col_idx);
             state.get_actions();
         }
-        return ValueStruct<double, false>{state.row_payoff(), state.col_payoff()};
+        return PairReal<double>{state.row_payoff(), state.col_payoff()};
     }
 };

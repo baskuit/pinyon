@@ -21,12 +21,7 @@ public:
 
     prng() : seed(std::random_device{}()), engine(std::mt19937{seed}) {}
     prng(std::mt19937::result_type seed) : seed(seed), engine(std::mt19937{seed}) {}
-
-    prng copy()
-    {
-        return prng(seed);
-    }
-
+    
     std::mt19937::result_type get_seed()
     {
         return seed;
@@ -55,13 +50,13 @@ public:
         return mpq_class{random_int(den + 1), den};
     }
 
-    template <typename Vector>
-    int sample_pdf(Vector &input, int k)
+    template <template <typename...> typename Vector, template <typename> typename Wrapper, typename T>
+    int sample_pdf(Vector<Wrapper<T>> &input, int k)
     {
         double p = uniform();
         for (int i = 0; i < k; ++i)
         {
-            p -= input[i].unwrap();
+            p -= static_cast<double>(input[i]);
             if (p <= 0)
             {
                 return i;
@@ -76,7 +71,7 @@ public:
         double p = uniform();
         for (int i = 0; i < input.size(); ++i)
         {
-            p -= input[i];
+            p -= static_cast<double>(input[i]);
             if (p <= 0)
             {
                 return i;

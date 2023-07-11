@@ -4,28 +4,19 @@ void random_matrix(prng device, const size_t rows, const size_t cols, const int 
 {
     const size_t entries = rows * cols;
 
-    // mpq_t *row_payoff_data = new mpq_t[entries];
-    // mpq_t *col_payoff_data = new mpq_t[entries];
-
     std::vector<mpq_class> rpd, cpd;
-    // std::vector<mpq_class> rpd;
 
-
-    Matrix<PairRat> matrix{rows, cols};
+    Matrix<PairReal<RealType<mpq_class>>> matrix{rows, cols};
 
     for (int i = 0; i < entries; ++i)
     {
-
         const int den = device.random_int(discrete) + 1;
         const int row_num = device.random_int(den + 1);
         const int col_num = den - row_num;
-        // mpq_init(row_payoff_data[i]);
-        // mpq_init(col_payoff_data[i]);
+
         rpd.emplace_back(mpz_class{row_num}, mpz_class{den});
         cpd.emplace_back(mpz_class{col_num}, mpz_class{den});
-        // mpq_set_ui(row_payoff_data[i], row_num, den);
-        // mpq_set_ui(col_payoff_data[i], col_num, den);
-        // std::cout << mpq_get_d(row_payoff_data[i]) << ' ' << mpq_get_d(col_payoff_data[i])  << std::endl;
+
         matrix[i].row_value = mpq_class{rpd[i]};
         matrix[i].col_value = mpq_class{cpd[i]};
     }
@@ -38,22 +29,8 @@ void random_matrix(prng device, const size_t rows, const size_t cols, const int 
 
     if (expl_ > 0)
     {
-        // matrix.print();
-        std::cout << "expl: " << expl.unwrap().get_str() << std::endl;
-
-        // for (int row_idx = 0; row_idx < rows + 2; ++row_idx)
-        // {
-        //     std::cout << mpz_get_ui(row_solution_data[row_idx]) << ' ';
-        // }
-        // std::cout << std::endl;
-        // for (int col_idx = 0; col_idx < cols + 2; ++col_idx)
-        // {
-        //     std::cout << mpz_get_ui(col_solution_data[col_idx]) << ' ';
-        // }
-        // std::cout << std::endl;
         exit(1);
     }
-
 }
 
 int main()

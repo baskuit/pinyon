@@ -25,7 +25,7 @@ public:
         typename Types::VectorInt col_visits;
 
         int visits = 0;
-        typename Types::Value value_total{0};
+        typename Types::Value value_total{0, 0};
     };
 
     struct ChanceStats

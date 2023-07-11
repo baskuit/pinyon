@@ -1,8 +1,9 @@
 #pragma once
 
+#include <types/value.hh>
+
 #include <vector>
 #include <algorithm>
-#include <types/value.hh>
 
 template <typename T>
 class Matrix : public std::vector<T>
@@ -101,24 +102,24 @@ public:
     }
 };
 
-template <typename T, bool IS_CONSTANT_SUM, int NUM, int DEN>
-class Matrix<ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN>> : public std::vector<ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN>>
+template <typename T>
+class Matrix<PairReal<T>> : public std::vector<PairReal<T>>
 {
 public:
     size_t rows, cols;
 
     Matrix(){};
-    Matrix(size_t rows, size_t cols) : std::vector<ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN>>(rows * cols), rows(rows), cols(cols)
+    Matrix(size_t rows, size_t cols) : std::vector<PairReal<T>>(rows * cols), rows(rows), cols(cols)
     {
     }
 
-    operator Matrix<ValueStruct<double, false>>() const
+    operator Matrix<PairReal<double>>() const
     {
-        Matrix<ValueStruct<double, false>> output{this->rows, this->cols};
+        Matrix<PairReal<T>> output{this->rows, this->cols};
         for (int entry_idx = 0; entry_idx < rows * cols; ++entry_idx)
         {
             auto value = (*this)[entry_idx];
-            output[entry_idx] = ValueStruct<double, false>{static_cast<double>(value.get_row_value()), static_cast<double>(value.get_col_value())};
+            output[entry_idx] = PairReal<T>{static_cast<double>(value.get_row_value()), static_cast<double>(value.get_col_value())};
         }
         return output;
     }
@@ -130,7 +131,7 @@ public:
         this->resize(rows * cols);
     }
 
-    void fill(size_t rows, size_t cols, ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> value)
+    void fill(size_t rows, size_t cols, PairReal<T> value)
     {
         this->rows = rows;
         this->cols = cols;
@@ -139,27 +140,27 @@ public:
         std::fill(this->begin(), this->begin() + n, value);
     }
 
-    ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> &get(size_t i, size_t j)
+    PairReal<T> &get(size_t i, size_t j)
     {
         return (*this)[i * cols + j];
     }
 
-    Matrix operator*(ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> t) const
+    Matrix operator*(PairReal<T> t) const
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> a)
+                       [t](PairReal<T> a)
                        { return a * t; });
         return output;
     }
 
-    Matrix operator+(ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> t) const
+    Matrix operator+(PairReal<T> t) const
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> a)
+                       [t](PairReal<T> a)
                        { return a + t; });
         return output;
     }
@@ -180,7 +181,7 @@ public:
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, t.begin(), output.begin(),
-                       [](ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> a, ValueStruct<T, IS_CONSTANT_SUM, NUM, DEN> b)
+                       [](PairReal<T> a, PairReal<T> b)
                        { return a + b; });
         return output;
     }

@@ -4,7 +4,7 @@
 
 #include <types/types.hh>
 
-namespace   LRSNash
+namespace LRSNash
 {
 
     template <typename Real, template <typename> typename Vector, template <typename> typename Matrix>
@@ -12,9 +12,9 @@ namespace   LRSNash
     {
     }
 
-    template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper, int num, int den>
+    template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper>
     void solve(
-        Matrix<ValueStruct<Wrapper<mpq_class>, false, num, den>> &payoff_matrix,
+        Matrix<PairReal<Wrapper<mpq_class>>> &payoff_matrix,
         Vector<Wrapper<mpq_class>> &row_strategy,
         Vector<Wrapper<mpq_class>> &col_strategy)
     {
@@ -67,34 +67,11 @@ namespace   LRSNash
 
     template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper, int num, int den>
     void solve(
-        Matrix<ValueStruct<Wrapper<mpq_class>, true, num, den>> &payoff_matrix,
-        Vector<Wrapper<mpq_class>> &row_strategy,
-        Vector<Wrapper<mpq_class>> &col_strategy)
+        // Matrix<ConstantSum<num, den>>::template Value<Wrapper<mpq_class>> &payoff_matrix,
+        // Vector<Wrapper<mpq_class>> &row_strategy,
+        // Vector<Wrapper<mpq_class>> &col_strategy
+    )
     {
-        const size_t rows = payoff_matrix.rows;
-        const size_t cols = payoff_matrix.cols;
-        const size_t entries = rows * cols;
-
-        // make new constant sum functions in lrsnashlib
-    }
-
-    template <
-        template <typename...> typename Vector,
-        template <typename...> typename Matrix,
-        template <typename> typename Wrapper,
-        typename T, int num, int den>
-    void solve(
-        Matrix<ValueStruct<Wrapper<T>, false, num, den>> &payoff_matrix,
-        Vector<Wrapper<T>> &row_strategy,
-        Vector<Wrapper<T>> &col_strategy,
-        const size_t discrete = 100)
-    {
-        const size_t rows = payoff_matrix.rows;
-        const size_t cols = payoff_matrix.cols;
-        const size_t entries = rows * cols;
-
-        // normalize payoff_matrix to be [0, 1]
-        // use 128 bit
     }
 
 }; // End namespace LRSNash

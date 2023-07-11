@@ -1,17 +1,10 @@
 #pragma once
-#include <math.h>
-#include <assert.h>
-#include <stdexcept>
-#include <algorithm>
-#include <vector>
-#include <chrono>
 
 #include <types/rational.hh>
 #include <types/random.hh>
-#include <types/vector.hh>
-#include <types/value.hh>
-#include <types/matrix.hh>
+
 #include <cstdint>
+#include <math.h>
 
 using ActionIndex = int;
 
@@ -70,7 +63,6 @@ namespace math
         }
         std::cout << std::endl;
     }
-
 
     template <typename Real, typename Value, template <typename...> typename Vector, template <typename> typename Matrix>
     Real exploitability(

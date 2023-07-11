@@ -34,32 +34,13 @@ struct RealType : ArithmeticType<T>
     }
 };
 
-using PairRat = ValueStruct<RealType<mpq_class>, false, 0, 1>;
-
 template <>
 struct RealType<mpq_class> : ArithmeticType<mpq_class>
 {
     RealType() : ArithmeticType<mpq_class>{} {}
     RealType(const mpq_class &val) : ArithmeticType<mpq_class>{val} {}
     RealType(const ArithmeticType<mpq_class> val) : ArithmeticType<mpq_class>{val} {}
-    RealType(const Rational<> val) : ArithmeticType<mpq_class>{} {
-        this->value = mpq_class{val.p, val.q};
-        // this->value.canonicalize();
-    }
-    explicit operator mpq_class() const
-    {
-        return this->value;
-    }
-    RealType &operator=(const mpq_class &val)
-    {
-        this->value = val;
-        return *this;
-    }
-    RealType &operator=(const ArithmeticType<mpq_class> &val)
-    {
-        this->value = val.value;
-        return *this;
-    }
+    RealType(const Rational<> val) : ArithmeticType<mpq_class>{mpq_class{val.p, val.q}} {}
 };
 
 template <typename T>
@@ -68,11 +49,6 @@ struct ProbabilityType : ArithmeticType<T>
     constexpr ProbabilityType() : ArithmeticType<T>{1} {} // prob default init to 1 instead of 0
     constexpr ProbabilityType(T val) : ArithmeticType<T>{val} {}
     constexpr ProbabilityType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {}
-    constexpr ProbabilityType &operator=(const ProbabilityType &other)
-    {
-        this->value = other.value;
-        return *this;
-    }
 };
 
 template <>
@@ -82,11 +58,6 @@ struct ProbabilityType<mpq_class> : ArithmeticType<mpq_class>
     ProbabilityType(mpq_class val) : ArithmeticType<mpq_class>{val} {}
     ProbabilityType(const ArithmeticType<mpq_class> val) : ArithmeticType<mpq_class>{val} {}
     ProbabilityType(const Rational<> &val) : ArithmeticType<mpq_class>{mpq_class{val.p, val.q}} {}
-    ProbabilityType &operator=(const ProbabilityType &other)
-    {
-        this->value = other.value;
-        return *this;
-    }
 };
 
 template <typename T>
@@ -94,20 +65,9 @@ struct ObservationType : Wrapper<T>
 {
     constexpr ObservationType(const T &value) : Wrapper<T>{value} {}
     constexpr ObservationType() : Wrapper<T>{} {}
-    constexpr operator T() const
-    {
-        return Wrapper<T>::value;
-    }
     bool operator==(const ObservationType &other) const
     {
         return this->value == other.value;
-    }
-
-    // TODO only here for Pokemon logs
-    template <typename U, size_t size>
-    U *data()
-    {
-        return this->value.data();
     }
 };
 
@@ -148,122 +108,66 @@ TypeList
 */
 
 template <
-    typename _Rational,
     typename _Real,
-
     typename _Action,
     typename _Observation,
     typename _Probability,
 
-    typename _Seed,
-    typename _PRNG,
+    template <typename...> typename _Value = PairReal,
+    template <typename...> typename _Vector = Vector,
+    template <typename...> typename _Matrix = Matrix,
 
-    template <typename _R> typename _VectorReal,
-    template <typename _A> typename _VectorAction,
-    template <typename _I> typename _VectorInt,
-
-    template <typename _R> typename _MatrixReal,
-    template <typename _F> typename _MatrixFloat,
-    template <typename _I> typename _MatrixInt>
-struct Types
+    typename _Mutex = std::mutex,
+    typename _Seed = uint64_t,
+    typename _PRNG = prng,
+    typename _Rational = Rational<int>>
+struct DefaultTypes
 {
-    using Rational = _Rational;
     using Real = RealType<_Real>;
-
     using Action = ActionType<_Action>;
     using Observation = ObservationType<_Observation>;
-    using ObservationHash = ObservationHashType<_Observation>;
     using Probability = ProbabilityType<_Probability>;
 
+    using Value = _Value<Real>;
+    using VectorReal = _Vector<Real>;
+    using VectorAction = _Vector<Action>;
+    using VectorInt = _Vector<int>;
+    using MatrixReal = _Matrix<Real>;
+    using MatrixInt = _Matrix<int>;
+    using MatrixValue = _Matrix<Value>;
+    template <typename... Args>
+    using Vector = _Vector<Args...>;
+    template <typename... Args>
+    using Matrix = _Matrix<Args...>;
+
+    using ObservationHash = ObservationHashType<_Observation>;
+    using Mutex = std::mutex;
     using Seed = _Seed;
     using PRNG = _PRNG;
-
-    using Value = ValueStruct<Real, true>;
-
-    using VectorReal = _VectorReal<Real>;
-    using VectorAction = _VectorAction<Action>;
-    using VectorInt = _VectorInt<int>;
-
-    using MatrixReal = _MatrixReal<Real>;
-    using MatrixInt = _MatrixInt<int>;
-    using MatrixValue = Matrix<Value>;
-
-    using Strategy = VectorReal;
-    using Mutex = std::mutex;
+    using Rational = _Rational;
 };
 
-using SimpleTypes = Types<
-    Rational<int>,
+using SimpleTypes = DefaultTypes<
     double,
     int,
     int,
-    double,
-    uint64_t,
-    prng,
-    Vector,
-    Vector,
-    Vector,
-    Matrix,
-    Matrix,
-    Matrix>;
+    double>;
 
-using RandomTreeTypes = Types<
-    Rational<int>,
+using RandomTreeTypes = DefaultTypes<
     double,
     int,
     int,
-    double,
-    uint64_t,
-    prng,
-    Vector,
-    Vector,
-    Vector,
-    Matrix,
-    Matrix,
-    Matrix>;
+    double>;
 
-using RatTypes = Types<
-    Rational<int>,
+using RatTypes = DefaultTypes<
     mpq_class,
     int,
     int,
-    mpq_class,
-    uint64_t,
-    prng,
-    Vector,
-    Vector,
-    Vector,
-    Matrix,
-    Matrix,
-    Matrix>;
-
-using ArenaTypes = Types<
-    Rational<int>,
-    float,
-    uint8_t,
-    std::vector<uint8_t>, // train data here TODO
-    float,
-    uint64_t,
-    prng,
-    Vector,
-    A<9>::Array,
-    Vector,
-    Matrix,
-    Matrix,
-    Matrix>;
+    mpq_class>;
 
 template <size_t LogSize>
-using BattleTypes = Types<
-    Rational<int>,
+using BattleTypes = DefaultTypes<
     float,
     uint8_t,
     std::array<uint8_t, LogSize>,
-    float,
-    uint64_t,
-    prng,
-    Vector,
-    A<9>::Array,
-    Vector,
-    Matrix,
-    Matrix,
-    Matrix>;
+    float>;

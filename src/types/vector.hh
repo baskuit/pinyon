@@ -71,11 +71,5 @@ struct A
         {
             return std::array<T, MaxSize>::begin() + _size;
         }
-
-        template <typename U, template <typename U_> typename W>
-        U *data()
-        {
-            return reinterpret_cast<U *>(this->std::array<T, MaxSize>::data());
-        }
     };
 };
