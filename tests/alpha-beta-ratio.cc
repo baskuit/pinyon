@@ -39,21 +39,40 @@ struct Solve
 
 int main()
 {
-    size_t tries = 10;
+
+    std::vector<size_t> tries_vec;
+    tries_vec.resize(100);
+
+    RandomTreeGenerator generator{
+        prng{},
+        {1, 2, 3},
+        {2, 3},
+        {1, 2},
+        {Rational<>{0}},
+        tries_vec};
+
     double total_ratio = 0;
-    for (int i = 0; i < tries; ++i)
-    {
+    int tries = 0;
+
+    for (auto wrapped_state : generator) {
         uint64_t seed = prng{}.uniform_64();
         RandomTree<RatTypes> state{seed, 1, 3, 3, 2, 0};
         MonteCarloModel<RandomTree<RatTypes>> model{0};
         Solve<MonteCarloModel<RandomTree<RatTypes>>> solve{state, model};
 
         auto error = solve.root_ab.stats.row_value - solve.root_full.stats.payoff.get_row_value();
+        double error_ = static_cast<mpq_class>(error).get_d();
 
-        std::cout << "error: " << static_cast<mpq_class>(error).get_d() << std::endl;
+        if (error_ > 0)
+        {
+            std::cout << "seed: " << seed << " failed!" << std::endl;
+            exit(1);
+        }
 
         total_ratio += solve.root_ab.stats.matrix_node_count / (double)solve.root_full.stats.matrix_node_count;
+        ++tries;
     }
 
-    std::cout << total_ratio / tries << std::endl;
+    std::cout << "average node ratio: " << total_ratio / tries << std::endl;
+    std::cout << "tries: " << tries << std::endl;
 }

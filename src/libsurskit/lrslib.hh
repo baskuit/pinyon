@@ -74,18 +74,10 @@ namespace LRSNash
         const size_t rows = payoff_matrix.rows;
         const size_t cols = payoff_matrix.cols;
         const size_t entries = rows * cols;
-
-        // mpq_t *row_payoff_data = new mpq_t[entries];
-        // mpq_t *col_payoff_data = new mpq_t[entries];
         std::vector<mpq_t *> rpd{entries};
 
         for (size_t i = 0; i < entries; ++i)
         {
-            // mpq_init(row_payoff_data[i]);
-            // mpq_init(col_payoff_data[i]);
-
-            // mpq_set(row_payoff_data[i], payoff_matrix[i].get_row_value().unwrap().get_mpq_t());
-            // mpq_set(col_payoff_data[i], payoff_matrix[i].get_col_value().unwrap().get_mpq_t());
             rpd[i] = reinterpret_cast<mpq_t *>(&payoff_matrix[i].row_value);
         }
 
@@ -100,9 +92,7 @@ namespace LRSNash
             mpz_init(col_solution_data[col_idx]);
         }
 
-        // solve_gmp(rows, cols, row_payoff_data, col_payoff_data, row_solution_data, col_solution_data);
         solve_gmp_pointer_constant_sum(rows, cols, rpd.data(), row_solution_data, col_solution_data, 1, 1);
-        // use pointer version since otherwise we'd have to copy all the mpq_t's
 
         mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
