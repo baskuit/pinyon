@@ -94,8 +94,7 @@ public:
         {
             for (size_t col_idx = 0; col_idx < cols; ++col_idx)
             {
-                char str[10];
-                std::cout << (*this)[row_idx * cols + col_idx].row_value.get_str() << ' ';
+                std::cout << static_cast<double>((*this)[row_idx * cols + col_idx].row_value) << ' ';
             }
             std::cout << std::endl;
         }

@@ -219,6 +219,15 @@ public:
         std::vector<int> &I = matrix_node->stats.I;
         std::vector<int> &J = matrix_node->stats.J;
 
+        std::vector<int> sorted_col_idx {};
+        int max_idx = 0;
+        std::sort(J.begin(), J.end(), [&max_idx, &col_strategy](int col_idx_1, int col_idx_2) {
+            // TODO set max_idx to the highest index that has non-zero 
+            return col_strategy[col_idx_1] < col_strategy[col_idx_2];
+        });
+
+        
+
         // 1: BRvalue ← α
         typename Types::Real best_response_row = alpha;
         // 2: i BR ← null
@@ -227,8 +236,7 @@ public:
         // 3: for i = {1, . . . , n} do
         for (int row_idx = 0; row_idx < state.row_actions.size(); ++row_idx)
         {
-            bool cont = false;
-
+            bool skip_row_idx = false;
             // 4: pi,J ← alpha-betaMin(si,J , minval, maxval)
             // 5: oi,J ← alpha-betaMax (si,J , minval, maxval)
             // We don't perform serialized alpha-beta
@@ -243,26 +251,30 @@ public:
             // 6: for j ∈ J; y j > 0 ∧ pi, j < oi, j do
             for (int j = 0; j < J.size(); ++j)
             {
-                int col_idx = J[j];
+                const int col_idx = J[j];
                 typename Types::Real y = col_strategy[j];
 
                 typename Types::Real &p_ij = p.get(row_idx, col_idx);
                 typename Types::Real &o_ij = o.get(row_idx, col_idx);
-
                 if (y > 0 && p_ij < o_ij)
                 {
-                    // 7: p0 i, j ← max pi, j , BRvalue − P j0 ∈Jr{ j} y j0 · oi, j0
-                    const typename Types::Real p__ij = std::max(p_ij.unwrap(), ((best_response_row - expected_o_payoff + y * o_ij) / y).unwrap());
 
+                    // we are iterating over joint actions/entries here that remain unsolved
+
+                    // 7: p0 i, j ← max pi, j , BRvalue − P j0 ∈Jr{ j} y j0 · oi, j0
+                    const typename Types::Real p__ij = std::max(p_ij.unwrap(), ((best_response_row - expected_o_payoff + y * o_ij)).unwrap());
+                    const typename Types::Real p__ij_ = std::max(p_ij.unwrap(), ((best_response_row - expected_o_payoff + y * o_ij) / y).unwrap());
+
+                    bool skip = p__ij > o_ij;
+                    bool skip_ = p__ij_ > o_ij;
                     // 8: if p0 > oi, j then
                     if (p__ij > o_ij)
                     {
-                        cont = true;
+                        skip_row_idx = true;
                         break;
                     }
                     else
                     {
-
                         // 11: u(s_ij) = double_oracle (s_ij, p_ij, o_ij)
                         typename Types::Real u_ij = typename Types::Rational{0};
                         CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
@@ -286,14 +298,16 @@ public:
                             auto best_possible = (chance_node->stats.explored * -1 + 1) + u_ij;
                             if (best_possible < p__ij && chance_node->stats.explored < 1)
                             {
-                                // std::cout << "NIGGER" << std::endl;
-                                cont = true;
-                                break;
+                                skip_row_idx = true;
+                                // break;
                             }
                         }
 
                         // 12: pi, j ← u(si, j ); oi, j ← u(si, j)
-                        if (!cont)
+                        // p_ij = u_ij;
+                        // o_ij = u_ij;
+                        const typename Types::Probability unexplored = chance_node->stats.explored * -1 + 1;
+                        if (!skip_row_idx)
                         {
                             p_ij = u_ij;
                             o_ij = u_ij;
@@ -308,7 +322,7 @@ public:
             }
 
             // 9: continue with next i
-            if (cont)
+            if (skip_row_idx)
             {
                 continue;
             }
@@ -324,7 +338,7 @@ public:
                 new_action_idx = row_idx;
                 best_response_row = expected_row_payoff;
             }
-        }
+        } // end row action loop
 
         std::pair<int, typename Types::Real> pair{new_action_idx, best_response_row};
         return pair;
@@ -357,17 +371,21 @@ public:
 
             for (int i = 0; i < I.size(); ++i)
             {
-                int row_idx = I[i];
+                const int row_idx = I[i];
                 typename Types::Real x = row_strategy[i];
 
                 typename Types::Real &p_ij = p.get(row_idx, col_idx);
                 typename Types::Real &o_ij = o.get(row_idx, col_idx);
 
-                if (x > 0 && p_ij < o_ij)
+                const bool ok = p_ij < o_ij;
+                if (x > 0 && ok)
                 {
-                    const typename Types::Real o__ij = std::min((o_ij).unwrap(), ((best_response_col - expected_p_payoff + x * p_ij) / x).unwrap());
+                    const typename Types::Real o__ij = std::min((o_ij).unwrap(), ((best_response_col - expected_p_payoff + x * p_ij)).unwrap());
+                    const typename Types::Real o__ij_ = std::min((o_ij).unwrap(), ((best_response_col - expected_p_payoff + x * p_ij) / x).unwrap());
+                    bool skip = o__ij < p_ij;
+                    bool skip_ = o__ij_ < p_ij;
 
-                    if (o__ij < p_ij)
+                    if (skip)
                     {
                         cont = true;
                         break;
@@ -392,17 +410,21 @@ public:
 
                             chance_node->stats.matrix_node_count += matrix_node_next->stats.matrix_node_count - matrix_node_next->stats.matrix_node_count_last;
                             matrix_node_next->stats.matrix_node_count_last = matrix_node_next->stats.matrix_node_count;
-
-                            // auto worst_possible = u_ij;
-                            // if (worst_possible > o__ij) {
-                            //     cont = true;
-                            //     break;
-                            // }
                         }
 
                         // 12: pi, j ← u(si, j ); oi, j ← u(si, j)
                         p_ij = u_ij;
                         o_ij = u_ij;
+                        // if (!cont)
+                        // {
+                        //     p_ij = u_ij;
+                        //     o_ij = u_ij;
+                        // }
+                        // else
+                        // {
+                        //     p_ij = u_ij;
+                        //     o_ij = (chance_node->stats.explored * -1 + 1) + u_ij;
+                        // }
                     }
                 }
             }
@@ -433,7 +455,12 @@ private:
     bool fuzzy_equals(T x, T y)
     {
         // return epsilon > std::abs((x - y).unwrap());
-        return x == y; // TODO
+        mpq_ptr a = x.value.get_mpq_t();
+        mpq_ptr b = y.value.get_mpq_t();
+        mpq_canonicalize(a);
+        mpq_canonicalize(b);
+        bool answer = mpq_equal(a, b);
+        return answer; // TODO
     }
 
     typename Types::Real solve_submatrix(

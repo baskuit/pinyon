@@ -41,25 +41,27 @@ int main()
 {
 
     std::vector<size_t> tries_vec;
-    tries_vec.resize(100);
+    tries_vec.resize(1);
 
-    RandomTreeGenerator generator{
+    RandomTreeGenerator<RatTypes> generator{
         prng{},
-        {1, 2, 3},
-        {2, 3},
-        {1, 2},
+        {4},
+        {4},
+        {1},
         {Rational<>{0}},
-        tries_vec};
+        std::vector<size_t>(20, 0)};
 
     double total_ratio = 0;
     int tries = 0;
 
     for (auto wrapped_state : generator) {
         uint64_t seed = prng{}.uniform_64();
-        RandomTree<RatTypes> state{seed, 1, 3, 3, 2, 0};
         MonteCarloModel<RandomTree<RatTypes>> model{0};
-        Solve<MonteCarloModel<RandomTree<RatTypes>>> solve{state, model};
+        Solve<MonteCarloModel<RandomTree<RatTypes>>> solve{*wrapped_state.ptr, model};
 
+        auto v = static_cast<mpq_class>(solve.root_ab.stats.row_value).get_d();
+        auto vv = static_cast<mpq_class>(solve.root_full.stats.payoff.get_row_value()).get_d();
+        std::cout << "values: " << v << ' ' << vv << std::endl;
         auto error = solve.root_ab.stats.row_value - solve.root_full.stats.payoff.get_row_value();
         double error_ = static_cast<mpq_class>(error).get_d();
 

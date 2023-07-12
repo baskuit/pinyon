@@ -41,6 +41,9 @@ struct RealType<mpq_class> : ArithmeticType<mpq_class>
     RealType(const mpq_class &val) : ArithmeticType<mpq_class>{val} {}
     RealType(const ArithmeticType<mpq_class> val) : ArithmeticType<mpq_class>{val} {}
     RealType(const Rational<> val) : ArithmeticType<mpq_class>{mpq_class{val.p, val.q}} {}
+    explicit operator double() const {
+        return this->value.get_d();
+    }
 };
 
 template <typename T>
@@ -76,7 +79,6 @@ struct ObservationHashType
 {
     std::size_t operator()(const ObservationType<T> &t) const
     {
-
         return std::hash(static_cast<T>(t));
     }
 };

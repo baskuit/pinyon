@@ -55,11 +55,11 @@ namespace LRSNash
         mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            row_strategy.emplace_back(mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den});
+            row_strategy[row_idx] = mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            col_strategy.emplace_back(mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den});
+            col_strategy[col_idx] = mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den};
         }
         delete[] row_solution_data;
         delete[] col_solution_data;
@@ -97,11 +97,11 @@ namespace LRSNash
         mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            row_strategy.emplace_back(mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den});
+            row_strategy[row_idx] = mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            col_strategy.emplace_back(mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den});
+            col_strategy[col_idx] = mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den};
         }
         delete[] row_solution_data;
         delete[] col_solution_data;
