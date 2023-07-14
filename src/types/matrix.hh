@@ -6,6 +6,48 @@
 #include <algorithm>
 
 template <typename T>
+class DataMatrix : public std::vector<T>
+{
+public:
+    size_t rows, cols;
+
+    DataMatrix(){};
+    DataMatrix(size_t rows, size_t cols) : std::vector<T>(rows * cols), rows(rows), cols(cols)
+    {
+    }
+
+    template <typename U>
+    explicit DataMatrix(const DataMatrix<U> &matrix)
+    {
+        rows = matrix.rows;
+        cols = matrix.cols;
+        std::transform(matrix.begin(), matrix.end(), this->begin(), [](const U &element)
+                       { return static_cast<T>(element); });
+    }
+
+    void fill(size_t rows, size_t cols)
+    {
+        this->rows = rows;
+        this->cols = cols;
+        this->resize(rows * cols);
+    }
+
+    void fill(size_t rows, size_t cols, T value)
+    {
+        this->rows = rows;
+        this->cols = cols;
+        const size_t n = rows * cols;
+        this->resize(n);
+        std::fill(this->begin(), this->begin() + n, value);
+    }
+
+    T &get(size_t i, size_t j)
+    {
+        return (*this)[i * cols + j];
+    }
+};
+
+template <typename T>
 class Matrix : public std::vector<T>
 {
 public:

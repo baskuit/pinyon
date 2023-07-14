@@ -6,7 +6,7 @@ Computes the savings of serialized alpha beta
 
 */
 
-template <class Model>
+template <DoubleOracleModelConcept Model>
 struct Solve
 {
 
