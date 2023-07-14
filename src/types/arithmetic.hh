@@ -180,11 +180,11 @@ struct ArithmeticType : Wrapper<T>
         return this->value == other;
     }
 
-    template <typename U>
-    bool operator==(const Rational<U> &other) const
-    {
-        return this->value == other;
-    }
+    // template <typename U>
+    // bool operator==(const Rational<U> &other) const
+    // {
+    //     return this->value == other;
+    // }
 
     bool operator!=(const ArithmeticType &other) const
     {
@@ -199,7 +199,19 @@ struct ArithmeticType : Wrapper<T>
     template <typename U>
     bool operator!=(const Rational<U> &other) const
     {
-        return this->value != other;
+        if constexpr (std::is_same<T, mpq_class>::value)
+        {
+            mpq_ptr a = this->value.get_mpq_t();
+            mpq_ptr b = other.value.get_mpq_t();
+            mpq_canonicalize(a);
+            mpq_canonicalize(b);
+            bool answer = mpq_equal(a, b);
+            return answer;
+        }
+        else // TODO ugh
+        {
+            return this->value != other;
+        }
     }
 
     bool operator<(const ArithmeticType &other) const

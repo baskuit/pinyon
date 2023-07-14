@@ -68,7 +68,8 @@ namespace LRSNash
     }
 
     template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper>
-    void solve(
+    std::pair<Wrapper<mpq_class>, Wrapper<mpq_class>>
+    solve(
         Matrix<ConstantSum<1, 1>::Value<Wrapper<mpq_class>>> &payoff_matrix,
         Vector<Wrapper<mpq_class>> &row_strategy,
         Vector<Wrapper<mpq_class>> &col_strategy)
@@ -107,6 +108,11 @@ namespace LRSNash
         }
         delete[] row_solution_data;
         delete[] col_solution_data;
+
+        mpq_class row_payoff{mpz_class{col_solution_data[rows + 1]}, col_den};
+        mpq_class col_payoff{mpz_class{row_solution_data[cols + 1]}, row_den};
+
+        return {row_payoff, col_payoff};
     }
 
     template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper, int num, int den>

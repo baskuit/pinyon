@@ -1,4 +1,4 @@
-#include <libsurskit/gambit.hh>
+#include <libsurskit/lrslib.hh>
 #include <types/matrix.hh>
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
@@ -17,13 +17,17 @@ for Pruning in Simultaneous Move Games>
 */
 
 template <typename T>
-concept DoubleOracleModelConcept = requires(T obj) {
+concept DoubleOracleModelConcept = requires(T obj, typename T::Types::State &state) {
     typename T::Types;
     typename T::Types::ModelInput;
     typename T::Types::ModelOutput;
     // {
-    //     obj.get_inference(typename T::Types::State{}, typename T::Types::ModelOutput{})
+    //     obj.get_inference(
+    //         std::reference_wrapper(typename T::Types::State{}),
+    //         std::reference_wrapper(typename T::Types::ModelOutput{})
+    //     )
     // } -> std::same_as<void>;
+
 };
 
 template <DoubleOracleModelConcept Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
@@ -40,7 +44,6 @@ public:
 
     struct Data
     {
-        typename Types::Probability explored = typename Types::Rational{0};
         typename Types::Probability unexplored = typename Types::Rational{1};
 
         typename Types::Real alpha_explored, beta_explored;
@@ -93,6 +96,7 @@ public:
         typename Types::Real beta,
         int max_depth)
     {
+
         MatrixStats &stats = matrix_node->stats;
 
         typename Types::Real alpha_new;
@@ -128,6 +132,7 @@ public:
         while (!fuzzy_equals(alpha, beta) && true)
         {
 
+            // get entry values/bounds for newly expanded sub game, use last added actions
             const int latest_row_idx = I.back();
             const int latest_col_idx = J.back();
 
@@ -137,39 +142,35 @@ public:
             for (const int row_idx : I)
             {
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, latest_col_idx);
-                solved_exactly &= foo(state, model, chance_node, row_idx, latest_col_idx, stats.data_matrix.get(row_idx, latest_col_idx), stats.depth);
+                solved_exactly &= try_solve_chance_node(state, model, chance_node, row_idx, latest_col_idx, stats.data_matrix.get(row_idx, latest_col_idx), stats.depth);
             }
             for (const int col_idx : J)
             {
                 CNode<AlphaBeta> *chance_node = matrix_node->access(latest_row_idx, col_idx);
-                solved_exactly &= foo(state, model, chance_node, latest_row_idx, col_idx, stats.data_matrix.get(latest_row_idx, col_idx), stats.depth);
+                solved_exactly &= try_solve_chance_node(state, model, chance_node, latest_row_idx, col_idx, stats.data_matrix.get(latest_row_idx, col_idx), stats.depth);
             }
 
+            // solve newly expanded and explored game
             typename Types::VectorReal row_strategy, col_strategy;
 
+            int entry_idx = 0;
             if (solved_exactly)
             {
-                typename Types::MatrixValue alpha_matrix{rows, cols};
-
-                int entry_idx = 0;
+                typename Types::MatrixValue matrix{rows, cols};
                 for (auto row_idx : I)
                 {
                     for (auto col_idx : J)
                     {
                         const Data &data = stats.data_matrix.get(row_idx, col_idx);
-                        alpha_matrix[entry_idx] = data.alpha_explored;
+                        matrix[entry_idx] = data.alpha_explored;
                         ++entry_idx;
                     }
                 }
-                // LRSLib::Solve();
-                // alpha_new = solve_submatrix(alpha_matrix, matrix_node, row_strategy, col_strategy, I, J);
-                // beta_new = alpha_new;
+                alpha_new = beta_new = LRSNash::solve(matrix, row_strategy, col_strategy).first;
             }
             else
             {
                 typename Types::MatrixValue alpha_matrix{rows, cols}, beta_matrix{rows, cols};
-
-                int entry_idx = 0;
                 for (auto row_idx : I)
                 {
                     for (auto col_idx : J)
@@ -181,24 +182,25 @@ public:
                     }
                 }
                 typename Types::VectorReal temp;
-                // alpha_new = solve_submatrix(alpha_matrix, matrix_node, temp, col_strategy, I, J);
+                alpha_new = LRSNash::solve(alpha_matrix, temp, col_strategy).first;
                 temp.clear();
-                // beta_new = solve_submatrix(beta_matrix, matrix_node, row_strategy, temp, I, J);
+                beta_new = LRSNash::solve(beta_matrix, row_strategy, temp).first;
             }
 
+            // best response step
             auto iv = best_response_row(state, model, matrix_node, alpha, col_strategy, I, J);
-            auto jv = best_response_col(state, model, matrix_node, beta, row_strategy, I, J);
+            auto jv = best_response_col(state, model, matrix_node, beta, row_strategy, I, J); // use p aka alpha_matrix
 
             stats.row_solution = row_strategy;
             stats.col_solution = col_strategy;
 
             if (iv.first == -1)
             {
-                return {min_val, max_val};
+                return {min_val, min_val};
             }
             if (jv.first == -1)
             {
-                return {min_val, max_val};
+                return {max_val, max_val};
             }
 
             alpha = std::max(alpha, jv.second);
@@ -213,7 +215,7 @@ public:
                 J.push_back(jv.first);
             }
         }
-        return {alpha_new, beta_new};
+        return {alpha, beta};
     }
 
     std::pair<int, typename Types::Real> best_response_row(
@@ -226,31 +228,35 @@ public:
         std::vector<int> &J)
     {
         MatrixStats &stats = matrix_node->stats;
-
+        int best_row_idx = 0;
         for (int row_idx = 0; row_idx < state.row_actions.size(); ++row_idx)
         {
 
             const typename Types::Action row_action = state.row_actions[row_idx];
 
-            // get importance weight for each col action with support
+            typename Types::Real max = typename Types::Rational{0};
             std::vector<typename Types::Real> importance_weight;
-            // importance_weight.reserve(J.size());
-            for (const int col_idx : J)
+            int col_idx = 0;
+            int best_i; // replace with ptr to Real?
+
+            for (int i = 0; i < J.size(); ++i)
             {
-                importance_weight.push_back(
-                    static_cast<typename Types::Real>(col_strategy[col_idx] * stats.data_matrix.get(row_idx, col_idx).unexplored));
+                const int col_idx__ = J[i];
+                const typename Types::Real x = col_strategy[col_idx__] * stats.data_matrix.get(row_idx, col_idx__).unexplored;
+                importance_weight.push_back(x);
+                if (x > max)
+                {
+                    col_idx = col_idx__;
+                    max = x;
+                    best_i = i;
+                }
             }
 
             while (true)
             {
-
-                // get col_idx with largest importance
-                int col_idx = 0;
-
                 Data &data = stats.data_matrix.get(row_idx, col_idx);
 
-                const typename Types::Real max_importance_weight;
-                if (max_importance_weight == 0)
+                if (max == 0)
                 {
                     break;
                     // this means we have solved every matrix_node_child in this row
@@ -278,10 +284,22 @@ public:
 
                 data.alpha_explored += alpha_beta_pair.first * state_copy.prob;
                 data.beta_explored += alpha_beta_pair.second * state_copy.prob;
-                data.explored += state_copy.prob;
                 data.unexplored -= state_copy.prob;
+                importance_weight[best_i] -= state_copy.prob * col_strategy[col_idx];
+
+                max = typename Types::Rational{0};
+                for (int i = 0; i < J.size(); ++i)
+                {
+                    const typename Types::Real x = importance_weight[i];
+                    if (x > max)
+                    {
+                        col_idx = J[i];
+                        max = x;
+                    }
+                }
             }
         }
+        return {best_row_idx, alpha};
     }
 
     std::pair<int, typename Types::Real> best_response_col(
@@ -342,10 +360,10 @@ public:
 
                 data.alpha_explored += alpha_beta_pair.first * state_copy.prob;
                 data.beta_explored += alpha_beta_pair.second * state_copy.prob;
-                data.explored += state_copy.prob;
                 data.unexplored -= state_copy.prob;
             }
         }
+        return {0, beta};
     }
 
 private:
@@ -361,29 +379,8 @@ private:
         return answer; // TODO
     }
 
-    typename Types::Real row_alpha_beta(
-        typename Types::State &state,
-        Model &model,
-        MNode<AlphaBeta> *matrix_node,
-        typename Types::Real alpha,
-        typename Types::Real beta)
-    {
-        return max_val;
-    }
-
-    typename Types::Real col_alpha_beta(
-        typename Types::State &state,
-        Model &model,
-        MNode<AlphaBeta> *matrix_node,
-        typename Types::Real alpha,
-        typename Types::Real beta)
-    {
-        return min_val;
-    }
-    // Serialized AlphaBeta, TODO
-
-    inline bool foo(
-        typename Types::State &state, // TODO const? 
+    inline bool try_solve_chance_node(
+        typename Types::State &state, // TODO const?
         typename Types::Model &model,
         CNode<AlphaBeta> *chance_node,
         int row_idx,
@@ -392,7 +389,7 @@ private:
         int depth)
     {
 
-        if (data.explored < 1)
+        if (data.unexplored > 0)
         {
 
             // typename Types::Action row_action, col_action;
@@ -417,7 +414,6 @@ private:
                 typename Types::Real beta_next = data.beta_explored + max_val * data.unexplored;
 
                 auto alpha_beta = double_oracle(state_copy, model, matrix_node_next, alpha_next, beta_next, depth + 1);
-                data.explored += state.prob;
                 data.unexplored -= state.prob;
                 data.alpha_explored += alpha_beta.first * state_copy.prob;
                 data.beta_explored += alpha_beta.second * state_copy.prob;
@@ -426,11 +422,32 @@ private:
 
         bool solved_exactly = (data.alpha_explored == data.beta_explored);
 
-        if (data.explored != typename Types::Rational{1})
-        {
-            exit(1);
-        }
+        // if (data.explored != typename Types::Rational{1})
+        // {
+        //     exit(1);
+        // }
 
         return solved_exactly;
     };
+
+    typename Types::Real row_alpha_beta(
+        typename Types::State &state,
+        Model &model,
+        MNode<AlphaBeta> *matrix_node,
+        typename Types::Real alpha,
+        typename Types::Real beta)
+    {
+        return max_val;
+    }
+
+    typename Types::Real col_alpha_beta(
+        typename Types::State &state,
+        Model &model,
+        MNode<AlphaBeta> *matrix_node,
+        typename Types::Real alpha,
+        typename Types::Real beta)
+    {
+        return min_val;
+    }
+    // Serialized AlphaBeta, TODO
 };

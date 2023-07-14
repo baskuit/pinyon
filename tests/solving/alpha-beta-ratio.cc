@@ -77,4 +77,5 @@ int main()
 
     std::cout << "average node ratio: " << total_ratio / tries << std::endl;
     std::cout << "tries: " << tries << std::endl;
+    return 0;
 }
