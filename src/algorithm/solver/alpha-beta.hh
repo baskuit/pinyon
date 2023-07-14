@@ -6,6 +6,7 @@
 // #include <algorithm
 #include <ranges>
 #include <concepts>
+
 /*
 
 An implementation of Simultaneous Move Alpha Beta
@@ -57,6 +58,7 @@ public:
         unsigned int depth = 0;
 
         int row_pricipal_idx = 0, col_pricipal_idx = 0;
+        std::vector<int> I, J;
     };
 
     struct ChanceStats
@@ -114,10 +116,6 @@ public:
             return {inference.value.get_row_value(), inference.value.get_col_value()};
         }
 
-        // 6: initialize restricted action sets I and J with a first action in stage s
-
-        // TODO first action using info from last expansion, if possible
-
         I.push_back(stats.row_pricipal_idx);
         J.push_back(stats.col_pricipal_idx);
         bool solved_exactly = true;
@@ -126,9 +124,6 @@ public:
         const size_t cols = state.col_actions.size();
 
         stats.data_matrix.fill(rows, cols);
-        // Note: this implementation does not use serialized alpha beta
-        // Just seems like too much tree traversal?
-        // 9: repeat, 23: until α = β
 
         while (!fuzzy_equals(alpha, beta) && true)
         {
@@ -139,7 +134,6 @@ public:
             const typename Types::Action latest_row_action = state.row_actions[latest_row_idx];
             const typename Types::Action latest_col_action = state.col_actions[latest_col_idx];
 
-            // 10: for i ∈ I, j ∈ J do
             for (const int row_idx : I)
             {
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, latest_col_idx);
@@ -155,36 +149,49 @@ public:
 
             if (solved_exactly)
             {
-                typename Types::MatrixValue matrix;
+                typename Types::MatrixValue alpha_matrix{rows, cols};
 
-                alpha_new = solve_submatrix(matrix, matrix_node, row_strategy, col_strategy, I, J);
-                beta_new = alpha_new;
+                int entry_idx = 0;
+                for (auto row_idx : I)
+                {
+                    for (auto col_idx : J)
+                    {
+                        const Data &data = stats.data_matrix.get(row_idx, col_idx);
+                        alpha_matrix[entry_idx] = data.alpha_explored;
+                        ++entry_idx;
+                    }
+                }
+                // LRSLib::Solve();
+                // alpha_new = solve_submatrix(alpha_matrix, matrix_node, row_strategy, col_strategy, I, J);
+                // beta_new = alpha_new;
             }
             else
             {
                 typename Types::MatrixValue alpha_matrix{rows, cols}, beta_matrix{rows, cols};
 
                 int entry_idx = 0;
-                for (const Data &data : stats.data_matrix)
+                for (auto row_idx : I)
                 {
-                    alpha_matrix[entry_idx] = data.alpha_explored;
-                    beta_matrix[entry_idx] = data.beta_explored;
+                    for (auto col_idx : J)
+                    {
+                        const Data &data = stats.data_matrix.get(row_idx, col_idx);
+                        alpha_matrix[entry_idx] = data.alpha_explored;
+                        beta_matrix[entry_idx] = data.beta_explored;
+                        ++entry_idx;
+                    }
                 }
-
                 typename Types::VectorReal temp;
-                alpha_new = solve_submatrix(alpha_matrix, matrix_node, temp, col_strategy, I, J);
-                beta_new = solve_submatrix(beta_matrix, matrix_node, row_strategy, temp, I, J);
+                // alpha_new = solve_submatrix(alpha_matrix, matrix_node, temp, col_strategy, I, J);
+                temp.clear();
+                // beta_new = solve_submatrix(beta_matrix, matrix_node, row_strategy, temp, I, J);
             }
 
-            // 15: hi0, vMaxi ← BRMax (s, α, y)
             auto iv = best_response_row(state, model, matrix_node, alpha, col_strategy, I, J);
-            // 16: h j0 , vMini ← BRMin(s, β, x)
             auto jv = best_response_col(state, model, matrix_node, beta, row_strategy, I, J);
 
             stats.row_solution = row_strategy;
             stats.col_solution = col_strategy;
 
-            // 17 - 20
             if (iv.first == -1)
             {
                 return {min_val, max_val};
@@ -193,11 +200,10 @@ public:
             {
                 return {min_val, max_val};
             }
-            // 21: α ← max(α, vMin); β ← min(β, v Max )
+
             alpha = std::max(alpha, jv.second);
             beta = std::min(beta, iv.second);
 
-            // 22: I ← I ∪ {i0}; J ← J ∪ { j0 }
             if (std::find(I.begin(), I.end(), iv.first) == I.end())
             {
                 I.push_back(iv.first);
@@ -265,10 +271,10 @@ public:
                 const typename Types::Real beta_next = data.beta_explored + max_val * data.unexplored;
 
                 auto alpha_beta_pair = double_oracle(
-                                           state_copy,
-                                           model,
-                                           matrix_node_next,
-                                           alpha_next, beta_next, max_depth);
+                    state_copy,
+                    model,
+                    matrix_node_next,
+                    alpha_next, beta_next, max_depth);
 
                 data.alpha_explored += alpha_beta_pair.first * state_copy.prob;
                 data.beta_explored += alpha_beta_pair.second * state_copy.prob;
@@ -316,7 +322,6 @@ public:
 
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
 
-
                 int chance_idx = data.next_chance_idx++;
 
                 const typename Types::Action row_action = state.row_actions[row_idx];
@@ -329,11 +334,11 @@ public:
                 const typename Types::Real beta_next = data.beta_explored + max_val * data.unexplored;
 
                 auto alpha_beta_pair = double_oracle(
-                                           state_copy,
-                                           model,
-                                           matrix_node_next,
-                                           alpha_next, beta_next) *
-                                       state_copy.prob;
+                    state_copy,
+                    model,
+                    matrix_node_next,
+                    alpha_next, beta_next,
+                    0);
 
                 data.alpha_explored += alpha_beta_pair.first * state_copy.prob;
                 data.beta_explored += alpha_beta_pair.second * state_copy.prob;
@@ -354,41 +359,6 @@ private:
         mpq_canonicalize(b);
         bool answer = mpq_equal(a, b);
         return answer; // TODO
-    }
-
-    typename Types::Real solve_submatrix(
-        typename Types::MatrixValue &submatrix,
-        MNode<AlphaBeta> *matrix_node,
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy,
-        std::vector<int> &I, std::vector<int> &J)
-    {
-        // define submatrix
-        submatrix.fill(I.size(), J.size());
-        row_strategy.fill(submatrix.rows);
-        col_strategy.fill(submatrix.cols);
-        int entry_idx = 0;
-        for (const int row_idx : I)
-        {
-            for (const int col_idx : J)
-            {
-                submatrix[entry_idx++] = typename Types::Value{matrix_node->stats.p.get(row_idx, col_idx)};
-                // assert(matrix_node->stats.p.get(row_idx, col_idx) == matrix_node->stats.o.get(row_idx, col_idx));
-                // we can use either p or q here since the substage is solved
-            }
-        }
-
-        LRSNash::solve(submatrix, row_strategy, col_strategy);
-
-        typename Types::Real value = typename Types::Rational{0};
-        for (int row_idx = 0; row_idx < submatrix.rows; ++row_idx)
-        {
-            for (int col_idx = 0; col_idx < submatrix.cols; ++col_idx)
-            {
-                value += submatrix.get(row_idx, col_idx).get_row_value() * row_strategy[row_idx] * col_strategy[col_idx];
-            }
-        }
-        return value;
     }
 
     typename Types::Real row_alpha_beta(
@@ -413,26 +383,26 @@ private:
     // Serialized AlphaBeta, TODO
 
     inline bool foo(
-        const typename Types::State &state,
+        typename Types::State &state, // TODO const? 
         typename Types::Model &model,
         CNode<AlphaBeta> *chance_node,
         int row_idx,
         int col_idx,
         Data &data,
-        int depth) const
+        int depth)
     {
 
         if (data.explored < 1)
         {
 
-            const typename Types::Action row_action, col_action;
-            row_action = state.row_actions[row_idx];
-            col_action = state.col_actions[col_idx];
+            // typename Types::Action row_action, col_action;
+            auto row_action = state.row_actions[row_idx];
+            auto col_action = state.col_actions[col_idx];
 
             auto chance_actions = data.chance_actions;
             if (chance_actions.size() == 0)
             {
-                state.get_chance_actions(row_action, col_action, chance_actions);
+                state.get_chance_actions(chance_actions, row_action, col_action); // TODO arg order
             }
 
             for (; data.next_chance_idx < chance_actions.size(); ++data.next_chance_idx)
@@ -446,17 +416,20 @@ private:
                 typename Types::Real alpha_next = data.alpha_explored + min_val * data.unexplored;
                 typename Types::Real beta_next = data.beta_explored + max_val * data.unexplored;
 
-                auto alpha_beta = double_oracle(state_copy, model, matrix_node_next, alpha_next, beta_next, depth + 1) * state_copy.transition.prob;
+                auto alpha_beta = double_oracle(state_copy, model, matrix_node_next, alpha_next, beta_next, depth + 1);
                 data.explored += state.prob;
                 data.unexplored -= state.prob;
-                data.alpha_explored += alpha_beta.first;
-                data.beta_explored += alpha_beta.second;
+                data.alpha_explored += alpha_beta.first * state_copy.prob;
+                data.beta_explored += alpha_beta.second * state_copy.prob;
             }
         }
 
         bool solved_exactly = (data.alpha_explored == data.beta_explored);
 
-        assert(data.explored == 1);
+        if (data.explored != typename Types::Rational{1})
+        {
+            exit(1);
+        }
 
         return solved_exactly;
     };

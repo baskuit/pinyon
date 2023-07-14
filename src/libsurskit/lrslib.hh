@@ -4,6 +4,8 @@
 
 #include <types/types.hh>
 
+// TODO return payoffs
+
 namespace LRSNash
 {
 

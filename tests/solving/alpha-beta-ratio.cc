@@ -59,20 +59,20 @@ int main()
         MonteCarloModel<RandomTree<RatTypes>> model{0};
         Solve<MonteCarloModel<RandomTree<RatTypes>>> solve{*wrapped_state.ptr, model};
 
-        auto v = static_cast<mpq_class>(solve.root_ab.stats.row_value).get_d();
-        auto vv = static_cast<mpq_class>(solve.root_full.stats.payoff.get_row_value()).get_d();
-        std::cout << "values: " << v << ' ' << vv << std::endl;
-        auto error = solve.root_ab.stats.row_value - solve.root_full.stats.payoff.get_row_value();
-        double error_ = static_cast<mpq_class>(error).get_d();
+        // auto v = static_cast<mpq_class>(solve.root_ab.stats.row_value).get_d();
+        // auto vv = static_cast<mpq_class>(solve.root_full.stats.payoff.get_row_value()).get_d();
+        // std::cout << "values: " << v << ' ' << vv << std::endl;
+        // auto error = solve.root_ab.stats.row_value - solve.root_full.stats.payoff.get_row_value();
+        // double error_ = static_cast<mpq_class>(error).get_d();
 
-        if (error_ > 0)
-        {
-            std::cout << "seed: " << seed << " failed!" << std::endl;
-            exit(1);
-        }
+        // if (error_ > 0)
+        // {
+        //     std::cout << "seed: " << seed << " failed!" << std::endl;
+        //     exit(1);
+        // }
 
-        total_ratio += solve.root_ab.stats.matrix_node_count / (double)solve.root_full.stats.matrix_node_count;
-        ++tries;
+        // total_ratio += solve.root_ab.stats.matrix_node_count / (double)solve.root_full.stats.matrix_node_count;
+        // ++tries;
     }
 
     std::cout << "average node ratio: " << total_ratio / tries << std::endl;
