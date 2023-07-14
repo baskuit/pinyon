@@ -14,6 +14,7 @@ struct Solve
 
     MatrixNode<FullTraversal<Model>> root_full;
     MatrixNode<AlphaBeta<Model>> root_ab;
+    typename Model::Types::Real ab_value;
 
     Solve(State &state, Model &model)
     {
@@ -25,7 +26,7 @@ struct Solve
         // std::cout << "ab done." << std::endl;
         state_copy = state;
 
-        session_ab.run(state_copy, model, &root_ab);
+        ab_value = session_ab.run(state_copy, model, &root_ab).first;
     }
 
     void report()
@@ -44,12 +45,12 @@ int main()
     tries_vec.resize(1);
 
     RandomTreeGenerator<RatTypes> generator{
-        prng{},
-        {4},
-        {4},
+        prng{1},
+        {1},
+        {2},
         {1},
         {Rational<>{0}},
-        std::vector<size_t>(20, 0)};
+        std::vector<size_t>(1, 0)};
 
     double total_ratio = 0;
     int tries = 0;
@@ -59,9 +60,11 @@ int main()
         MonteCarloModel<RandomTree<RatTypes>> model{0};
         Solve<MonteCarloModel<RandomTree<RatTypes>>> solve{*wrapped_state.ptr, model};
 
-        // auto v = static_cast<mpq_class>(solve.root_ab.stats.row_value).get_d();
-        // auto vv = static_cast<mpq_class>(solve.root_full.stats.payoff.get_row_value()).get_d();
-        // std::cout << "values: " << v << ' ' << vv << std::endl;
+        auto v = static_cast<mpq_class>(solve.ab_value).get_d();
+        auto vv = static_cast<mpq_class>(solve.root_full.stats.payoff.get_row_value()).get_d();
+        std::cout << "values: " << v << ' ' << vv << std::endl;
+        std::cout << "Matrix:" << std::endl;
+        solve.root_full.stats.nash_payoff_matrix.print();
         // auto error = solve.root_ab.stats.row_value - solve.root_full.stats.payoff.get_row_value();
         // double error_ = static_cast<mpq_class>(error).get_d();
 

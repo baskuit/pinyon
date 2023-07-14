@@ -98,8 +98,8 @@ public:
 
     void get_chance_actions(
         std::vector<typename Types::Observation> &chance_actions,
-        typename Types::Action row_action,
-        typename Types::Action col_action)
+        const typename Types::Action row_action,
+        const typename Types::Action col_action)
     {
         chance_actions.clear();
         const size_t start_idx = get_transition_idx(row_action, col_action, typename Types::Observation{0});
@@ -132,7 +132,9 @@ public:
         if (depth_bound == 0)
         {
             this->is_terminal = true;
-            this->payoff.row_value = Rational<>{(payoff_bias > 0) - (payoff_bias < 0) + 1, 2};
+            Rational<> row_payoff{(payoff_bias > 0) - (payoff_bias < 0) + 1, 2};
+            row_payoff.reduce();
+            this->payoff.row_value = row_payoff;
         }
         else
         {

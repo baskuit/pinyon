@@ -177,7 +177,19 @@ struct ArithmeticType : Wrapper<T>
 
     bool operator==(const T &other) const
     {
-        return this->value == other;
+        if constexpr (std::is_same<T, mpq_class>::value)
+        {
+            mpq_ptr a = this->value.get_mpq_t();
+            mpq_ptr b = other.value.get_mpq_t();
+            mpq_canonicalize(a);
+            mpq_canonicalize(b);
+            bool answer = mpq_equal(a, b);
+            return answer;
+        }
+        else // TODO ugh
+        {
+            return this->value == other;
+        }
     }
 
     // template <typename U>
@@ -206,7 +218,7 @@ struct ArithmeticType : Wrapper<T>
             mpq_canonicalize(a);
             mpq_canonicalize(b);
             bool answer = mpq_equal(a, b);
-            return answer;
+            return !answer;
         }
         else // TODO ugh
         {
