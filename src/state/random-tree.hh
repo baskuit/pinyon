@@ -26,7 +26,7 @@ public:
     int payoff_bias = 0;
     typename Types::Probability chance_threshold{typename Types::Rational(1, transitions + 1)};
     std::vector<typename Types::Probability> chance_strategies;
-    int chance_denominator = 2;
+    int chance_denominator = 10;
 
     int (*depth_bound_func)(RandomTree *, int) = &(RandomTree::depth_bound_default);
     int (*actions_func)(RandomTree *, int) = &(RandomTree::actions_default);

@@ -38,10 +38,25 @@ template <>
 struct RealType<mpq_class> : ArithmeticType<mpq_class>
 {
     RealType() : ArithmeticType<mpq_class>{} {}
-    RealType(const mpq_class &val) : ArithmeticType<mpq_class>{val} {}
-    RealType(const ArithmeticType<mpq_class> val) : ArithmeticType<mpq_class>{val} {}
-    RealType(const Rational<> val) : ArithmeticType<mpq_class>{mpq_class{val.p, val.q}} {}
-    explicit operator double() const {
+    RealType(const mpq_class &val) : ArithmeticType<mpq_class>{val}
+    {
+        mpq_canonicalize(this->value.get_mpq_t());
+    }
+    RealType(const ArithmeticType<mpq_class> val) : ArithmeticType<mpq_class>{val}
+    {
+        mpq_canonicalize(this->value.get_mpq_t());
+    }
+    template <typename T>
+    RealType(const Rational<T> val) : ArithmeticType<mpq_class>{mpq_class{val.p, val.q}}
+    {
+        mpq_canonicalize(this->value.get_mpq_t());
+    }
+    explicit operator mpq_class() const
+    {
+        return this->value;
+    }
+    explicit operator double() const
+    {
         return this->value.get_d();
     }
 };
@@ -58,9 +73,27 @@ template <>
 struct ProbabilityType<mpq_class> : ArithmeticType<mpq_class>
 {
     ProbabilityType() : ArithmeticType<mpq_class>{1} {}
-    ProbabilityType(mpq_class val) : ArithmeticType<mpq_class>{val} {}
-    ProbabilityType(const ArithmeticType<mpq_class> val) : ArithmeticType<mpq_class>{val} {}
-    ProbabilityType(const Rational<> &val) : ArithmeticType<mpq_class>{mpq_class{val.p, val.q}} {}
+    ProbabilityType(mpq_class val) : ArithmeticType<mpq_class>{val}
+    {
+        mpq_canonicalize(this->value.get_mpq_t());
+    }
+    ProbabilityType(const ArithmeticType<mpq_class> val) : ArithmeticType<mpq_class>{val}
+    {
+        mpq_canonicalize(this->value.get_mpq_t());
+    }
+    template <typename T>
+    ProbabilityType(const Rational<T> &val) : ArithmeticType<mpq_class>{mpq_class{val.p, val.q}}
+    {
+        mpq_canonicalize(this->value.get_mpq_t());
+    }
+    explicit operator mpq_class() const
+    {
+        return this->value;
+    }
+    explicit operator double() const
+    {
+        return this->value.get_d();
+    }
 };
 
 template <typename T>

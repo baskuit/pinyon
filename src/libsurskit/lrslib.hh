@@ -15,7 +15,8 @@ namespace LRSNash
     // }
 
     template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper>
-    void solve(
+    std::pair<Wrapper<mpq_class>, Wrapper<mpq_class>>
+    solve(
         Matrix<PairReal<Wrapper<mpq_class>>> &payoff_matrix,
         Vector<Wrapper<mpq_class>> &row_strategy,
         Vector<Wrapper<mpq_class>> &col_strategy)
@@ -33,8 +34,6 @@ namespace LRSNash
             // mpq_init(row_payoff_data[i]);
             // mpq_init(col_payoff_data[i]);
 
-            // mpq_set(row_payoff_data[i], payoff_matrix[i].get_row_value().unwrap().get_mpq_t());
-            // mpq_set(col_payoff_data[i], payoff_matrix[i].get_col_value().unwrap().get_mpq_t());
             rpd[i] = reinterpret_cast<mpq_t *>(&payoff_matrix[i].row_value);
             cpd[i] = reinterpret_cast<mpq_t *>(&payoff_matrix[i].col_value);
         }
@@ -65,6 +64,11 @@ namespace LRSNash
         }
         delete[] row_solution_data;
         delete[] col_solution_data;
+
+        mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
+        mpq_class col_payoff{mpz_class{row_solution_data[rows + 1]}, row_den};
+
+        return {row_payoff, col_payoff};
     }
 
     template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper>

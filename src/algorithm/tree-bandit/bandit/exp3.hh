@@ -334,7 +334,7 @@ private:
         typename Types::Real sum = 0;
         for (size_t i = 0; i < k; ++i)
         {
-            const typename Types::Real y(std::exp((gains[i] * eta).unwrap()));
+            const typename Types::Real y{std::exp(static_cast<double>(gains[i] * eta))};
             forecast[i] = y;
             sum += y;
         }

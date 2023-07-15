@@ -7,11 +7,6 @@ struct ArithmeticType : Wrapper<T>
 
     constexpr ArithmeticType(const T val) : Wrapper<T>{val} {}
 
-    constexpr explicit operator T() const
-    {
-        return this->value;
-    }
-
     constexpr T unwrap() const // TODO remove
     {
         return this->value;
@@ -23,12 +18,12 @@ struct ArithmeticType : Wrapper<T>
         return (*this);
     }
 
-    template <typename U>
-    ArithmeticType &operator=(const Rational<T> &t)
-    {
-        this->value = t;
-        return (*this);
-    }
+    // template <typename U>
+    // ArithmeticType &operator=(const Rational<T> &t)
+    // {
+    //     this->value = t;
+    //     return (*this);
+    // }
 
     ArithmeticType operator+(const ArithmeticType &other) const
     {
@@ -40,11 +35,11 @@ struct ArithmeticType : Wrapper<T>
     //     return ArithmeticType(this->value + other);
     // }
 
-    template <typename U>
-    ArithmeticType operator+(const Rational<U> &other) const
-    {
-        return ArithmeticType(this->value + other);
-    }
+    // template <typename U>
+    // ArithmeticType operator+(const Rational<U> &other) const
+    // {
+    //     return ArithmeticType(this->value + other);
+    // }
 
     ArithmeticType operator-(const ArithmeticType &other) const
     {
@@ -56,11 +51,11 @@ struct ArithmeticType : Wrapper<T>
     //     return ArithmeticType(this->value - other);
     // }
 
-    template <typename U>
-    ArithmeticType operator-(const Rational<U> &other) const
-    {
-        return ArithmeticType(this->value - other);
-    }
+    // template <typename U>
+    // ArithmeticType operator-(const Rational<U> &other) const
+    // {
+    //     return ArithmeticType(this->value - other);
+    // }
 
     ArithmeticType operator*(const ArithmeticType &other) const
     {
@@ -88,11 +83,11 @@ struct ArithmeticType : Wrapper<T>
     //     return ArithmeticType(this->value / other);
     // }
 
-    template <typename U>
-    ArithmeticType operator/(const Rational<U> &other) const
-    {
-        return ArithmeticType(this->value / other);
-    }
+    // template <typename U>
+    // ArithmeticType operator/(const Rational<U> &other) const
+    // {
+    //     return ArithmeticType(this->value / other);
+    // }
 
     ArithmeticType &operator+=(const ArithmeticType &other)
     {
@@ -106,12 +101,12 @@ struct ArithmeticType : Wrapper<T>
     //     return *this;
     // }
 
-    template <typename U>
-    ArithmeticType &operator+=(const Rational<U> &other)
-    {
-        this->value += other;
-        return *this;
-    }
+    // template <typename U>
+    // ArithmeticType &operator+=(const Rational<U> &other)
+    // {
+    //     this->value += other;
+    //     return *this;
+    // }
 
     ArithmeticType &operator-=(const ArithmeticType &other)
     {
@@ -125,12 +120,12 @@ struct ArithmeticType : Wrapper<T>
     //     return *this;
     // }
 
-    template <typename U>
-    ArithmeticType &operator-=(const Rational<T> &other)
-    {
-        this->value -= other;
-        return *this;
-    }
+    // template <typename U>
+    // ArithmeticType &operator-=(const Rational<T> &other)
+    // {
+    //     this->value -= other;
+    //     return *this;
+    // }
 
     ArithmeticType &operator*=(const ArithmeticType &other)
     {
@@ -144,12 +139,12 @@ struct ArithmeticType : Wrapper<T>
     //     return *this;
     // }
 
-    template <typename U>
-    ArithmeticType &operator*=(const Rational<U> &other)
-    {
-        this->value *= other;
-        return *this;
-    }
+    // template <typename U>
+    // ArithmeticType &operator*=(const Rational<U> &other)
+    // {
+    //     this->value *= other;
+    //     return *this;
+    // }
 
     ArithmeticType &operator/=(const ArithmeticType &other)
     {
@@ -163,12 +158,12 @@ struct ArithmeticType : Wrapper<T>
     //     return *this;
     // }
 
-    template <typename U>
-    ArithmeticType &operator/=(const Rational<U> &other)
-    {
-        this->value /= other;
-        return *this;
-    }
+    // template <typename U>
+    // ArithmeticType &operator/=(const Rational<U> &other)
+    // {
+    //     this->value /= other;
+    //     return *this;
+    // }
 
     bool operator==(const ArithmeticType &other) const
     {
@@ -216,23 +211,23 @@ struct ArithmeticType : Wrapper<T>
     //     return this->value != other;
     // }
 
-    template <typename U>
-    bool operator!=(const Rational<U> &other) const
-    {
-        if constexpr (std::is_same<T, mpq_class>::value)
-        {
-            mpq_ptr a = this->value.get_mpq_t();
-            mpq_ptr b = other.value.get_mpq_t();
-            mpq_canonicalize(a);
-            mpq_canonicalize(b);
-            bool answer = mpq_equal(a, b);
-            return !answer;
-        }
-        else // TODO ugh
-        {
-            return this->value != other;
-        }
-    }
+    // template <typename U>
+    // bool operator!=(const Rational<U> &other) const
+    // {
+    //     if constexpr (std::is_same<T, mpq_class>::value)
+    //     {
+    //         mpq_ptr a = this->value.get_mpq_t();
+    //         mpq_ptr b = other.value.get_mpq_t();
+    //         mpq_canonicalize(a);
+    //         mpq_canonicalize(b);
+    //         bool answer = mpq_equal(a, b);
+    //         return !answer;
+    //     }
+    //     else // TODO ugh
+    //     {
+    //         return this->value != other;
+    //     }
+    // }
 
     bool operator<(const ArithmeticType &other) const
     {
@@ -244,11 +239,11 @@ struct ArithmeticType : Wrapper<T>
     //     return this->value < other;
     // }
 
-    template <typename U>
-    bool operator<(const Rational<U> &other) const
-    {
-        return this->value < other;
-    }
+    // template <typename U>
+    // bool operator<(const Rational<U> &other) const
+    // {
+    //     return this->value < other;
+    // }
 
     bool operator>(const ArithmeticType &other) const
     {
@@ -260,11 +255,11 @@ struct ArithmeticType : Wrapper<T>
     //     return this->value > other;
     // }
 
-    template <typename U>
-    bool operator>(const Rational<U> &other) const
-    {
-        return this->value > other;
-    }
+    // template <typename U>
+    // bool operator>(const Rational<U> &other) const
+    // {
+    //     return this->value > other;
+    // }
 
     bool operator<=(const ArithmeticType &other) const
     {
@@ -276,11 +271,11 @@ struct ArithmeticType : Wrapper<T>
     //     return this->value <= other;
     // }
 
-    template <typename U>
-    bool operator<=(const Rational<U> &other) const
-    {
-        return this->value <= other;
-    }
+    // template <typename U>
+    // bool operator<=(const Rational<U> &other) const
+    // {
+    //     return this->value <= other;
+    // }
 
     bool operator>=(const ArithmeticType &other) const
     {
@@ -292,11 +287,11 @@ struct ArithmeticType : Wrapper<T>
     //     return this->value >= other;
     // }
 
-    template <typename U>
-    bool operator>=(const Rational<U> &other) const
-    {
-        return this->value >= other;
-    }
+    // template <typename U>
+    // bool operator>=(const Rational<U> &other) const
+    // {
+    //     return this->value >= other;
+    // }
 
     friend std::ostream &operator<<(std::ostream &os, const ArithmeticType &val)
     {
