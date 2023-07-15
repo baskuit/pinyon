@@ -259,7 +259,7 @@ public:
         return std::min(min_row->get_row_value(), min_col->get_col_value());
     }
 
-    void print() const
+    void print() const __attribute__((noinline))
     {
         for (size_t row_idx = 0; row_idx < rows; ++row_idx)
         {

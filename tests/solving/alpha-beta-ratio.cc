@@ -14,41 +14,29 @@ struct Solve
 
     MatrixNode<FullTraversal<Model>> root_full;
     MatrixNode<AlphaBeta<Model>> root_ab;
-    typename Model::Types::Real ab_value;
+    std::pair<typename Model::Types::Real, typename Model::Types::Real> ab_value;
 
     Solve(State &state, Model &model)
     {
         FullTraversal<Model> session_full{};
         auto state_copy = state;
         session_full.run(state_copy, model, &root_full);
-        // std::cout << "real solve done- ";
         AlphaBeta<Model> session_ab{Rational<>{0}, Rational<>{1}};
-        // std::cout << "ab done." << std::endl;
+        session_ab.teacher = &root_full;
         state_copy = state;
 
-        ab_value = session_ab.run(state_copy, model, &root_ab).first;
-    }
-
-    void report()
-    {
-        std::cout << root_ab.stats.row_value << ' ' << root_full.stats.payoff.get_row_value() << std::endl;
-        std::cout << root_ab.stats.matrix_node_count << ' ' << root_full.stats.matrix_node_count << std::endl;
-        std::cout << root_ab.stats.matrix_node_count / (double)root_full.stats.matrix_node_count << std::endl;
-        return;
+        ab_value = session_ab.run(state_copy, model, &root_ab);
     }
 };
 
 int main()
 {
 
-    std::vector<size_t> tries_vec;
-    tries_vec.resize(1);
-
     RandomTreeGenerator<RatTypes> generator{
         prng{1},
-        {2},
-        {2},
-        {2},
+        {1, 2, 3},
+        {2, 3, 4},
+        {1, 2},
         {Rational<>{0}},
         std::vector<size_t>(100, 0)};
 
@@ -60,25 +48,16 @@ int main()
         MonteCarloModel<RandomTree<RatTypes>> model{0};
         Solve<MonteCarloModel<RandomTree<RatTypes>>> solve{state, model};
 
-        auto v = static_cast<mpq_class>(solve.ab_value).get_d();
-        auto vv = static_cast<mpq_class>(solve.root_full.stats.payoff.get_row_value()).get_d();
-        std::cout << "values: " << v << ' ' << vv << std::endl;
-        // std::cout << "Matrix:" << std::endl;
-        // solve.root_full.stats.nash_payoff_matrix.print();
-        auto error = solve.ab_value - solve.root_full.stats.payoff.get_row_value();
-        double error_ = static_cast<mpq_class>(error).get_d();
-        std::cout << error.value.get_d() << std::endl;
-        if (error != RealType<mpq_class>{Rational<>{0}})
-        {
-            std::cout << "seed: " << state.device.get_seed() << " failed!" << std::endl;
-            // exit(1);
-        }
-
-        // total_ratio += solve.root_ab.stats.matrix_node_count / (double)solve.root_full.stats.matrix_node_count;
-        // ++tries;
+        auto a = static_cast<mpq_class>(solve.ab_value.first).get_d();
+        auto b = static_cast<mpq_class>(solve.ab_value.second).get_d();
+        auto c = static_cast<mpq_class>(solve.root_full.stats.payoff.get_row_value()).get_d();
+        
+        assert(a <= c);
+        assert(c <= b);
+        // if (a != b) {
+        //     std::cout << "values: (" << a << ", " << b << "), " << c << std::endl;
+        // }
     }
 
-    std::cout << "average node ratio: " << total_ratio / tries << std::endl;
-    std::cout << "tries: " << tries << std::endl;
     return 0;
 }
