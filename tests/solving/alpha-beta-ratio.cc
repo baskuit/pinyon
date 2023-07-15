@@ -46,33 +46,33 @@ int main()
 
     RandomTreeGenerator<RatTypes> generator{
         prng{1},
-        {1},
         {2},
-        {1},
+        {2},
+        {2},
         {Rational<>{0}},
-        std::vector<size_t>(1, 0)};
+        std::vector<size_t>(100, 0)};
 
     double total_ratio = 0;
     int tries = 0;
 
     for (auto wrapped_state : generator) {
-        uint64_t seed = prng{}.uniform_64();
+        auto state = *wrapped_state.ptr;
         MonteCarloModel<RandomTree<RatTypes>> model{0};
-        Solve<MonteCarloModel<RandomTree<RatTypes>>> solve{*wrapped_state.ptr, model};
+        Solve<MonteCarloModel<RandomTree<RatTypes>>> solve{state, model};
 
         auto v = static_cast<mpq_class>(solve.ab_value).get_d();
         auto vv = static_cast<mpq_class>(solve.root_full.stats.payoff.get_row_value()).get_d();
         std::cout << "values: " << v << ' ' << vv << std::endl;
-        std::cout << "Matrix:" << std::endl;
-        solve.root_full.stats.nash_payoff_matrix.print();
-        // auto error = solve.root_ab.stats.row_value - solve.root_full.stats.payoff.get_row_value();
-        // double error_ = static_cast<mpq_class>(error).get_d();
-
-        // if (error_ > 0)
-        // {
-        //     std::cout << "seed: " << seed << " failed!" << std::endl;
-        //     exit(1);
-        // }
+        // std::cout << "Matrix:" << std::endl;
+        // solve.root_full.stats.nash_payoff_matrix.print();
+        auto error = solve.ab_value - solve.root_full.stats.payoff.get_row_value();
+        double error_ = static_cast<mpq_class>(error).get_d();
+        std::cout << error.value.get_d() << std::endl;
+        if (error != RealType<mpq_class>{Rational<>{0}})
+        {
+            std::cout << "seed: " << state.device.get_seed() << " failed!" << std::endl;
+            // exit(1);
+        }
 
         // total_ratio += solve.root_ab.stats.matrix_node_count / (double)solve.root_full.stats.matrix_node_count;
         // ++tries;

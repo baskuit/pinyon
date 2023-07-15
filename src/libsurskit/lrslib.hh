@@ -111,8 +111,8 @@ namespace LRSNash
         delete[] row_solution_data;
         delete[] col_solution_data;
 
-        mpq_class row_payoff{mpz_class{col_solution_data[rows + 1]}, col_den};
-        mpq_class col_payoff{mpz_class{row_solution_data[cols + 1]}, row_den};
+        mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
+        mpq_class col_payoff{mpz_class{row_solution_data[rows + 1]}, row_den};
 
         return {row_payoff, col_payoff};
     }
