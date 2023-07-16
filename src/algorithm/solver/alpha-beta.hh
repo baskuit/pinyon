@@ -26,6 +26,7 @@ class AlphaBeta : public AbstractAlgorithm<Model>
 {
 private:
     int max_depth = -1;
+
 public:
     struct MatrixStats;
     struct ChanceStats;
@@ -60,11 +61,12 @@ public:
         std::vector<int> I, J;
     };
 
-    static bool dont_terminate (MatrixStats&) {
+    static bool dont_terminate(typename Types::PRNG &, MatrixStats &)
+    {
         return false;
     };
 
-    bool (*terminate)(MatrixStats&) = dont_terminate;
+    bool (*const terminate)(typename Types::PRNG &, MatrixStats &) = dont_terminate;
 
     struct ChanceStats
     {
@@ -76,22 +78,29 @@ public:
     const typename Types::Real min_val{0}; // don't need to use the Game values if you happen to know that State's
     const typename Types::Real max_val{1};
 
-    prng device{0};
-
-    const typename Types::Real epsilon{Rational{1, 1 << 24}};
+    // const typename Types::Real epsilon{Rational{1, 1 << 24}};
 
     AlphaBeta(typename Types::Real min_val, typename Types::Real max_val) : min_val(min_val), max_val(max_val) {}
 
-    auto run(
+    auto run( // TODO depth param
+        typename Types::PRNG &device,
         typename Types::State &state,
         Model &model,
-        MNode<AlphaBeta> *root)
+        MNode<AlphaBeta> &root)
     {
-        return double_oracle(state, model, root, min_val, max_val);
+        return double_oracle(device, state, model, &root, min_val, max_val);
     }
+
+    void run(
+        size_t ms,
+        typename Types::PRNG &device,
+        typename Types::State &state,
+        Model &model,
+        MNode<AlphaBeta> &root) {}
 
     std::pair<typename Types::Real, typename Types::Real>
     double_oracle(
+        typename Types::PRNG &device,
         typename Types::State &state,
         Model &model,
         MNode<AlphaBeta> *matrix_node,
@@ -121,6 +130,8 @@ public:
             return {inference.value.get_row_value(), inference.value.get_row_value()};
         }
 
+        // here is the only place we can use prior solve info
+
         I.push_back(stats.row_pricipal_idx);
         J.push_back(stats.col_pricipal_idx);
         bool solved_exactly = true;
@@ -144,7 +155,7 @@ public:
             {
                 Data &data = stats.data_matrix.get(row_idx, latest_col_idx);
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, latest_col_idx);
-                solved_exactly &= try_solve_chance_node(state, model, matrix_node, row_idx, latest_col_idx, min_val, max_val);
+                solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, row_idx, latest_col_idx, min_val, max_val);
             }
             for (const int col_idx : J)
             {
@@ -154,7 +165,7 @@ public:
                 }
                 Data &data = stats.data_matrix.get(latest_row_idx, col_idx);
                 CNode<AlphaBeta> *chance_node = matrix_node->access(latest_row_idx, col_idx);
-                solved_exactly &= try_solve_chance_node(state, model, matrix_node, latest_row_idx, col_idx, min_val, max_val);
+                solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, latest_row_idx, col_idx, min_val, max_val);
             }
 
             // solve newly expanded and explored game
@@ -198,23 +209,39 @@ public:
                 // beta_matrix.print();
                 // std::cout << "correct:" <<std::endl;
                 // teacher->stats.nash_payoff_matrix.print();
-
             }
 
-            // best response step
-            auto iv = best_response_row(state, model, matrix_node, alpha, max_val, col_strategy, I, J);
-            auto jv = best_response_col(state, model, matrix_node, min_val, beta, row_strategy, I, J); // use p aka alpha_matrix
+            std::pair<int, typename Types::Real>
+                iv = best_response_row(
+                    device,
+                    state,
+                    model,
+                    matrix_node,
+                    alpha, max_val,
+                    col_strategy,
+                    I, J);
 
-            stats.row_solution = row_strategy;
-            stats.col_solution = col_strategy;
+            std::pair<int, typename Types::Real>
+                jv = best_response_col(
+                    device,
+                    state,
+                    model,
+                    matrix_node,
+                    min_val, beta,
+                    row_strategy,
+                    I, J);
 
             if (iv.first == -1)
             {
+                stats.row_solution = row_strategy;
+                stats.col_solution = col_strategy;
                 assert(teacher->stats.payoff.row_value == min_val);
                 return {min_val, min_val};
             }
             if (jv.first == -1)
             {
+                stats.row_solution = row_strategy;
+                stats.col_solution = col_strategy;
                 assert(teacher->stats.payoff.row_value == max_val);
                 return {max_val, max_val};
             }
@@ -231,13 +258,6 @@ public:
                 J.push_back(jv.first);
             }
 
-            // if (state.device.get_seed() == 12367942525619104324)
-            // {
-            //     math::print(row_strategy);
-            //     math::print(col_strategy);
-            //     std::cout << '@' << std::endl;
-            // } 
-
             bool smaller_bounds = false;
             if (jv.second > alpha)
             {
@@ -252,24 +272,12 @@ public:
 
             if (no_new_actions && !smaller_bounds)
             {
+                stats.row_solution = row_strategy;
+                stats.col_solution = col_strategy;
                 break;
             }
-            // alpha = std::max(alpha, jv.second);
-            // beta = std::min(beta, iv.second);
         }
 
-        // if (teacher->stats.payoff.row_value > beta)
-        // {
-        //     for (int i = 0; i < 4; ++i)
-        //     {
-        //         for (int j = 0; j < 4; ++j)
-        //         {
-        //             auto &data = stats.data_matrix.get(i, j);
-        //             std::cout << "(" << data.alpha_explored.value.get_d() << "," << data.beta_explored.value.get_d() << "),  ";
-        //         }
-        //         std::cout << std::endl;
-        //     }
-        // }
         assert(teacher->stats.payoff.row_value <= beta);
         assert(teacher->stats.payoff.row_value >= alpha);
 
@@ -277,14 +285,13 @@ public:
     }
 
     std::pair<int, typename Types::Real> best_response_row(
+        typename Types::PRNG &device,
         typename Types::State &state,
         Model &model,
         MNode<AlphaBeta> *matrix_node,
-        typename Types::Real alpha,
-        typename Types::Real beta,
+        typename Types::Real alpha, typename Types::Real beta,
         typename Types::VectorReal &col_strategy,
-        std::vector<int> &I,
-        std::vector<int> &J)
+        std::vector<int> &I, std::vector<int> &J)
     {
         MatrixStats &stats = matrix_node->stats;
         int best_row_idx = -1;
@@ -346,6 +353,7 @@ public:
                 teacher = teacher->access(row_idx, col_idx)->access(state_copy.obs);
 
                 auto alpha_beta_pair = double_oracle(
+                    device,
                     state_copy,
                     model,
                     matrix_node_next,
@@ -410,14 +418,13 @@ public:
     }
 
     std::pair<int, typename Types::Real> best_response_col(
+        typename Types::PRNG &device,
         typename Types::State &state,
         Model &model,
         MNode<AlphaBeta> *matrix_node,
-        typename Types::Real alpha,
-        typename Types::Real beta,
+        typename Types::Real alpha, typename Types::Real beta,
         typename Types::VectorReal &row_strategy,
-        std::vector<int> &I,
-        std::vector<int> &J)
+        std::vector<int> &I, std::vector<int> &J)
     {
         MatrixStats &stats = matrix_node->stats;
         int best_col_idx = -1;
@@ -479,6 +486,7 @@ public:
                 teacher = teacher->access(row_idx, col_idx)->access(state_copy.obs);
 
                 auto alpha_beta_pair = double_oracle(
+                    device,
                     state_copy,
                     model,
                     matrix_node_next,
@@ -552,6 +560,7 @@ public:
     }
 
     inline bool try_solve_chance_node(
+        typename Types::PRNG &device,
         typename Types::State &state, // TODO const?
         typename Types::Model &model,
         MatrixNode<AlphaBeta> *matrix_node,
@@ -562,7 +571,7 @@ public:
     {
         MatrixStats &stats = matrix_node->stats;
         CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-        Data& data = stats.data_matrix.get(row_idx, col_idx); 
+        Data &data = stats.data_matrix.get(row_idx, col_idx);
 
         if (data.unexplored > typename Types::Rational{0} && !data.solved)
         {
@@ -578,9 +587,8 @@ public:
             }
 
             // go through all chance actions
-            for (; data.next_chance_idx < chance_actions.size() && !terminate(stats); ++data.next_chance_idx)
+            for (; data.next_chance_idx < chance_actions.size() && !terminate(device, stats); ++data.next_chance_idx)
             {
-
 
                 const typename Types::Observation chance_action = chance_actions[data.next_chance_idx];
                 typename Types::State state_copy = state;
@@ -590,7 +598,7 @@ public:
                 auto old_teacher = teacher;
                 teacher = teacher->access(row_idx, col_idx)->access(state_copy.obs);
 
-                auto alpha_beta = double_oracle(state_copy, model, matrix_node_next, alpha, beta);
+                auto alpha_beta = double_oracle(device, state_copy, model, matrix_node_next, alpha, beta);
                 teacher = old_teacher;
                 data.unexplored -= state_copy.prob;
 

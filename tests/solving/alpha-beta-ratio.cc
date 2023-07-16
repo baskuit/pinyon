@@ -18,6 +18,8 @@ struct Solve
 
     Solve(State &state, Model &model)
     {
+
+        prng device{0};
         FullTraversal<Model> session_full{};
         auto state_copy = state;
         session_full.run(state_copy, model, &root_full);
@@ -25,7 +27,7 @@ struct Solve
         session_ab.teacher = &root_full;
         state_copy = state;
 
-        ab_value = session_ab.run(state_copy, model, &root_ab);
+        ab_value = session_ab.run(device, state_copy, model, root_ab);
     }
 };
 
@@ -35,7 +37,7 @@ int main()
     RandomTreeGenerator<RatTypes> generator{
         prng{1},
         {1, 2, 3},
-        {2, 3, 4},
+        {2, 3},
         {1, 2},
         {Rational<>{0}},
         std::vector<size_t>(100, 0)};
@@ -43,6 +45,8 @@ int main()
     double total_ratio = 0;
     int tries = 0;
 
+
+    size_t counter = 0;
     for (auto wrapped_state : generator) {
         auto state = *wrapped_state.ptr;
         MonteCarloModel<RandomTree<RatTypes>> model{0};
@@ -57,6 +61,7 @@ int main()
         // if (a != b) {
         //     std::cout << "values: (" << a << ", " << b << "), " << c << std::endl;
         // }
+        ++counter;
     }
 
     return 0;
