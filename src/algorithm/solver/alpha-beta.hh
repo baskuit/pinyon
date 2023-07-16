@@ -24,6 +24,8 @@ concept DoubleOracleModelConcept = requires(T obj, typename T::Types::State &sta
 template <DoubleOracleModelConcept Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
 class AlphaBeta : public AbstractAlgorithm<Model>
 {
+private:
+    int max_depth = -1;
 public:
     struct MatrixStats;
     struct ChanceStats;
@@ -58,9 +60,14 @@ public:
         std::vector<int> I, J;
     };
 
+    static bool dont_terminate (MatrixStats&) {
+        return false;
+    };
+
+    bool (*terminate)(MatrixStats&) = dont_terminate;
+
     struct ChanceStats
     {
-        // typename Types::Probability explored{Rational{0}};
         size_t matrix_node_count = 0;
     };
 
@@ -78,10 +85,9 @@ public:
     auto run(
         typename Types::State &state,
         Model &model,
-        MNode<AlphaBeta> *root,
-        int max_depth = -1)
+        MNode<AlphaBeta> *root)
     {
-        return double_oracle(state, model, root, min_val, max_val, max_depth);
+        return double_oracle(state, model, root, min_val, max_val);
     }
 
     std::pair<typename Types::Real, typename Types::Real>
@@ -90,8 +96,7 @@ public:
         Model &model,
         MNode<AlphaBeta> *matrix_node,
         typename Types::Real alpha,
-        typename Types::Real beta,
-        int max_depth)
+        typename Types::Real beta)
     {
 
         assert(teacher->stats.payoff.row_value >= alpha && teacher->stats.payoff.row_value <= beta);
@@ -139,7 +144,7 @@ public:
             {
                 Data &data = stats.data_matrix.get(row_idx, latest_col_idx);
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, latest_col_idx);
-                solved_exactly &= try_solve_chance_node(state, model, chance_node, row_idx, latest_col_idx, data, max_depth, min_val, max_val);
+                solved_exactly &= try_solve_chance_node(state, model, matrix_node, row_idx, latest_col_idx, min_val, max_val);
             }
             for (const int col_idx : J)
             {
@@ -149,7 +154,7 @@ public:
                 }
                 Data &data = stats.data_matrix.get(latest_row_idx, col_idx);
                 CNode<AlphaBeta> *chance_node = matrix_node->access(latest_row_idx, col_idx);
-                solved_exactly &= try_solve_chance_node(state, model, chance_node, latest_row_idx, col_idx, data, max_depth, min_val, max_val);
+                solved_exactly &= try_solve_chance_node(state, model, matrix_node, latest_row_idx, col_idx, min_val, max_val);
             }
 
             // solve newly expanded and explored game
@@ -197,8 +202,8 @@ public:
             }
 
             // best response step
-            auto iv = best_response_row(state, model, matrix_node, alpha, max_val, col_strategy, I, J, max_depth);
-            auto jv = best_response_col(state, model, matrix_node, min_val, beta, row_strategy, I, J, max_depth); // use p aka alpha_matrix
+            auto iv = best_response_row(state, model, matrix_node, alpha, max_val, col_strategy, I, J);
+            auto jv = best_response_col(state, model, matrix_node, min_val, beta, row_strategy, I, J); // use p aka alpha_matrix
 
             stats.row_solution = row_strategy;
             stats.col_solution = col_strategy;
@@ -279,8 +284,7 @@ public:
         typename Types::Real beta,
         typename Types::VectorReal &col_strategy,
         std::vector<int> &I,
-        std::vector<int> &J,
-        int max_depth)
+        std::vector<int> &J)
     {
         MatrixStats &stats = matrix_node->stats;
         int best_row_idx = -1;
@@ -345,7 +349,7 @@ public:
                     state_copy,
                     model,
                     matrix_node_next,
-                    min_val, max_val, max_depth);
+                    min_val, max_val);
 
                 teacher = old_teacher;
 
@@ -413,8 +417,7 @@ public:
         typename Types::Real beta,
         typename Types::VectorReal &row_strategy,
         std::vector<int> &I,
-        std::vector<int> &J,
-        int max_depth)
+        std::vector<int> &J)
     {
         MatrixStats &stats = matrix_node->stats;
         int best_col_idx = -1;
@@ -479,7 +482,7 @@ public:
                     state_copy,
                     model,
                     matrix_node_next,
-                    min_val, max_val, max_depth);
+                    min_val, max_val);
 
                 teacher = old_teacher;
 
@@ -551,14 +554,15 @@ public:
     inline bool try_solve_chance_node(
         typename Types::State &state, // TODO const?
         typename Types::Model &model,
-        CNode<AlphaBeta> *chance_node,
+        MatrixNode<AlphaBeta> *matrix_node,
         int row_idx,
         int col_idx,
-        Data &data,
-        int depth,
         typename Types::Real alpha,
         typename Types::Real beta)
     {
+        MatrixStats &stats = matrix_node->stats;
+        CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
+        Data& data = stats.data_matrix.get(row_idx, col_idx); 
 
         if (data.unexplored > typename Types::Rational{0} && !data.solved)
         {
@@ -573,14 +577,10 @@ public:
                 state.get_chance_actions(chance_actions, row_action, col_action); // TODO arg order
             }
 
-            for (; data.next_chance_idx < chance_actions.size(); ++data.next_chance_idx)
+            // go through all chance actions
+            for (; data.next_chance_idx < chance_actions.size() && !terminate(stats); ++data.next_chance_idx)
             {
 
-                if (device.uniform() < .2)
-                {
-                    ++data.next_chance_idx;
-                    break;
-                }
 
                 const typename Types::Observation chance_action = chance_actions[data.next_chance_idx];
                 typename Types::State state_copy = state;
@@ -590,11 +590,9 @@ public:
                 auto old_teacher = teacher;
                 teacher = teacher->access(row_idx, col_idx)->access(state_copy.obs);
 
-                auto alpha_beta = double_oracle(state_copy, model, matrix_node_next, alpha, beta, depth);
+                auto alpha_beta = double_oracle(state_copy, model, matrix_node_next, alpha, beta);
                 teacher = old_teacher;
                 data.unexplored -= state_copy.prob;
-                data.explored_vec.push_back(state_copy.prob.value.get_d());
-                data.chance_idx_vec.push_back(data.next_chance_idx);
 
                 assert(data.unexplored >= static_cast<typename Types::Probability>(Rational<>{0}));
                 if (data.next_chance_idx == state_copy.transitions - 1)
