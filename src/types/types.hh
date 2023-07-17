@@ -16,13 +16,14 @@ template <typename T>
 struct RealType : ArithmeticType<T>
 {
     constexpr RealType() : ArithmeticType<T>{} {}
-    constexpr RealType(const Wrapper<T> &val) : Wrapper<T>{val} {}
-    constexpr explicit RealType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {}
-    RealType &operator=(const Wrapper<T> &val)
-    {
-        this->value = val.value;
-        return *this;
+    constexpr RealType(const T &val) : ArithmeticType<T>{val} {}
+    template <typename Integral>
+    constexpr RealType(const Rational<Integral> &val) : ArithmeticType<T>{T{val}} {
+        if constexpr (std::is_same<T, mpq_class>::value) {
+            // mpq_canonicalize(this->value.get_mpq_t());
+        }
     }
+    constexpr explicit RealType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {}
     RealType &operator=(const ArithmeticType<T> &val)
     {
         this->value = val.value;
@@ -30,55 +31,22 @@ struct RealType : ArithmeticType<T>
     }
 };
 
-template <>
-struct RealType<mpq_class> : ArithmeticType<mpq_class>
-{
-    RealType() : ArithmeticType<mpq_class>{} {}
-    RealType(const Wrapper<mpq_class> &val) : ArithmeticType<mpq_class>{val}
-    {
-        // mpq_canonicalize(this->value.get_mpq_t());
-    }
-    explicit RealType(const ArithmeticType<mpq_class> &val) : ArithmeticType<mpq_class>{val}
-    {
-        // mpq_canonicalize(this->value.get_mpq_t());
-    }
-    explicit operator mpq_class() const
-    {
-        return this->value;
-    }
-    explicit operator double() const
-    {
-        return this->value.get_d();
-    }
-};
-
 template <typename T>
 struct ProbabilityType : ArithmeticType<T>
 {
-    constexpr ProbabilityType() : ArithmeticType<T>{} {} 
-    constexpr ProbabilityType(const Wrapper<T> &val) : ArithmeticType<T>{val} {}
-    constexpr explicit ProbabilityType(const ArithmeticType<T> &val) : ArithmeticType<T>{val} {}
-};
-
-template <>
-struct ProbabilityType<mpq_class> : ArithmeticType<mpq_class>
-{
-    ProbabilityType() : ArithmeticType<mpq_class>{} {}
-    ProbabilityType(const mpq_class &val) : ArithmeticType<mpq_class>{val}
-    {
-        // mpq_canonicalize(this->value.get_mpq_t());
+    constexpr ProbabilityType() : ArithmeticType<T>{} {}
+    constexpr ProbabilityType(const T &val) : ArithmeticType<T>{val} {}
+    template <typename Integral>
+    constexpr ProbabilityType(const Rational<Integral> &val) : ArithmeticType<T>{T{val}} {}
+    constexpr explicit ProbabilityType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {
+        if constexpr (std::is_same<T, mpq_class>::value) {
+            // mpq_canonicalize(this->value.get_mpq_t());
+        }
     }
-    ProbabilityType(const ArithmeticType<mpq_class> &val) : ArithmeticType<mpq_class>{val}
+    ProbabilityType &operator=(const ArithmeticType<T> &val)
     {
-        // mpq_canonicalize(this->value.get_mpq_t());
-    }
-    explicit operator mpq_class() const
-    {
-        return this->value;
-    }
-    explicit operator double() const
-    {
-        return this->value.get_d();
+        this->value = val.value;
+        return *this;
     }
 };
 

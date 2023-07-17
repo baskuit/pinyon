@@ -122,7 +122,7 @@ protected:
         typename Types::VectorReal col_forecast(cols);
         if (rows == 1)
         {
-            row_forecast[0] = 1;
+            row_forecast[0] = Rational<>{1};
         }
         else
         {
@@ -134,7 +134,7 @@ protected:
         }
         if (cols == 1)
         {
-            col_forecast[0] = 1;
+            col_forecast[0] = Rational<>{1};
         }
         else
         {
@@ -202,7 +202,7 @@ protected:
 
         if (rows == 1)
         {
-            row_forecast[0] = 1;
+            row_forecast[0] = Rational<>{1};
         }
         else
         {
@@ -214,7 +214,7 @@ protected:
         }
         if (cols == 1)
         {
-            col_forecast[0] = 1;
+            col_forecast[0] = Rational<>{1};
         }
         else
         {

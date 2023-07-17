@@ -96,15 +96,21 @@ namespace W
         };
         PairReal<double> payoff()
         {
-            return PairReal<double>{static_cast<double>(ptr->payoff.get_row_value()), static_cast<double>(ptr->payoff.get_col_value())};
+            // TODODODODODOOD
+            // return PairReal<double>{
+            //     static_cast<double>(ptr->payoff.get_row_value()), 
+            //     static_cast<double>(ptr->payoff.get_col_value())};
+            return PairReal<double>{0, 0};
         }
         double row_payoff()
         {
-            return static_cast<double>(ptr->payoff.get_row_value());
+            // return static_cast<double>(ptr->payoff.get_row_value());
+            return 0;
         };
         double col_payoff()
         {
-            return static_cast<double>(ptr->payoff.get_col_value());
+            // return static_cast<double>(ptr->payoff.get_col_value());
+            return 0;
         };
         bool is_solved()
         {
@@ -196,7 +202,7 @@ namespace W
         };
 
         TreeData tree_data;
-        virtual Search* clone () = 0;
+        virtual Search *clone() = 0;
         virtual void run(size_t iterations, State &state, Model &model) = 0;
         virtual void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model) = 0;
         virtual double exploitability(State &state) = 0;
@@ -224,7 +230,7 @@ namespace W
         template <typename... Args>
         SearchWrapper(Args... args) : ptr(std::make_shared<_Algorithm>(args...)), root{std::make_shared<MatrixNode<_Algorithm>>()} {}
 
-        Search* clone()
+        Search *clone()
         {
             return new SearchWrapper{*ptr};
         }

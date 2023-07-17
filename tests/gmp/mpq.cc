@@ -17,8 +17,8 @@ void random_matrix(prng device, const size_t rows, const size_t cols, const int 
         rpd.emplace_back(mpz_class{row_num}, mpz_class{den});
         cpd.emplace_back(mpz_class{col_num}, mpz_class{den});
 
-        matrix[i].row_value = mpq_class{rpd[i]};
-        matrix[i].col_value = mpq_class{cpd[i]};
+        matrix[i].row_value = RealType<mpq_class>{rpd[i]};
+        matrix[i].col_value = RealType<mpq_class>{cpd[i]};
     }
 
     Vector<RealType<mpq_class>> row_strategy, col_strategy;

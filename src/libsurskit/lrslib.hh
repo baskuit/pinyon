@@ -62,11 +62,12 @@ namespace LRSNash
         {
             col_strategy[col_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
         }
-        delete[] row_solution_data;
-        delete[] col_solution_data;
 
         mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
         mpq_class col_payoff{mpz_class{row_solution_data[rows + 1]}, row_den};
+
+        delete[] row_solution_data;
+        delete[] col_solution_data;
 
         return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
     }
@@ -112,11 +113,12 @@ namespace LRSNash
         {
             col_strategy[col_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
         }
-        delete[] row_solution_data;
-        delete[] col_solution_data;
 
         mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
         mpq_class col_payoff{mpz_class{row_solution_data[rows + 1]}, row_den};
+
+        delete[] row_solution_data;
+        delete[] col_solution_data;
 
         return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
     }

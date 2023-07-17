@@ -38,7 +38,7 @@ struct ConstantSum
 
         template <typename T>
         Value operator*(const T t) {
-            return Value{row_value * static_cast<Real>(t)};
+            return Value{Real{row_value * static_cast<Real>(t)}};
         }
     };
 };

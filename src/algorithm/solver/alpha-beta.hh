@@ -385,7 +385,7 @@ public:
                     assert(data.unexplored == static_cast<typename Types::Probability>(Rational<>{0}));
                 }
 
-                typename Types::Real z = state_copy.prob * col_strategy[best_i];
+                typename Types::Real z {state_copy.prob * col_strategy[best_i]};
                 importance_weight[best_i] -= z;
 
                 max = typename Types::Real{typename Types::Rational{0}};
@@ -408,24 +408,16 @@ public:
                 const int col_idx = J[i];
                 Data &data = stats.data_matrix.get(row_idx, col_idx);
 
-                // if (data.unexplored > Rational<>{0})
-                // {
-                //     std::cout << '!' << std::endl;
-                // }
-
-                const typename Types::Real alpha_next = data.beta_explored + beta * data.unexplored; // TODO is this correct?
-                const typename Types::Real w = col_strategy[i] * alpha_next;
-                expected_score += w;
+                const typename Types::Real alpha_next {data.beta_explored + beta * data.unexplored}; // TODO is this correct?
+                expected_score += col_strategy[i] * alpha_next;
             }
 
-            // mpq_canonicalize(expected_score.value.get_mpq_t());
             if (expected_score >= alpha)
             {
                 best_row_idx = row_idx;
                 alpha = expected_score;
             }
         }
-        // mpq_canonicalize(alpha.value.get_mpq_t());
         return {best_row_idx, alpha};
     }
 
@@ -518,7 +510,7 @@ public:
                     assert(data.unexplored == static_cast<typename Types::Probability>(Rational<>{0}));
                 }
 
-                typename Types::Real z = state_copy.prob * row_strategy[best_i];
+                typename Types::Real z {state_copy.prob * row_strategy[best_i]};// TODO why assignment not working
                 importance_weight[best_i] -= z;
 
                 max = typename Types::Real{Rational<>{0}};
@@ -545,7 +537,7 @@ public:
                     // std::cout << '!' << std::endl;
                 }
 
-                const typename Types::Real beta_next = data.alpha_explored + alpha * data.unexplored;
+                const typename Types::Real beta_next {data.alpha_explored + alpha * data.unexplored};
                 expected_score += row_strategy[i] * beta_next;
             }
             // mpq_canonicalize(expected_score.value.get_mpq_t());

@@ -61,6 +61,18 @@ int main()
         if (a != b) {
             std::cout << "values: (" << a << ", " << b << "), " << c << std::endl;
         }
+
+        mpz_t gc1, gc2;
+        mpz_init(gc1);
+        mpz_init(gc2);
+
+        mpz_gcd(gc1, 
+        solve.ab_value.first.value.get_num_mpz_t(), 
+        solve.ab_value.first.value.get_den_mpz_t());
+        mpz_gcd(gc2, 
+        solve.root_full.stats.payoff.get_row_value().value.get_num_mpz_t(), 
+        solve.root_full.stats.payoff.get_row_value().value.get_den_mpz_t());
+
         ++counter;
     }
 

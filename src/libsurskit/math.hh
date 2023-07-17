@@ -11,19 +11,19 @@ using ActionIndex = int;
 namespace math
 {
 
-    template <typename VectorIn, typename VectorOut>
-    void power_norm(VectorIn &input, int length, double power, VectorOut &output)
+    template <template <typename...> typename VectorIn, typename InT, template <typename...> typename VectorOut, typename OutT>
+    void power_norm(VectorIn<InT> &input, int length, double power, VectorOut<OutT> &output)
     {
         double sum = 0;
         for (int i = 0; i < length; ++i)
         {
             double x = std::pow(input[i], power);
-            output[i] = x;
+            output[i] = OutT{x};
             sum += x;
         }
         for (int i = 0; i < length; ++i)
         {
-            output[i] = output[i] / sum;
+            output[i] = output[i] / static_cast<OutT>(sum);
         }
     }
 
@@ -95,7 +95,7 @@ namespace math
         Real row_best_response{*std::max_element(row_response.begin(), row_response.end())};
         Real col_best_response{*std::max_element(col_response.begin(), col_response.end())};
 
-        return (row_best_response - row_payoff) + (col_best_response - col_payoff);
+        return Real{row_best_response - row_payoff + col_best_response - col_payoff};
     }
 
 } // end 'math'

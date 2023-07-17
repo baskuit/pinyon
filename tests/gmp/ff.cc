@@ -9,6 +9,10 @@ struct Rational
     {
         return mpq_class{p, q};
     }
+    operator double () const
+    {
+        return p / (double) q;
+    }
 };
 
 template <typename T>
@@ -47,13 +51,15 @@ struct ArithmeticType : Wrapper<T>
 {
     constexpr ArithmeticType() {}
     explicit constexpr ArithmeticType(const T &val) : Wrapper<T>{val} {}
-    constexpr ArithmeticType(const Wrapper<T> &val) : Wrapper<T>{val} {}
+    // constexpr ArithmeticType(const Wrapper<T> &val) : Wrapper<T>{val} {}
 };
 
 template <typename T>
 struct RealType : ArithmeticType<T>
 {
     constexpr RealType() : ArithmeticType<T>{} {}
+    template <typename U>
+    constexpr RealType (const Rational<U> &val) : ArithmeticType<T>{val} {}
     constexpr RealType(const T &val) : ArithmeticType<T>{val} {}
     constexpr explicit RealType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {}
     RealType &operator=(const T &val)
@@ -94,6 +100,7 @@ struct RealType : ArithmeticType<T>
 // };
 
 int main () {
-    RealType<mpq_class> x{Rational<>{}};
+    RealType<mpq_class> x = Rational<>{};
+
     return 0;
-}  
+}
