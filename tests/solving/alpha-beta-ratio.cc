@@ -13,7 +13,7 @@ struct Solve
     using State = typename Model::Types::State;
 
     MatrixNode<FullTraversal<Model>> root_full;
-    MatrixNode<AlphaBeta<Model>> root_ab;
+    MatrixNode<AlphaBeta<Model>> root_ab{};
     std::pair<typename Model::Types::Real, typename Model::Types::Real> ab_value;
 
     Solve(State &state, Model &model)
@@ -23,7 +23,7 @@ struct Solve
         FullTraversal<Model> session_full{};
         auto state_copy = state;
         session_full.run(state_copy, model, &root_full);
-        AlphaBeta<Model> session_ab{Rational<>{0}, Rational<>{1}};
+        AlphaBeta<Model> session_ab{};
         session_ab.teacher = &root_full;
         state_copy = state;
 
@@ -36,10 +36,10 @@ int main()
 
     RandomTreeGenerator<RatTypes> generator{
         prng{1},
-        {1, 2, 3},
-        {2, 3},
         {1, 2},
-        {Rational<>{0}},
+        {2, 3},
+        {20},
+        {Rational<>{1, 20}},
         std::vector<size_t>(100, 0)};
 
     double total_ratio = 0;
@@ -58,9 +58,9 @@ int main()
         
         assert(a <= c);
         assert(c <= b);
-        // if (a != b) {
-        //     std::cout << "values: (" << a << ", " << b << "), " << c << std::endl;
-        // }
+        if (a != b) {
+            std::cout << "values: (" << a << ", " << b << "), " << c << std::endl;
+        }
         ++counter;
     }
 

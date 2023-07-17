@@ -56,11 +56,11 @@ namespace LRSNash
         mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            row_strategy[row_idx] = mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den};
+            row_strategy[row_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            col_strategy[col_idx] = mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den};
+            col_strategy[col_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
         }
         delete[] row_solution_data;
         delete[] col_solution_data;
@@ -68,7 +68,7 @@ namespace LRSNash
         mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
         mpq_class col_payoff{mpz_class{row_solution_data[rows + 1]}, row_den};
 
-        return {row_payoff, col_payoff};
+        return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
     }
 
     template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper>
@@ -106,11 +106,11 @@ namespace LRSNash
         col_strategy.fill(cols);
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            row_strategy[row_idx] = mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den};
+            row_strategy[row_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            col_strategy[col_idx] = mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den};
+            col_strategy[col_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
         }
         delete[] row_solution_data;
         delete[] col_solution_data;
@@ -118,7 +118,7 @@ namespace LRSNash
         mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
         mpq_class col_payoff{mpz_class{row_solution_data[rows + 1]}, row_den};
 
-        return {row_payoff, col_payoff};
+        return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
     }
 
     template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper, int num, int den>

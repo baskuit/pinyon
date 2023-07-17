@@ -26,7 +26,7 @@ public:
             this->row_actions[i] = typename Types::Action{i};
             this->col_actions[i] = typename Types::Action{i};
         }
-        this->prob = typename Types::Probability{1};
+        this->prob = typename Types::Probability{Rational<>{1}};
     }
 
     void reseed(typename Types::PRNG &device)

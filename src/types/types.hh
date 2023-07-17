@@ -16,15 +16,11 @@ template <typename T>
 struct RealType : ArithmeticType<T>
 {
     constexpr RealType() : ArithmeticType<T>{} {}
-    constexpr RealType(const T val) : ArithmeticType<T>{val} {}
-    constexpr RealType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {}
-    constexpr explicit operator T() const
+    constexpr RealType(const Wrapper<T> &val) : Wrapper<T>{val} {}
+    constexpr explicit RealType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {}
+    RealType &operator=(const Wrapper<T> &val)
     {
-        return this->value;
-    }
-    RealType &operator=(const T &val)
-    {
-        this->value = val;
+        this->value = val.value;
         return *this;
     }
     RealType &operator=(const ArithmeticType<T> &val)
@@ -38,18 +34,13 @@ template <>
 struct RealType<mpq_class> : ArithmeticType<mpq_class>
 {
     RealType() : ArithmeticType<mpq_class>{} {}
-    RealType(const mpq_class &val) : ArithmeticType<mpq_class>{val}
+    RealType(const Wrapper<mpq_class> &val) : ArithmeticType<mpq_class>{val}
     {
-        mpq_canonicalize(this->value.get_mpq_t());
+        // mpq_canonicalize(this->value.get_mpq_t());
     }
-    RealType(const ArithmeticType<mpq_class> val) : ArithmeticType<mpq_class>{val}
+    explicit RealType(const ArithmeticType<mpq_class> &val) : ArithmeticType<mpq_class>{val}
     {
-        mpq_canonicalize(this->value.get_mpq_t());
-    }
-    template <typename T>
-    RealType(const Rational<T> val) : ArithmeticType<mpq_class>{mpq_class{val.p, val.q}}
-    {
-        mpq_canonicalize(this->value.get_mpq_t());
+        // mpq_canonicalize(this->value.get_mpq_t());
     }
     explicit operator mpq_class() const
     {
@@ -64,27 +55,22 @@ struct RealType<mpq_class> : ArithmeticType<mpq_class>
 template <typename T>
 struct ProbabilityType : ArithmeticType<T>
 {
-    constexpr ProbabilityType() : ArithmeticType<T>{1} {} // prob default init to 1 instead of 0
-    constexpr ProbabilityType(T val) : ArithmeticType<T>{val} {}
-    constexpr ProbabilityType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {}
+    constexpr ProbabilityType() : ArithmeticType<T>{} {} 
+    constexpr ProbabilityType(const Wrapper<T> &val) : ArithmeticType<T>{val} {}
+    constexpr explicit ProbabilityType(const ArithmeticType<T> &val) : ArithmeticType<T>{val} {}
 };
 
 template <>
 struct ProbabilityType<mpq_class> : ArithmeticType<mpq_class>
 {
-    ProbabilityType() : ArithmeticType<mpq_class>{1} {}
-    ProbabilityType(mpq_class val) : ArithmeticType<mpq_class>{val}
+    ProbabilityType() : ArithmeticType<mpq_class>{} {}
+    ProbabilityType(const mpq_class &val) : ArithmeticType<mpq_class>{val}
     {
-        mpq_canonicalize(this->value.get_mpq_t());
+        // mpq_canonicalize(this->value.get_mpq_t());
     }
-    ProbabilityType(const ArithmeticType<mpq_class> val) : ArithmeticType<mpq_class>{val}
+    ProbabilityType(const ArithmeticType<mpq_class> &val) : ArithmeticType<mpq_class>{val}
     {
-        mpq_canonicalize(this->value.get_mpq_t());
-    }
-    template <typename T>
-    ProbabilityType(const Rational<T> &val) : ArithmeticType<mpq_class>{mpq_class{val.p, val.q}}
-    {
-        mpq_canonicalize(this->value.get_mpq_t());
+        // mpq_canonicalize(this->value.get_mpq_t());
     }
     explicit operator mpq_class() const
     {

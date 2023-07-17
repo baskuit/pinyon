@@ -43,7 +43,7 @@ public:
         size_t rows,
         size_t cols,
         size_t transitions,
-        typename Types::Rational chance_threshold)
+        const typename Types::Rational &chance_threshold)
         : device{device},
           depth_bound{depth_bound},
           rows{rows},
@@ -105,7 +105,7 @@ public:
         const size_t start_idx = get_transition_idx(row_action, col_action, typename Types::Observation{0});
         for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
         {
-            if (chance_strategies[start_idx + chance_idx] > typename Types::Rational(0))
+            if (chance_strategies[start_idx + chance_idx] > typename Types::Probability{0})
             {
                 chance_actions.push_back(typename Types::Observation{chance_idx});
             }
@@ -134,7 +134,7 @@ public:
             this->is_terminal = true;
             Rational<> row_payoff{(payoff_bias > 0) - (payoff_bias < 0) + 1, 2};
             row_payoff.reduce();
-            this->payoff.row_value = row_payoff;
+            this->payoff.row_value = typename Types::Real{row_payoff};
         }
         else
         {
