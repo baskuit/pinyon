@@ -221,6 +221,7 @@ private:
                 for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
                 {
                     chance_strategies[start_idx + chance_idx] /= new_prob_sum;
+                    chance_strategies[start_idx + chance_idx].canonicalize();
                 }
             }
         }

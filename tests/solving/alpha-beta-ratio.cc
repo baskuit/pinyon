@@ -23,7 +23,7 @@ struct Solve
         FullTraversal<Model> session_full{};
         auto state_copy = state;
         session_full.run(state_copy, model, &root_full);
-        AlphaBeta<Model> session_ab{};
+        AlphaBeta<Model> session_ab{Rational<>{0}, Rational<>{1}, &AlphaBeta<Model>::after_some_time};
         session_ab.teacher = &root_full;
         state_copy = state;
 
@@ -35,12 +35,12 @@ int main()
 {
 
     RandomTreeGenerator<RatTypes> generator{
-        prng{1},
-        {1, 2},
-        {2, 3},
-        {20},
+        prng{0},
+        {1, 2, 3},
+        {2, 3, 4},
+        {4},
         {Rational<>{1, 20}},
-        std::vector<size_t>(100, 0)};
+        std::vector<size_t>(5, 0)};
 
     double total_ratio = 0;
     int tries = 0;
@@ -72,6 +72,9 @@ int main()
         mpz_gcd(gc2, 
         solve.root_full.stats.payoff.get_row_value().value.get_num_mpz_t(), 
         solve.root_full.stats.payoff.get_row_value().value.get_den_mpz_t());
+
+        std::cout << "full: " << solve.root_full.count_matrix_nodes() << std::endl;
+        std::cout << "ab: " << solve.root_ab.count_matrix_nodes() << std::endl;
 
         ++counter;
     }

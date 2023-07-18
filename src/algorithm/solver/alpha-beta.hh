@@ -73,7 +73,7 @@ public:
                 data.unexplored < x);
     }
 
-    bool (*const terminate)(typename Types::PRNG &, const Data &) = dont_terminate;
+    bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
 
     struct ChanceStats
     {
@@ -308,12 +308,16 @@ public:
     {
         MatrixStats &stats = matrix_node->stats;
         int best_row_idx = -1;
+
         for (int row_idx = 0; row_idx < state.row_actions.size(); ++row_idx)
         {
-
+            bool skipping_row_idx = false;
             const typename Types::Action row_action = state.row_actions[row_idx];
 
             typename Types::Real max{typename Types::Rational{0}};
+            typename Types::Real x_sum{typename Types::Rational{0}};
+            typename Types::Real expected_score{typename Types::Rational{0}};
+
             std::vector<typename Types::Real> importance_weight;
             int col_idx = 0;
             int best_i = 0; // replace with ptr to Real?
@@ -326,11 +330,16 @@ public:
                 if (data.solved)
                 {
                     x = typename Types::Real{Rational<>{0}};
+                    const typename Types::Real alpha_next{data.beta_explored + beta * data.unexplored};
+                    expected_score += col_strategy[i] * alpha_next;
                 }
                 else
                 {
                     x = col_strategy[i] * data.unexplored;
+                    const typename Types::Real alpha_next{data.beta_explored};
+                    expected_score += col_strategy[i] * alpha_next;
                 }
+                x_sum += x;
                 importance_weight.push_back(x);
                 if (x > max)
                 {
@@ -344,10 +353,12 @@ public:
             while (max > typename Types::Real{Rational<>{0}})
             {
                 Data &data = stats.data_matrix.get(row_idx, col_idx);
-                if (data.solved)
-                {
+
+                typename Types::Real min_viable {(alpha - expected_score) / x_sum};
+                if (min_viable > beta) {
                     break;
                 }
+
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
 
                 int chance_idx = data.next_chance_idx++;
@@ -376,6 +387,7 @@ public:
                 data.alpha_explored += alpha_beta_pair.first * state_copy.prob;
                 data.beta_explored += alpha_beta_pair.second * state_copy.prob;
                 data.unexplored -= state_copy.prob;
+                expected_score += alpha_beta_pair.second * state_copy.prob * col_strategy[best_i];
                 data.explored_vec.push_back(state_copy.prob.value.get_d());
                 data.chance_idx_vec.push_back(chance_idx);
 
@@ -385,13 +397,15 @@ public:
                     assert(data.unexplored == static_cast<typename Types::Probability>(Rational<>{0}));
                 }
 
-                typename Types::Real z {state_copy.prob * col_strategy[best_i]};
+                typename Types::Real z{state_copy.prob * col_strategy[best_i]};
                 importance_weight[best_i] -= z;
 
-                max = typename Types::Real{typename Types::Rational{0}};
+                max = typename Types::Rational{0};
+                x_sum = typename Types::Rational{0};
                 for (int i = 0; i < J.size(); ++i)
                 {
                     const typename Types::Real x = importance_weight[i];
+                    x_sum += x;
                     if (x > max)
                     {
                         col_idx = J[i];
@@ -402,15 +416,14 @@ public:
             }
             // done solving
 
-            typename Types::Real expected_score{typename Types::Rational{0}};
-            for (int i = 0; i < J.size(); ++i)
-            {
-                const int col_idx = J[i];
-                Data &data = stats.data_matrix.get(row_idx, col_idx);
+            // for (int i = 0; i < J.size(); ++i)
+            // {
+            //     const int col_idx = J[i];
+            //     Data &data = stats.data_matrix.get(row_idx, col_idx);
 
-                const typename Types::Real alpha_next {data.beta_explored + beta * data.unexplored}; // TODO is this correct?
-                expected_score += col_strategy[i] * alpha_next;
-            }
+            //     const typename Types::Real alpha_next{data.beta_explored + beta * data.unexplored}; // TODO is this correct?
+            //     expected_score += col_strategy[i] * alpha_next;
+            // }
 
             if (expected_score >= alpha)
             {
@@ -510,7 +523,7 @@ public:
                     assert(data.unexplored == static_cast<typename Types::Probability>(Rational<>{0}));
                 }
 
-                typename Types::Real z {state_copy.prob * row_strategy[best_i]};// TODO why assignment not working
+                typename Types::Real z{state_copy.prob * row_strategy[best_i]}; // TODO why assignment not working
                 importance_weight[best_i] -= z;
 
                 max = typename Types::Real{Rational<>{0}};
@@ -537,7 +550,7 @@ public:
                     // std::cout << '!' << std::endl;
                 }
 
-                const typename Types::Real beta_next {data.alpha_explored + alpha * data.unexplored};
+                const typename Types::Real beta_next{data.alpha_explored + alpha * data.unexplored};
                 expected_score += row_strategy[i] * beta_next;
             }
             // mpq_canonicalize(expected_score.value.get_mpq_t());

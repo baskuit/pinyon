@@ -12,22 +12,59 @@
 
 #include <vector>
 
+int ccc = 0;
+
+bool is_canon(mpq_class &x)
+{
+    mpq_class y{};
+    mpq_set(y.get_mpq_t(), x.get_mpq_t());
+    mpq_canonicalize(y.get_mpq_t());
+    int a = mpz_cmp(x.get_num_mpz_t(), y.get_num_mpz_t());
+    int b = mpz_cmp(x.get_den_mpz_t(), y.get_den_mpz_t());
+    return (a == 0) && (b == 0);
+}
+
 template <typename T>
 struct RealType : ArithmeticType<T>
 {
     constexpr RealType() : ArithmeticType<T>{} {}
     constexpr RealType(const T &val) : ArithmeticType<T>{val} {}
     template <typename Integral>
-    constexpr RealType(const Rational<Integral> &val) : ArithmeticType<T>{T{val}} {
-        if constexpr (std::is_same<T, mpq_class>::value) {
-            // mpq_canonicalize(this->value.get_mpq_t());
+    constexpr RealType(const Rational<Integral> &val) : ArithmeticType<T>{T{val}}
+    {
+        if constexpr (std::is_same_v<T, mpq_class>)
+        {
+            if (!is_canon(this->value))
+            {
+                ++ccc;
+            }
         }
     }
-    constexpr explicit RealType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {}
+    constexpr explicit RealType(const ArithmeticType<T> val) : ArithmeticType<T>{val}
+    {
+        if constexpr (std::is_same_v<T, mpq_class>)
+        {
+            mpq_canonicalize(this->value.get_mpq_t());
+        }
+    }
     RealType &operator=(const ArithmeticType<T> &val)
     {
+        if constexpr (std::is_same_v<T, mpq_class>)
+        {
+            if (!is_canon(this->value))
+            {
+                ++ccc;
+            }
+        }
         this->value = val.value;
         return *this;
+    }
+    void canonicalize()
+    {
+        if (std::is_same_v<T, mpq_class>)
+        {
+            mpq_canonicalize(this->value.get_mpq_t());
+        }
     }
 };
 
@@ -35,18 +72,52 @@ template <typename T>
 struct ProbabilityType : ArithmeticType<T>
 {
     constexpr ProbabilityType() : ArithmeticType<T>{} {}
-    constexpr ProbabilityType(const T &val) : ArithmeticType<T>{val} {}
+    constexpr ProbabilityType(const T &val) : ArithmeticType<T>{val}
+    {
+        if constexpr (std::is_same_v<T, mpq_class>)
+        {
+            if (!is_canon(this->value))
+            {
+                ++ccc;
+            }
+        }
+    }
     template <typename Integral>
-    constexpr ProbabilityType(const Rational<Integral> &val) : ArithmeticType<T>{T{val}} {}
-    constexpr explicit ProbabilityType(const ArithmeticType<T> val) : ArithmeticType<T>{val} {
-        if constexpr (std::is_same<T, mpq_class>::value) {
-            // mpq_canonicalize(this->value.get_mpq_t());
+    constexpr ProbabilityType(const Rational<Integral> &val) : ArithmeticType<T>{T{val}}
+    {
+        if constexpr (std::is_same_v<T, mpq_class>)
+        {
+            if (!is_canon(this->value))
+            {
+                ++ccc;
+            }
+        }
+    }
+    constexpr explicit ProbabilityType(const ArithmeticType<T> val) : ArithmeticType<T>{val}
+    {
+        if constexpr (std::is_same<T, mpq_class>::value)
+        {
+            mpq_canonicalize(this->value.get_mpq_t());
         }
     }
     ProbabilityType &operator=(const ArithmeticType<T> &val)
     {
         this->value = val.value;
+        if constexpr (std::is_same_v<T, mpq_class>)
+        {
+            if (!is_canon(this->value))
+            {
+                ++ccc;
+            }
+        }
         return *this;
+    }
+    void canonicalize()
+    {
+        if (std::is_same_v<T, mpq_class>)
+        {
+            mpq_canonicalize(this->value.get_mpq_t());
+        }
     }
 };
 

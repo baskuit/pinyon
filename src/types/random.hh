@@ -44,12 +44,6 @@ public:
         return uniform_64_(engine);
     }
 
-    mpq_class uniform_mpq(const size_t q)
-    {
-        const size_t den = random_int(q) + 1;
-        return mpq_class{random_int(den + 1), den};
-    }
-
     template <template <typename...> typename Vector, template <typename> typename Wrapper, typename T>
     int sample_pdf(Vector<Wrapper<T>> &input, int k)
     {
