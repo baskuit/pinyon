@@ -117,8 +117,8 @@ public:
         typename Types::Real beta)
     {
         MatrixStats &stats = matrix_node->stats;
-        typename Types::VectorReal &I = stats.I;
-        typename Types::VectorReal &J = stats.J;
+        std::vector<int> &I = stats.I;
+        std::vector<int> &J = stats.J;
 
         state.get_actions();
         matrix_node->expand(state);
@@ -279,8 +279,8 @@ public:
         typename Types::VectorReal &col_strategy)
     {
         MatrixStats &stats = matrix_node->stats;
-        typename Types::VectorReal &I = stats.I;
-        typename Types::VectorReal &J = stats.J;
+        std::vector<int> &I = stats.I;
+        std::vector<int> &J = stats.J;
         int best_row_idx = -1;
 
         for (int row_idx = 0; row_idx < state.row_actions.size(); ++row_idx)
@@ -377,8 +377,8 @@ public:
         typename Types::VectorReal &row_strategy)
     {
         MatrixStats &stats = matrix_node->stats;
-        typename Types::VectorReal &I = stats.I;
-        typename Types::VectorReal &J = stats.J;
+        std::vector<int> &I = stats.I;
+        std::vector<int> &J = stats.J;
         int best_col_idx = -1;
 
         for (int col_idx = 0; col_idx < state.col_actions.size(); ++col_idx)
