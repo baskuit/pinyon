@@ -38,14 +38,10 @@ public:
 
     struct Data
     {
-        bool solved = false;
         typename Types::Probability unexplored{typename Types::Rational{1}};
-
         typename Types::Real alpha_explored, beta_explored;
         int next_chance_idx = 0;
         std::vector<typename Types::Observation> chance_actions;
-        std::vector<double> explored_vec{};
-        std::vector<int> chance_idx_vec{};
     };
 
     struct MatrixStats
@@ -73,7 +69,6 @@ public:
                 data.unexplored < x);
     }
 
-    bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
 
     struct ChanceStats
     {
@@ -84,6 +79,7 @@ public:
 
     const typename Types::Real min_val{Rational<>{0}}; // don't need to use the Game values if you happen to know that State's
     const typename Types::Real max_val{Rational<>{1}};
+    bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
 
     // const typename Types::Real epsilon{Rational{1, 1 << 24}};
 
@@ -120,12 +116,9 @@ public:
         typename Types::Real alpha,
         typename Types::Real beta)
     {
-
-        assert(teacher->stats.payoff.row_value >= alpha && teacher->stats.payoff.row_value <= beta);
-
         MatrixStats &stats = matrix_node->stats;
-
-        std::vector<int> I{}, J{};
+        typename Types::VectorReal &I = stats.I;
+        typename Types::VectorReal &J = stats.J;
 
         state.get_actions();
         matrix_node->expand(state);
@@ -223,8 +216,7 @@ public:
                     model,
                     matrix_node,
                     alpha, max_val,
-                    col_strategy,
-                    I, J);
+                    col_strategy);
 
             std::pair<int, typename Types::Real>
                 jv = best_response_col(
@@ -233,27 +225,20 @@ public:
                     model,
                     matrix_node,
                     min_val, beta,
-                    row_strategy,
-                    I, J);
+                    row_strategy);
 
+            // prune this node if no best response is as good as alpha/beta
             if (iv.first == -1)
             {
-                stats.row_solution = row_strategy;
-                stats.col_solution = col_strategy;
-                assert(teacher->stats.payoff.row_value == min_val);
                 return {min_val, min_val};
             }
             if (jv.first == -1)
             {
-                stats.row_solution = row_strategy;
-                stats.col_solution = col_strategy;
-                assert(teacher->stats.payoff.row_value == max_val);
                 return {max_val, max_val};
             }
 
             smaller_bounds = false;
             new_action = false;
-
             latest_row_idx = iv.first;
             latest_col_idx = jv.first;
 
@@ -267,7 +252,6 @@ public:
                 J.push_back(latest_col_idx);
                 new_action = true;
             }
-
             if (jv.second > alpha)
             {
                 alpha = jv.second;
@@ -278,29 +262,10 @@ public:
                 beta = iv.second;
                 smaller_bounds = true;
             }
-
-            if (fuzzy_equals(alpha, beta) || (!smaller_bounds && !new_action))
-            {
-                // teacher->stats.nash_payoff_matrix.print();
-                // for (size_t row_idx = 0; row_idx < rows; ++row_idx)
-                // {
-                //     for (size_t col_idx = 0; col_idx < cols; ++col_idx)
-                //     {
-                //         auto data = stats.data_matrix.get(row_idx, col_idx);
-                //         std::cout << data.alpha_explored.value.get_d() << ',' << data.beta_explored.value.get_d() << ' ';
-                //     }
-                //     std::cout << std::endl;
-                // }
-                // std::cout << '!' << std::endl;
-
-                assert(teacher->stats.payoff.row_value <= beta);
-                assert(teacher->stats.payoff.row_value >= alpha);
-            }
         }
 
         stats.row_solution = row_strategy;
         stats.col_solution = col_strategy;
-
         return {alpha, beta};
     }
 
@@ -311,10 +276,11 @@ public:
         Model &model,
         MNode<AlphaBeta> *matrix_node,
         typename Types::Real alpha, typename Types::Real beta,
-        typename Types::VectorReal &col_strategy,
-        std::vector<int> &I, std::vector<int> &J)
+        typename Types::VectorReal &col_strategy)
     {
         MatrixStats &stats = matrix_node->stats;
+        typename Types::VectorReal &I = stats.I;
+        typename Types::VectorReal &J = stats.J;
         int best_row_idx = -1;
 
         for (int row_idx = 0; row_idx < state.row_actions.size(); ++row_idx)
@@ -365,15 +331,12 @@ public:
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
                 MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
 
-                auto old_teacher = teacher;
-                teacher = teacher->access(row_idx, col_idx)->access(state_copy.obs);
                 auto alpha_beta_pair = double_oracle(
                     device,
                     state_copy,
                     model,
                     matrix_node_next,
                     min_val, max_val);
-                teacher = old_teacher;
 
                 data.alpha_explored += alpha_beta_pair.first * state_copy.prob;
                 data.beta_explored += alpha_beta_pair.second * state_copy.prob;
@@ -381,11 +344,7 @@ public:
 
                 data.unexplored -= state_copy.prob;
                 total_unexplored -= state_copy.prob * col_strategy[best_i];
-
-                assert(data.unexplored >= static_cast<typename Types::Probability>(Rational<>{0}));
-
-                typename Types::Real z{state_copy.prob * col_strategy[best_i]};
-                priority_scores[best_i] -= z;
+                priority_scores[best_i] -= state_copy.prob * col_strategy[best_i];
 
                 max_priority = typename Types::Rational{0};
                 for (int i = 0; i < J.size(); ++i)
@@ -398,11 +357,6 @@ public:
                         best_i = i;
                     }
                 }
-
-                // bool skip = (typename Types::Real{expected_score + beta * total_unexplored} < alpha);
-                // if (skip) {
-                //     std::cout << '!';
-                // }
             }
 
             if (expected_score >= alpha)
@@ -420,10 +374,11 @@ public:
         Model &model,
         MNode<AlphaBeta> *matrix_node,
         typename Types::Real alpha, typename Types::Real beta,
-        typename Types::VectorReal &row_strategy,
-        std::vector<int> &I, std::vector<int> &J)
+        typename Types::VectorReal &row_strategy)
     {
         MatrixStats &stats = matrix_node->stats;
+        typename Types::VectorReal &I = stats.I;
+        typename Types::VectorReal &J = stats.J;
         int best_col_idx = -1;
 
         for (int col_idx = 0; col_idx < state.col_actions.size(); ++col_idx)
@@ -474,16 +429,12 @@ public:
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
                 MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
 
-                auto old_teacher = teacher;
-                teacher = teacher->access(row_idx, col_idx)->access(state_copy.obs);
-
                 auto alpha_beta_pair = double_oracle(
                     device,
                     state_copy,
                     model,
                     matrix_node_next,
                     min_val, max_val);
-                teacher = old_teacher;
 
                 data.alpha_explored += alpha_beta_pair.first * state_copy.prob;
                 data.beta_explored += alpha_beta_pair.second * state_copy.prob;
@@ -491,11 +442,7 @@ public:
 
                 data.unexplored -= state_copy.prob;
                 total_unexplored -= state_copy.prob * row_strategy[best_i];
-
-                assert(data.unexplored >= static_cast<typename Types::Probability>(Rational<>{0}));
-
-                typename Types::Real z{state_copy.prob * row_strategy[best_i]}; // TODO why assignment not working
-                priority_scores[best_i] -= z;
+                priority_scores[best_i] -= state_copy.prob * row_strategy[best_i];
 
                 max_priority = typename Types::Real{Rational<>{0}};
                 for (int i = 0; i < I.size(); ++i)
@@ -508,11 +455,6 @@ public:
                         best_i = i;
                     }
                 }
-
-                // bool skip = (typename Types::Real{expected_score + alpha * total_unexplored} > beta);
-                // if (skip) {
-                //     std::cout << '!';
-                // }
             }
 
             if (expected_score <= beta)
@@ -565,27 +507,17 @@ private:
                 const typename Types::Observation chance_action = chance_actions[data.next_chance_idx];
                 typename Types::State state_copy = state;
                 state_copy.apply_actions(row_action, col_action, chance_action);
-
                 MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
-                auto old_teacher = teacher;
-                teacher = teacher->access(row_idx, col_idx)->access(state_copy.obs);
+
                 auto alpha_beta = double_oracle(device, state_copy, model, matrix_node_next, alpha, beta);
-                teacher = old_teacher;
 
-                data.unexplored -= state_copy.prob;
-
-                assert(data.unexplored >= static_cast<typename Types::Probability>(Rational<>{0}));
-                if (data.next_chance_idx == state_copy.transitions - 1)
-                {
-                    assert(data.unexplored == static_cast<typename Types::Probability>(Rational<>{0}));
-                }
                 data.alpha_explored += alpha_beta.first * state_copy.prob;
                 data.beta_explored += alpha_beta.second * state_copy.prob;
+                data.unexplored -= state_copy.prob;
             }
         }
 
         bool solved_exactly = (data.alpha_explored == data.beta_explored) && (data.unexplored == typename Types::Real{Rational<>{0}});
-
         return solved_exactly;
     };
 
