@@ -72,6 +72,12 @@ struct RealType : ArithmeticType<T>
             mpq_canonicalize(this->value.get_mpq_t());
         }
     }
+
+    friend std::ostream &operator<<(std::ostream &os, const RealType &value)
+    {
+        os << value.value.get_d();
+        return os;
+    }
 };
 
 template <typename T>

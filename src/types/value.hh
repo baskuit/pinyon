@@ -26,19 +26,28 @@ struct ConstantSum
         }
 
         template <typename T>
-        Value& operator+=(const T t) {
+        Value &operator+=(const T t)
+        {
             row_value += static_cast<Real>(t);
             return *this;
         }
 
-        Value& operator+=(const Value t) {
+        Value &operator+=(const Value t)
+        {
             row_value += static_cast<Real>(t.row_value);
             return *this;
         }
 
         template <typename T>
-        Value operator*(const T t) {
+        Value operator*(const T t)
+        {
             return Value{Real{row_value * static_cast<Real>(t)}};
+        }
+
+        friend std::ostream &operator<<(std::ostream &os, const Value &x)
+        {
+            os << x.row_value;
+            return os;
         }
     };
 };
@@ -130,7 +139,7 @@ struct PairReal<Wrapper<mpq_class>>
 
     friend std::ostream &operator<<(std::ostream &os, const PairReal<Wrapper<mpq_class>> &value)
     {
-        os << value.row_value << ',' << value.col_value;
+        os << value.row_value.value.get_d() << ',' << value.col_value.value.get_d();
         return os;
     }
 };

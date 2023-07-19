@@ -45,6 +45,19 @@ public:
     {
         return (*this)[i * cols + j];
     }
+
+    void print() const
+    {
+        for (size_t row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            for (size_t col_idx = 0; col_idx < cols; ++col_idx)
+            {
+                auto data = (*this)[row_idx * cols + col_idx];
+                std::cout << '(' << data.alpha_explored.value.get_d() << ',' << data.beta_explored.value.get_d() << ',' << data.unexplored.value.get_d() << ") "; // TODO REMOVE
+            }
+            std::cout << std::endl;
+        }
+    }
 };
 
 template <typename T>
@@ -130,13 +143,13 @@ public:
         return *std::min_element(this->begin(), this->begin() + entries);
     }
 
-    void print() const
+    void print() const __attribute__((noinline))
     {
         for (size_t row_idx = 0; row_idx < rows; ++row_idx)
         {
             for (size_t col_idx = 0; col_idx < cols; ++col_idx)
             {
-                std::cout << (*this)[row_idx * cols + col_idx].row_value.value.get_d() << ' '; // TODO REMOVE
+                std::cout << (*this)[row_idx * cols + col_idx] << ' ';
             }
             std::cout << std::endl;
         }

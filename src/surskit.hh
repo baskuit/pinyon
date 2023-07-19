@@ -38,7 +38,8 @@
 #include <algorithm/tree-bandit/bandit/rand.hh>
 
 #include <algorithm/solver/full-traversal.hh>
-#include <algorithm/solver/alpha-beta.hh> // TODO add stochastic optimizations
+#include <algorithm/solver/alpha-beta.hh>
+#include <algorithm/solver/alpha-beta-old.hh>
 
 // Tree
 
