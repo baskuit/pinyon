@@ -136,7 +136,7 @@ public:
         {
             for (size_t col_idx = 0; col_idx < cols; ++col_idx)
             {
-                std::cout << static_cast<double>((*this)[row_idx * cols + col_idx].row_value) << ' ';
+                std::cout << (*this)[row_idx * cols + col_idx].row_value.value.get_d() << ' '; // TODO REMOVE
             }
             std::cout << std::endl;
         }

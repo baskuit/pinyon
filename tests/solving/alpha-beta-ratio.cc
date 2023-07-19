@@ -38,9 +38,9 @@ int main()
         prng{0},
         {1, 2, 3},
         {2, 3, 4},
-        {4},
+        {1, 2, 5},
         {Rational<>{1, 20}},
-        std::vector<size_t>(5, 0)};
+        std::vector<size_t>(100, 0)};
 
     double total_ratio = 0;
     int tries = 0;

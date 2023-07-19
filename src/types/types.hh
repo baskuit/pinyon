@@ -14,7 +14,7 @@
 
 int ccc = 0;
 
-bool is_canon(mpq_class &x)
+bool is_canon(const mpq_class &x)
 {
     mpq_class y{};
     mpq_set(y.get_mpq_t(), x.get_mpq_t());
@@ -51,7 +51,7 @@ struct RealType : ArithmeticType<T>
     {
         if constexpr (std::is_same_v<T, mpq_class>)
         {
-            if (!is_canon(this->value))
+            if (!is_canon(val.value))
             {
                 ++ccc;
             }
@@ -59,6 +59,12 @@ struct RealType : ArithmeticType<T>
         this->value = val.value;
         return *this;
     }
+    // template <typename Integral>
+    // RealType &operator=(const Rational<Integral> &val)
+    // {
+    //     this->value = T{val};
+    //     return *this;
+    // }
     void canonicalize()
     {
         if (std::is_same_v<T, mpq_class>)
@@ -114,7 +120,7 @@ struct ProbabilityType : ArithmeticType<T>
     }
     void canonicalize()
     {
-        if (std::is_same_v<T, mpq_class>)
+        if constexpr (std::is_same_v<T, mpq_class>)
         {
             mpq_canonicalize(this->value.get_mpq_t());
         }

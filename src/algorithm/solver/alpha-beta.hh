@@ -154,15 +154,17 @@ public:
 
         stats.data_matrix.fill(rows, cols);
 
-        while (!fuzzy_equals(alpha, beta) && true)
+        bool smaller_bounds = false;
+        bool new_action = true;
+        typename Types::VectorReal row_strategy, col_strategy;
+
+        int latest_row_idx = 0;
+        int latest_col_idx = 0;
+
+        while (!fuzzy_equals(alpha, beta) && (smaller_bounds || new_action))
         {
 
             // get entry values/bounds for newly expanded sub game, use last added actions
-            const int latest_row_idx = I.back();
-            const int latest_col_idx = J.back();
-
-            const typename Types::Action latest_row_action = state.row_actions[latest_row_idx];
-            const typename Types::Action latest_col_action = state.col_actions[latest_col_idx];
 
             for (const int row_idx : I)
             {
@@ -170,19 +172,15 @@ public:
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, latest_col_idx);
                 solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, row_idx, latest_col_idx, min_val, max_val);
             }
+
             for (const int col_idx : J)
             {
-                if (col_idx == latest_col_idx)
-                {
-                    continue; // already done above
-                }
                 Data &data = stats.data_matrix.get(latest_row_idx, col_idx);
                 CNode<AlphaBeta> *chance_node = matrix_node->access(latest_row_idx, col_idx);
                 solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, latest_row_idx, col_idx, min_val, max_val);
             }
 
             // solve newly expanded and explored game
-            typename Types::VectorReal row_strategy, col_strategy;
 
             int entry_idx = 0;
             if (solved_exactly)
@@ -216,12 +214,6 @@ public:
                 LRSNash::solve(alpha_matrix, row_strategy, temp);
                 temp.clear();
                 LRSNash::solve(beta_matrix, temp, col_strategy);
-                // std::cout << "alpha_matrix" << std::endl;
-                // alpha_matrix.print();
-                // std::cout << "beta_matrix" << std::endl;
-                // beta_matrix.print();
-                // std::cout << "correct:" <<std::endl;
-                // teacher->stats.nash_payoff_matrix.print();
             }
 
             std::pair<int, typename Types::Real>
@@ -259,19 +251,23 @@ public:
                 return {max_val, max_val};
             }
 
-            bool no_new_actions = true;
-            if (std::find(I.begin(), I.end(), iv.first) == I.end())
+            smaller_bounds = false;
+            new_action = false;
+
+            latest_row_idx = iv.first;
+            latest_col_idx = jv.first;
+
+            if (std::find(I.begin(), I.end(), latest_row_idx) == I.end())
             {
-                no_new_actions = false;
-                I.push_back(iv.first);
+                I.push_back(latest_row_idx);
+                new_action = true;
             }
-            if (std::find(J.begin(), J.end(), jv.first) == J.end())
+            if (std::find(J.begin(), J.end(), latest_col_idx) == J.end())
             {
-                no_new_actions = false;
-                J.push_back(jv.first);
+                J.push_back(latest_col_idx);
+                new_action = true;
             }
 
-            bool smaller_bounds = false;
             if (jv.second > alpha)
             {
                 alpha = jv.second;
@@ -283,21 +279,33 @@ public:
                 smaller_bounds = true;
             }
 
-            if (no_new_actions && !smaller_bounds)
+            if (fuzzy_equals(alpha, beta) || (!smaller_bounds && !new_action))
             {
-                stats.row_solution = row_strategy;
-                stats.col_solution = col_strategy;
-                break;
+                // teacher->stats.nash_payoff_matrix.print();
+                // for (size_t row_idx = 0; row_idx < rows; ++row_idx)
+                // {
+                //     for (size_t col_idx = 0; col_idx < cols; ++col_idx)
+                //     {
+                //         auto data = stats.data_matrix.get(row_idx, col_idx);
+                //         std::cout << data.alpha_explored.value.get_d() << ',' << data.beta_explored.value.get_d() << ' ';
+                //     }
+                //     std::cout << std::endl;
+                // }
+                // std::cout << '!' << std::endl;
+
+                assert(teacher->stats.payoff.row_value <= beta);
+                assert(teacher->stats.payoff.row_value >= alpha);
             }
         }
 
-        assert(teacher->stats.payoff.row_value <= beta);
-        assert(teacher->stats.payoff.row_value >= alpha);
+        stats.row_solution = row_strategy;
+        stats.col_solution = col_strategy;
 
         return {alpha, beta};
     }
 
-    std::pair<int, typename Types::Real> best_response_row(
+    std::pair<int, typename Types::Real>
+    best_response_row(
         typename Types::PRNG &device,
         typename Types::State &state,
         Model &model,
@@ -311,119 +319,91 @@ public:
 
         for (int row_idx = 0; row_idx < state.row_actions.size(); ++row_idx)
         {
-            bool skipping_row_idx = false;
+            bool row_idx_in_I = (std::find(I.begin(), I.end(), row_idx) != I.end());
             const typename Types::Action row_action = state.row_actions[row_idx];
 
-            typename Types::Real max{typename Types::Rational{0}};
-            typename Types::Real x_sum{typename Types::Rational{0}};
-            typename Types::Real expected_score{typename Types::Rational{0}};
-
-            std::vector<typename Types::Real> importance_weight;
-            int col_idx = 0;
-            int best_i = 0; // replace with ptr to Real?
-
+            typename Types::Real max_priority{0}, expected_score{0}, total_unexplored{0};
+            std::vector<typename Types::Real> priority_scores;
+            int col_idx, best_i;
             for (int i = 0; i < J.size(); ++i)
             {
                 const int col_idx_temp = J[i];
                 Data &data = stats.data_matrix.get(row_idx, col_idx_temp);
-                typename Types::Real x;
-                if (data.solved)
+                expected_score += col_strategy[i] * data.beta_explored;
+                typename Types::Real priority;
+                if (row_idx_in_I)
                 {
-                    x = typename Types::Real{Rational<>{0}};
-                    const typename Types::Real alpha_next{data.beta_explored + beta * data.unexplored};
-                    expected_score += col_strategy[i] * alpha_next;
+                    priority = typename Types::Rational{0};
                 }
                 else
                 {
-                    x = col_strategy[i] * data.unexplored;
-                    const typename Types::Real alpha_next{data.beta_explored};
-                    expected_score += col_strategy[i] * alpha_next;
+                    priority = col_strategy[i] * data.unexplored;
                 }
-                x_sum += x;
-                importance_weight.push_back(x);
-                if (x > max)
+                total_unexplored += priority;
+                priority_scores.push_back(priority);
+                if (priority > max_priority)
                 {
                     col_idx = col_idx_temp;
-                    max = x;
+                    max_priority = priority;
                     best_i = i;
                 }
             }
-            // // mpq_canonicalize(max.value.get_mpq_t());
 
-            while (max > typename Types::Real{Rational<>{0}})
+            while (
+                (max_priority > typename Types::Real{Rational<>{0}}) &&
+                (typename Types::Real{expected_score + beta * total_unexplored} >= alpha))
             {
                 Data &data = stats.data_matrix.get(row_idx, col_idx);
-
-                typename Types::Real min_viable {(alpha - expected_score) / x_sum};
-                if (min_viable > beta) {
-                    break;
-                }
-
-                CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-
-                int chance_idx = data.next_chance_idx++;
-
                 const typename Types::Action col_action = state.col_actions[col_idx];
                 if (data.chance_actions.size() == 0)
                 {
                     state.get_chance_actions(data.chance_actions, row_action, col_action);
                 }
-                const typename Types::Observation chance_action = data.chance_actions[chance_idx];
+
                 typename Types::State state_copy = state;
-                state_copy.apply_actions(row_action, col_action, chance_action);
+                state_copy.apply_actions(row_action, col_action, data.chance_actions[data.next_chance_idx++]);
+                CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
                 MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
+
                 auto old_teacher = teacher;
                 teacher = teacher->access(row_idx, col_idx)->access(state_copy.obs);
-
                 auto alpha_beta_pair = double_oracle(
                     device,
                     state_copy,
                     model,
                     matrix_node_next,
                     min_val, max_val);
-
                 teacher = old_teacher;
 
                 data.alpha_explored += alpha_beta_pair.first * state_copy.prob;
                 data.beta_explored += alpha_beta_pair.second * state_copy.prob;
-                data.unexplored -= state_copy.prob;
                 expected_score += alpha_beta_pair.second * state_copy.prob * col_strategy[best_i];
-                data.explored_vec.push_back(state_copy.prob.value.get_d());
-                data.chance_idx_vec.push_back(chance_idx);
+
+                data.unexplored -= state_copy.prob;
+                total_unexplored -= state_copy.prob * col_strategy[best_i];
 
                 assert(data.unexplored >= static_cast<typename Types::Probability>(Rational<>{0}));
-                if (chance_idx == state_copy.transitions - 1)
-                {
-                    assert(data.unexplored == static_cast<typename Types::Probability>(Rational<>{0}));
-                }
 
                 typename Types::Real z{state_copy.prob * col_strategy[best_i]};
-                importance_weight[best_i] -= z;
+                priority_scores[best_i] -= z;
 
-                max = typename Types::Rational{0};
-                x_sum = typename Types::Rational{0};
+                max_priority = typename Types::Rational{0};
                 for (int i = 0; i < J.size(); ++i)
                 {
-                    const typename Types::Real x = importance_weight[i];
-                    x_sum += x;
-                    if (x > max)
+                    const typename Types::Real priority = priority_scores[i];
+                    if (priority > max_priority)
                     {
                         col_idx = J[i];
-                        max = x;
+                        max_priority = priority;
                         best_i = i;
                     }
                 }
+
+                // bool skip = (typename Types::Real{expected_score + beta * total_unexplored} < alpha);
+                // if (skip) {
+                //     std::cout << '!';
+                // }
             }
-            // done solving
-
-            // for (int i = 0; i < J.size(); ++i)
-            // {
-            //     const int col_idx = J[i];
-            //     Data &data = stats.data_matrix.get(row_idx, col_idx);
-
-            //     const typename Types::Real alpha_next{data.beta_explored + beta * data.unexplored}; // TODO is this correct?
-            //     expected_score += col_strategy[i] * alpha_next;
-            // }
 
             if (expected_score >= alpha)
             {
@@ -445,60 +425,55 @@ public:
     {
         MatrixStats &stats = matrix_node->stats;
         int best_col_idx = -1;
+
         for (int col_idx = 0; col_idx < state.col_actions.size(); ++col_idx)
         {
-
+            bool col_idx_in_J = (std::find(J.begin(), J.end(), col_idx) != J.end());
             const typename Types::Action col_action = state.col_actions[col_idx];
 
-            typename Types::Real max{typename Types::Rational{0}};
-            std::vector<typename Types::Real> importance_weight;
-            int row_idx = 0;
-            int best_i = 0;
+            typename Types::Real max_priority{0}, expected_score{0}, total_unexplored{0};
+            std::vector<typename Types::Real> priority_scores;
+            int row_idx, best_i;
             for (int i = 0; i < I.size(); ++i)
             {
                 const int row_idx_temp = I[i];
                 Data &data = stats.data_matrix.get(row_idx_temp, col_idx);
-                typename Types::Real x;
-                if (data.solved)
+                expected_score += row_strategy[i] * data.alpha_explored;
+                typename Types::Real priority;
+                if (col_idx_in_J)
                 {
-                    x = typename Types::Real{typename Types::Rational{0}};
+                    priority = typename Types::Rational{0};
                 }
                 else
                 {
-                    x = row_strategy[i] * data.unexplored;
+                    priority = row_strategy[i] * data.unexplored;
                 }
-                importance_weight.push_back(x);
-                if (x > max)
+                total_unexplored += priority;
+                priority_scores.push_back(priority);
+                if (priority > max_priority)
                 {
                     row_idx = row_idx_temp;
-                    max = x;
+                    max_priority = priority;
                     best_i = i;
                 }
             }
 
-            // mpq_canonicalize(max.value.get_mpq_t());
-
-            while (max > typename Types::Real{typename Types::Rational{0}})
+            while (
+                (max_priority > typename Types::Real{Rational<>{0}}) &&
+                (typename Types::Real{expected_score + alpha * total_unexplored} <= beta))
             {
                 Data &data = stats.data_matrix.get(row_idx, col_idx);
-                if (data.solved)
-                {
-                    break;
-                }
-
-                CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-
-                int chance_idx = data.next_chance_idx++;
-
                 const typename Types::Action row_action = state.row_actions[row_idx];
                 if (data.chance_actions.size() == 0)
                 {
                     state.get_chance_actions(data.chance_actions, row_action, col_action);
                 }
-                const typename Types::Observation chance_action = data.chance_actions[chance_idx];
+
                 typename Types::State state_copy = state;
-                state_copy.apply_actions(row_action, col_action, chance_action);
+                state_copy.apply_actions(row_action, col_action, data.chance_actions[data.next_chance_idx++]);
+                CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
                 MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
+
                 auto old_teacher = teacher;
                 teacher = teacher->access(row_idx, col_idx)->access(state_copy.obs);
 
@@ -508,63 +483,48 @@ public:
                     model,
                     matrix_node_next,
                     min_val, max_val);
-
                 teacher = old_teacher;
 
                 data.alpha_explored += alpha_beta_pair.first * state_copy.prob;
                 data.beta_explored += alpha_beta_pair.second * state_copy.prob;
+                expected_score += alpha_beta_pair.first * state_copy.prob * row_strategy[best_i];
+
                 data.unexplored -= state_copy.prob;
-                data.explored_vec.push_back(state_copy.prob.value.get_d());
-                data.chance_idx_vec.push_back(chance_idx);
+                total_unexplored -= state_copy.prob * row_strategy[best_i];
 
                 assert(data.unexplored >= static_cast<typename Types::Probability>(Rational<>{0}));
-                if (chance_idx == state_copy.transitions - 1)
-                {
-                    assert(data.unexplored == static_cast<typename Types::Probability>(Rational<>{0}));
-                }
 
                 typename Types::Real z{state_copy.prob * row_strategy[best_i]}; // TODO why assignment not working
-                importance_weight[best_i] -= z;
+                priority_scores[best_i] -= z;
 
-                max = typename Types::Real{Rational<>{0}};
+                max_priority = typename Types::Real{Rational<>{0}};
                 for (int i = 0; i < I.size(); ++i)
                 {
-                    const typename Types::Real x = importance_weight[i];
-                    if (x > max)
+                    const typename Types::Real priority = priority_scores[i];
+                    if (priority > max_priority)
                     {
                         row_idx = I[i];
-                        max = x;
+                        max_priority = priority;
                         best_i = i;
                     }
                 }
+
+                // bool skip = (typename Types::Real{expected_score + alpha * total_unexplored} > beta);
+                // if (skip) {
+                //     std::cout << '!';
+                // }
             }
 
-            typename Types::Real expected_score{typename Types::Rational{0}};
-            for (int i = 0; i < I.size(); ++i)
-            {
-                const int row_idx = I[i];
-                Data &data = stats.data_matrix.get(row_idx, col_idx);
-
-                if (data.unexplored > typename Types::Probability{0})
-                {
-                    // std::cout << '!' << std::endl;
-                }
-
-                const typename Types::Real beta_next{data.alpha_explored + alpha * data.unexplored};
-                expected_score += row_strategy[i] * beta_next;
-            }
-            // mpq_canonicalize(expected_score.value.get_mpq_t());
             if (expected_score <= beta)
             {
                 best_col_idx = col_idx;
                 beta = expected_score;
             }
         }
-        // // mpq_canonicalize(beta.value.get_mpq_t());
         return {best_col_idx, beta};
     }
 
-    // private:
+private:
     template <typename T>
     bool fuzzy_equals(T x, T y)
     {
@@ -581,19 +541,15 @@ public:
         typename Types::State &state, // TODO const?
         typename Types::Model &model,
         MatrixNode<AlphaBeta> *matrix_node,
-        int row_idx,
-        int col_idx,
-        typename Types::Real alpha,
-        typename Types::Real beta)
+        int row_idx, int col_idx,
+        typename Types::Real alpha, typename Types::Real beta)
     {
         MatrixStats &stats = matrix_node->stats;
         CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
         Data &data = stats.data_matrix.get(row_idx, col_idx);
 
-        if (data.unexplored > typename Types::Probability{0} && !data.solved)
+        if (data.unexplored > typename Types::Probability{0})
         {
-
-            // typename Types::Action row_action, col_action;
             auto row_action = state.row_actions[row_idx];
             auto col_action = state.col_actions[col_idx];
 
@@ -606,7 +562,6 @@ public:
             // go through all chance actions
             for (; data.next_chance_idx < chance_actions.size() && !terminate(device, data); ++data.next_chance_idx)
             {
-
                 const typename Types::Observation chance_action = chance_actions[data.next_chance_idx];
                 typename Types::State state_copy = state;
                 state_copy.apply_actions(row_action, col_action, chance_action);
@@ -614,9 +569,9 @@ public:
                 MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
                 auto old_teacher = teacher;
                 teacher = teacher->access(row_idx, col_idx)->access(state_copy.obs);
-
                 auto alpha_beta = double_oracle(device, state_copy, model, matrix_node_next, alpha, beta);
                 teacher = old_teacher;
+
                 data.unexplored -= state_copy.prob;
 
                 assert(data.unexplored >= static_cast<typename Types::Probability>(Rational<>{0}));
@@ -628,11 +583,8 @@ public:
                 data.beta_explored += alpha_beta.second * state_copy.prob;
             }
         }
-        // mpq_canonicalize(data.alpha_explored.value.get_mpq_t());
-        // mpq_canonicalize(data.beta_explored.value.get_mpq_t());
 
         bool solved_exactly = (data.alpha_explored == data.beta_explored) && (data.unexplored == typename Types::Real{Rational<>{0}});
-        data.solved = true;
 
         return solved_exactly;
     };
