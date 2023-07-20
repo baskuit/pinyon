@@ -18,7 +18,7 @@ public:
     };
 
     typename Types::PRNG device;
-    typename Types::Seed seed{};
+    typename Types::Seed seed;
     size_t depth_bound = 0;
     size_t rows = 0;
     size_t cols = 0;
@@ -96,6 +96,22 @@ public:
         };
     }
 
+    void get_actions(
+        typename Types::VectorAction &row_actions,
+        typename Types::VectorAction &col_actions) const
+    {
+        row_actions.fill(rows);
+        col_actions.fill(cols);
+        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            row_actions[row_idx] = typename Types::Action{row_idx};
+        };
+        for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
+        {
+            col_actions[col_idx] = typename Types::Action{col_idx};
+        };
+    }
+
     void get_chance_actions(
         std::vector<typename Types::Observation> &chance_actions,
         const typename Types::Action row_action,
@@ -132,9 +148,9 @@ public:
         if (depth_bound == 0)
         {
             this->is_terminal = true;
-            Rational<> row_payoff{(payoff_bias > 0) - (payoff_bias < 0) + 1, 2};
+            typename Types::Rational row_payoff{(payoff_bias > 0) - (payoff_bias < 0) + 1, 2};
             row_payoff.reduce();
-            this->payoff.row_value = typename Types::Real{row_payoff};
+            this->payoff = typename Types::Value{typename Types::Real{row_payoff}};
         }
         else
         {
@@ -212,7 +228,7 @@ private:
                     p /= prob_sum;
                     if (p < chance_threshold)
                     {
-                        p = typename Types::Probability(typename Types::Rational(0));
+                        p = typename Types::Probability{0};
                     }
                     new_prob_sum += p;
                 }
@@ -263,4 +279,3 @@ struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTre
         RandomTreeGenerator::device = prng{device};
     }
 };
-// 

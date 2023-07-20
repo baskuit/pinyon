@@ -30,16 +30,7 @@ struct RealType : ArithmeticType<T>
     constexpr RealType() : ArithmeticType<T>{} {}
     constexpr RealType(const T &val) : ArithmeticType<T>{val} {}
     template <typename Integral>
-    constexpr RealType(const Rational<Integral> &val) : ArithmeticType<T>{T{val}}
-    {
-        if constexpr (std::is_same_v<T, mpq_class>)
-        {
-            if (!is_canon(this->value))
-            {
-                ++ccc;
-            }
-        }
-    }
+    constexpr RealType(const Rational<Integral> &val) : ArithmeticType<T>{T{val}} {}
     constexpr explicit RealType(const ArithmeticType<T> val) : ArithmeticType<T>{val}
     {
         if constexpr (std::is_same_v<T, mpq_class>)
@@ -49,25 +40,16 @@ struct RealType : ArithmeticType<T>
     }
     RealType &operator=(const ArithmeticType<T> &val)
     {
+        this->value = val.value;
         if constexpr (std::is_same_v<T, mpq_class>)
         {
-            if (!is_canon(val.value))
-            {
-                ++ccc;
-            }
+            mpq_canonicalize(this->value.get_mpq_t());
         }
-        this->value = val.value;
         return *this;
     }
-    // template <typename Integral>
-    // RealType &operator=(const Rational<Integral> &val)
-    // {
-    //     this->value = T{val};
-    //     return *this;
-    // }
     void canonicalize()
     {
-        if (std::is_same_v<T, mpq_class>)
+        if constexpr (std::is_same_v<T, mpq_class>)
         {
             mpq_canonicalize(this->value.get_mpq_t());
         }
@@ -75,7 +57,12 @@ struct RealType : ArithmeticType<T>
 
     friend std::ostream &operator<<(std::ostream &os, const RealType &value)
     {
-        os << value.value.get_d();
+        if constexpr (std::is_same_v<T, mpq_class>)
+        {
+            os << value.value.get_str();
+        } else {
+            os << value.value;
+        }
         return os;
     }
 };
@@ -231,7 +218,8 @@ using RandomTreeTypes = DefaultTypes<
     double,
     int,
     int,
-    double>;
+    double,
+    ConstantSum<1, 1>::Value>;
 
 using RatTypes = DefaultTypes<
     mpq_class,

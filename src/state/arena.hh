@@ -14,7 +14,7 @@ public:
     W::StateWrapper<_State> (*init_state_generator)(typename Types::Seed){nullptr};
     W::ModelWrapper<_Model> model{device};
 
-    typename Types::Seed init_state_seed{};
+    typename Types::Seed state_seed{};
 
     prng device{};
     std::vector<W::Search *> searches{};
@@ -42,11 +42,11 @@ public:
         }
     }
 
-    void get_actions() {}
+    void get_actions() const {}
 
     void reseed(typename Types::PRNG &device)
     {
-        init_state_seed = device.uniform_64();
+        state_seed = device.uniform_64();
     }
 
     void apply_actions(
@@ -56,9 +56,9 @@ public:
         W::Search *row_search = searches[static_cast<int>(row_action)]->clone();
         W::Search *col_search = searches[static_cast<int>(col_action)]->clone();
 
-        W::StateWrapper<_State> state_copy = (*init_state_generator)(init_state_seed);
+        W::StateWrapper<_State> state_copy = (*init_state_generator)(state_seed);
         PairReal<double> row_first_payoff = play_vs(row_search, col_search, state_copy, model);
-        state_copy = (*init_state_generator)(init_state_seed);
+        state_copy = (*init_state_generator)(state_seed);
         PairReal<double> col_first_payoff = play_vs(col_search, row_search, state_copy, model);
 
         PairReal<double> avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
@@ -80,8 +80,6 @@ public:
         while (!state.is_terminal())
         {
             std::vector<double> row_strategy, col_strategy;
-            // row_search->reset();
-            // col_search->reset();
             row_search->run_and_get_strategies(row_strategy, col_strategy, iterations, state, model);
             ActionIndex row_idx = device.sample_pdf(row_strategy);
             col_search->run_and_get_strategies(row_strategy, col_strategy, iterations, state, model);

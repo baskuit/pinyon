@@ -45,7 +45,7 @@ public:
     }
 
     template <template <typename...> typename Vector, template <typename> typename Wrapper, typename T>
-    int sample_pdf(Vector<Wrapper<T>> &input, int k)
+    int sample_pdf(const Vector<Wrapper<T>> &input, int k)
     {
         double p = uniform();
         for (int i = 0; i < k; ++i)
@@ -60,7 +60,7 @@ public:
     }
 
     template <typename Vector>
-    int sample_pdf(Vector &input)
+    int sample_pdf(const Vector &input)
     {
         double p = uniform();
         for (int i = 0; i < input.size(); ++i)

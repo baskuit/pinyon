@@ -22,7 +22,7 @@ struct ConstantSum
         }
         inline constexpr Real get_col_value() const
         {
-            return Real{PAYOFF_SUM} - row_value;
+            return Real{Real{PAYOFF_SUM} - row_value};
         }
 
         template <typename T>
@@ -108,8 +108,6 @@ struct PairReal<Wrapper<mpq_class>>
 
     PairReal() {}
     PairReal(mpq_class row_value, mpq_class col_value) : row_value{row_value}, col_value{col_value} {}
-    // template <typename T>
-    // PairReal(Rational<T> row_value, Rational<T> col_value) : row_value{row_value}, col_value{col_value} {}
 
     inline constexpr Wrapper<mpq_class> get_row_value() const
     {

@@ -268,16 +268,16 @@ public:
             stats.row_pricipal_idx = I[std::distance(row_strategy.begin(), std::max_element(row_strategy.begin(), row_strategy.end()))];
             stats.col_pricipal_idx = J[std::distance(col_strategy.begin(), std::max_element(col_strategy.begin(), col_strategy.end()))];
         }
-        // I.clear();
-        // J.clear();
-        // row_strategy.clear();
-        // col_strategy.clear();
-        // stats.data_matrix.clear();
-        I.resize(0);
-        J.resize(0);
-        row_strategy.resize(0);
-        col_strategy.resize(0);
-        stats.data_matrix.resize(0);
+        I.clear();
+        J.clear();
+        row_strategy.clear();
+        col_strategy.clear();
+        stats.data_matrix.clear();
+        // I.resize(0);
+        // J.resize(0);
+        // row_strategy.resize(0);
+        // col_strategy.resize(0);
+        // stats.data_matrix.resize(0);
 
         return {alpha, beta};
     }

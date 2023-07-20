@@ -25,7 +25,7 @@ public:
         typename Types::VectorInt col_visits;
 
         int visits = 0;
-        typename Types::Value value_total{0, 0};
+        PairReal<typename Types::Real> value_total{0, 0};
     };
 
     struct ChanceStats
@@ -156,7 +156,7 @@ protected:
         MatrixStats &stats,
         Outcome &outcome) const
     {
-        stats.value_total += outcome.value;
+        stats.value_total += PairReal<typename Types::Real>{outcome.value.get_row_value(), outcome.value.get_col_value()};
         stats.visits += 1;
         stats.row_visits[outcome.row_idx] += 1;
         stats.col_visits[outcome.col_idx] += 1;

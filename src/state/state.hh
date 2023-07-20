@@ -36,6 +36,11 @@ public:
     
     void get_actions();
 
+    void get_actions(
+        typename Types::VectorAction &row_actions,
+        typename Types::VectorAction &col_actions
+    ) const;
+
     void apply_actions(
         typename Types::Action row_action,
         typename Types::Action col_action);

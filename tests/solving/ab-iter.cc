@@ -48,11 +48,11 @@ int main()
 
     RandomTreeGenerator<RatTypes> generator{
         prng{0},
-        {12},
-        {5},
-        {2},
+        {7},
+        {3},
+        {3},
         {Rational<>{1, 20}},
-        std::vector<size_t>(100, 0)};
+        std::vector<size_t>(10, 0)};
 
     double total_ratio = 0;
     size_t counter = 0;
