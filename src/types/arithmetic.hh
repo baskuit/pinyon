@@ -62,13 +62,22 @@ struct ArithmeticType : Wrapper<T>
         }
         else
         {
-            return this->value == other;
+            return this->value == other.value;
         }
     }
 
     bool operator!=(const ArithmeticType &other) const
     {
-        return this->value != other.value;
+        if constexpr (std::is_same<T, mpq_class>::value)
+        {
+            mpq_srcptr a = this->value.get_mpq_t();
+            mpq_srcptr b = other.value.get_mpq_t();
+            return mpq_equal(a, b) == 0;
+        }
+        else
+        {
+            return this->value != other.value;
+        }
     }
 
     bool operator<(const ArithmeticType &other) const

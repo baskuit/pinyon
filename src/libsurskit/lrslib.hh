@@ -132,4 +132,14 @@ namespace LRSNash
     {
     }
 
+    template <template <typename...> typename Vector, template <typename...> typename Matrix, template<typename> typename Value, typename Real>
+    std::pair<Real, Real>
+    solve(
+        Matrix<Value<Real>> &payoff_matrix,
+        Vector<Real> &row_strategy,
+        Vector<Real> &col_strategy)
+    {
+        return {Real{0}, Real{0}};
+    }
+
 }; // End namespace LRSNash

@@ -451,16 +451,22 @@ public:
     }
 
 private:
-    template <typename T>
-    bool fuzzy_equals(T x, T y)
+    template <template <typename> typename Wrapper, typename T>
+    bool fuzzy_equals(Wrapper<T> x, Wrapper<T> y)
     {
-        // return epsilon > std::abs((x - y).value);
-        mpq_ptr a = x.value.get_mpq_t();
-        mpq_ptr b = y.value.get_mpq_t();
-        mpq_canonicalize(a);
-        mpq_canonicalize(b);
-        bool answer = mpq_equal(a, b);
-        return answer; // TODO
+        if constexpr (std::is_same_v<T, mpq_class>) {
+            mpq_ptr a = x.value.get_mpq_t();
+            mpq_ptr b = y.value.get_mpq_t();
+            // mpq_canonicalize(a);
+            // mpq_canonicalize(b);
+            bool answer = mpq_equal(a, b);
+            return answer;
+        } else {
+            static const typename Types::Real epsilon{Rational{1, 1 << 24}};
+            static const typename Types::Real neg_epsilon{Rational{-1, 1 << 24}};
+            Wrapper<T> z {x - y};
+            return neg_epsilon < z && z < epsilon;
+        }
     }
 
     typename Types::Real solve_submatrix(
