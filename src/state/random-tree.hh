@@ -99,7 +99,7 @@ public:
     void get_chance_actions(
         std::vector<typename Types::Observation> &chance_actions,
         const typename Types::Action row_action,
-        const typename Types::Action col_action)
+        const typename Types::Action col_action) const
     {
         chance_actions.clear();
         const size_t start_idx = get_transition_idx(row_action, col_action, typename Types::Observation{0});
@@ -176,7 +176,7 @@ private:
     inline size_t get_transition_idx(
         typename Types::Action row_action,
         typename Types::Action col_action,
-        typename Types::Observation chance_action)
+        typename Types::Observation chance_action) const
     {
         const ActionIndex row_idx{row_action};
         const ActionIndex col_idx{col_action};

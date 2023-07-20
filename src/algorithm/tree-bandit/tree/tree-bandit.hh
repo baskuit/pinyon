@@ -37,7 +37,7 @@ public:
     size_t run(
         size_t duration_ms,
         typename Types::PRNG &device,
-        typename Types::State &state,
+        const typename Types::State &state,
         typename Types::Model &model,
         MatrixNode<TreeBandit> &matrix_node)
     {

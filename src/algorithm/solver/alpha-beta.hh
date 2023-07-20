@@ -24,9 +24,6 @@ concept DoubleOracleModelConcept = requires(T obj, typename T::Types::State &sta
 template <DoubleOracleModelConcept Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
 class AlphaBeta : public AbstractAlgorithm<Model>
 {
-private:
-    int max_depth = -1;
-
 public:
     struct MatrixStats;
     struct ChanceStats;
@@ -39,22 +36,19 @@ public:
     struct Data
     {
         typename Types::Probability unexplored{typename Types::Rational{1}};
-        typename Types::Real alpha_explored, beta_explored;
+        typename Types::Real alpha_explored{0}, beta_explored{0};
         int next_chance_idx = 0;
-        std::vector<typename Types::Observation> chance_actions;
+        std::vector<typename Types::Observation> chance_actions{};
     };
 
     struct MatrixStats
     {
-        DataMatrix<Data> data_matrix;
-        typename Types::VectorReal row_solution, col_solution;
-
-        size_t matrix_node_count = 1;
-        size_t matrix_node_count_last = 0;
+        DataMatrix<Data> data_matrix{};
+        typename Types::VectorReal row_solution{}, col_solution{};
         unsigned int depth = 0;
 
         int row_pricipal_idx = 0, col_pricipal_idx = 0;
-        std::vector<int> I, J;
+        std::vector<int> I{}, J{};
     };
 
     static bool dont_terminate(typename Types::PRNG &, const Data &)
@@ -69,10 +63,8 @@ public:
                 data.unexplored < x);
     }
 
-
     struct ChanceStats
     {
-        size_t matrix_node_count = 0;
     };
 
     MNode<FullTraversal<Model>> *teacher;
@@ -80,6 +72,7 @@ public:
     const typename Types::Real min_val{Rational<>{0}}; // don't need to use the Game values if you happen to know that State's
     const typename Types::Real max_val{Rational<>{1}};
     bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
+    int max_depth = -1;
 
     // const typename Types::Real epsilon{Rational{1, 1 << 24}};
 
@@ -93,17 +86,18 @@ public:
 
     auto run(
         typename Types::PRNG &device,
-        typename Types::State &state,
+        const typename Types::State &state,
         Model &model,
         MNode<AlphaBeta> &root)
     {
-        return double_oracle(device, state, model, &root, min_val, max_val);
+        auto state_copy = state;
+        return double_oracle(device, state_copy, model, &root, min_val, max_val);
     }
 
     void run(
         size_t ms,
         typename Types::PRNG &device,
-        typename Types::State &state,
+        const typename Types::State &state,
         Model &model,
         MNode<AlphaBeta> &root) {}
 
@@ -119,6 +113,8 @@ public:
         MatrixStats &stats = matrix_node->stats;
         std::vector<int> &I = stats.I;
         std::vector<int> &J = stats.J;
+        typename Types::VectorReal &row_strategy = stats.row_solution;
+        typename Types::VectorReal &col_strategy = stats.col_solution;
 
         state.get_actions();
         matrix_node->expand(state);
@@ -145,14 +141,15 @@ public:
         const size_t rows = state.row_actions.size();
         const size_t cols = state.col_actions.size();
 
-        stats.data_matrix.fill(rows, cols);
+        // stats.data_matrix.fill(rows, cols);
+        DataMatrix<Data> new_data_matrix{rows, cols}; // TODO
+        stats.data_matrix = new_data_matrix;
 
         bool smaller_bounds = false;
         bool new_action = true;
-        typename Types::VectorReal row_strategy, col_strategy;
 
-        int latest_row_idx = 0;
-        int latest_col_idx = 0;
+        int latest_row_idx = stats.row_pricipal_idx;
+        int latest_col_idx = stats.col_pricipal_idx;
 
         while (!fuzzy_equals(alpha, beta) && (smaller_bounds || new_action))
         {
@@ -163,14 +160,14 @@ public:
             {
                 Data &data = stats.data_matrix.get(row_idx, latest_col_idx);
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, latest_col_idx);
-                solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, row_idx, latest_col_idx, min_val, max_val);
+                solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, row_idx, latest_col_idx);
             }
 
             for (const int col_idx : J)
             {
                 Data &data = stats.data_matrix.get(latest_row_idx, col_idx);
                 CNode<AlphaBeta> *chance_node = matrix_node->access(latest_row_idx, col_idx);
-                solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, latest_row_idx, col_idx, min_val, max_val);
+                solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, latest_row_idx, col_idx);
             }
 
             // solve newly expanded and explored game
@@ -264,15 +261,31 @@ public:
             }
         }
 
-        stats.row_solution = row_strategy;
-        stats.col_solution = col_strategy;
+        // stats.row_solution = row_strategy;
+        // stats.col_solution = col_strategy;
+        if (max_depth > 0)
+        {
+            stats.row_pricipal_idx = I[std::distance(row_strategy.begin(), std::max_element(row_strategy.begin(), row_strategy.end()))];
+            stats.col_pricipal_idx = J[std::distance(col_strategy.begin(), std::max_element(col_strategy.begin(), col_strategy.end()))];
+        }
+        // I.clear();
+        // J.clear();
+        // row_strategy.clear();
+        // col_strategy.clear();
+        // stats.data_matrix.clear();
+        I.resize(0);
+        J.resize(0);
+        row_strategy.resize(0);
+        col_strategy.resize(0);
+        stats.data_matrix.resize(0);
+
         return {alpha, beta};
     }
 
     std::pair<int, typename Types::Real>
     best_response_row(
         typename Types::PRNG &device,
-        typename Types::State &state,
+        const typename Types::State &state,
         Model &model,
         MNode<AlphaBeta> *matrix_node,
         typename Types::Real alpha, typename Types::Real beta,
@@ -330,6 +343,8 @@ public:
                 state_copy.apply_actions(row_action, col_action, data.chance_actions[data.next_chance_idx++]);
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
                 MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
+                matrix_node_next->stats.depth = stats.depth + 1;
+                const typename Types::Probability prob = state_copy.prob;
 
                 auto alpha_beta_pair = double_oracle(
                     device,
@@ -338,13 +353,16 @@ public:
                     matrix_node_next,
                     min_val, max_val);
 
-                data.alpha_explored += alpha_beta_pair.first * state_copy.prob;
-                data.beta_explored += alpha_beta_pair.second * state_copy.prob;
-                expected_score += alpha_beta_pair.second * state_copy.prob * col_strategy[best_i];
+                data.alpha_explored += alpha_beta_pair.first * prob;
+                data.beta_explored += alpha_beta_pair.second * prob;
+                expected_score += alpha_beta_pair.second * prob * col_strategy[best_i];
 
-                data.unexplored -= state_copy.prob;
-                total_unexplored -= state_copy.prob * col_strategy[best_i];
-                priority_scores[best_i] -= state_copy.prob * col_strategy[best_i];
+                data.unexplored -= prob;
+                total_unexplored -= prob * col_strategy[best_i];
+                priority_scores[best_i] -= prob * col_strategy[best_i];
+
+                assert(data.unexplored >= typename Types::Real{0});
+                assert(total_unexplored >= typename Types::Real{0});
 
                 max_priority = typename Types::Rational{0};
                 for (int i = 0; i < J.size(); ++i)
@@ -370,7 +388,7 @@ public:
 
     std::pair<int, typename Types::Real> best_response_col(
         typename Types::PRNG &device,
-        typename Types::State &state,
+        const typename Types::State &state,
         Model &model,
         MNode<AlphaBeta> *matrix_node,
         typename Types::Real alpha, typename Types::Real beta,
@@ -428,6 +446,8 @@ public:
                 state_copy.apply_actions(row_action, col_action, data.chance_actions[data.next_chance_idx++]);
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
                 MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
+                matrix_node_next->stats.depth = stats.depth + 1;
+                const typename Types::Probability prob = state_copy.prob;
 
                 auto alpha_beta_pair = double_oracle(
                     device,
@@ -436,13 +456,16 @@ public:
                     matrix_node_next,
                     min_val, max_val);
 
-                data.alpha_explored += alpha_beta_pair.first * state_copy.prob;
-                data.beta_explored += alpha_beta_pair.second * state_copy.prob;
-                expected_score += alpha_beta_pair.first * state_copy.prob * row_strategy[best_i];
+                data.alpha_explored += alpha_beta_pair.first * prob;
+                data.beta_explored += alpha_beta_pair.second * prob;
+                expected_score += alpha_beta_pair.first * prob * row_strategy[best_i];
 
-                data.unexplored -= state_copy.prob;
-                total_unexplored -= state_copy.prob * row_strategy[best_i];
-                priority_scores[best_i] -= state_copy.prob * row_strategy[best_i];
+                data.unexplored -= prob;
+                total_unexplored -= prob * row_strategy[best_i];
+                priority_scores[best_i] -= prob * row_strategy[best_i];
+
+                assert(data.unexplored >= typename Types::Real{0});
+                assert(total_unexplored >= typename Types::Real{0});
 
                 max_priority = typename Types::Real{Rational<>{0}};
                 for (int i = 0; i < I.size(); ++i)
@@ -480,11 +503,10 @@ private:
 
     inline bool try_solve_chance_node(
         typename Types::PRNG &device,
-        typename Types::State &state, // TODO const?
+        const typename Types::State &state, // TODO const?
         typename Types::Model &model,
         MatrixNode<AlphaBeta> *matrix_node,
-        int row_idx, int col_idx,
-        typename Types::Real alpha, typename Types::Real beta)
+        int row_idx, int col_idx)
     {
         MatrixStats &stats = matrix_node->stats;
         CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
@@ -508,12 +530,14 @@ private:
                 typename Types::State state_copy = state;
                 state_copy.apply_actions(row_action, col_action, chance_action);
                 MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
+                matrix_node_next->stats.depth = stats.depth + 1;
+                const typename Types::Probability prob = state_copy.prob;
 
-                auto alpha_beta = double_oracle(device, state_copy, model, matrix_node_next, alpha, beta);
+                auto alpha_beta = double_oracle(device, state_copy, model, matrix_node_next, min_val, max_val);
 
-                data.alpha_explored += alpha_beta.first * state_copy.prob;
-                data.beta_explored += alpha_beta.second * state_copy.prob;
-                data.unexplored -= state_copy.prob;
+                data.alpha_explored += alpha_beta.first * prob;
+                data.beta_explored += alpha_beta.second * prob;
+                data.unexplored -= prob;
             }
         }
 
