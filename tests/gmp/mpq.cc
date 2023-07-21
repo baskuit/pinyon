@@ -4,30 +4,25 @@ void random_matrix(prng device, const size_t rows, const size_t cols, const int 
 {
     const size_t entries = rows * cols;
 
-    std::vector<mpq_class> rpd, cpd;
+    std::vector<double> rpd, cpd;
 
-    Matrix<PairReal<RealType<mpq_class>>> matrix{rows, cols};
+    Matrix<PairReal<RealType<double>>> matrix{rows, cols};
 
     for (int i = 0; i < entries; ++i)
     {
-        const int den = device.random_int(discrete) + 1;
-        const int row_num = device.random_int(den + 1);
-        const int col_num = den - row_num;
+        rpd.emplace_back(device.uniform());
+        cpd.emplace_back(device.uniform());
 
-        rpd.emplace_back(mpz_class{row_num}, mpz_class{den});
-        cpd.emplace_back(mpz_class{col_num}, mpz_class{den});
-
-        matrix[i].row_value = RealType<mpq_class>{rpd[i]};
-        matrix[i].col_value = RealType<mpq_class>{cpd[i]};
+        matrix[i].row_value = RealType<double>{rpd[i]};
+        matrix[i].col_value = RealType<double>{cpd[i]};
     }
 
-    Vector<RealType<mpq_class>> row_strategy, col_strategy;
-    LRSNash::solve(matrix, row_strategy, col_strategy);
+    Vector<RealType<double>> row_strategy, col_strategy;
+    LRSNash::solve(matrix, row_strategy, col_strategy, discrete);
 
     auto expl = math::exploitability(matrix, row_strategy, col_strategy);
-    double expl_ = static_cast<decltype(expl)::type>(expl).get_d();
-
-    if (expl_ > 0)
+    double expl_ = static_cast<double>(expl);
+    if (expl_ > 1 / (double) discrete)
     {
         exit(1);
     }

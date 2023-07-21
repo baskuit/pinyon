@@ -156,24 +156,26 @@ public:
     }
 };
 
-template <typename T>
-class Matrix<PairReal<T>> : public std::vector<PairReal<T>>
+template <typename Real, template <typename> typename Value>
+    requires requires() { Value<Real>::IS_CONSTANT_SUM; }
+
+class Matrix<Value<Real>> : public std::vector<Value<Real>>
 {
 public:
     size_t rows, cols;
 
     Matrix(){};
-    Matrix(size_t rows, size_t cols) : std::vector<PairReal<T>>(rows * cols), rows(rows), cols(cols)
+    Matrix(size_t rows, size_t cols) : std::vector<Value<Real>>(rows * cols), rows(rows), cols(cols)
     {
     }
 
-    operator Matrix<PairReal<double>>() const
+    operator Matrix<Value<double>>() const
     {
-        Matrix<PairReal<T>> output{this->rows, this->cols};
+        Matrix<Value<Real>> output{this->rows, this->cols};
         for (int entry_idx = 0; entry_idx < rows * cols; ++entry_idx)
         {
             auto value = (*this)[entry_idx];
-            output[entry_idx] = PairReal<T>{static_cast<double>(value.get_row_value()), static_cast<double>(value.get_col_value())};
+            output[entry_idx] = Value<Real>{static_cast<double>(value.get_row_value()), static_cast<double>(value.get_col_value())};
         }
         return output;
     }
@@ -185,7 +187,7 @@ public:
         this->resize(rows * cols);
     }
 
-    void fill(size_t rows, size_t cols, PairReal<T> value)
+    void fill(size_t rows, size_t cols, Value<Real> value)
     {
         this->rows = rows;
         this->cols = cols;
@@ -194,27 +196,27 @@ public:
         std::fill(this->begin(), this->begin() + n, value);
     }
 
-    PairReal<T> &get(size_t i, size_t j)
+    Value<Real> &get(size_t i, size_t j)
     {
         return (*this)[i * cols + j];
     }
 
-    Matrix operator*(PairReal<T> t) const
+    Matrix operator*(Value<Real> t) const
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](PairReal<T> a)
+                       [t](Value<Real> a)
                        { return a * t; });
         return output;
     }
 
-    Matrix operator+(PairReal<T> t) const
+    Matrix operator+(Value<Real> t) const
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](PairReal<T> a)
+                       [t](Value<Real> a)
                        { return a + t; });
         return output;
     }
@@ -235,12 +237,12 @@ public:
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
         std::transform(this->begin(), this->begin() + rows * cols, t.begin(), output.begin(),
-                       [](PairReal<T> a, PairReal<T> b)
+                       [](Value<Real> a, Value<Real> b)
                        { return a + b; });
         return output;
     }
 
-    T max() const
+    Real max() const
     {
         const size_t entries = rows * cols;
         auto max_row = std::max_element(this->begin(), this->begin() + entries,
@@ -256,7 +258,7 @@ public:
         return std::max(max_row->get_row_value(), max_col->get_col_value());
     }
 
-    T min() const
+    Real min() const
     {
         const size_t entries = rows * cols;
         auto min_row = std::min_element(this->begin(), this->begin() + entries,
