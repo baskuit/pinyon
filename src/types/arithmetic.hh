@@ -6,7 +6,17 @@ struct ArithmeticType : Wrapper<T>
     constexpr ArithmeticType() {}
 
     constexpr ArithmeticType(const T &val) : Wrapper<T>{val} {}
-    // mostly to limit its use to this class
+
+    // constexpr ArithmeticType(const ArithmeticType &val) : Wrapper<T>{val.value}
+    // {
+    //     if constexpr (std::is_same_v<T, mpq_class>)
+    //     {
+    //         mpq_canonicalize(this->value.get_mpq_t());
+    //     }
+    // }
+
+    template <typename Integral>
+    explicit constexpr ArithmeticType(const Rational<Integral> &val) : Wrapper<T>{val} {}
 
     ArithmeticType operator+(const ArithmeticType &other) const
     {
@@ -82,7 +92,8 @@ struct ArithmeticType : Wrapper<T>
 
     bool operator<(const ArithmeticType &other) const
     {
-        return this->value < other.value;
+        bool x = this->value < other.value;
+        return x;
     }
 
     bool operator>(const ArithmeticType &other) const

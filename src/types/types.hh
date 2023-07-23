@@ -60,7 +60,9 @@ struct RealType : ArithmeticType<T>
         if constexpr (std::is_same_v<T, mpq_class>)
         {
             os << value.value.get_str();
-        } else {
+        }
+        else
+        {
             os << value.value;
         }
         return os;
@@ -75,10 +77,6 @@ struct ProbabilityType : ArithmeticType<T>
     {
         if constexpr (std::is_same_v<T, mpq_class>)
         {
-            if (!is_canon(this->value))
-            {
-                ++ccc;
-            }
         }
     }
     template <typename Integral>
@@ -86,15 +84,11 @@ struct ProbabilityType : ArithmeticType<T>
     {
         if constexpr (std::is_same_v<T, mpq_class>)
         {
-            if (!is_canon(this->value))
-            {
-                ++ccc;
-            }
         }
     }
     constexpr explicit ProbabilityType(const ArithmeticType<T> val) : ArithmeticType<T>{val}
     {
-        if constexpr (std::is_same<T, mpq_class>::value)
+        if constexpr (std::is_same_v<T, mpq_class>)
         {
             mpq_canonicalize(this->value.get_mpq_t());
         }
@@ -104,10 +98,6 @@ struct ProbabilityType : ArithmeticType<T>
         this->value = val.value;
         if constexpr (std::is_same_v<T, mpq_class>)
         {
-            if (!is_canon(this->value))
-            {
-                ++ccc;
-            }
         }
         return *this;
     }

@@ -32,7 +32,7 @@ struct Solve
         ab_value = session_ab.run(device, state_copy, model, root_ab);
 
         AlphaBetaOld<Model> session_ab_old{};
-        session_ab_old.run(state, model, &root_ab_old);
+        // session_ab_old.run(state, model, &root_ab_old);
 
     }
 };
@@ -42,9 +42,9 @@ int main()
 
     RandomTreeGenerator<> generator{
         prng{0},
-        {4},
-        {3},
-        {7},
+        {1, 2, 3},
+        {2, 3},
+        {1, 2},
         {Rational<>{1, 20}},
         std::vector<size_t>(100, 0)};
 
@@ -52,7 +52,7 @@ int main()
     int tries = 0;
 
 
-
+    size_t failures = 0;
     size_t counter = 0;
     for (auto wrapped_state : generator) {
         auto state = *wrapped_state.ptr;
@@ -90,10 +90,11 @@ int main()
         size_t ab_count = solve.root_ab.count_matrix_nodes();
         size_t ab_old_count = solve.root_ab_old.count_matrix_nodes();
         // assert (ab_count <= ab_old_count);
+        double ratio = ab_count / (double) ab_old_count;
+        total_ratio += ratio;
         if (ab_count > ab_old_count) {
-            std::cout << '!' << std::endl;
+            ++failures;
         }
-        total_ratio += ab_count / (double) ab_old_count;
 
         // std::cout << "full: " << full_count << std::endl;
         // std::cout << "ab: " << ab_count << std::endl;

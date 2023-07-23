@@ -22,17 +22,14 @@ void random_matrix(prng device, const size_t rows, const size_t cols, const int 
 
     auto expl = math::exploitability(matrix, row_strategy, col_strategy);
     double expl_ = static_cast<double>(expl);
-    if (expl_ > 1 / (double) discrete)
-    {
-        exit(1);
-    }
+    assert (discrete * expl_ < 1);
 }
 
 int main()
 {
     prng device{0};
 
-    const int discrete = 20;
+    const int discrete = 100;
     const size_t trials = 100;
     for (int rows = 2; rows <= 9; ++rows)
     {

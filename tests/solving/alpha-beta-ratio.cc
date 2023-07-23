@@ -90,9 +90,6 @@ int main()
         size_t ab_count = solve.root_ab.count_matrix_nodes();
         size_t ab_old_count = solve.root_ab_old.count_matrix_nodes();
         // assert (ab_count <= ab_old_count);
-        if (ab_count > ab_old_count) {
-            std::cout << '!' << std::endl;
-        }
         total_ratio += ab_count / (double) ab_old_count;
 
         // std::cout << "full: " << full_count << std::endl;

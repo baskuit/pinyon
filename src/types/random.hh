@@ -18,11 +18,10 @@ class prng
     std::uniform_int_distribution<uint64_t> uniform_64_;
 
 public:
-
     prng() : seed(std::random_device{}()), engine(std::mt19937{seed}) {}
     prng(std::mt19937::result_type seed) : seed(seed), engine(std::mt19937{seed}) {}
-    
-    std::mt19937::result_type get_seed()
+
+    std::mt19937::result_type get_seed() const
     {
         return seed;
     }

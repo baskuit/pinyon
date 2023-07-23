@@ -29,12 +29,16 @@ struct Rational
     }
 
 public:
-
     constexpr Rational() {}
 
     constexpr Rational(const T p) : p{p}, q{1} {}
 
     constexpr Rational(const T p, const T q) : p{p}, q{q} {}
+
+    bool operator==(const Rational &y) const
+    {
+        return (p == y.p) && (q == y.q);
+    }
 
     constexpr Rational operator+(const Rational y) const
     {
@@ -62,17 +66,17 @@ public:
         return p * y.q < y.p * q;
     }
 
-    constexpr bool operator<=(Rational y)
+    constexpr bool operator<=(Rational y) const
     {
         return p * y.q <= y.p * q;
     }
 
-    constexpr bool operator>(Rational y)
+    constexpr bool operator>(Rational y) const
     {
         return p * y.q > y.p * q;
     }
 
-    constexpr bool operator>=(Rational y)
+    constexpr bool operator>=(Rational y) const
     {
         return p * y.q >= y.p * q;
     }
@@ -80,7 +84,7 @@ public:
     constexpr Rational &operator+=(Rational y)
     {
         p = p * y.q + y.p * q;
-        q = p * y.q;
+        q = q * y.q;
         reduce();
         return *this;
     }
@@ -96,12 +100,12 @@ public:
         return p / (float)q;
     }
 
-    constexpr operator double() const 
+    constexpr operator double() const
     {
         return p / (double)q;
     }
 
-    operator mpq_class() const 
+    operator mpq_class() const
     {
         return mpq_class{p, q};
     }

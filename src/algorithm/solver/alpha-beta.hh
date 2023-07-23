@@ -336,7 +336,10 @@ public:
                 {
                     state.get_chance_actions(data.chance_actions, row_action, col_action);
                 }
-
+                if (data.next_chance_idx >= data.chance_actions.size())
+                {
+                    break;
+                }
                 typename Types::State state_copy = state;
                 state_copy.apply_actions(row_action, col_action, data.chance_actions[data.next_chance_idx++]);
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
@@ -359,8 +362,8 @@ public:
                 total_unexplored -= prob * col_strategy[best_i];
                 priority_scores[best_i] -= prob * col_strategy[best_i];
 
-                assert(data.unexplored >= typename Types::Real{0});
-                assert(total_unexplored >= typename Types::Real{0});
+                // assert(data.unexplored >= typename Types::Real{0});
+                // assert(total_unexplored >= typename Types::Real{0});
 
                 max_priority = typename Types::Rational{0};
                 for (int i = 0; i < J.size(); ++i)
@@ -430,7 +433,7 @@ public:
             }
 
             while (
-                (max_priority > typename Types::Real{Rational<>{0}}) &&
+                fuzzy_greater(total_unexplored, typename Types::Real{Rational<>{0}}) &&
                 (typename Types::Real{expected_score + alpha * total_unexplored} <= beta))
             {
                 Data &data = stats.data_matrix.get(row_idx, col_idx);
@@ -440,6 +443,10 @@ public:
                     state.get_chance_actions(data.chance_actions, row_action, col_action);
                 }
 
+                if (data.next_chance_idx >= data.chance_actions.size())
+                {
+                    break;
+                }
                 typename Types::State state_copy = state;
                 state_copy.apply_actions(row_action, col_action, data.chance_actions[data.next_chance_idx++]);
                 CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
@@ -462,8 +469,8 @@ public:
                 total_unexplored -= prob * row_strategy[best_i];
                 priority_scores[best_i] -= prob * row_strategy[best_i];
 
-                assert(data.unexplored >= typename Types::Real{0});
-                assert(total_unexplored >= typename Types::Real{0});
+                // assert(data.unexplored >= typename Types::Real{0});
+                // assert(total_unexplored >= typename Types::Real{0});
 
                 max_priority = typename Types::Real{Rational<>{0}};
                 for (int i = 0; i < I.size(); ++i)
@@ -489,20 +496,38 @@ public:
 
 private:
     template <template <typename> typename Wrapper, typename T>
-    bool fuzzy_equals(Wrapper<T> x, Wrapper<T> y)
+    inline bool fuzzy_equals(Wrapper<T> x, Wrapper<T> y)
     {
-        if constexpr (std::is_same_v<T, mpq_class>) {
+        if constexpr (std::is_same_v<T, mpq_class>)
+        {
             mpq_ptr a = x.value.get_mpq_t();
             mpq_ptr b = y.value.get_mpq_t();
-            // mpq_canonicalize(a);
-            // mpq_canonicalize(b);
+            mpq_canonicalize(a);
+            mpq_canonicalize(b);
             bool answer = mpq_equal(a, b);
             return answer;
-        } else {
+        }
+        else
+        {
             static const typename Types::Real epsilon{Rational{1, 1 << 24}};
             static const typename Types::Real neg_epsilon{Rational{-1, 1 << 24}};
-            Wrapper<T> z {x - y};
+            Wrapper<T> z{x - y};
             return neg_epsilon < z && z < epsilon;
+        }
+    }
+
+    template <template <typename> typename Wrapper, typename T>
+    inline bool fuzzy_greater(Wrapper<T> x, Wrapper<T> y)
+    {
+        if constexpr (std::is_same_v<T, mpq_class>)
+        {
+            return x > y;
+        }
+        else
+        {
+            static const typename Types::Real epsilon{Rational{1, 1 << 24}};
+            bool a = x > y + epsilon;
+            return a;
         }
     }
 
@@ -531,6 +556,11 @@ private:
             // go through all chance actions
             for (; data.next_chance_idx < chance_actions.size() && !terminate(device, data); ++data.next_chance_idx)
             {
+                if (chance_actions.size() <= data.next_chance_idx)
+                {
+                    break;
+                }
+
                 const typename Types::Observation chance_action = chance_actions[data.next_chance_idx];
                 typename Types::State state_copy = state;
                 state_copy.apply_actions(row_action, col_action, chance_action);

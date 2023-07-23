@@ -24,7 +24,7 @@ public:
     size_t cols = 0;
     size_t transitions = 1;
     int payoff_bias = 0;
-    typename Types::Probability chance_threshold{typename Types::Rational(1, transitions + 1)};
+    typename Types::Rational chance_threshold{typename Types::Rational(1, transitions + 1)};
     std::vector<typename Types::Probability> chance_strategies;
     int chance_denominator = 10;
 
@@ -202,6 +202,8 @@ private:
 
     void get_chance_strategies()
     {
+        typename Types::template Vector<typename Types::Rational> chance_strategies_;
+        chance_strategies_.resize(rows * cols * transitions);
         chance_strategies.resize(rows * cols * transitions);
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
@@ -212,32 +214,32 @@ private:
                 ActionIndex start_idx = row_idx * cols * transitions + col_idx * transitions;
 
                 // get unnormalized distro
-                typename Types::Probability prob_sum{typename Types::Rational(0)};
+                typename Types::Rational prob_sum{typename Types::Rational(0)};
                 for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
                 {
-                    const typename Types::Probability p{typename Types::Rational{device.random_int(chance_denominator) + 1, chance_denominator}};
-                    chance_strategies[start_idx + chance_idx] = p;
-                    prob_sum += p;
+                    const int num = device.random_int(chance_denominator) + 1;
+
+                    typename Types::Rational x{num, chance_denominator};
+                    if (x < chance_threshold)
+                    {
+                        x = Rational<>{0};
+                    }
+                    chance_strategies_[start_idx + chance_idx] = x;
+                    prob_sum += x;
                 }
 
-                // clip and compute new norm
-                typename Types::Probability new_prob_sum{typename Types::Rational(0)};
-                for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
+                if (prob_sum == typename Types::Rational{0})
                 {
-                    typename Types::Probability &p = chance_strategies[start_idx + chance_idx];
-                    p /= prob_sum;
-                    if (p < chance_threshold)
-                    {
-                        p = typename Types::Probability{0};
-                    }
-                    new_prob_sum += p;
+                    chance_strategies[start_idx] = typename Types::Probability{1};
+                    continue;
                 }
 
                 // append final renormalized strategy
                 for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
                 {
-                    chance_strategies[start_idx + chance_idx] /= new_prob_sum;
-                    chance_strategies[start_idx + chance_idx].canonicalize();
+                    auto &x = chance_strategies_[start_idx + chance_idx];
+                    x = x / prob_sum; // reduced here
+                    chance_strategies[start_idx + chance_idx] = typename Types::Probability{x};
                 }
             }
         }
@@ -251,11 +253,11 @@ Helper class to generate random tree instances for testing
 */
 
 template <typename TypeList = RandomTreeTypes>
-struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTree<TypeList>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<double>, std::vector<size_t>>
+struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTree<TypeList>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>
 {
     inline static prng device{};
 
-    static W::StateWrapper<RandomTree<TypeList>> constr(std::tuple<size_t, size_t, size_t, double, size_t> tuple) // static otherwise implcit this arg messes up signature
+    static W::StateWrapper<RandomTree<TypeList>> constr(std::tuple<size_t, size_t, size_t, Rational<>, size_t> tuple) // static otherwise implcit this arg messes up signature
     {
         return W::StateWrapper<RandomTree<TypeList>>{
             RandomTreeGenerator::device.uniform_64(),
@@ -271,9 +273,9 @@ struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTre
         std::vector<size_t> depth_bound_vec,
         std::vector<size_t> actions_vec,
         std::vector<size_t> chance_action_vec,
-        std::vector<double> chance_threshold_vec,
+        std::vector<Rational<>> chance_threshold_vec,
         std::vector<size_t> trial_vec)
-        : CartesianProductGenerator<W::StateWrapper<RandomTree<TypeList>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<double>, std::vector<size_t>>{
+        : CartesianProductGenerator<W::StateWrapper<RandomTree<TypeList>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>{
               constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec}
     {
         RandomTreeGenerator::device = prng{device};

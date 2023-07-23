@@ -111,24 +111,8 @@ public:
             }
         }
 
-        // solve
-        // std::cout << "matrix: " << std::endl;
-        // stats.nash_payoff_matrix.print();
-
-        LRSNash::solve(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
-        // std::cout << "strats: " << std::endl;
-        // math::print(stats.row_solution);
-        // math::print(stats.col_solution);
-
-        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
-        {
-            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
-            {
-                stats.payoff +=
-                    stats.nash_payoff_matrix.get(row_idx, col_idx) *
-                    (stats.row_solution[row_idx] * stats.col_solution[col_idx]);
-            }
-        }
+        auto value_pair = LRSNash::solve(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
+        stats.payoff = typename Types::Value {value_pair.first};
         return;
     }
 
