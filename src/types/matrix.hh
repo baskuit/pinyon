@@ -52,7 +52,7 @@ public:
         {
             for (size_t col_idx = 0; col_idx < cols; ++col_idx)
             {
-                T &data = (*this)[row_idx * cols + col_idx];
+                const T &data = (*this)[row_idx * cols + col_idx];
                 std::cout << '(' << data.alpha_explored.value.get_d() << ',' << data.beta_explored.value.get_d() << ',' << data.unexplored.value.get_d() << ") "; // TODO remove? only for AlphaBeta data matrix
             }
             std::cout << std::endl;

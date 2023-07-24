@@ -230,11 +230,10 @@ private:
 
                 if (prob_sum == typename Types::Rational{0})
                 {
-                    chance_strategies[start_idx] = typename Types::Probability{1};
-                    continue;
+                    chance_strategies_[start_idx] = typename Types::Rational{1};
+                    prob_sum = typename Types::Rational{1};
                 }
 
-                // append final renormalized strategy
                 for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
                 {
                     auto &x = chance_strategies_[start_idx + chance_idx];

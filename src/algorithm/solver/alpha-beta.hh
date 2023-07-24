@@ -271,6 +271,7 @@ public:
         row_strategy.clear();
         col_strategy.clear();
         stats.data_matrix.clear();
+
         // I.resize(0);
         // J.resize(0);
         // row_strategy.resize(0);
@@ -378,7 +379,7 @@ public:
                 }
             }
 
-            if (expected_score >= alpha)
+            if (expected_score >= alpha || (best_row_idx == -1 && fuzzy_equals(expected_score, alpha)))
             {
                 best_row_idx = row_idx;
                 alpha = expected_score;
@@ -485,7 +486,7 @@ public:
                 }
             }
 
-            if (expected_score <= beta)
+            if (expected_score <= beta || (best_col_idx == -1 && fuzzy_equals(expected_score, beta)))
             {
                 best_col_idx = col_idx;
                 beta = expected_score;

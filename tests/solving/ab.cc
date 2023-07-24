@@ -66,16 +66,18 @@ struct Solve
         end = std::chrono::high_resolution_clock::now();
         time_full_f = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
-        std::cout << "full matrix:" << std::endl;
-        root_full.stats.nash_payoff_matrix.print();
-        std::cout << "solutions:" << std::endl;
-        math::print(root_full.stats.row_solution);
-        math::print(root_full.stats.col_solution);
-        std::cout << "full float matrix:" << std::endl;
-        root_full_f.stats.nash_payoff_matrix.print();
-        std::cout << "solutions:" << std::endl;
-        math::print(root_full_f.stats.row_solution);
-        math::print(root_full_f.stats.col_solution);
+        // std::cout << "full matrix:" << std::endl;
+        // root_full.stats.nash_payoff_matrix.print();
+        // std::cout << "solutions:" << std::endl;
+        // math::print(root_full.stats.row_solution);
+        // math::print(root_full.stats.col_solution);
+        // std::cout << "full float matrix:" << std::endl;
+        // root_full_f.stats.nash_payoff_matrix.print();
+        // std::cout << "solutions:" << std::endl;
+        // math::print(root_full_f.stats.row_solution);
+        // math::print(root_full_f.stats.col_solution);
+        // std::cout << "ab matrix:" << std::endl;
+        // root_ab.stats.data_matrix.print();
 
         start = std::chrono::high_resolution_clock::now();
         ab_value = session_ab.run(device, state, model, root_ab);
@@ -94,19 +96,22 @@ struct Solve
         double value{root_full.stats.payoff.get_row_value().value.get_d()};
         double value_f{root_full_f.stats.payoff.get_row_value()};
 
-
         // std::cout << "ab matrix:" << std::endl;
         // root_ab.stats.data_matrix.print();
 
+        double eps = (1 / (double)(1 << 5));
 
         assert(alpha <= value);
         assert(beta >= value);
+        assert(alpha <= beta);
 
+        assert(alpha_f - value_f <= eps);
+        assert(beta_f - value >= -eps);
+        assert(alpha_f - beta_f <= eps);
 
-        // assert (alpha_f <= value_f);
-        // assert (beta_f >= value_f);
-
-        assert(abs(value - value_f) < (1 / (double)(1 << 5)));
+        assert(abs(alpha - alpha_f) < eps);
+        assert(abs(beta - beta_f) < eps);
+        assert(abs(value - value_f) < eps);
     }
 
     void count()
@@ -124,7 +129,7 @@ int main()
     RandomTreeGenerator<RatTypes> generator{
         prng{0},
         {1, 2, 3},
-        {1, 2, 4},
+        {2, 4},
         {1, 2, 4},
         {threshold},
         std::vector<size_t>(100, 0)};
