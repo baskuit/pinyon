@@ -1,3 +1,4 @@
+
 # Types Struct
 As alluded earlier, a TypeList object is just a struct with some alias declarations.  All the `using` declarations found in the `DefaultTypes` template basically define a minimal 'standard' that any other TypeList must satisfy.
 
@@ -30,13 +31,13 @@ template <
     typename _Seed = uint64_t,
     typename _PRNG = prng,
     typename _Rational = Rational<int>>
-struct Types
+struct DefaultTypes
 {
     using Real = RealType<_Real>;
     using Action = ActionType<_Action>;
     using Observation = ObservationType<_Observation>;
     using Probability = ProbabilityType<_Probability>;
-
+    
     using Value = _Value<Real>;
     using VectorReal = _Vector<Real>;
     using VectorAction = _Vector<Action>;
@@ -48,7 +49,7 @@ struct Types
     using Vector = _Vector<Args...>;
     template <typename... Args>
     using Matrix = _Matrix<Args...>;
-
+    
     using ObservationHash = ObservationHashType<_Observation>;
     using Mutex = std::mutex;
     using Seed = _Seed;
@@ -61,18 +62,75 @@ struct Types
 
 ### `Wrapper<T>`
 
-All the types in this group are derived from `Wrapper<T>`. If these types were classes, we could derive `Wrapper<T> : T` the wrapper and this would automatically give the wrapper the same data as the `T` but also allow us to use the methods. The usage of `operator[](size_t)` in the default Matrix implementation is one example of this. However primitive types cannot be derived from, so instead 
-> We store the `T` data as a member  (`T Wrapper<T>::value`) of the wrapper class.
+All the types in this group are derived from `Wrapper<T>`. 
+* This purpose of this class is to simply hold a value of type `T`, and so any class which is derived from `Wrapper<T>` will automatically store this data by inheriting that member.
+*  This class also defines a conversion to type `T`, which is basically an 'unwrapping' operation. This operator is marked as explicit, otherwise an implicit unwrapping might occur without the user's knowledge, which would circumvent the strong type conventions. The conversion operator is best invoked via a static cast, e.g. `double raw_data = static_cast<double>(some_real);`
+* The underlying type `T` is accessible via an alias declaration `using type = T;`. This allows the user to make assertions about the underlying type easily, e.g. 
+	```cpp
+	if constexpr (std::is_same_v<typename Types::Real::type, mpq_class>) {
+		mpq_canonicalize(some_real._value);
+	}
+	```
+* The user should never construct or interface with this class directly. Its constructor is called by the constructors of its derived classes automatically. 
 
-* Implicit conversion from `T` to `Wrapper<T>` is allowed
-
-* 
-
-The Real and Probability
 ### `ArithmeticType<T>`
 
-### `RealType` and `ProbabilityType`
+**This section is important to understand otherwise the user may find that expressions which look valid may cause a compilation error.**
+```cpp
+typename Types::Real x = 0; // valid
+// ...
+x += 1; // invalid, no match for operator += with...
+```
 
+The use of strong type wrappers is the root of this. The `Types::Real` and `Types::Probability` wrappers need to have the same arithmetic functionality as their underlying types. However, these operations would only be available a priori if the wrappers were *derived* from their underlying types. The class which serves as the default implementation of `Types::Vector` have this luxory, but C++ does not allow for class to be derived from *primitive* types like `double`.
+
+Thus we are forced to define each of these operations manually. We could define the common operations (`+`, `==`, etc) for `Real` and `Probability` separately, and we would then also have to define 'mixed' operations too (where we multiply a `Real` typed player payoff by a `Probability`).  However, the reduction of boiler-plate code (take a look at "types/arithmetic.hh" to see this) is a core design principle.
+
+Thus we define the operations on a new class `ArithmeticType<T>` and make `RealType<T>`, `ProbabilityType<T>` derived from this class, so that they inherit these operations. This approach introduces its own kinks which have to be smoothed over.
+
+```cpp
+typename Types::Real x{1}, y{1};
+x + y; // ArithmeticType<T>;
+```
+Both the operands are staticly cast to `ArithmeticType<T>`, which is also the return type of the operation. Thus the result has to be cast into either a `Real<T>` or a `Probability<T>`. We make this constructor explicit, again so that implicit conversions do not foil the strong typing.
+```cpp
+typename Types::Probability w {x * y + 1};
+typename Types::Real z = x + y;
+// note: the second line needs to use a special assignment operator 
+// RealType<T>::RealType<T> operator=(ArithmeticType<T>)
+```
+
+* Like `Wrapper<T>`, the user never needs to explicitly construct `ArithmeticType<T>`. It is always constructed explicity by invoking some arithmetic operator.
+
+* Currently only right-handed operators are defined. That is, the expression `1 + x;` has no match but `x + 1` does. Thus we express `1 - x` (e.g. getting the column players payoff from the row players in a 1-sum game) as `x * -1 + 1` 
+
+* Applying a non-elementary operation like `std::exp` is done by a static cast conversion, e.g. 
+`const  typename  Types::Real  y{std::exp(static_cast<double>(gains[i] *  eta))};` 
+
+### `RealType<T>` & `ProbabilityType<T>`
+
+Since the common operators are defined on the base class, there is currently only one task that these types are relied upon to perform.
+The default implementation for multiple precision arithmetic is provided by `mpq_class`, which is the C++ front-end for GMP, or the [GNU Multiple Precision Library](https://gmplib.org/).
+Unfortunately, there is one quirk of this class that makes writing polymorphic code (or more specifically code that works the same for float and `mpq_class` without template specialization or `if constexpr` everywhere) difficult.
+In order for the equality and comparison (`>=` etc) operators to work correctly, the `mpq_class` objects must be *canonicalized*, or reduced to a proper fraction. Unless the user naively initializes an `mpq_class` to be un-canonicalized (e.g. `typename Types::Rational {2, 4}`), the only way rationals end up improper is after an arithmetic operation. The GMP library is designed for performance and thus does not perform this reduction automatically.
+Our method of handling this is to automatically canonicalize the underlying value when an `ArithmeticType<mpq_class>` is cast to a `RealType<mpq_class>` or `ProbabilityType<mpq_class>`, since that typically means we are done operating on that value.
+```cpp
+RealType &operator=(const ArithmeticType<T> &val) {
+    this->_value = val._value;
+    if constexpr (std::is_same_v<T, mpq_class>) {
+        mpq_canonicalize(this->value.get_mpq_t());
+    }
+    return *this;
+}
+```
+Regrettably, this means that some unnecessary reductions may be performed. However, I feel that `mpq_class` is used in more theoretical or academic contexts, rather than in the performance critical context of a user created engine, where they will instead surely use `double` or `float` instead
+
+
+### `ObservationType<T>`
+A wrapper for the observation type. Only the equality operator `==` is used here, to check whether a particular state transition has occurred before. Using this, we can track the development of a state accurately in the corresponding tree structure.
+
+### `ActionType<T>`
+A wrapper for the action type, and the argument type of the `apply_actions` method. No operators are required for this type, not even equality `==` (actions are identified by their *index* in the `row_actions`, `col_actions` containers.
 
 ## Template Aliases
 
