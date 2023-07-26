@@ -10,10 +10,9 @@ int main()
 
     using Model = MonteCarloModel<MoldState<2>>;
 
-
-    auto session0 = TreeBandit<Exp3<Model>, MNode, CNode>{};
-    auto session1 = TreeBanditThreaded<Exp3<Model>, MNode, CNode>{};
-    auto session2 = TreeBanditThreadPool<Exp3<Model>, MNode, CNode>{};
+    auto session0 = TreeBandit<Exp3<Model>>{};
+    auto session1 = TreeBanditThreaded<Exp3<Model>>{};
+    auto session2 = TreeBanditThreadPool<Exp3<Model>>{};
 
     std::tuple<
         TreeBandit<Exp3<Model>>,

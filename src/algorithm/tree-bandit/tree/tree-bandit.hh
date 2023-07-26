@@ -2,13 +2,13 @@
 
 #include <types/types.hh>
 #include <algorithm/algorithm.hh>
+#include <tree/tree.hh>
 
 #include <chrono>
 
 template <
     class BanditAlgorithm,
-    template <class> class MNode = MatrixNode,
-    template <class> class CNode = ChanceNode,
+    class NodePair=DefaultNodes,
     bool return_if_expand = true>
 class TreeBandit : public BanditAlgorithm
 {
@@ -19,8 +19,8 @@ public:
     {
         using MatrixStats = TreeBandit::MatrixStats;
         using ChanceStats = TreeBandit::ChanceStats;
-        using MatrixNode = MNode<TreeBandit>;
-        using ChanceNode = CNode<TreeBandit>;
+        using MatrixNode = typename NodePair::template MNode<TreeBandit>;
+        using ChanceNode = typename NodePair::template CNode<TreeBandit>;
     };
 
     struct MatrixStats : BanditAlgorithm::MatrixStats
@@ -39,7 +39,7 @@ public:
         typename Types::PRNG &device,
         const typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBandit> &matrix_node)
+        typename Types::MatrixNode &matrix_node)
     {
         auto start = std::chrono::high_resolution_clock::now();
         auto end = std::chrono::high_resolution_clock::now();
@@ -63,7 +63,7 @@ public:
         typename Types::PRNG &device,
         const typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBandit> &matrix_node)
+        typename Types::MatrixNode &matrix_node)
     {
         // this->initialize_stats(iterations, state, model, matrix_node.stats);
         typename Types::ModelOutput inference;
@@ -76,11 +76,11 @@ public:
     }
 
 protected:
-    MatrixNode<TreeBandit> *run_iteration(
+    typename Types::MatrixNode *run_iteration(
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBandit> *matrix_node,
+        typename Types::MatrixNode *matrix_node,
         typename Types::ModelOutput &inference)
     {
         if (!matrix_node->is_terminal())
@@ -105,10 +105,10 @@ protected:
 
             matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
-            ChanceNode<TreeBandit> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-            MatrixNode<TreeBandit> *matrix_node_next = chance_node->access(state.obs);
+            typename Types::ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+            typename Types::MatrixNode *matrix_node_next = chance_node->access(state.obs);
 
-            MatrixNode<TreeBandit> *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
+            typename Types::MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
 
             outcome.value = inference.value;
             this->update_matrix_stats(matrix_node->stats, outcome);
@@ -117,7 +117,7 @@ protected:
         }
         else
         {
-            if constexpr (MatrixNode<TreeBandit>::STORES_VALUE)
+            if constexpr (Types::MatrixNode::STORES_VALUE)
             {
                 matrix_node->get_value(inference.value);
             }
@@ -129,11 +129,11 @@ protected:
         }
     }
 
-    MatrixNode<TreeBandit> *run_iteration_average(
+    typename Types::MatrixNode *run_iteration_average(
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<TreeBandit> *matrix_node,
+        typename Types::MatrixNode *matrix_node,
         typename Types::ModelOutput &inference)
     {
         if (!matrix_node->is_terminal())
@@ -156,10 +156,10 @@ protected:
 
             matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
-            ChanceNode<TreeBandit> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-            MatrixNode<TreeBandit> *matrix_node_next = chance_node->access(state.obs);
+            typename Types::ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+            typename Types::MatrixNode *matrix_node_next = chance_node->access(state.obs);
 
-            MatrixNode<TreeBandit> *matrix_node_leaf = run_iteration_average(device, state, model, matrix_node_next, inference);
+            typename Types::MatrixNode *matrix_node_leaf = run_iteration_average(device, state, model, matrix_node_next, inference);
 
             this->get_empirical_value(matrix_node_next->stats, outcome.value);
             // TODO use chance node? Breaks if matrix_node_next is terminal?
@@ -169,7 +169,7 @@ protected:
         }
         else
         {
-            if constexpr (MatrixNode<TreeBandit>::STORES_VALUE)
+            if constexpr (Types::MatrixNode::STORES_VALUE)
             {
                 matrix_node->get_value(inference.value);
             }

@@ -2,7 +2,7 @@
 
 using State = Arena<RandomTree<>, MonteCarloModel<RandomTree<>>>;
 using Model = MonteCarloModel<State>;
-using Algorithm = TreeBanditThreaded<Exp3<Model>, MatrixNode, ChanceNode>;
+using Algorithm = TreeBanditThreaded<Exp3<Model>>;
 
 W::StateWrapper<RandomTree<>> generator(typename State::Types::Seed seed)
 {
@@ -22,7 +22,7 @@ W::StateWrapper<RandomTree<>> generator(typename State::Types::Seed seed)
 int main()
 {
 
-    std::vector<W::SearchWrapper<TreeBandit<Exp3<MonteCarloModel<RandomTree<>>>, MatrixNode, ChanceNode>>> agents = {
+    std::vector<W::SearchWrapper<TreeBandit<Exp3<MonteCarloModel<RandomTree<>>>>>> agents = {
         {.01}, {.1}, {1}};
 
     const size_t iterations = 1 << 10;

@@ -86,6 +86,10 @@ public:
         expanded = true;
     }
 
+    inline void get_value(typename Types::Value &value)
+    {
+    }
+
     ChanceNodeL<Algorithm> *access(ActionIndex row_idx, int col_idx)
     {
         if (this->child == nullptr)

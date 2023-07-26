@@ -19,10 +19,6 @@ struct FlatNodes
     using CNode = ChanceNodeFlat<Algorithm>;
 };
 
-/*
-Matrix Node
-*/
-
 template <typename Algorithm>
 class MatrixNodeFlat : public AbstractNode<Algorithm>
 {
@@ -91,6 +87,10 @@ public:
     inline void set_expanded()
     {
         expanded = true;
+    }
+
+    inline void get_value(typename Types::Value &value)
+    {
     }
 
     ChanceNodeFlat<Algorithm> *access(ActionIndex row_idx, int col_idx)

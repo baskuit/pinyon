@@ -122,16 +122,12 @@ protected:
     void update_matrix_stats(
         MatrixStats &stats,
         typename Types::Outcome &outcome,
-        typename Types::Mutex &mtx)
-    {
-    }
+        typename Types::Mutex &mtx) {}
 
     void update_chance_stats(
         ChanceStats &stats,
         typename Types::Outcome &outcome,
-        typename Types::Mutex &mtx)
-    {
-    }
+        typename Types::Mutex &mtx) {}
 
     void update_matrix_stats(
         MatrixStats &stats,
