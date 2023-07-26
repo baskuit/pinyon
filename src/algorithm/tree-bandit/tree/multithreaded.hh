@@ -41,67 +41,84 @@ public:
 
     size_t threads = 1;
 
-    void run(
+    size_t run(
+        const size_t duration_ms,
+        typename Types::PRNG &device,
+        const typename Types::State &state,
+        typename Types::Model &model,
+        typename Types::MatrixNode &matrix_node)
+    {
+        std::thread thread_pool[threads];
+        size_t iterations[threads];
+        size_t total_iterations = 0;
+        for (int i = 0; i < threads; ++i)
+        {
+            thread_pool[i] = std::thread(&TreeBanditThreaded::run_thread, this, duration_ms, &device, &state, &model, &matrix_node, std::next(iterations, i));
+        }
+        for (int i = 0; i < threads; ++i)
+        {
+            thread_pool[i].join();
+        }
+        for (int i = 0; i < threads; ++i)
+        {
+            total_iterations += iterations[i];
+        }
+        return total_iterations;
+    }
+
+    size_t run_for_iterations(
         const size_t iterations,
         typename Types::PRNG &device,
         const typename Types::State &state,
         typename Types::Model &model,
         typename Types::MatrixNode &matrix_node)
     {
-        this->initialize_stats(iterations, state, model, matrix_node.stats);
         std::thread thread_pool[threads];
-        const size_t iterations_per_thread = iterations / threads;
+        size_t iterations_per_thread = iterations / threads;
+        auto start = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < threads; ++i)
         {
-            thread_pool[i] = std::thread(&TreeBanditThreaded::run_thread, this, iterations_per_thread, &device, &state, &model, &matrix_node);
+            thread_pool[i] = std::thread(&TreeBanditThreaded::run_thread_for_iterations, this, iterations_per_thread, &device, &state, &model, &matrix_node);
         }
         for (int i = 0; i < threads; ++i)
         {
             thread_pool[i].join();
         }
-    }
-
-    void run_for_duration(
-        const size_t duration_us,
-        typename Types::PRNG &device,
-        const typename Types::State &state,
-        typename Types::Model &model,
-        typename Types::MatrixNode &matrix_node)
-    {
-        // this->initialize_stats(iterations, state, model, matrix_node.stats);
-        std::thread thread_pool[threads];
-        for (int i = 0; i < threads; ++i)
-        {
-            thread_pool[i] = std::thread(&TreeBanditThreaded::run_thread_for_duration, this, duration_us, &device, &state, &model, &matrix_node);
-        }
-        for (int i = 0; i < threads; ++i)
-        {
-            thread_pool[i].join();
-        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        return duration.count();
     }
 
 private:
     void run_thread(
-        const size_t iterations,
+        const size_t duration_ms,
         typename Types::PRNG *device,
         const typename Types::State *state,
         const typename Types::Model *model,
-        typename Types::MatrixNode *matrix_node)
+        typename Types::MatrixNode *matrix_node,
+        size_t *iterations)
     {
         typename Types::PRNG device_thread(device->uniform_64()); // TODO deterministically provide new seed
         typename Types::Model model_thread{*model};               // TODO go back to not making new ones? Perhaps only device needs new instance
         typename Types::ModelOutput inference;
 
-        for (size_t iteration = 0; iteration < iterations; ++iteration)
+        auto start = std::chrono::high_resolution_clock::now();
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        size_t thread_iterations = 0;
+        for (; duration.count() < duration_ms; ++thread_iterations)
         {
             typename Types::State state_copy = *state;
             state_copy.reseed(device_thread);
             this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
+            end = std::chrono::high_resolution_clock::now();
+            duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         }
+        *iterations = thread_iterations;
     }
 
-    void run_thread_for_duration(
-        const size_t duration_us,
+    void run_thread_for_iterations(
+        const size_t iterations,
         typename Types::PRNG *device,
         const typename Types::State *state,
         const typename Types::Model *model,
@@ -110,19 +127,11 @@ private:
         typename Types::PRNG device_thread(device->uniform_64());
         typename Types::Model model_thread{*model};
         typename Types::ModelOutput inference;
-
-        auto start = std::chrono::high_resolution_clock::now();
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = duration_cast<std::chrono::microseconds>(end - start);
-
-        while (duration.count() < duration_us)
+        for (size_t iteration = 0; iteration < iterations; ++iteration)
         {
             typename Types::State state_copy = *state;
             state_copy.reseed(device_thread);
             this->run_iteration(device_thread, state_copy, model_thread, &matrix_node, inference);
-
-            end = std::chrono::high_resolution_clock::now();
-            duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         }
     }
 
@@ -183,7 +192,14 @@ private:
         }
         else
         {
-            inference.value = state.payoff;
+            if constexpr (Types::MatrixNode::STORES_VALUE)
+            {
+                matrix_node->get_value(inference.value);
+            }
+            else
+            {
+                inference.value = state.payoff;
+            }
             return matrix_node;
         }
     }
@@ -229,54 +245,83 @@ public:
     std::array<typename Types::Mutex, pool_size> mutex_pool{};
     std::atomic<unsigned int> current_index{0};
 
-    void run(
+    size_t run(
+        const size_t duration_ms,
+        typename Types::PRNG &device,
+        const typename Types::State &state,
+        typename Types::Model &model,
+        typename Types::MatrixNode &matrix_node)
+    {
+        std::thread thread_pool[threads];
+        size_t iterations[threads];
+        size_t total_iterations = 0;
+        for (int i = 0; i < threads; ++i)
+        {
+            thread_pool[i] = std::thread(&TreeBanditThreadPool::run_thread, this, duration_ms, &device, &state, &model, &matrix_node, std::next(iterations, i));
+        }
+        for (int i = 0; i < threads; ++i)
+        {
+            thread_pool[i].join();
+        }
+        for (int i = 0; i < threads; ++i)
+        {
+            total_iterations += iterations[i];
+        }
+        return total_iterations;
+    }
+
+    size_t run_for_iterations(
         const size_t iterations,
         typename Types::PRNG &device,
         const typename Types::State &state,
         typename Types::Model &model,
         typename Types::MatrixNode &matrix_node)
     {
-        this->initialize_stats(iterations, state, model, matrix_node.stats);
         std::thread thread_pool[threads];
-        const size_t iterations_per_thread = iterations / threads;
+        size_t iterations_per_thread = iterations / threads;
+        auto start = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < threads; ++i)
         {
-            thread_pool[i] = std::thread(&TreeBanditThreadPool::run_thread, this, iterations_per_thread, &device, &state, &model, &matrix_node);
+            thread_pool[i] = std::thread(&TreeBanditThreadPool::run_thread_for_iterations, this, iterations_per_thread, &device, &state, &model, &matrix_node);
         }
         for (int i = 0; i < threads; ++i)
         {
             thread_pool[i].join();
         }
-    }
-
-    void run_thread_for_duration(
-        const size_t duration_us,
-        typename Types::PRNG *device,
-        const typename Types::State *state,
-        const typename Types::Model *model,
-        typename Types::MatrixNode *matrix_node)
-    {
-        typename Types::PRNG device_thread(device->uniform_64());
-        typename Types::Model model_thread{*model};
-        typename Types::ModelOutput inference;
-
-        auto start = std::chrono::high_resolution_clock::now();
         auto end = std::chrono::high_resolution_clock::now();
-        auto duration = duration_cast<std::chrono::microseconds>(end - start);
-
-        while (duration.count() < duration_us)
-        {
-            typename Types::State state_copy = *state;
-            state_copy.reseed(device_thread);
-            this->run_iteration(device_thread, state_copy, model_thread, &matrix_node, inference);
-
-            end = std::chrono::high_resolution_clock::now();
-            duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        }
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        return duration.count();
     }
 
 private:
     void run_thread(
+        const size_t duration_ms,
+        typename Types::PRNG *device,
+        const typename Types::State *state,
+        const typename Types::Model *model,
+        typename Types::MatrixNode *matrix_node,
+        size_t *iterations)
+    {
+        typename Types::PRNG device_thread(device->uniform_64()); // TODO deterministically provide new seed
+        typename Types::Model model_thread{*model};               // TODO go back to not making new ones? Perhaps only device needs new instance
+        typename Types::ModelOutput inference;
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        size_t thread_iterations = 0;
+        for (; duration.count() < duration_ms; ++thread_iterations)
+        {
+            typename Types::State state_copy = *state;
+            state_copy.reseed(device_thread);
+            this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
+            end = std::chrono::high_resolution_clock::now();
+            duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        }
+        *iterations = thread_iterations;
+    }
+
+    void run_thread_for_iterations(
         const size_t iterations,
         typename Types::PRNG *device,
         const typename Types::State *state,
@@ -290,7 +335,7 @@ private:
         {
             typename Types::State state_copy = *state;
             state_copy.reseed(device_thread);
-            this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
+            this->run_iteration(device_thread, state_copy, model_thread, &matrix_node, inference);
         }
     }
 
@@ -316,6 +361,7 @@ private:
                 {
                     state.get_actions();
                     model.get_inference(state, inference);
+                    get_mutex_index(matrix_node);
 
                     mtx.lock();
                     matrix_node->expand(state);
@@ -334,8 +380,12 @@ private:
 
             matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
+            // mtx.lock();
             typename Types::ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+            // chance_node->stats.mtx.lock();
             typename Types::MatrixNode *matrix_node_next = chance_node->access(state.obs);
+            // chance_node->stats.mtx.unlock();
+            // mtx.unlock();
 
             typename Types::MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
 
@@ -346,7 +396,14 @@ private:
         }
         else
         {
-            inference.value = state.payoff;
+            if constexpr (Types::MatrixNode::STORES_VALUE)
+            {
+                matrix_node->get_value(inference.value);
+            }
+            else
+            {
+                inference.value = state.payoff;
+            }
             return matrix_node;
         }
     }

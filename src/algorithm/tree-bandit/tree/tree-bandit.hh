@@ -51,21 +51,20 @@ public:
             typename Types::State state_copy = state;
             state_copy.reseed(device);
             this->run_iteration(device, state_copy, model, &matrix_node, inference);
-
             end = std::chrono::high_resolution_clock::now();
             duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         }
         return iterations;
     }
 
-    void run_for_iterations(
+    size_t run_for_iterations(
         const size_t iterations,
         typename Types::PRNG &device,
         const typename Types::State &state,
         typename Types::Model &model,
         typename Types::MatrixNode &matrix_node)
     {
-        // this->initialize_stats(iterations, state, model, matrix_node.stats);
+        auto start = std::chrono::high_resolution_clock::now();
         typename Types::ModelOutput inference;
         for (size_t iteration = 0; iteration < iterations; ++iteration)
         {
@@ -73,6 +72,9 @@ public:
             state_copy.reseed(device);
             this->run_iteration(device, state_copy, model, &matrix_node, inference);
         }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        return duration.count();
     }
 
 protected:
