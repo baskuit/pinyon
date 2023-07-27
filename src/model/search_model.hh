@@ -3,6 +3,14 @@
 #include <model/model.hh>
 #include <tree/tree.hh>
 
+/*
+
+Model + Search wrapped as a new model.
+One possible application is using this with a Solver with limited depth,
+so that inference at the leafs is stronger than a normal model
+
+*/
+
 template <class Algorithm>
 class SearchModel : public DoubleOracleModel<typename Algorithm::Types::State>
 {
