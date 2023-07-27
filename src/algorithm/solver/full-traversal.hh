@@ -15,7 +15,7 @@
     which is a way of turning any StateChance into a SolvedState
 */
 
-template <class Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
+template <class Model, typename PairNodes = DefaultNodes>
 class FullTraversal : public AbstractAlgorithm<Model>
 {
     static_assert(std::derived_from<typename Model::Types::State, ChanceState<typename Model::Types::TypeList>>,
@@ -31,6 +31,8 @@ public:
     {
         using MatrixStats = FullTraversal::MatrixStats;
         using ChanceStats = FullTraversal::ChanceStats;
+        using MatrixNode = typename PairNodes::template MNode<FullTraversal>;
+        using ChanceNode = typename PairNodes::template CNode<FullTraversal>;
     };
     struct MatrixStats : AbstractAlgorithm<Model>::MatrixStats
     {
@@ -54,7 +56,7 @@ public:
     void run(
         typename Types::State &state,
         Model &model,
-        MNode<FullTraversal> *matrix_node)
+        typename Types::MatrixNode *matrix_node)
     {
 
         // expand node
@@ -95,12 +97,12 @@ public:
                 std::vector<typename Types::Observation> chance_actions;
                 state.get_chance_actions(chance_actions, row_action, col_action);
 
-                CNode<FullTraversal> *chance_node = matrix_node->access(row_idx, col_idx);
+                typename Types::ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
                 for (auto chance_action : chance_actions)
                 {
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, chance_action);
-                    MNode<FullTraversal> *matrix_node_next = chance_node->access(state_copy.obs);
+                    typename Types::MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                     matrix_node_next->stats.depth = stats.depth + 1;
 
                     run(state_copy, model, matrix_node_next);

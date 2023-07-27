@@ -9,57 +9,60 @@ Test that tree bandit algorithms are producing low exploitability when searching
 int main()
 {
 
-    // prng device(285608215);
-    // std::vector<size_t> depth_bounds{1, 2};
-    // std::vector<size_t> actions{2, 3, 4};
-    // std::vector<size_t> chance_actions{1};
-    // std::vector<double> transition_thresholds{0.0};
-    // std::vector<size_t> states_per{10, 0};
-    // RandomTreeGenerator generator{device, depth_bounds, actions, chance_actions, transition_thresholds, states_per};
+    prng device{0};
 
-    // const double expl_threshold = 1;
+    Rational<> threshold = Rational<>{1, 2};
+    RandomTreeGenerator<> generator{
+        prng{0},
+        {1, 2, 3},
+        {2, 4},
+        {1, 2, 4},
+        {Rational<>{1, 4}},
+        std::vector<size_t>(100, 0)};
 
-    // using Model = MonteCarloModel<RandomTree<>>;
-    // Model model(device);
-    // W::ModelWrapper<Model> model_wrapper(model);
+    const double expl_threshold = .01;
 
-    // W::SearchWrapper<TreeBandit<Exp3<Model>>> session_0{};
-    // W::SearchWrapper<TreeBanditThreaded<Exp3<Model>>> session_1{};
-    // W::SearchWrapper<TreeBanditThreadPool<Exp3<Model>>> session_2{};
-    // session_1.ptr->threads = 4;
-    // session_2.ptr->threads = 4;
+    using Model = MonteCarloModel<RandomTree<>>;
+    Model model(device);
+    W::ModelWrapper<Model> model_wrapper(model);
 
-    // std::vector<W::Search *> sessions = {&session_0, &session_1, &session_2};
+    W::SearchWrapper<TreeBandit<Exp3<Model>>> session_0{};
+    W::SearchWrapper<TreeBanditThreaded<Exp3<Model>>> session_1{};
+    W::SearchWrapper<TreeBanditThreadPool<Exp3<Model>>> session_2{};
+    session_1.ptr->threads = 4;
+    session_2.ptr->threads = 4;
 
-    // const size_t iterations = 1000;
+    std::vector<W::Search *> sessions = {&session_0, &session_1, &session_2};
 
-    // for (RandomTree<> &&state : generator)
-    // {
-    //     state.get_actions();
+    const size_t search_iterations = 1000;
 
-    //     TraversedState<Model> traversed_state(state, model);
-    //     Matrix<PairDouble> payoff_matrix{traversed_state.current_node->stats.nash_payoff_matrix};
+    for (RandomTree<> &&state : generator)
+    {
+        state.get_actions();
 
-    //     W::StateWrapper<RandomTree<>> state_wrapper{state};
+        TraversedState<Model> traversed_state(state, model);
+        Matrix<PairReal<double>> payoff_matrix{traversed_state.current_node->stats.nash_payoff_matrix};
 
-    //     for (W::Search *session_ptr : sessions)
-    //     {
-    //         std::vector<double> r{}, c{};
-    //         r.resize(state.row_actions.size());
-    //         c.resize(state.col_actions.size());
-    //         session_ptr->run_and_get_strategies(r, c, iterations, state_wrapper, model_wrapper);
-    //         double expl = math::exploitability(payoff_matrix, r, c);
+        W::StateWrapper<RandomTree<>> state_wrapper{state};
 
-    //         std::cout << "expl: " << expl << std::endl;
-    //         if (expl > expl_threshold)
-    //         {
-    //             std::cout << "ERROR" << std::endl;
-    //             exit(1);
-    //         }
-    //     }
-    //     std::cout << std::endl;
+        for (W::Search *session_ptr : sessions)
+        {
+            std::vector<double> r{}, c{};
+            r.resize(state.row_actions.size());
+            c.resize(state.col_actions.size());
+            session_ptr->run_and_get_strategies(r, c, search_iterations, state_wrapper, model_wrapper);
+            double expl = math::exploitability(payoff_matrix, r, c);
 
-    // }
+            std::cout << "expl: " << expl << std::endl;
+            if (expl > expl_threshold)
+            {
+                std::cout << "ERROR" << std::endl;
+                exit(1);
+            }
+        }
+        std::cout << std::endl;
+
+    }
 
     return 0;
 }

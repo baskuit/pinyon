@@ -180,6 +180,18 @@ public:
         return output;
     }
 
+    template <typename T>
+    operator Matrix<T> () const 
+    {
+        Matrix<T> output{this->rows, this->cols};
+        for (int entry_idx = 0; entry_idx < rows * cols; ++entry_idx)
+        {
+            auto value = (*this)[entry_idx];
+            output[entry_idx] = T{value};
+        }
+        return output;
+    }
+
     void fill(size_t rows, size_t cols)
     {
         this->rows = rows;

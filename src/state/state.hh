@@ -75,6 +75,8 @@ public:
     {
     };
 
+    typename Types::VectorReal row_strategy, col_strategy;
+
     void get_payoff_matrix(
         typename Types::MatrixValue &matrix);
 

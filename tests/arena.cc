@@ -4,7 +4,7 @@ using State = Arena<RandomTree<>, MonteCarloModel<RandomTree<>>>;
 using Model = MonteCarloModel<State>;
 using Algorithm = TreeBanditThreaded<Exp3<Model>>;
 
-W::StateWrapper<RandomTree<>> generator(typename State::Types::Seed seed)
+W::StateWrapper<RandomTree<>> generator_function(typename State::Types::Seed seed)
 {
     const size_t max_depth_bound = 5;
     const size_t max_actions = 5;
@@ -29,7 +29,7 @@ int main()
     prng device{0};
     W::ModelWrapper<MonteCarloModel<RandomTree<>>> model{device};
 
-    State arena{iterations, &generator, model, agents};
+    State arena{iterations, &generator_function, model, agents};
 
     Model arena_model{1337};
     Algorithm session{.1};
