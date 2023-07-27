@@ -131,7 +131,7 @@ private:
         {
             typename Types::State state_copy = *state;
             state_copy.reseed(device_thread);
-            this->run_iteration(device_thread, state_copy, model_thread, &matrix_node, inference);
+            this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
         }
     }
 
@@ -335,7 +335,7 @@ private:
         {
             typename Types::State state_copy = *state;
             state_copy.reseed(device_thread);
-            this->run_iteration(device_thread, state_copy, model_thread, &matrix_node, inference);
+            this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
         }
     }
 

@@ -33,7 +33,7 @@ int main()
 
         const size_t iterations = 1 << 18;
         prng device{0};
-        session.run(iterations, device, state, model, root);
+        session.run_for_iterations(iterations, device, state, model, root);
 
         size_t count = root.count_matrix_nodes();
 
