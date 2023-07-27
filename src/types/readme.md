@@ -1,6 +1,6 @@
 
 # Types Struct
-As alluded earlier, a TypeList object is just a struct with some alias declarations.  All the `using` declarations found in the `DefaultTypes` template basically define a minimal 'standard' that any other TypeList must satisfy.
+As alluded earlier, a TypeList object is just a struct with some alias declarations.  All the `using` declarations found in the `DefaultTypes<...>` template basically specify a minimal 'standard' that any user-defined TypeList must satisfy.
 
 ### Required
 * Each of the names must be defined at some point in the derivation of the `::Types` helper in order for all features of the library to compile.
@@ -8,14 +8,17 @@ As alluded earlier, a TypeList object is just a struct with some alias declarati
 
 ### Not Required
 
-Some of the basic aliases like `Action` are not defined to be exactly what is provided in the template parameter list for `DefaultTypes`. Instead they are wrapped e.g. `using Action = ActionType<_Action>;`
-The benefits of using strong typing for certain primitives are not absolutely necessary to write working search code. More to the case against wrapping, I don't take it for granted that these abstracts are at no cost to run-time performance.
+* In `DefaultTypes<...>`, some of the basic aliases like `Action` are not defined to be exactly what is provided by the user in the template parameter list. Instead they are wrapped e.g. `using Action = ActionType<_Action>;`
+* The benefits of using strong typing for certain primitives are not absolutely necessary to write working search code. More to the case against wrapping, I don't take it for granted that these abstracts are at no cost to run-time performance.
 For this reason the library functions will work just fine if raw types are used instead.
-Also, strictly speaking the required types do not have to be defined all at once at this stage. But the user will have to include the declarations elsewhere if they choose to omit them in their TypeList.
+* Also, strictly speaking the required types do not have to be defined all at once at this stage. But the user will have to include the declarations elsewhere if they choose to omit them in their TypeList.
 
 # `DefaultTypes`
 
-The alias declarations below are organized for this dis. Loosely speaking, the are the wrapped types, 
+Below is the entire definition of the `DefaultTypes` TypeList.
+The template parameters are demarcated from the actual type aliases with an underscore prefix.
+The template parameters with the `template <typename...>` prefix are not simply types but are themselves templates.
+
 ```cpp
 template <
     typename _Real,
@@ -60,11 +63,13 @@ struct DefaultTypes
 
 ## Wrapped Primitives
 
+The `Real`, `Probability`, `Action`, and `Observation` type aliases that are defined in the `DefaultTypes` struct are not the same as the types which are provided in the template parameter list. Since these types are usually C++ primitives, they are instead wrapped with template classes which store the same data but also provide some extra functionality and make the search code more consistent when using library types like `mpq_class`. 
+
 ### `Wrapper<T>`
 
 All the types in this group are derived from `Wrapper<T>`. 
 * This purpose of this class is to simply hold a value of type `T`, and so any class which is derived from `Wrapper<T>` will automatically store this data by inheriting that member.
-*  This class also defines a conversion to type `T`, which is basically an 'unwrapping' operation. This operator is marked as explicit, otherwise an implicit unwrapping might occur without the user's knowledge, which would circumvent the strong type conventions. The conversion operator is best invoked via a static cast, e.g. `double raw_data = static_cast<double>(some_real);`
+*  This class also defines a conversion to type `T`, which is basically an 'unwrapping' operation. This operator is marked as explicit, otherwise an implicit unwrapping might occur without the user's knowledge, which would circumvent the strong-typing conventions. The conversion operator is best invoked via a static cast, e.g. `double raw_data = static_cast<double>(some_real);`
 * The underlying type `T` is accessible via an alias declaration `using type = T;`. This allows the user to make assertions about the underlying type easily, e.g. 
 	```cpp
 	if constexpr (std::is_same_v<typename Types::Real::type, mpq_class>) {
@@ -82,7 +87,7 @@ typename Types::Real x = 0; // valid
 x += 1; // invalid, no match for operator += with...
 ```
 
-The use of strong type wrappers is the root of this. The `Types::Real` and `Types::Probability` wrappers need to have the same arithmetic functionality as their underlying types. However, these operations would only be available a priori if the wrappers were *derived* from their underlying types. The class which serves as the default implementation of `Types::Vector` have this luxory, but C++ does not allow for class to be derived from *primitive* types like `double`.
+The use of strong type wrappers is the root of this. The `Types::Real` and `Types::Probability` wrappers need to have the same arithmetic functionality as their underlying types. However, these operations would only be available a priori if the wrappers were *derived* from their underlying types. The class which serves as the default implementation of `Types::Vector` has this luxury, but C++ does not allow for a class to be derived from *primitive* types like `double`.
 
 Thus we are forced to define each of these operations manually. We could define the common operations (`+`, `==`, etc) for `Real` and `Probability` separately, and we would then also have to define 'mixed' operations too (where we multiply a `Real` typed player payoff by a `Probability`).  However, the reduction of boiler-plate code (take a look at "types/arithmetic.hh" to see this) is a core design principle.
 
@@ -96,7 +101,7 @@ Both the operands are staticly cast to `ArithmeticType<T>`, which is also the re
 ```cpp
 typename Types::Probability w {x * y + 1};
 typename Types::Real z = x + y;
-// note: the second line needs to use a special assignment operator 
+// note: the second line makes use of a specially defined assignment operator 
 // RealType<T>::RealType<T> operator=(ArithmeticType<T>)
 ```
 
@@ -109,11 +114,11 @@ typename Types::Real z = x + y;
 
 ### `RealType<T>` & `ProbabilityType<T>`
 
-Since the common operators are defined on the base class, there is currently only one task that these types are relied upon to perform.
+Since the essential mathematical operators are defined on their base class, there is currently only one task that these two are relied upon to perform.
 The default implementation for multiple precision arithmetic is provided by `mpq_class`, which is the C++ front-end for GMP, or the [GNU Multiple Precision Library](https://gmplib.org/).
 Unfortunately, there is one quirk of this class that makes writing polymorphic code (or more specifically code that works the same for float and `mpq_class` without template specialization or `if constexpr` everywhere) difficult.
-In order for the equality and comparison (`>=` etc) operators to work correctly, the `mpq_class` objects must be *canonicalized*, or reduced to a proper fraction. Unless the user naively initializes an `mpq_class` to be un-canonicalized (e.g. `typename Types::Rational {2, 4}`), the only way rationals end up improper is after an arithmetic operation. The GMP library is designed for performance and thus does not perform this reduction automatically.
-Our method of handling this is to automatically canonicalize the underlying value when an `ArithmeticType<mpq_class>` is cast to a `RealType<mpq_class>` or `ProbabilityType<mpq_class>`, since that typically means we are done operating on that value.
+In order for the equality and comparison (`>=` etc) operators to work correctly, the `mpq_class` objects must be *canonicalized*, or reduced to a proper fraction. Unless the user naively initializes an `mpq_class` to be un-canonical (e.g. `typename Types::Rational {2, 4}`), the only way rationals end up improper is after an arithmetic operation. The GMP library is designed for performance and thus does not perform this reduction automatically.
+Our method of handling this is to automatically canonicalize the underlying value when an `ArithmeticType<mpq_class>` is cast to a `RealType<mpq_class>` or `ProbabilityType<mpq_class>`, since that typically means we are finished operating on that value.
 ```cpp
 RealType &operator=(const ArithmeticType<T> &val) {
     this->_value = val._value;
@@ -123,14 +128,14 @@ RealType &operator=(const ArithmeticType<T> &val) {
     return *this;
 }
 ```
-Regrettably, this means that some unnecessary reductions may be performed. However, I feel that `mpq_class` is used in more theoretical or academic contexts, rather than in the performance critical context of a user created engine, where they will instead surely use `double` or `float` instead
+Regrettably, this means that some unnecessary reductions may be performed. However, I feel that `mpq_class` is restricted to theoretical or academic contexts, rather than in the performance critical context of a user created engine, where they will instead surely use `double` or `float` as the underlying `Real` and `Probability` types.
 
 
 ### `ObservationType<T>`
-A wrapper for the observation type. Only the equality operator `==` is used here, to check whether a particular state transition has occurred before. Using this, we can track the development of a state accurately in the corresponding tree structure.
+A wrapper for the observation type. Only the equality operator `==` is used on this, to check whether a particular state transition has occurred before. This is how the search functions match the development of a state accurately in the corresponding tree structure.
 
 ### `ActionType<T>`
-A wrapper for the action type, and the argument type of the `apply_actions` method. No operators are required for this type, not even equality `==` (actions are identified by their *index* in the `row_actions`, `col_actions` containers.
+A wrapper for the action type, and the argument type of the `apply_actions` method. No operators are required for this type, not even equality `==` (actions are identified by their *index* in the `row_actions`, `col_actions` containers.)
 
 ## Template Aliases
 

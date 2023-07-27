@@ -1,7 +1,4 @@
 
-
-
-
 # Generic Search
 
 Surskit was designed to test search algorithms, which means it must accommodate all the well-studied approaches to game playing in the perfect information regime.
@@ -16,11 +13,8 @@ There are three major inference schemes in computer game playing. The oldest and
 The second is the large neural network, a la Alpha Zero. One advantage of neural networks is that they are capable of much more sophisticated inference than a manual device. This approach was dominant in computer chess until the advent of the small [NNUE](https://en.wikipedia.org/wiki/Efficiently_updatable_neural_network). These networks tend to have less powerful inference than the former but they compensate with increased performance. Their inferences per second can be orders of magnitude larger.
 
 * **Algorithm**
-
 I chose to emulate proven projects in chess. For this, [LeelaChessZero](https://lczero.org/) and [Stockfish](https://stockfishchess.org/) were the inspiration for the 'tree-bandit' and 'solver' folders respectively. Both have achieved fantastic results in computer chess while taking drastically different approaches to search.
-
 The former is a generalization of the 'Monte Carlo' tree search which was proven with AlphaZero and afterward successfully applied to many domains.
-
 The latter models the iterative deepening approaches of Stockfish and most chess engines.
 
 * **TypeList**
