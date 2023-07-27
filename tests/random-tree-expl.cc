@@ -14,13 +14,13 @@ int main()
     Rational<> threshold = Rational<>{1, 2};
     RandomTreeGenerator<> generator{
         prng{0},
-        {1, 2, 3},
-        {2, 4},
-        {1, 2, 4},
+        {1, 2},
+        {2, 3},
+        {1, 2},
         {Rational<>{1, 4}},
         std::vector<size_t>(100, 0)};
 
-    const double expl_threshold = .01;
+    const double expl_threshold = .25;
 
     using Model = MonteCarloModel<RandomTree<>>;
     Model model(device);
@@ -48,8 +48,6 @@ int main()
         for (W::Search *session_ptr : sessions)
         {
             std::vector<double> r{}, c{};
-            r.resize(state.row_actions.size());
-            c.resize(state.col_actions.size());
             session_ptr->run_and_get_strategies(r, c, search_iterations, state_wrapper, model_wrapper);
             double expl = math::exploitability(payoff_matrix, r, c);
 
