@@ -109,7 +109,7 @@ private:
         for (; duration.count() < duration_ms; ++thread_iterations)
         {
             typename Types::State state_copy = *state;
-            state_copy.reseed(device_thread);
+            state_copy.randomize_transition(device_thread);
             this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
             end = std::chrono::high_resolution_clock::now();
             duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -130,7 +130,7 @@ private:
         for (size_t iteration = 0; iteration < iterations; ++iteration)
         {
             typename Types::State state_copy = *state;
-            state_copy.reseed(device_thread);
+            state_copy.randomize_transition(device_thread);
             this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
         }
     }
@@ -313,7 +313,7 @@ private:
         for (; duration.count() < duration_ms; ++thread_iterations)
         {
             typename Types::State state_copy = *state;
-            state_copy.reseed(device_thread);
+            state_copy.randomize_transition(device_thread);
             this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
             end = std::chrono::high_resolution_clock::now();
             duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -334,7 +334,7 @@ private:
         for (size_t iteration = 0; iteration < iterations; ++iteration)
         {
             typename Types::State state_copy = *state;
-            state_copy.reseed(device_thread);
+            state_copy.randomize_transition(device_thread);
             this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
         }
     }

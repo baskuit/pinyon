@@ -9,7 +9,7 @@
 #include <vector>
 #include <ranges>
 
-template <typename _Types = RandomTreeFloatTypes>
+template <IsTypeList _Types = RandomTreeFloatTypes>
 class RandomTree : public ChanceState<_Types>
 {
 public:
@@ -17,14 +17,14 @@ public:
     {
     };
 
-    typename Types::PRNG device;
-    typename Types::Seed seed;
+    Types::PRNG device;
+    Types::Seed seed;
     size_t depth_bound = 0;
     size_t rows = 0;
     size_t cols = 0;
     size_t transitions = 1;
     int payoff_bias = 0;
-    typename Types::Rational chance_threshold{typename Types::Rational(1, transitions + 1)};
+    Types::Rational chance_threshold{Types::Rational(1, transitions + 1)};
     std::vector<typename Types::Probability> chance_strategies;
     int chance_denominator = 10;
 
@@ -38,12 +38,12 @@ public:
     // just a helper for the sample_pdf function in apply_actions
 
     RandomTree(
-        const typename Types::PRNG &device,
+        const Types::PRNG &device,
         size_t depth_bound,
         size_t rows,
         size_t cols,
         size_t transitions,
-        const typename Types::Rational &chance_threshold)
+        const Types::Rational &chance_threshold)
         : device{device},
           depth_bound{depth_bound},
           rows{rows},
@@ -55,12 +55,12 @@ public:
     }
 
     RandomTree(
-        const typename Types::PRNG &device,
+        const Types::PRNG &device,
         size_t depth_bound,
         size_t rows,
         size_t cols,
         size_t transitions,
-        typename Types::Rational chance_threshold,
+        Types::Rational chance_threshold,
         int (*depth_bound_func)(RandomTree *, int),
         int (*actions_func)(RandomTree *, int),
         int (*payoff_bias_func)(RandomTree *, int))
@@ -77,7 +77,7 @@ public:
         get_chance_strategies();
     }
 
-    void reseed(typename Types::PRNG &device)
+    void randomize_transition(Types::PRNG &device)
     {
         seed = device.uniform_64();
     }
@@ -97,8 +97,8 @@ public:
     }
 
     void get_actions(
-        typename Types::VectorAction &row_actions,
-        typename Types::VectorAction &col_actions) const
+        Types::VectorAction &row_actions,
+        Types::VectorAction &col_actions) const
     {
         row_actions.resize(rows);
         col_actions.resize(cols);
@@ -114,8 +114,8 @@ public:
 
     void get_chance_actions(
         std::vector<typename Types::Observation> &chance_actions,
-        const typename Types::Action row_action,
-        const typename Types::Action col_action) const
+        const Types::Action row_action,
+        const Types::Action col_action) const
     {
         chance_actions.clear();
         const size_t start_idx = get_transition_idx(row_action, col_action, typename Types::Observation{0});
@@ -129,14 +129,14 @@ public:
     }
 
     void apply_actions(
-        typename Types::Action row_action,
-        typename Types::Action col_action,
-        typename Types::Observation chance_action)
+        Types::Action row_action,
+        Types::Action col_action,
+        Types::Observation chance_action)
     {
 
         const ActionIndex transition_idx = get_transition_idx(row_action, col_action, chance_action);
         device.discard(transition_idx);
-        // advance the typename Types::PRNG so that different player/chance actions have different outcomes
+        // advance the Types::PRNG so that different player/chance actions have different outcomes
 
         this->obs = chance_action;
         this->prob = chance_strategies[transition_idx];
@@ -149,7 +149,7 @@ public:
         {
             this->is_terminal = true;
             typename Types::Rational row_payoff{(payoff_bias > 0) - (payoff_bias < 0) + 1, 2};
-            row_payoff.reduce();
+            row_payoff.canonicalize();
             this->payoff = typename Types::Value{typename Types::Real{row_payoff}};
         }
         else
@@ -161,8 +161,8 @@ public:
     }
 
     void apply_actions(
-        typename Types::Action row_action,
-        typename Types::Action col_action)
+        Types::Action row_action,
+        Types::Action col_action)
     {
         std::vector<typename Types::Observation> chance_actions{};
         get_chance_actions(chance_actions, row_action, col_action);
@@ -190,9 +190,9 @@ public:
 
 private:
     inline size_t get_transition_idx(
-        typename Types::Action row_action,
-        typename Types::Action col_action,
-        typename Types::Observation chance_action) const
+        Types::Action row_action,
+        Types::Action col_action,
+        Types::Observation chance_action) const
     {
         const ActionIndex row_idx{row_action};
         const ActionIndex col_idx{col_action};

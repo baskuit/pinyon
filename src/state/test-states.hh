@@ -26,10 +26,10 @@ public:
             this->row_actions[i] = typename Types::Action{i};
             this->col_actions[i] = typename Types::Action{i};
         }
-        this->prob = typename Types::Probability{Rational<>{1}};
+        this->prob = typename Types::Probability{typename Types::Rational{1}};
     }
 
-    void reseed(typename Types::PRNG &device)
+    void randomize_transition(Types::PRNG &device)
     {
     }
 
@@ -38,9 +38,20 @@ public:
         this->is_terminal = (this->max_depth <= 0);
     }
 
+    void get_actions(
+        Types::VectorAction &row_actions,
+        Types::VectorAction &col_actions
+    )
+    {
+        row_actions = this->row_actions;
+        col_actions = this->col_actions;
+        this->is_terminal = (this->max_depth <= 0);
+    }
+
+
     void apply_actions(
-        typename Types::Action row_action,
-        typename Types::Action col_action)
+        Types::Action row_action,
+        Types::Action col_action)
     {
         --this->max_depth;
     }

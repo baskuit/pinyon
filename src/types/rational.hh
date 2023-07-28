@@ -11,7 +11,7 @@ struct Rational
     T p = 1;
     T q = 1;
 
-    void reduce()
+    void canonicalize()
     {
         // eulcid's algorithm
         T a = p;
@@ -43,21 +43,18 @@ public:
     constexpr Rational operator+(const Rational y) const
     {
         Rational z = {p * y.q + y.p * q, q * y.q};
-        z.reduce();
         return z;
     }
 
     constexpr Rational operator*(const Rational y) const
     {
         Rational z{p * y.p, q * y.q};
-        z.reduce();
         return z;
     }
 
     constexpr Rational operator/(const Rational y) const
     {
         Rational z{p * y.q, q * y.p};
-        z.reduce();
         return z;
     }
 
@@ -85,7 +82,6 @@ public:
     {
         p = p * y.q + y.p * q;
         q = q * y.q;
-        reduce();
         return *this;
     }
 

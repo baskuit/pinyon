@@ -2,7 +2,7 @@
 
 #include <utility>
 
-template <class _State, class _Model>
+template <IsPerfectInfoState _State, class _Model>
 class Arena : public PerfectInfoState<SimpleTypes>
 {
 public:
@@ -10,8 +10,8 @@ public:
     {
     };
 
-    size_t iterations;
-    W::StateWrapper<_State> (*init_state_generator)(typename Types::Seed){nullptr};
+    size_t search_iterations;
+    W::StateWrapper<_State> (*init_state_generator)(Types::Seed){nullptr};
     W::ModelWrapper<_Model> model{device};
 
     typename Types::Seed state_seed{};
@@ -21,10 +21,10 @@ public:
 
     template <typename... Containers>
     Arena(
-        const size_t iterations,
+        const size_t search_iterations,
         W::StateWrapper<_State> (*init_state_generator)(typename Types::Seed),
         const _Model &model,
-        Containers &...containers) : iterations{iterations}, init_state_generator{init_state_generator}, model{model}
+        Containers &...containers) : search_iterations{search_iterations}, init_state_generator{init_state_generator}, model{model}
     {
         (std::transform(containers.begin(), containers.end(), std::back_inserter(searches),
                         [](auto &search)
@@ -44,14 +44,22 @@ public:
 
     void get_actions() const {}
 
-    void reseed(typename Types::PRNG &device)
+    void get_actions(
+        Types::VectorAction &row_actions,
+        Types::VectorAction &col_actions) const
+    {
+        row_actions = this->row_actions;
+        col_actions = this->col_actions;
+    }
+
+    void randomize_transition(Types::PRNG &device)
     {
         state_seed = device.uniform_64();
     }
 
     void apply_actions(
-        typename Types::Action row_action,
-        typename Types::Action col_action)
+        Types::Action row_action,
+        Types::Action col_action)
     {
         W::Search *row_search = searches[static_cast<int>(row_action)]->clone();
         W::Search *col_search = searches[static_cast<int>(col_action)]->clone();
@@ -62,7 +70,8 @@ public:
         PairReal<double> col_first_payoff = play_vs(col_search, row_search, state_copy, model);
 
         PairReal<double> avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
-        this->payoff = typename Types::Value{avg_payoff.get_row_value(), avg_payoff.get_col_value()};
+        this->payoff = static_cast<Types::Value>(avg_payoff.get_row_value(), avg_payoff.get_col_value());
+
         this->is_terminal = true;
         this->obs = typename Types::Observation{device.random_int(1 << 16)};
 
@@ -70,6 +79,7 @@ public:
         delete col_search;
     }
 
+private:
     PairReal<double> play_vs(
         W::Search *row_search,
         W::Search *col_search,
@@ -80,9 +90,9 @@ public:
         while (!state.is_terminal())
         {
             std::vector<double> row_strategy, col_strategy;
-            row_search->run_and_get_strategies(row_strategy, col_strategy, iterations, state, model);
+            row_search->run_and_get_strategies(row_strategy, col_strategy, search_iterations, state, model);
             ActionIndex row_idx = device.sample_pdf(row_strategy);
-            col_search->run_and_get_strategies(row_strategy, col_strategy, iterations, state, model);
+            col_search->run_and_get_strategies(row_strategy, col_strategy, search_iterations, state, model);
             ActionIndex col_idx = device.sample_pdf(col_strategy);
             state.apply_actions(row_idx, col_idx);
             state.get_actions();

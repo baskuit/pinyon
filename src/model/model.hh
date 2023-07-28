@@ -18,12 +18,10 @@ public:
 Similar to `State`, in that virtually all models will be derived from it.
 */
 
-template <class State>
+template <IsPerfectInfoState State>
 
 class DoubleOracleModel : public AbstractModel<State>
 {
-    static_assert(std::derived_from<State, PerfectInfoState<typename State::Types::TypeList>>);
-
 public:
     struct ModelOutput;
 
@@ -146,7 +144,7 @@ public:
         using ModelInput = State;
     };
 
-    EmptyModel () {}
+    EmptyModel() {}
 
     void get_input(
         const typename Types::State &state,
@@ -174,4 +172,28 @@ public:
         typename Types::ModelBatchOutput &outputs)
     {
     }
+};
+
+/*
+
+Concepts
+
+*/
+
+template <typename Model>
+concept IsDoubleOracleModel = requires(
+    Model model,
+    typename Model::Types::ModelInput &input,
+    typename Model::Types::ModelOutput &output,
+    typename Model::Types::State &state) {
+    {
+        model.get_inference(
+            input,
+            output)
+    } -> std::same_as<void>;
+    {
+        model.get_input(
+            state,
+            input)
+    } -> std::same_as<void>;
 };

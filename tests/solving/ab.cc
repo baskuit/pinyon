@@ -19,6 +19,8 @@ RandomTree<> convert(const RandomTree<RandomTreeRationalTypes> &state, Rational<
     return x;
 }
 
+mpq_class x;
+
 struct Solve
 {
 
@@ -125,6 +127,7 @@ struct Solve
 
 int main()
 {
+    x.canonicalize();
     Rational<> threshold = Rational<>{1, 2};
     RandomTreeGenerator<RandomTreeRationalTypes> generator{
         prng{0},

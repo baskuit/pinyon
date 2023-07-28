@@ -3,8 +3,6 @@
 #include <array>
 #include <algorithm>
 
-#include "wrapper.hh"
-
 template <size_t MaxSize>
 struct A
 {
@@ -13,6 +11,17 @@ struct A
     {
 
         Array() {}
+
+        Array(const Array &other)
+        {
+            std::copy(other.begin(), other.end(), this->begin());
+        }
+
+        Array &operator=(const Array &other)
+        {
+            std::copy(other.begin(), other.end(), this->begin());
+            return *this;
+        }
 
         size_t _size = 0;
 

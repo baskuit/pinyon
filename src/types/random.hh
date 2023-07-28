@@ -78,3 +78,82 @@ public:
         engine.discard(n);
     }
 };
+
+class xor_shift
+{
+    uint64_t seed;
+    uint64_t state;
+
+public:
+    xor_shift() : seed(std::random_device{}()), state(seed) {}
+    xor_shift(uint64_t seed) : seed(seed), state(seed) {}
+
+    uint64_t get_seed() const
+    {
+        return seed;
+    }
+
+    // Uniform random in (0, 1)
+    double uniform()
+    {
+        return static_cast<double>(xorshift()) / UINT64_MAX;
+    }
+
+    // Random integer in [0, n)
+    int random_int(int n)
+    {
+        return xorshift() % n;
+    }
+
+    uint64_t uniform_64()
+    {
+        return xorshift();
+    }
+
+    template <template <typename...> typename Vector, template <typename> typename Wrapper, typename T>
+    int sample_pdf(const Vector<Wrapper<T>> &input, int k)
+    {
+        double p = uniform();
+        for (int i = 0; i < k; ++i)
+        {
+            p -= static_cast<double>(input[i]);
+            if (p <= 0)
+            {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    template <typename Vector>
+    int sample_pdf(const Vector &input)
+    {
+        double p = uniform();
+        for (int i = 0; i < input.size(); ++i)
+        {
+            p -= static_cast<double>(input[i]);
+            if (p <= 0)
+            {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    void discard(size_t n)
+    {
+        for (size_t i = 0; i < n; ++i)
+        {
+            xorshift();
+        }
+    }
+
+private:
+    uint64_t xorshift()
+    {
+        state ^= (state << 21);
+        state ^= (state >> 35);
+        state ^= (state << 4);
+        return state;
+    }
+};

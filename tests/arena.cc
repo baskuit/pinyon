@@ -22,25 +22,25 @@ W::StateWrapper<RandomTree<>> generator_function(typename State::Types::Seed see
 int main()
 {
 
-    std::vector<W::SearchWrapper<TreeBandit<Exp3<MonteCarloModel<RandomTree<>>>>>> agents = {
-        {.01}, {.1}, {1}};
+    // std::vector<W::SearchWrapper<TreeBandit<Exp3<MonteCarloModel<RandomTree<>>>>>> agents = {
+    //     {.01}, {.1}, {1}};
 
-    const size_t iterations = 1 << 10;
-    prng device{0};
-    W::ModelWrapper<MonteCarloModel<RandomTree<>>> model{device};
+    // const size_t iterations = 1 << 10;
+    // prng device{0};
+    // W::ModelWrapper<MonteCarloModel<RandomTree<>>> model{device};
 
-    State arena{iterations, &generator_function, model, agents};
+    // State arena{iterations, &generator_function, model, agents};
 
-    Model arena_model{1337};
-    Algorithm session{.1};
-    session.threads = 6;
-    MatrixNode<Algorithm> root;
+    // Model arena_model{1337};
+    // Algorithm session{.1};
+    // session.threads = 6;
+    // MatrixNode<Algorithm> root;
 
-    session.run(1000, device, arena, arena_model, root);
-    State::Types::VectorReal row_strategy, col_strategy;
-    session.get_empirical_strategies(root.stats, row_strategy, col_strategy);
-    math::print(row_strategy);
-    math::print(col_strategy);
+    // session.run(1000, device, arena, arena_model, root);
+    // State::Types::VectorReal row_strategy, col_strategy;
+    // session.get_empirical_strategies(root.stats, row_strategy, col_strategy);
+    // math::print(row_strategy);
+    // math::print(col_strategy);
 
     return 0;
 }

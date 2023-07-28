@@ -11,9 +11,7 @@
 
 // Types
 
-#include <types/random.hh>
-#include <types/random.hh>
-#include <types/vector.hh>
+#include <types/types.hh>
 
 // State
 
@@ -27,6 +25,11 @@
 // Model
 
 #include <model/model.hh>
+// #include <model/search_model.hh>
+
+#ifdef TORCH
+#include <model/libtorch_model.hh>
+#endif
 
 // Algorithm
 

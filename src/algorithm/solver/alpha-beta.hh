@@ -8,20 +8,7 @@
 #include <concepts>
 #include <assert.h>
 
-template <typename T>
-concept DoubleOracleModelConcept = requires(T obj, typename T::Types::State &state) {
-    typename T::Types;
-    typename T::Types::ModelInput;
-    typename T::Types::ModelOutput;
-    // {
-    //     obj.get_inference(
-    //         std::reference_wrapper(typename T::Types::State{}),
-    //         std::reference_wrapper(typename T::Types::ModelOutput{})
-    //     )
-    // } -> std::same_as<void>;
-};
-
-template <DoubleOracleModelConcept Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
+template <IsDoubleOracleModel Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
 class AlphaBeta : public AbstractAlgorithm<Model>
 {
 public:
@@ -97,7 +84,9 @@ public:
         typename Types::PRNG &device,
         const typename Types::State &state,
         Model &model,
-        MNode<AlphaBeta> &root) {}
+        MNode<AlphaBeta> &root) {
+            model.get_inference();
+        }
 
     std::pair<typename Types::Real, typename Types::Real>
     double_oracle(

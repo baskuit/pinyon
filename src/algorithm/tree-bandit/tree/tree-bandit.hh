@@ -49,7 +49,7 @@ public:
         for (; duration.count() < duration_ms; ++iterations)
         {
             typename Types::State state_copy = state;
-            state_copy.reseed(device);
+            state_copy.randomize_transition(device);
             this->run_iteration(device, state_copy, model, &matrix_node, inference);
             end = std::chrono::high_resolution_clock::now();
             duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -69,7 +69,7 @@ public:
         for (size_t iteration = 0; iteration < iterations; ++iteration)
         {
             typename Types::State state_copy = state;
-            state_copy.reseed(device);
+            state_copy.randomize_transition(device);
             this->run_iteration(device, state_copy, model, &matrix_node, inference);
         }
         auto end = std::chrono::high_resolution_clock::now();

@@ -253,7 +253,7 @@ namespace W
 
             row_strategy.clear();
             col_strategy.clear();
-            typename _Algorithm::Types::VectorReal r{root->row_actions.size()}, c{root->col_actions.size()};
+            typename _Algorithm::Types::VectorReal r, c;
             ptr->get_empirical_strategies(root_temp.stats, r, c);
             for (int i = 0; i < r.size(); ++i)
             {
@@ -274,7 +274,7 @@ namespace W
         {
             row_strategy.clear();
             col_strategy.clear();
-            typename _Algorithm::Types::VectorReal r{root->row_actions.size()}, c{root->col_actions.size()};
+            typename _Algorithm::Types::VectorReal r, c;
             ptr->get_empirical_strategies(root->stats, r, c);
             for (int i = 0; i < r.size(); ++i)
             {
@@ -292,7 +292,7 @@ namespace W
         };
         double exploitability(State &state)
         {
-            typename _Algorithm::Types::VectorReal r{root->row_actions.size()}, c{root->col_actions.size()};
+            typename _Algorithm::Types::VectorReal r, c;
             ptr->get_empirical_strategies(root->stats, r, c);
             Matrix<PairReal<double>> matrix;
             state.get_payoff_matrix(matrix);
@@ -302,7 +302,7 @@ namespace W
 
         double exploitability(Matrix<PairReal<double>> &matrix)
         {
-            typename _Algorithm::Types::VectorReal r{root->row_actions.size()}, c{root->col_actions.size()};
+            typename _Algorithm::Types::VectorReal r, c;
             ptr->get_empirical_strategies(root->stats, r, c);
             double expl = static_cast<double>(math::exploitability(matrix, r, c));
             return expl;
