@@ -1,40 +1,23 @@
-#include <concepts>
-
-template <typename State>
-concept IsState = requires(State obj) {
-    {
-        obj.terminal
-    } -> std::same_as<bool&>;
-};
-
-template <typename State>
-concept IsPerfectInfoState = IsState<State> &&
-requires(State obj) {
-    requires IsState<State>;
-};
+#include <surskit.hh>
 
 struct Foo
 {
     bool terminal;
 };
 
-template <IsPerfectInfoState State>
-void foo()
-{
-    State state;
-    state.terminal;
-    state.ter
-}
-
 template <IsState State>
 void foo()
 {
-    State state;
-    state.terminal;
-    
+    State state{2};
+    typename State::Types::PRNG device{};
+}
+
+template <IsTypeList Types>
+void bar() {
+
 }
 
 int main()
 {
-    foo<Foo>();
+    foo<MoldState<2>>();
 }

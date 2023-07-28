@@ -24,8 +24,7 @@ foreach(TEST_FILE ${TEST_FILES})
 
     add_executable(${TEST_TARGET_NAME} ${TEST_FILE})
     target_link_libraries(${TEST_TARGET_NAME} surskit)
-    target_compile_definitions(${TEST_TARGET_NAME} PRIVATE fconcepts-diagnostics-depth=50)
-
+    # target_compile_definitions(${TEST_TARGET_NAME} PRIVATE fconcepts-diagnostics-depth=50)
 
     add_test(NAME ${TEST_TARGET_NAME} COMMAND ${TEST_TARGET_NAME})
     set_target_properties(${TEST_TARGET_NAME} PROPERTIES

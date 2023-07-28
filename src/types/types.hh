@@ -55,32 +55,6 @@ struct DefaultTypes
     using Rational = _Rational;
 };
 
-template <typename Types>
-concept IsTypeList = requires(Types obj) {
-    typename Types::Real;
-    typename Types::Action;
-    typename Types::Observation;
-    typename Types::Probability;
-    typename Types::Value;
-    typename Types::VectorReal;
-    typename Types::VectorAction;
-    typename Types::VectorInt;
-    typename Types::MatrixReal;
-    typename Types::MatrixValue;
-    typename Types::MatrixInt;
-    typename Types::Mutex;
-    typename Types::PRNG;
-    typename Types::Seed;
-    typename Types::Rational;
-    // {
-    //     obj.get_inference()
-    // } -> std::same_as<void>;
-
-    // typename Types::Vector<typename Types::Real>;
-};
-
-
-
 using SimpleTypes = DefaultTypes<
     double,
     int,
@@ -100,3 +74,28 @@ using RandomTreeRationalTypes = DefaultTypes<
     int,
     mpq_class,
     ConstantSum<1, 1>::Value>;
+
+/*
+
+Concepts
+
+*/
+
+template <typename Types>
+concept IsTypeList = requires(Types obj) {
+    typename Types::Real;
+    typename Types::Action;
+    typename Types::Observation;
+    typename Types::Probability;
+    typename Types::Value;
+    typename Types::VectorReal;
+    typename Types::VectorAction;
+    typename Types::VectorInt;
+    typename Types::MatrixReal;
+    typename Types::MatrixValue;
+    typename Types::MatrixInt;
+    typename Types::Mutex;
+    typename Types::PRNG;
+    typename Types::Seed;
+    typename Types::Rational;
+};

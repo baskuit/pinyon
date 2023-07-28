@@ -43,18 +43,6 @@ public:
     {
         return terminal;
     }
-
-    void get_actions(){};
-
-    void get_actions(
-        Types::VectorAction &row_actions,
-        Types::VectorAction &col_actions) const;
-
-    void apply_actions(
-        Types::Action row_action,
-        Types::Action col_action);
-
-    void randomize_transition(Types::PRNG &device);
 };
 
 template <typename _Types>
@@ -64,16 +52,6 @@ public:
     struct Types : PerfectInfoState<_Types>::Types
     {
     };
-
-    void get_chance_actions(
-        std::vector<typename Types::Observation> &chance_actions,
-        Types::Action row_action,
-        Types::Action col_action);
-
-    void apply_actions(
-        Types::Action row_action,
-        Types::Action col_action,
-        Types::Observation chance_action){};
 };
 
 template <typename _Types>
@@ -85,13 +63,6 @@ public:
     };
 
     Types::VectorReal row_strategy, col_strategy;
-
-    void get_payoff_matrix(
-        Types::MatrixValue &matrix);
-
-    void get_strategies(
-        Types::VectorReal &row_strategy,
-        Types::VectorReal &col_strategy);
 };
 
 /*
@@ -134,25 +105,24 @@ concept IsPerfectInfoState = requires(
     State obj,
     typename State::Types::VectorAction &vec,
     typename State::Types::PRNG &device) {
-    requires IsState<State>;
     {
         obj.terminal
-    } -> std::same_as<bool&>;
+    } -> std::same_as<bool &>;
     {
         obj.row_actions
-    } -> std::same_as<typename State::Types::VectorAction&>;
+    } -> std::same_as<typename State::Types::VectorAction &>;
     {
         obj.col_actions
-    } -> std::same_as<typename State::Types::VectorAction&>;
+    } -> std::same_as<typename State::Types::VectorAction &>;
     {
         obj.payoff
-    } -> std::same_as<typename State::Types::Value&>;
+    } -> std::same_as<typename State::Types::Value &>;
     {
         obj.obs
-    } -> std::same_as<typename State::Types::Observation&>;
+    } -> std::same_as<typename State::Types::Observation &>;
     {
         obj.prob
-    } -> std::same_as<typename State::Types::Probability&>;
+    } -> std::same_as<typename State::Types::Probability &>;
     {
         obj.apply_actions(
             typename State::Types::Action{},
@@ -161,7 +131,7 @@ concept IsPerfectInfoState = requires(
     {
         obj.get_actions()
     } -> std::same_as<void>;
-};
+} && IsState<State>;
 
 template <typename State>
 concept IsChanceState = requires(
@@ -180,7 +150,7 @@ concept IsChanceState = requires(
             typename State::Types::Action{},
             typename State::Types::Action{})
     } -> std::same_as<void>;
-};
+} && IsPerfectInfoState<State>;
 
 template <typename State>
 concept IsSolvedState = requires(
@@ -194,4 +164,4 @@ concept IsSolvedState = requires(
     {
         obj.get_matrix(matrix)
     } -> std::same_as<void>;
-};
+} && IsChanceState<State>;
