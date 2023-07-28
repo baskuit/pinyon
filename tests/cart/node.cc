@@ -1,10 +1,5 @@
 #include <surskit.hh>
 
-template <typename Algorithm>
-using MNode = MatrixNodeFlat<Algorithm>;
-template <typename Algorithm>
-using CNode = ChanceNodeFlat<Algorithm>;
-
 int main()
 {
 

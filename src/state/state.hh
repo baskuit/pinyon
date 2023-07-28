@@ -34,9 +34,15 @@ public:
     Types::Observation obs{};
     Types::Probability prob{};
 
-    inline bool is_terminal () const {
+    inline Types::Value get_payoff()
+    {
+        return payoff;
+    }
+
+    inline bool is_terminal()
+    {
         return terminal;
-    } 
+    }
 
     void get_actions(){};
 
@@ -94,20 +100,59 @@ Concepts
 
 */
 
-// template <typename State>
-// concept IsState = requires(State obj) {
-//     obj.terminal;
-// };
+template <typename State>
+concept IsState = requires(
+    State obj,
+    typename State::Types::VectorAction &vec,
+    typename State::Types::PRNG &device,
+    typename State::Types::Observation &obs,
+    typename State::Types::Probability &prob) {
+    {
+        obj.is_terminal()
+    } -> std::same_as<bool>;
+    {
+        obj.get_payoff()
+    } -> std::same_as<typename State::Types::Value>;
+    {
+        obj.get_actions(
+            vec, vec)
+    } -> std::same_as<void>;
+    {
+        obj.randomize_transition(device)
+    } -> std::same_as<void>;
+    // { // maybe don't add this
+    //     obj.apply_actions(
+    //         typename State::Types::Action{},
+    //         typename State::Types::Action{},
+    //         obs,
+    //         prob)
+    // } -> std::same_as<void>;
+};
 
 template <typename State>
-concept IsPerfectInfoState = requires(State obj, typename State::Types::VectorAction &vec, typename State::Types::PRNG &device) {
-    requires IsTypeList<typename State::Types>;
-    std::is_same_v<decltype(obj.terminal), bool>;
-    std::is_same_v<decltype(obj.row_actions), typename State::Types::VectorAction>;
-    std::is_same_v<decltype(obj.col_actions), typename State::Types::VectorAction>;
-    std::is_same_v<decltype(obj.payoff), typename State::Types::Value>;
-    std::is_same_v<decltype(obj.obs), typename State::Types::Observation>;
-    std::is_same_v<decltype(obj.prob), typename State::Types::Probability>;
+concept IsPerfectInfoState = requires(
+    State obj,
+    typename State::Types::VectorAction &vec,
+    typename State::Types::PRNG &device) {
+    requires IsState<State>;
+    {
+        obj.terminal
+    } -> std::same_as<bool&>;
+    {
+        obj.row_actions
+    } -> std::same_as<typename State::Types::VectorAction&>;
+    {
+        obj.col_actions
+    } -> std::same_as<typename State::Types::VectorAction&>;
+    {
+        obj.payoff
+    } -> std::same_as<typename State::Types::Value&>;
+    {
+        obj.obs
+    } -> std::same_as<typename State::Types::Observation&>;
+    {
+        obj.prob
+    } -> std::same_as<typename State::Types::Probability&>;
     {
         obj.apply_actions(
             typename State::Types::Action{},
@@ -115,13 +160,6 @@ concept IsPerfectInfoState = requires(State obj, typename State::Types::VectorAc
     } -> std::same_as<void>;
     {
         obj.get_actions()
-    } -> std::same_as<void>;
-    {
-        obj.get_actions(
-            vec, vec)
-    } -> std::same_as<void>;
-    {
-        obj.randomize_transition(device)
     } -> std::same_as<void>;
 };
 
@@ -148,9 +186,7 @@ template <typename State>
 concept IsSolvedState = requires(
     State obj,
     typename State::Types::VectorReal &strategy,
-    typename State::Types::MatrixValue &matrix)
-
-{
+    typename State::Types::MatrixValue &matrix) {
     requires IsChanceState<State>;
     {
         obj.get_strategies(strategy, strategy)

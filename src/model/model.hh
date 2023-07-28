@@ -4,7 +4,7 @@
 
 #include <vector>
 
-template <class _State>
+template <IsState _State>
 class AbstractModel
 {
 public:
@@ -18,7 +18,7 @@ public:
 Similar to `State`, in that virtually all models will be derived from it.
 */
 
-template <IsPerfectInfoState State>
+template <IsState State>
 
 class DoubleOracleModel : public AbstractModel<State>
 {
@@ -42,7 +42,7 @@ public:
 Universal model.
 */
 
-template <class State>
+template <IsState State>
 class MonteCarloModel : public DoubleOracleModel<State>
 {
 
@@ -132,7 +132,7 @@ protected:
     }
 };
 
-template <class State>
+template <IsState State>
 class EmptyModel : public DoubleOracleModel<State>
 {
 

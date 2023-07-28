@@ -1,13 +1,11 @@
 #include <surskit.hh>
 
-template <IsTypeList Types>
+template <IsPerfectInfoState State>
 void foo () {
+    State state{2};
 }
 
-int main () {
-
-    foo<RandomTreeRationalTypes>();
-
-    MoldState<2> x{1};
-
+int main()
+{
+    foo<MoldState<2>>();
 }
