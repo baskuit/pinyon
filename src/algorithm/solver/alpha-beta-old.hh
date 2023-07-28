@@ -13,7 +13,7 @@ for Pruning in Simultaneous Move Games>
 
 */
 
-template <class Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
+template <IsValueModel Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
 class AlphaBetaOld : public AbstractAlgorithm<Model>
 {
 public:

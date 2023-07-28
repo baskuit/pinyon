@@ -2,7 +2,7 @@
 
 #include <model/model.hh>
 
-template <class _Model>
+template <IsValueModel _Model>
 class AbstractAlgorithm
 {
     static_assert(std::derived_from<_Model, AbstractModel<typename _Model::Types::State>>);

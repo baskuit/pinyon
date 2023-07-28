@@ -56,20 +56,20 @@ public:
 
     typename Types::PRNG device;
 
-    MonteCarloModel(typename Types::PRNG &device) : device(device) {}
+    MonteCarloModel(Types::PRNG &device) : device(device) {}
 
     MonteCarloModel(uint64_t seed) : device(seed) {}
 
     void get_input(
-        const typename Types::State &state,
-        typename Types::ModelInput &input)
+        const Types::State &state,
+        Types::ModelInput &input)
     {
         input = state;
     }
 
     void get_batch_input(
         const std::vector<typename Types::State> &states,
-        typename Types::ModelBatchInput &inputs)
+        Types::ModelBatchInput &inputs)
     {
         inputs = states;
     }
@@ -88,8 +88,8 @@ public:
     }
 
     void get_inference(
-        typename Types::ModelBatchInput &inputs,
-        typename Types::ModelBatchOutput &outputs)
+        Types::ModelBatchInput &inputs,
+        Types::ModelBatchOutput &outputs)
     {
         outputs.resize(inputs.size());
         // add empty structs
@@ -102,16 +102,16 @@ public:
     }
 
     void get_value(
-        typename Types::ModelInput &input,
-        typename Types::Value &value)
+        Types::ModelInput &input,
+        Types::Value &value)
     {
         rollout(input);
         value = input.payoff;
     }
 
     void add_to_batch_input(
-        typename Types::State &state,
-        typename Types::ModelBatchInput &input)
+        Types::State &state,
+        Types::ModelBatchInput &input)
     {
         input.push_back(state);
     }
@@ -147,29 +147,29 @@ public:
     EmptyModel() {}
 
     void get_input(
-        const typename Types::State &state,
-        typename Types::ModelInput &input)
+        const Types::State &state,
+        Types::ModelInput &input)
     {
         input = state;
     }
 
     void get_batch_input(
         const std::vector<typename Types::State> &states,
-        typename Types::ModelBatchInput &inputs)
+        Types::ModelBatchInput &inputs)
     {
         inputs = states;
     }
 
     void get_inference(
-        typename Types::ModelInput &input,
-        typename Types::ModelOutput &output)
+        Types::ModelInput &input,
+        Types::ModelOutput &output)
     {
         output.value = typename Types::Value{.5, .5};
     }
 
     void get_inference(
-        typename Types::ModelBatchInput &inputs,
-        typename Types::ModelBatchOutput &outputs)
+        Types::ModelBatchInput &inputs,
+        Types::ModelBatchOutput &outputs)
     {
     }
 };
@@ -181,10 +181,32 @@ Concepts
 */
 
 template <typename Model>
+concept IsValueModel = requires(
+    Model model, 
+    typename Model::Types::ModelInput &input, 
+    typename Model::Types::ModelOutput &output, 
+    typename Model::Types::State &state) {
+    requires IsTypeList<typename Model::Types>;
+    {
+        Model::Types::ModelOutput::value
+    } -> std::same_as<typename Model::Types::Value&>;
+    {
+        model.get_inference(
+            input,
+            output)
+    } -> std::same_as<void>;
+    {
+        model.get_input(
+            state,
+            input)
+    } -> std::same_as<void>;
+};
+
+template <typename Model>
 concept IsDoubleOracleModel = requires(
-    Model model,
-    typename Model::Types::ModelInput &input,
-    typename Model::Types::ModelOutput &output,
+    Model model, 
+    typename Model::Types::ModelInput &input, 
+    typename Model::Types::ModelOutput &output, 
     typename Model::Types::State &state) {
     {
         model.get_inference(

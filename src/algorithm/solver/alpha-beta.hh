@@ -8,7 +8,7 @@
 #include <concepts>
 #include <assert.h>
 
-template <IsDoubleOracleModel Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
+template <IsValueModel Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
 class AlphaBeta : public AbstractAlgorithm<Model>
 {
 public:

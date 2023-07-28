@@ -2,7 +2,7 @@
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
-template <class Model>
+template <IsValueModel Model>
 class Exp3 : AbstractAlgorithm<Model>
 {
 

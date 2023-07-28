@@ -6,7 +6,7 @@
 Minimal model for benchmarking purposes (Test speed of state and tree structure)
 */
 
-template <class Model>
+template <IsValueModel Model>
 class Rand : public AbstractAlgorithm<Model>
 {
 
