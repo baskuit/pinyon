@@ -33,8 +33,8 @@ public:
         // append pointer to search wrapper to this->searches
 
         const size_t size = searches.size();
-        this->row_actions.fill(size);
-        this->col_actions.fill(size);
+        this->row_actions.resize(size);
+        this->col_actions.resize(size);
         for (int i = 0; i < size; ++i)
         {
             this->row_actions[i] = typename Types::Action{i};

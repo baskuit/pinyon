@@ -81,9 +81,9 @@ public:
         typename Types::ModelOutput &output)
     {
         const typename Types::Real row_uniform{Rational{1, static_cast<int>(input.row_actions.size())}};
-        output.row_policy.fill(input.row_actions.size(), row_uniform);
+        output.row_policy.resize(input.row_actions.size(), row_uniform);
         const typename Types::Real col_uniform{Rational{1, static_cast<int>(input.col_actions.size())}};
-        output.col_policy.fill(input.col_actions.size(), col_uniform);
+        output.col_policy.resize(input.col_actions.size(), col_uniform);
 
         rollout(input);
         output.value = input.payoff;

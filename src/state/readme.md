@@ -161,8 +161,8 @@ public:
    {
       const size_t rows = pkmn_gen1_battle_choices(&battle_, PKMN_PLAYER_P1, pkmn_result_p1(result), this->row_actions.template data<pkmn_choice, A<9>::Array>(), PKMN_CHOICES_SIZE);
       const size_t cols = pkmn_gen1_battle_choices(&battle_, PKMN_PLAYER_P2, pkmn_result_p2(result), this->col_actions.template data<pkmn_choice, A<9>::Array>(), PKMN_CHOICES_SIZE);
-      this->row_actions.fill(rows);
-      this->col_actions.fill(cols);
+      this->row_actions.resize(rows);
+      this->col_actions.resize(cols);
       // similarly to last function we know the `VectorActions` type is array based, so these last two methods just set the size parameter
    }
 

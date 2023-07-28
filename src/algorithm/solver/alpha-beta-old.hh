@@ -477,8 +477,8 @@ private:
     {
         // define submatrix
         submatrix.fill(matrix_node->stats.I.size(), matrix_node->stats.J.size());
-        row_strategy.fill(submatrix.rows);
-        col_strategy.fill(submatrix.cols);
+        row_strategy.resize(submatrix.rows);
+        col_strategy.resize(submatrix.cols);
         int entry_idx = 0;
         for (const int row_idx : matrix_node->stats.I)
         {

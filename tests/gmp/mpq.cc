@@ -17,7 +17,7 @@ void random_matrix(prng device, const size_t rows, const size_t cols, const int 
         matrix[i].col_value = RealType<double>{cpd[i]};
     }
 
-    Vector<RealType<double>> row_strategy, col_strategy;
+    std::vector<RealType<double>> row_strategy, col_strategy;
     LRSNash::solve(matrix, row_strategy, col_strategy, discrete);
 
     auto expl = math::exploitability(matrix, row_strategy, col_strategy);

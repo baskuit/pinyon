@@ -149,8 +149,8 @@ protected:
         typename Types::VectorReal &col_policy)
     {
         const typename Types::Real row_uniform{Rational{1, stats.rows}};
-        row_policy.fill(stats.rows, row_uniform);
+        row_policy.resize(stats.rows, row_uniform);
         const typename Types::Real col_uniform{Rational{1, stats.cols}};
-        col_policy.fill(stats.cols, col_uniform);
+        col_policy.resize(stats.cols, col_uniform);
     }
 };

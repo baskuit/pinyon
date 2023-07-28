@@ -165,7 +165,7 @@ template <
     typename _Probability,
 
     template <typename...> typename _Value = PairReal,
-    template <typename...> typename _Vector = Vector,
+    template <typename...> typename _Vector = std::vector,
     template <typename...> typename _Matrix = Matrix,
 
     typename _Mutex = std::mutex,

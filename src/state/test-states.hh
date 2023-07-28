@@ -18,8 +18,8 @@ public:
 
     MoldState(size_t max_depth) : max_depth((max_depth >= 0) * max_depth)
     {
-        this->row_actions.fill(size);
-        this->col_actions.fill(size);
+        this->row_actions.resize(size);
+        this->col_actions.resize(size);
 
         for (int i = 0; i < size; ++i)
         {

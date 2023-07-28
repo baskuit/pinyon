@@ -83,8 +83,8 @@ public:
         const int cols = state.col_actions.size();
 
         stats.nash_payoff_matrix.fill(rows, cols);
-        stats.row_solution.fill(rows);
-        stats.col_solution.fill(cols);
+        stats.row_solution.resize(rows);
+        stats.col_solution.resize(cols);
 
         // recurse
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)

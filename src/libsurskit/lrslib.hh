@@ -93,8 +93,8 @@ namespace LRSNash
         solve_gmp_pointer_constant_sum(rows, cols, rpd.data(), row_solution_data, col_solution_data, 1, 1);
 
         mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
-        row_strategy.fill(rows);
-        col_strategy.fill(cols);
+        row_strategy.resize(rows);
+        col_strategy.resize(cols);
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             row_strategy[row_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
@@ -157,8 +157,8 @@ namespace LRSNash
         solve_gmp_float(rows, cols, payoff_data.data(), den, row_solution_data, col_solution_data);
 
         mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
-        row_strategy.fill(rows);
-        col_strategy.fill(cols);
+        row_strategy.resize(rows);
+        col_strategy.resize(cols);
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
             // row_strategy[row_idx] = Real{mpz_get_ui(row_solution_data[row_idx + 1]) / static_cast<typename Real::type>(row_den)};

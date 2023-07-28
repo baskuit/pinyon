@@ -57,8 +57,8 @@ public:
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy) const
     {
-        row_strategy.fill(stats.row_visits.size());
-        col_strategy.fill(stats.col_visits.size());
+        row_strategy.resize(stats.row_visits.size());
+        col_strategy.resize(stats.col_visits.size());
         math::power_norm(stats.row_visits, row_strategy.size(), 1, row_strategy);
         math::power_norm(stats.col_visits, col_strategy.size(), 1, col_strategy);
     }
@@ -76,8 +76,8 @@ public:
         typename Types::VectorReal &row_strategy,
         typename Types::VectorReal &col_strategy) const
     {
-        row_strategy.fill(stats.row_visits.size());
-        col_strategy.fill(stats.col_visits.size());
+        row_strategy.resize(stats.row_visits.size());
+        col_strategy.resize(stats.col_visits.size());
         denoise(row_strategy, col_strategy);
         math::power_norm(stats.row_visits, row_strategy.size(), 1, row_strategy);
         math::power_norm(stats.col_visits, col_strategy.size(), 1, col_strategy);
@@ -104,10 +104,10 @@ protected:
         MatrixStats &stats,
         typename Types::ModelOutput &inference)
     {
-        stats.row_visits.fill(state.row_actions.size(), 0);
-        stats.col_visits.fill(state.col_actions.size(), 0);
-        stats.row_gains.fill(state.row_actions.size(), 0);
-        stats.col_gains.fill(state.col_actions.size(), 0);
+        stats.row_visits.resize(state.row_actions.size(), 0);
+        stats.col_visits.resize(state.col_actions.size(), 0);
+        stats.row_gains.resize(state.row_actions.size(), 0);
+        stats.col_gains.resize(state.col_actions.size(), 0);
     }
 
     void select(

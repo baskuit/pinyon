@@ -84,8 +84,8 @@ public:
 
     void get_actions()
     {
-        this->row_actions.fill(rows);
-        this->col_actions.fill(cols);
+        this->row_actions.resize(rows);
+        this->col_actions.resize(cols);
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
             this->row_actions[row_idx] = typename Types::Action{row_idx};
@@ -100,8 +100,8 @@ public:
         typename Types::VectorAction &row_actions,
         typename Types::VectorAction &col_actions) const
     {
-        row_actions.fill(rows);
-        col_actions.fill(cols);
+        row_actions.resize(rows);
+        col_actions.resize(cols);
         for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
             row_actions[row_idx] = typename Types::Action{row_idx};
