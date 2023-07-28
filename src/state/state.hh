@@ -27,12 +27,16 @@ public:
 
     PerfectInfoState(Types::PRNG &device) {}
 
-    bool is_terminal{false};
+    bool terminal{false};
     Types::VectorAction row_actions{};
     Types::VectorAction col_actions{};
     Types::Value payoff{};
     Types::Observation obs{};
     Types::Probability prob{};
+
+    inline bool is_terminal () const {
+        return terminal;
+    } 
 
     void get_actions(){};
 
@@ -90,13 +94,15 @@ Concepts
 
 */
 
+// template <typename State>
+// concept IsState = requires(State obj) {
+//     obj.terminal;
+// };
+
 template <typename State>
-concept IsPerfectInfoState = requires(
-    State obj,
-    typename State::Types::VectorAction &vec,
-    typename State::Types::PRNG &device) {
+concept IsPerfectInfoState = requires(State obj, typename State::Types::VectorAction &vec, typename State::Types::PRNG &device) {
     requires IsTypeList<typename State::Types>;
-    std::is_same_v<decltype(obj.is_terminal), bool>;
+    std::is_same_v<decltype(obj.terminal), bool>;
     std::is_same_v<decltype(obj.row_actions), typename State::Types::VectorAction>;
     std::is_same_v<decltype(obj.col_actions), typename State::Types::VectorAction>;
     std::is_same_v<decltype(obj.payoff), typename State::Types::Value>;

@@ -66,7 +66,7 @@ public:
         MatrixStats &stats = matrix_node->stats;
         stats.prob = state.prob;
 
-        if (state.is_terminal)
+        if (state.is_terminal())
         {
             stats.payoff = state.payoff;
             matrix_node->set_terminal();

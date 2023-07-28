@@ -147,7 +147,7 @@ public:
 
         if (depth_bound == 0)
         {
-            this->is_terminal = true;
+            this->terminal = true;
             typename Types::Rational row_payoff{(payoff_bias > 0) - (payoff_bias < 0) + 1, 2};
             row_payoff.canonicalize();
             this->payoff = typename Types::Value{typename Types::Real{row_payoff}};

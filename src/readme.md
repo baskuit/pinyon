@@ -81,7 +81,7 @@ class Battle : public State {
 
 // Rollout method 
 void rollout (State& state) {
-	while (!state.is_terminal) {
+	while (!state.is_terminal()) {
 		state.get_actions();
 		Action row_action, col_action;
 		// select random actions for both row and column players
@@ -107,7 +107,7 @@ Templates in C++ allow a generic class or function to be defined with a type or 
 ```cpp
 template <typename State>
 void rollout (State &state) {
-	while (!state.is_terminal) {
+	while (!state.is_terminal()) {
 		// state.apply_actions(); etc
 	}
 }

@@ -148,7 +148,7 @@ public:
    {
       this->row_actions = t.row_actions;
       this->col_actions = t.col_actions;
-      // the base class `PerfectInfoState` is not called, so we don't automatically copy over is_terminal, etc
+      // the base class `PerfectInfoState` is not called, so we don't automatically copy over terminal, etc
       // however the only base data of any use is the actions, and we really only copy it because it cased a bug. Its not needed because in all searches you only copy a state to advance it, and then call apply_actions() and get_actions(), which overwrites everything else 
    }
 
@@ -181,7 +181,7 @@ public:
       if (r)
       {
          // set is_terminal and payoff, as indicated
-         this->is_terminal = true;
+         this->terminal = true;
          if (r == PKMN_RESULT_WIN)
          {
             this->payoff.row_value = typename::Types::Value{Rational(1)};

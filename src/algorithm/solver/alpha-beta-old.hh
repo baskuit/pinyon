@@ -78,7 +78,7 @@ public:
         state.get_actions();
         matrix_node->expand(state);
 
-        if (state.is_terminal)
+        if (state.is_terminal())
         {
             matrix_node->set_terminal();
             stats.row_value = state.payoff.get_row_value();

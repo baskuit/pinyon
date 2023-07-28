@@ -25,7 +25,7 @@ namespace W
         virtual void get_actions() = 0;
         virtual void get_actions(size_t &rows, size_t &cols) = 0;
         virtual void apply_actions(size_t row_idx, size_t col_idx) = 0;
-        virtual bool is_terminal() = 0;
+        virtual bool is_terminal() const = 0;
 
         virtual bool is_constant_sum() = 0;
 
@@ -85,9 +85,9 @@ namespace W
                 throw(std::exception());
             }
         };
-        bool is_terminal()
+        bool is_terminal() const
         {
-            return ptr->is_terminal;
+            return ptr->is_terminal();
         };
 
         bool is_constant_sum()

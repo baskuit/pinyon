@@ -160,7 +160,7 @@ protected:
             {
                 state.get_actions();
                 matrix_node->expand(state);
-                matrix_node->set_terminal(state.is_terminal);
+                matrix_node->set_terminal(state.is_terminal());
 
                 typename Types::ModelOutput inference;
                 this->expand(state, matrix_node->stats, inference);

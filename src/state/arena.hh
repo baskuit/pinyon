@@ -72,7 +72,7 @@ public:
         PairReal<double> avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
         this->payoff = static_cast<Types::Value>(avg_payoff.get_row_value(), avg_payoff.get_col_value());
 
-        this->is_terminal = true;
+        this->terminal = true;
         this->obs = typename Types::Observation{device.random_int(1 << 16)};
 
         delete row_search;

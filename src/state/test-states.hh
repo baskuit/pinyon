@@ -35,7 +35,7 @@ public:
 
     void get_actions()
     {
-        this->is_terminal = (this->max_depth <= 0);
+        this->terminal = (this->max_depth <= 0);
     }
 
     void get_actions(

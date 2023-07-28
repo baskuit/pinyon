@@ -149,7 +149,7 @@ private:
         {
             if (!matrix_node->is_expanded())
             {
-                if (state.is_terminal)
+                if (state.is_terminal())
                 {
                     matrix_node->set_terminal();
                     inference.value = state.payoff;
@@ -352,7 +352,7 @@ private:
         {
             if (!matrix_node->is_expanded())
             {
-                if (state.is_terminal)
+                if (state.is_terminal())
                 {
                     matrix_node->set_terminal();
                     inference.value = state.payoff;

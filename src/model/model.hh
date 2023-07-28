@@ -120,7 +120,7 @@ protected:
     void rollout(State &state)
     {
         // model inference in bandits happens in expand(), after get_actions is called
-        while (!state.is_terminal)
+        while (!state.is_terminal())
         {
             const ActionIndex row_idx = device.random_int(state.row_actions.size());
             const ActionIndex col_idx = device.random_int(state.col_actions.size());

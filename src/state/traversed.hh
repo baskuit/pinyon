@@ -103,7 +103,7 @@ public:
 private:
     void update_solved_state_info()
     {
-        this->is_terminal = current_node->is_terminal();
+        this->terminal = current_node->is_terminal();
         this->payoff = current_node->stats.payoff;
         this->row_strategy = current_node->stats.row_solution;
         this->col_strategy = current_node->stats.col_solution;
