@@ -9,7 +9,7 @@
 #include <vector>
 #include <ranges>
 
-template <typename _Types = RandomTreeTypes>
+template <typename _Types = RandomTreeFloatTypes>
 class RandomTree : public ChanceState<_Types>
 {
 public:
@@ -251,7 +251,7 @@ Helper class to generate random tree instances for testing
 
 */
 
-template <typename TypeList = RandomTreeTypes>
+template <typename TypeList = RandomTreeFloatTypes>
 struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTree<TypeList>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>
 {
     inline static prng device{};

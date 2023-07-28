@@ -22,7 +22,7 @@ public:
 int main()
 {
 
-    auto states = cartesian_product_per_template<RandomTree>(type_list<RandomTreeTypes>(),
+    auto states = cartesian_product_per_template<RandomTree>(type_list<RandomTreeFloatTypes>(),
                                                              std::make_tuple(0, 1, 2, 2, 1, 0));
 
     auto models = cartesian_product_per_param

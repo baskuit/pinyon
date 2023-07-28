@@ -6,7 +6,7 @@ Computes the savings of serialized alpha beta
 
 */
 
-RandomTree<> convert(const RandomTree<RatTypes> &state, Rational<> threshold)
+RandomTree<> convert(const RandomTree<RandomTreeRationalTypes> &state, Rational<> threshold)
 {
     RandomTree<> x{
         prng{state.device.get_seed()},
@@ -22,7 +22,7 @@ RandomTree<> convert(const RandomTree<RatTypes> &state, Rational<> threshold)
 struct Solve
 {
 
-    using State = RandomTree<RatTypes>;
+    using State = RandomTree<RandomTreeRationalTypes>;
     using StateFloat = RandomTree<>;
     using Model = MonteCarloModel<State>;
     using ModelFloat = MonteCarloModel<StateFloat>;
@@ -126,7 +126,7 @@ struct Solve
 int main()
 {
     Rational<> threshold = Rational<>{1, 2};
-    RandomTreeGenerator<RatTypes> generator{
+    RandomTreeGenerator<RandomTreeRationalTypes> generator{
         prng{0},
         {1, 2, 3},
         {2, 4},

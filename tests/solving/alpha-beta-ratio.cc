@@ -40,7 +40,7 @@ struct Solve
 int main()
 {
 
-    RandomTreeGenerator<RatTypes> generator{
+    RandomTreeGenerator<RandomTreeRationalTypes> generator{
         prng{0},
         {4},
         {3},
@@ -57,8 +57,8 @@ int main()
     for (auto wrapped_state : generator) {
         auto state = *wrapped_state.ptr;
 
-        MonteCarloModel<RandomTree<RatTypes>> model{0};
-        Solve<MonteCarloModel<RandomTree<RatTypes>>> solve{state, model};
+        MonteCarloModel<RandomTree<RandomTreeRationalTypes>> model{0};
+        Solve<MonteCarloModel<RandomTree<RandomTreeRationalTypes>>> solve{state, model};
         // std::cout << state.device.get_seed() << std::endl;
 
         // auto a = static_cast<mpq_class>(solve.ab_value.first).get_d();

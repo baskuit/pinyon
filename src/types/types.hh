@@ -204,23 +204,16 @@ using SimpleTypes = DefaultTypes<
     int,
     double>;
 
-using RandomTreeTypes = DefaultTypes<
+using RandomTreeFloatTypes = DefaultTypes<
     double,
     int,
     int,
     double,
     ConstantSum<1, 1>::Value>;
 
-using RatTypes = DefaultTypes<
+using RandomTreeRationalTypes = DefaultTypes<
     mpq_class,
     int,
     int,
     mpq_class,
     ConstantSum<1, 1>::Value>;
-
-template <size_t LogSize>
-using BattleTypes = DefaultTypes<
-    float,
-    uint8_t,
-    std::array<uint8_t, LogSize>,
-    float>;

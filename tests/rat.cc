@@ -6,7 +6,7 @@ int main () {
     // uint64_t seed = device.uniform_64();
     // std::cout << "seed: " << seed << std::endl;
 
-    // using RationalState = RandomTree<RatTypes>;
+    // using RationalState = RandomTree<RandomTreeRationalTypes>;
     // using RationalModel = MonteCarloModel<RationalState>;
     // RationalState rational_state{seed, 1, 2, 2, 1, 0};
     // RationalModel rational_model{0};
