@@ -2,12 +2,9 @@
 
 Surskit is a highly generic implementation of search for 'stochastic matrix tree games' in C++.
 
-At minimum, the user can wrap their specific game as a `DefaultState` and the provided implementations of [SM-MCTS](https://arxiv.org/abs/1804.09045) and [MatrixUCB](https://arxiv.org/abs/2006.05145) will provide convergence guarantees. 
-A compiled libtorch model or heuristic evaluation may be substituted all the same by wrapping it as a `DoubleOracleModel`.
+# Warning:
 
-If the user would like to create new algorithms, then they may be aided by the implementation pattern of Surskit that provides an inheritance framework for additional classes and a type management system that standardizes syntax. 
-
-A more detailed explanation of the implementation is [here](https://github.com/baskuit/surskit/blob/master/src/readme.md).
+Surskit is in the final stages of a rewrite and release as version 0.1.0. The most current changes are in the *pruning* branch.
 
 ## Installation
 
