@@ -44,7 +44,7 @@ public:
 
     Exp3() {}
 
-    constexpr Exp3(typename Types::Real gamma) : gamma(gamma), one_minus_gamma{gamma * -1 + 1} {}
+    constexpr Exp3(Types::Real gamma) : gamma(gamma), one_minus_gamma{gamma * -1 + 1} {}
 
     friend std::ostream &operator<<(std::ostream &os, const Exp3 &session)
     {
@@ -54,8 +54,8 @@ public:
 
     void get_empirical_strategies(
         MatrixStats &stats,
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy) const
+        Types::VectorReal &row_strategy,
+        Types::VectorReal &col_strategy) const
     {
         row_strategy.resize(stats.row_visits.size());
         col_strategy.resize(stats.col_visits.size());
@@ -65,7 +65,7 @@ public:
 
     void get_empirical_value(
         MatrixStats &stats,
-        typename Types::Value &value) const
+        Types::Value &value) const
     {
         const typename Types::Real den = 1 / (stats.total_visits + (stats.total_visits == 0));
         value = stats.value_total * den;
@@ -73,8 +73,8 @@ public:
 
     void get_refined_strategies(
         MatrixStats &stats,
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy) const
+        Types::VectorReal &row_strategy,
+        Types::VectorReal &col_strategy) const
     {
         row_strategy.resize(stats.row_visits.size());
         col_strategy.resize(stats.col_visits.size());
@@ -85,7 +85,7 @@ public:
 
     void get_refined_value(
         MatrixStats &stats,
-        typename Types::Value &value) const
+        Types::Value &value) const
     {
         get_empirical_value(stats, value);
     }
@@ -93,16 +93,16 @@ public:
 protected:
     void initialize_stats(
         int iterations,
-        const typename Types::State &state,
-        typename Types::Model &model,
+        const Types::State &state,
+        Types::Model &model,
         MatrixStats &stats) const
     {
     }
 
     void expand(
-        typename Types::State &state,
+        Types::State &state,
         MatrixStats &stats,
-        typename Types::ModelOutput &inference)
+        Types::ModelOutput &inference)
     {
         stats.row_visits.resize(state.row_actions.size(), 0);
         stats.col_visits.resize(state.col_actions.size(), 0);
@@ -111,7 +111,7 @@ protected:
     }
 
     void select(
-        typename Types::PRNG &device,
+        Types::PRNG &device,
         MatrixStats &stats,
         Outcome &outcome) const
     {
@@ -187,10 +187,10 @@ protected:
     // multithreaded
 
     void select(
-        typename Types::PRNG &device,
+        Types::PRNG &device,
         MatrixStats &stats,
         Outcome &outcome,
-        typename Types::Mutex &mtx) const
+        Types::Mutex &mtx) const
     {
         mtx.lock();
         typename Types::VectorReal row_forecast{stats.row_gains};
@@ -235,7 +235,7 @@ protected:
     void update_matrix_stats(
         MatrixStats &stats,
         Outcome &outcome,
-        typename Types::Mutex &mtx) const
+        Types::Mutex &mtx) const
     {
         mtx.lock();
         stats.value_total += outcome.value;
@@ -264,7 +264,7 @@ protected:
     void update_chance_stats(
         ChanceStats &stats,
         Outcome &outcome,
-        typename Types::Mutex &mtx)
+        Types::Mutex &mtx)
     {
     }
 
@@ -273,7 +273,7 @@ protected:
     void update_matrix_stats(
         MatrixStats &stats,
         Outcome &outcome,
-        typename Types::Real learning_rate) const
+        Types::Real learning_rate) const
     {
         stats.value_total += outcome.value * learning_rate;
         stats.visits += 1;
@@ -286,14 +286,14 @@ protected:
     void update_chance_stats(
         ChanceStats &stats,
         Outcome &outcome,
-        typename Types::Real learning_rate) const
+        Types::Real learning_rate) const
     {
     }
 
     void get_policy(
         MatrixStats &stats,
-        typename Types::VectorReal &row_policy,
-        typename Types::VectorReal &col_policy) const
+        Types::VectorReal &row_policy,
+        Types::VectorReal &col_policy) const
     {
         const int rows = stats.row_gains.size();
         const int cols = stats.col_gains.size();
@@ -326,10 +326,10 @@ protected:
 
 private:
     inline void softmax(
-        typename Types::VectorReal &forecast,
-        typename Types::VectorReal &gains,
+        Types::VectorReal &forecast,
+        Types::VectorReal &gains,
         const size_t k,
-        typename Types::Real eta) const
+        Types::Real eta) const
     {
         typename Types::Real sum = 0;
         for (size_t i = 0; i < k; ++i)
@@ -345,8 +345,8 @@ private:
     };
 
     inline void denoise(
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy)
+        Types::VectorReal &row_strategy,
+        Types::VectorReal &col_strategy)
     {
         const int rows = row_strategy.size();
         const int cols = col_strategy.size();

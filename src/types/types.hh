@@ -83,24 +83,34 @@ concept IsReal = requires(Real real) {
     } -> std::same_as<void>;
 };
 
+template <typename Value, typename Real>
+concept IsValue = requires(Value value) {
+    {
+        value.get_row_value()
+    } -> std::same_as<Real>;
+    {
+        value.get_col_value()
+    } -> std::same_as<Real>;
+};
+
 template <typename Types>
 concept IsTypeList = requires(
-    Types obj,
-    typename Types::Real &real,
-    typename Types::Action &action,
-    typename Types::Observation &obs,
-    typename Types::Probability &prob,
-    typename Types::Value &value,
-    typename Types::VectorReal &strategy,
-    typename Types::VectorAction &actions,
-    typename Types::VectorInt &visits,
-    typename Types::MatrixReal &real_matrix,
-    typename Types::MatrixValue &payoff_matrix,
-    typename Types::MatrixInt &visit_matrix,
-    typename Types::Mutex &mtx,
-    typename Types::PRNG &device,
-    typename Types::Seed &seed,
-    typename Types::Rational &rational) {
+                         Types obj,
+                         typename Types::Real &real,
+                         typename Types::Action &action,
+                         typename Types::Observation &obs,
+                         typename Types::Probability &prob,
+                         typename Types::Value &value,
+                         typename Types::VectorReal &strategy,
+                         typename Types::VectorAction &actions,
+                         typename Types::VectorInt &visits,
+                         typename Types::MatrixReal &real_matrix,
+                         typename Types::MatrixValue &payoff_matrix,
+                         typename Types::MatrixInt &visit_matrix,
+                         typename Types::Mutex &mtx,
+                         typename Types::PRNG &device,
+                         typename Types::Seed &seed,
+                         typename Types::Rational &rational) {
     // {
     //     real.canonicalize()
     // } -> std::same_as<void>;
@@ -113,12 +123,6 @@ concept IsTypeList = requires(
     {
         obs == obs
     } -> std::same_as<bool>;
-    {
-        value.get_row_value()
-    } -> std::same_as<typename Types::Real>;
-    {
-        value.get_col_value()
-    } -> std::same_as<typename Types::Real>;
     {
         strategy[0]
     } -> std::same_as<typename Types::Real &>;
@@ -140,7 +144,7 @@ concept IsTypeList = requires(
     {
         visit_matrix.get(0, 0)
     } -> std::same_as<int &>;
-} && IsReal<typename Types::Real>;
+} && IsReal<typename Types::Real> && IsValue<typename Types::Value, typename Types::Real>;
 
 /*
 

@@ -40,54 +40,54 @@ public:
 
     void get_empirical_strategies(
         MatrixStats &stats,
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy)
+        Types::VectorReal &row_strategy,
+        Types::VectorReal &col_strategy) const
     {
     }
 
     void get_empirical_value(
         MatrixStats &stats,
-        typename Types::Real &row_value,
-        typename Types::Real &col_value)
+        Types::Real &row_value,
+        Types::Real &col_value)
     {
     }
 
     void get_refined_strategies(
         MatrixStats &stats,
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy)
+        Types::VectorReal &row_strategy,
+        Types::VectorReal &col_strategy)
     {
     }
 
     void get_refined_value(
         MatrixStats &stats,
-        typename Types::Real &row_value,
-        typename Types::Real &col_value)
+        Types::Real &row_value,
+        Types::Real &col_value)
     {
     }
 
 protected:
     void initialize_stats(
         int iterations,
-        typename Types::State &state,
-        typename Types::Model &model,
+        Types::State &state,
+        Types::Model &model,
         MatrixStats &stats)
     {
     }
 
     void expand(
-        typename Types::State &state,
+        Types::State &state,
         MatrixStats &stats,
-        typename Types::ModelOutput &inference)
+        Types::ModelOutput &inference)
     {
         stats.rows = state.row_actions.size();
         stats.cols = state.col_actions.size();
     }
 
     void select(
-        typename Types::PRNG &device,
+        Types::PRNG &device,
         MatrixStats &stats,
-        typename Types::Outcome &outcome)
+        Types::Outcome &outcome)
     {
         const int row_idx = device.random_int(stats.rows);
         const int col_idx = device.random_int(stats.cols);
@@ -97,21 +97,21 @@ protected:
 
     void update_matrix_stats(
         MatrixStats &stats,
-        typename Types::Outcome &outcome)
+        Types::Outcome &outcome)
     {
     }
 
     void update_chance_stats(
         ChanceStats &stats,
-        typename Types::Outcome &outcome)
+        Types::Outcome &outcome)
     {
     }
 
     void select(
-        typename Types::PRNG &device,
+        Types::PRNG &device,
         MatrixStats &stats,
-        typename Types::Outcome &outcome,
-        typename Types::Mutex &mtx)
+        Types::Outcome &outcome,
+        Types::Mutex &mtx)
     {
         const int row_idx = device.random_int(stats.rows);
         const int col_idx = device.random_int(stats.cols);
@@ -121,32 +121,32 @@ protected:
 
     void update_matrix_stats(
         MatrixStats &stats,
-        typename Types::Outcome &outcome,
-        typename Types::Mutex &mtx) {}
+        Types::Outcome &outcome,
+        Types::Mutex &mtx) {}
 
     void update_chance_stats(
         ChanceStats &stats,
-        typename Types::Outcome &outcome,
-        typename Types::Mutex &mtx) {}
+        Types::Outcome &outcome,
+        Types::Mutex &mtx) {}
 
     void update_matrix_stats(
         MatrixStats &stats,
-        typename Types::Outcome &outcome,
-        typename Types::Real learning_rate)
+        Types::Outcome &outcome,
+        Types::Real learning_rate)
     {
     }
 
     void update_chance_stats(
         ChanceStats &stats,
-        typename Types::Outcome &outcome,
-        typename Types::Real learning_rate)
+        Types::Outcome &outcome,
+        Types::Real learning_rate)
     {
     }
 
     void get_policy(
         MatrixStats &stats,
-        typename Types::VectorReal &row_policy,
-        typename Types::VectorReal &col_policy)
+        Types::VectorReal &row_policy,
+        Types::VectorReal &col_policy)
     {
         const typename Types::Real row_uniform{Rational{1, stats.rows}};
         row_policy.resize(stats.rows, row_uniform);

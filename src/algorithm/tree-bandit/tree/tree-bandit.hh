@@ -7,7 +7,7 @@
 #include <chrono>
 
 template <
-    class BanditAlgorithm,
+    IsBanditAlgorithm BanditAlgorithm,
     class NodePair=DefaultNodes,
     bool return_if_expand = true>
 class TreeBandit : public BanditAlgorithm
