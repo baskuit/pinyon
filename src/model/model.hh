@@ -14,22 +14,37 @@ public:
     };
 };
 
-/*
-Similar to `State`, in that virtually all models will be derived from it.
-*/
+template <typename Model>
+concept IsValueModel = requires(
+                           Model model,
+                           typename Model::Types::ModelInput &input,
+                           typename Model::Types::ModelOutput &output,
+                           typename Model::Types::State &state) {
+    {
+        output.value
+    } -> std::same_as<typename Model::Types::Value &>;
+    {
+        model.get_inference(
+            input,
+            output)
+    } -> std::same_as<void>;
+    {
+        model.get_input(
+            state,
+            input)
+    } -> std::same_as<void>;
+} && IsState<typename Model::Types::State> &&
+                       IsTypeList<typename Model::Types>;
 
 template <IsState State>
-
 class DoubleOracleModel : public AbstractModel<State>
 {
 public:
     struct ModelOutput;
-
     struct Types : AbstractModel<State>::Types
     {
         using ModelOutput = DoubleOracleModel::ModelOutput;
     };
-
     struct ModelOutput
     {
         typename Types::Value value;
@@ -38,14 +53,23 @@ public:
     };
 };
 
-/*
-Universal model.
-*/
+template <typename Model>
+concept IsDoubleOracleModel = requires(
+                                  Model model,
+                                  typename Model::Types::ModelInput &input,
+                                  typename Model::Types::ModelOutput &output,
+                                  typename Model::Types::State &state) {
+    {
+        output.row_policy
+    } -> std::same_as<typename Model::Types::VectorReal &>;
+    {
+        output.col_policy
+    } -> std::same_as<typename Model::Types::VectorReal &>;
+} && IsValueModel<Model> && IsPerfectInfoState<typename Model::Types::State>;
 
-template <IsState State>
+template <IsPerfectInfoState State>
 class MonteCarloModel : public DoubleOracleModel<State>
 {
-
 public:
     struct Types : DoubleOracleModel<State>::Types
     {
@@ -54,7 +78,9 @@ public:
         using ModelInput = State;
     };
 
-    typename Types::PRNG device;
+    typename Types::PRNG device{};
+
+    MonteCarloModel() {}
 
     MonteCarloModel(Types::PRNG &device) : device(device) {}
 
@@ -92,7 +118,6 @@ public:
         Types::ModelBatchOutput &outputs)
     {
         outputs.resize(inputs.size());
-        // add empty structs
         for (int i = 0; i < inputs.size(); ++i)
         {
             auto &input = inputs[i];
@@ -119,7 +144,6 @@ public:
 protected:
     void rollout(State &state)
     {
-        // model inference in bandits happens in expand(), after get_actions is called
         while (!state.is_terminal())
         {
             const ActionIndex row_idx = device.random_int(state.row_actions.size());
@@ -135,7 +159,6 @@ protected:
 template <IsState State>
 class EmptyModel : public DoubleOracleModel<State>
 {
-
 public:
     struct Types : DoubleOracleModel<State>::Types
     {
@@ -143,8 +166,6 @@ public:
         using ModelBatchInput = std::vector<State>;
         using ModelInput = State;
     };
-
-    EmptyModel() {}
 
     void get_input(
         const Types::State &state,
@@ -171,51 +192,9 @@ public:
         Types::ModelBatchInput &inputs,
         Types::ModelBatchOutput &outputs)
     {
+        for (auto &output : outputs)
+        {
+            output.value = typename Types::Value{.5, .5};
+        }
     }
-};
-
-/*
-
-Concepts
-
-*/
-
-template <typename Model>
-concept IsValueModel = requires(
-    Model model, 
-    typename Model::Types::ModelInput &input, 
-    typename Model::Types::ModelOutput &output, 
-    typename Model::Types::State &state) {
-    requires IsTypeList<typename Model::Types>;
-    {
-        Model::Types::ModelOutput::value
-    } -> std::same_as<typename Model::Types::Value&>;
-    {
-        model.get_inference(
-            input,
-            output)
-    } -> std::same_as<void>;
-    {
-        model.get_input(
-            state,
-            input)
-    } -> std::same_as<void>;
-};
-
-template <typename Model>
-concept IsDoubleOracleModel = requires(
-    Model model, 
-    typename Model::Types::ModelInput &input, 
-    typename Model::Types::ModelOutput &output, 
-    typename Model::Types::State &state) {
-    {
-        model.get_inference(
-            input,
-            output)
-    } -> std::same_as<void>;
-    {
-        model.get_input(
-            state,
-            input)
-    } -> std::same_as<void>;
 };

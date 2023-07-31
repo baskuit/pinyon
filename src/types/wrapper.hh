@@ -19,7 +19,7 @@ struct ArithmeticType : Wrapper<T>
 
     constexpr ArithmeticType(const T &val) : Wrapper<T>{val} {}
 
-    inline void canonicalize () {
+    void canonicalize () {
         // if constexpr (requires std::is_same_v<decltype(std::declval<T>().myMethod()), void>) {
         // this->value.canonicalize();
 

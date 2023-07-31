@@ -101,15 +101,15 @@ concept IsTypeList = requires(
     typename Types::PRNG &device,
     typename Types::Seed &seed,
     typename Types::Rational &rational) {
-    {
-        real.canonicalize()
-    } -> std::same_as<void>;
-    {
-        prob.canonicalize()
-    } -> std::same_as<void>;
-    {
-        static_cast<typename Types::Real>(real + real)
-    };
+    // {
+    //     real.canonicalize()
+    // } -> std::same_as<void>;
+    // {
+    //     prob.canonicalize()
+    // } -> std::same_as<void>;
+    // {
+    //     static_cast<typename Types::Real>(real + real)
+    // };
     {
         obs == obs
     } -> std::same_as<bool>;
@@ -140,7 +140,7 @@ concept IsTypeList = requires(
     {
         visit_matrix.get(0, 0)
     } -> std::same_as<int &>;
-};// && IsReal<typename Types::Real>;
+} && IsReal<typename Types::Real>;
 
 /*
 
