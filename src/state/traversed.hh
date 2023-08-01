@@ -14,32 +14,24 @@ This state is a wrapper for the tree produced by the FullTraversal algorithm
 
 */
 
-template <class Model>
-class TraversedState : public SolvedState<typename Model::Types>
+template <IsValueModelTypes Types>
+class TraversedState : PerfectInfoState<Types>
 {
-    static_assert(std::derived_from<typename Model::Types::State, ChanceState<typename Model::Types::TypeList>>,
-                  "TraversedState must be based on State type derived from ChanceState");
-    static_assert(std::derived_from<Model, DoubleOracleModel<typename Model::Types::State>>,
-                  "FullTraversal algorithm requires Model must be derived from DoubleOracleModel");
-    static_assert(Model::Types::Value::IS_CONSTANT_SUM == true,
-                  "Game must be constant sum, otherwise there is no well-defined Nash payoff");
-
 public:
-    struct Types : SolvedState<typename Model::Types>::Types
-    {
+    struct T : Types {
+        using State = TraversedState;
     };
-
-    std::shared_ptr<MatrixNode<FullTraversal<Model>>> tree;
-    MatrixNode<FullTraversal<Model>> *current_node;
+    std::shared_ptr<MatrixNode<FullTraversal<Types>>> tree;
+    MatrixNode<FullTraversal<Types>> *current_node;
 
     TraversedState(
-        typename Types::State &state,
-        Model &model,
+        Types::State &state,
+        Types::Model &model,
         int max_depth = -1)
     {
-        this->tree = std::make_shared<MatrixNode<FullTraversal<Model>>>();
+        this->tree = std::make_shared<MatrixNode<FullTraversal<Types>>>();
         this->current_node = &*tree;
-        FullTraversal<Model> session{max_depth};
+        FullTraversal<Types> session{max_depth};
         session.run(state, model, current_node);
         update_solved_state_info();
     }
@@ -53,8 +45,8 @@ public:
     }
 
     void get_actions(
-        typename Types::VectorAction &row_actions,
-        typename Types::VectorAction &col_actions)
+        Types::VectorAction &row_actions,
+        Types::VectorAction &col_actions)
     {
         this->row_actions = current_node->row_actions;
         this->col_actions = current_node->col_actions;
@@ -63,22 +55,22 @@ public:
 
     void get_chance_actions(
         std::vector<typename Types::Observation> &chance_actions,
-        typename Types::Action row_action,
-        typename Types::Action col_action) const
+        Types::Action row_action,
+        Types::Action col_action) const
     {
         int row_idx = std::find(this->actions.row_actions.begin(), this->actions.row_actions.end(), row_action) - this->actions.row_actions.begin();
         int col_idx = std::find(this->actions.col_actions.begin(), this->actions.col_actions.end(), col_action) - this->actions.col_actions.begin();
-        ChanceNode<FullTraversal<Model>> *chance_node = current_node->access(row_idx, col_idx);
+        ChanceNode<FullTraversal<Types>> *chance_node = current_node->access(row_idx, col_idx);
         chance_actions = chance_node->stats.chance_actions;
     }
 
     void apply_actions(
-        typename Types::Action row_action,
-        typename Types::Action col_action)
+        Types::Action row_action,
+        Types::Action col_action)
     {
         ActionIndex row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
         ActionIndex col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
-        ChanceNode<FullTraversal<Model>> *chance_node = current_node->access(row_idx, col_idx);
+        ChanceNode<FullTraversal<Types>> *chance_node = current_node->access(row_idx, col_idx);
         const size_t chance_idx = this->seed % chance_node->stats.chance_actions.size();
         typename Types::Observation chance_action = chance_node->stats.chance_actions[chance_idx];
         current_node = chance_node->access(chance_action, 0);
@@ -86,16 +78,16 @@ public:
     }
 
     void apply_actions(
-        typename Types::Action row_action,
-        typename Types::Action col_action,
-        typename Types::Observation chance_action)
+        Types::Action row_action,
+        Types::Action col_action,
+        Types::Observation chance_action)
     {
         current_node = current_node->access(row_action, col_action)->access(chance_action, 0);
         update_solved_state_info();
     }
 
     void get_payoff_matrix(
-        typename Types::MatrixValue &payoff_matrix) const
+        Types::MatrixValue &payoff_matrix) const
     {
         payoff_matrix = current_node->stats.nash_payoff_matrix;
     }
@@ -110,10 +102,10 @@ private:
     }
 
     void sort_actions(
-        typename Types::VectorAction &row_actions,
-        typename Types::VectorAction &col_actions,
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy) const
+        Types::VectorAction &row_actions,
+        Types::VectorAction &col_actions,
+        Types::VectorReal &row_strategy,
+        Types::VectorReal &col_strategy) const
     {
         // sorts row_actions, col_actions by solution probability
         // this way the first action is the 'best' for alphabeta

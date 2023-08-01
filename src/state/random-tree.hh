@@ -9,12 +9,12 @@
 #include <vector>
 #include <ranges>
 
-template <IsTypeList _Types = RandomTreeFloatTypes>
-class RandomTree : public ChanceState<_Types>
+template <IsTypeList Types = RandomTreeFloatTypes>
+class RandomTree : public PerfectInfoState<Types>
 {
 public:
-    struct Types : ChanceState<_Types>::Types
-    {
+    struct T : Types {
+        using State = RandomTree;
     };
 
     Types::PRNG device;

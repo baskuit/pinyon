@@ -9,8 +9,9 @@ Intended to test mostly tree traversal speed
 int main () {
 
     using MoldState = MoldState<2>;
-    using MonteCarlo = MonteCarloModel<AddTypes<MoldState>>;
-    // using Exp3 = TreeBandit<Exp3<MonteCarlo>>;
+    using MonteCarlo = MonteCarloModel<MoldState::T>;
+    using Exp3 = Exp3<MonteCarlo::T>;
+    using Search = TreeBandit<Exp3::T>;
     
     // uint64_t seed = 0;
     // prng device(seed);

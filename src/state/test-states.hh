@@ -10,7 +10,9 @@ template <int size>
 class MoldState : public PerfectInfoState<SimpleTypes>
 {
 public:
-    using State = MoldState;
+    struct T : SimpleTypes {
+        using State = MoldState;
+    };
 
     size_t max_depth = 1;
 
@@ -66,9 +68,4 @@ public:
     {
         --this->max_depth;
     }
-};
-
-template <typename Types, int size>
-struct AddTypes<MoldState<size>, Types> {
-
 };

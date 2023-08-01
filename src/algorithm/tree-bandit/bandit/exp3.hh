@@ -25,6 +25,12 @@ public:
         typename Types::Value value;
         typename Types::Real row_mu, col_mu;
     };
+    struct T : Types {
+        using BanditAlgorithm = Exp3;
+        using MatrixStats = Exp3::MatrixStats;
+        using ChanceStats = Exp3::ChanceStats;
+        using Outcome = Exp3::Outcome;
+    };
 
     const typename Types::Real gamma{.01};
     const typename Types::Real one_minus_gamma{gamma * -1 + 1};

@@ -13,11 +13,13 @@ template <
 class TreeBandit : public Types::BanditAlgorithm
 {
 public:
-    using Search = TreeBandit;
-    using Types::TreeBandit::ChanceStats;
-    using Types::TreeBandit::MatrixStats;
     using MatrixNode = typename NodePair::template MNode<TreeBandit>;
     using ChanceNode = typename NodePair::template CNode<TreeBandit>;
+    struct T : Types {
+        using Search = TreeBandit;
+        using MatrixNode = TreeBandit::MatrixNode;
+        using ChanceNode = TreeBandit::ChanceNode;
+    };
 
     using Types::BanditAlgorithm::BanditAlgorithm;
 

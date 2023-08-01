@@ -47,7 +47,6 @@ template <IsStateTypes Types>
 class EmptyModel
 {
 public:
-    using Model = EmptyModel;
     using ModelInput = typename Types::State;
     struct ModelOutput
     {
@@ -55,6 +54,13 @@ public:
     };
     using ModelBatchInput = std::vector<ModelInput>;
     using ModelBatchOutput = std::vector<ModelOutput>;
+    struct T : Types {
+        using Model = EmptyModel;
+        using EmptyModel::ModelInput;
+        using EmptyModel::ModelOutput;
+        using EmptyModel::ModelBatchInput;
+        using EmptyModel::ModelBatchOutput;
+    };
 
     void get_input(
         const Types::State &state,

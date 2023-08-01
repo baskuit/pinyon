@@ -2,17 +2,14 @@
 
 #include <utility>
 
-template <IsPerfectInfoState _State, class _Model>
-class Arena : public PerfectInfoState<SimpleTypes>
+template <IsValueModelTypes Types>
+class Arena : public PerfectInfoState<Types>
 {
 public:
-    struct Types : PerfectInfoState<SimpleTypes>::Types
-    {
-    };
 
     size_t search_iterations;
-    W::StateWrapper<_State> (*init_state_generator)(Types::Seed){nullptr};
-    W::ModelWrapper<_Model> model{device};
+    W::StateWrapper<typename Types::State> (*init_state_generator)(Types::Seed){nullptr};
+    W::ModelWrapper<typename Types::Model> model{device};
 
     typename Types::Seed state_seed{};
 
@@ -22,8 +19,8 @@ public:
     template <typename... Containers>
     Arena(
         const size_t search_iterations,
-        W::StateWrapper<_State> (*init_state_generator)(typename Types::Seed),
-        const _Model &model,
+        W::StateWrapper<typename Types::State> (*init_state_generator)(typename Types::Seed),
+        const typename Types::Model &model,
         Containers &...containers) : search_iterations{search_iterations}, init_state_generator{init_state_generator}, model{model}
     {
         (std::transform(containers.begin(), containers.end(), std::back_inserter(searches),
@@ -64,7 +61,7 @@ public:
         W::Search *row_search = searches[static_cast<int>(row_action)]->clone();
         W::Search *col_search = searches[static_cast<int>(col_action)]->clone();
 
-        W::StateWrapper<_State> state_copy = (*init_state_generator)(state_seed);
+        W::StateWrapper<typename Types::State> state_copy = (*init_state_generator)(state_seed);
         PairReal<double> row_first_payoff = play_vs(row_search, col_search, state_copy, model);
         state_copy = (*init_state_generator)(state_seed);
         PairReal<double> col_first_payoff = play_vs(col_search, row_search, state_copy, model);

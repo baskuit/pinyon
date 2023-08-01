@@ -76,6 +76,13 @@ concept IsValue = requires(Value value) {
     } -> std::same_as<Real>;
 };
 
+template <typename PRNG>
+concept IsPRNG = requires (PRNG &device) {
+    {
+        device.random_int(0)
+    } -> std::convertible_to<int>;
+};
+
 template <typename Types>
 concept IsTypeList =
     requires(
@@ -112,7 +119,8 @@ concept IsTypeList =
     } &&
     IsArithmetic<typename Types::Real> &&
     IsArithmetic<typename Types::Probability> &&
-    IsValue<typename Types::Value, typename Types::Real>;
+    IsValue<typename Types::Value, typename Types::Real> &&
+    IsPRNG<typename Types::PRNG>;
 
 using SimpleTypes = DefaultTypes<
     double,

@@ -6,7 +6,6 @@ template <IsPerfectInfoStateTypes Types>
 class MonteCarloModel
 {
 public:
-    using Model = MonteCarloModel;
     using ModelInput = typename Types::State;
     struct ModelOutput
     {
@@ -14,6 +13,13 @@ public:
     };
     using ModelBatchInput = std::vector<ModelInput>;
     using ModelBatchOutput = std::vector<ModelOutput>;
+    struct T : Types {
+        using Model = MonteCarloModel;
+        using ModelInput = MonteCarloModel::ModelInput;
+        using ModelOutput = MonteCarloModel::ModelOutput;
+        using ModelBatchInput = MonteCarloModel::ModelBatchInput;
+        using ModelBatchOutput = MonteCarloModel::ModelBatchOutput;
+    };
 
     typename Types::PRNG device{};
 

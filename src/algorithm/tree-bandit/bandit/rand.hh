@@ -6,17 +6,10 @@
 Minimal model for benchmarking purposes (Test speed of state and tree structure)
 */
 
-template <IsValueModel Model>
-class Rand : public AbstractAlgorithm<Model>
+template <IsValueModelTypes Types>
+class Rand
 {
 public:
-    struct MatrixStats;
-    struct ChanceStats;
-    struct Types : AbstractAlgorithm<Model>::Types
-    {
-        using MatrixStats = Rand::MatrixStats;
-        using ChanceStats = Rand::ChanceStats;
-    };
     struct MatrixStats
     {
         int rows, cols;
@@ -26,6 +19,12 @@ public:
     };
     struct Outcome
     {
+    };
+    struct T : Types {
+        using BanditAlgorithm = Rand;
+        using Rand::MatrixStats;
+        using Rand::ChanceStats;
+        using Rand::Outcome;
     };
 
     friend std::ostream &operator<<(std::ostream &os, const Rand &session)

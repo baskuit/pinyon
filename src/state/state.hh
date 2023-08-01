@@ -31,10 +31,9 @@ template <typename Types>
 concept IsPerfectInfoStateTypes =
     requires(
         typename Types::State &state,
-        const typename Types::State &const_state,
         typename Types::Action &action) {
         {
-            const_state.terminal
+            state.terminal
         } -> std::same_as<bool &>;
         {
             state.row_actions

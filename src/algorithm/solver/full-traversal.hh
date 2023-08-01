@@ -15,19 +15,10 @@
     which is a way of turning any StateChance into a SolvedState
 */
 
-template <IsValueModel Model, typename PairNodes = DefaultNodes>
-class FullTraversal : public AbstractAlgorithm<Model>
+template <IsValueModelTypes Types, typename PairNodes = DefaultNodes>
+class FullTraversal
 {
 public:
-    struct MatrixStats;
-    struct ChanceStats;
-    struct Types : AbstractAlgorithm<Model>::Types
-    {
-        using MatrixStats = FullTraversal::MatrixStats;
-        using ChanceStats = FullTraversal::ChanceStats;
-        using MatrixNode = typename PairNodes::template MNode<FullTraversal>;
-        using ChanceNode = typename PairNodes::template CNode<FullTraversal>;
-    };
     struct MatrixStats
     {
         typename Types::Value payoff{};
@@ -41,6 +32,13 @@ public:
     struct ChanceStats
     {
     };
+    struct T : Types
+    {
+        using MatrixStats = FullTraversal::MatrixStats;
+        using ChanceStats = FullTraversal::ChanceStats;
+        using MatrixNode = typename PairNodes::template MNode<FullTraversal>;
+        using ChanceNode = typename PairNodes::template CNode<FullTraversal>;
+    };
 
     const int max_depth = -1;
 
@@ -48,9 +46,9 @@ public:
     FullTraversal(const int max_depth) : max_depth{max_depth} {}
 
     void run(
-        typename Types::State &state,
-        Model &model,
-        typename Types::MatrixNode *matrix_node)
+        Types::State &state,
+        Types::Model &model,
+        Types::MatrixNode *matrix_node)
     {
         // expand node
         state.get_actions();
