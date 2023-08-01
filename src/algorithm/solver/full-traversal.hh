@@ -34,6 +34,7 @@ public:
     };
     struct T : Types
     {
+        using Search = FullTraversal;
         using MatrixStats = FullTraversal::MatrixStats;
         using ChanceStats = FullTraversal::ChanceStats;
         using MatrixNode = typename PairNodes::template MNode<FullTraversal>;

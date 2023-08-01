@@ -13,17 +13,10 @@ for Pruning in Simultaneous Move Games>
 
 */
 
-template <IsValueModel Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
-class AlphaBetaOld : public AbstractAlgorithm<Model>
+template <IsValueModelTypes Types, typename NodePair = DefaultNodes>
+class AlphaBetaOld
 {
 public:
-    struct MatrixStats;
-    struct ChanceStats;
-    struct Types : AbstractAlgorithm<Model>::Types
-    {
-        using MatrixStats = AlphaBetaOld::MatrixStats;
-        using ChanceStats = AlphaBetaOld::ChanceStats;
-    };
     struct MatrixStats
     {
         typename Types::Real row_value;
@@ -49,6 +42,15 @@ public:
         typename Types::Probability explored{Rational{0}};
         size_t matrix_node_count = 0;
     };
+    using MatrixNode = typename NodePair::template MNode<AlphaBetaOld>;
+    using ChanceNode = typename NodePair::template CNode<AlphaBetaOld>;
+    struct T : Types {
+        using Search = AlphaBetaOld;
+        using MatrixStats = AlphaBetaOld::MatrixStats;
+        using ChanceStats = AlphaBetaOld::ChanceStats;
+        using MatrixNode = AlphaBetaOld::MatrixNode;
+        using ChanceNode = AlphaBetaOld::ChanceNode;
+    };
 
     const typename Types::Real min_val{0};
     const typename Types::Real max_val{1};
@@ -60,19 +62,19 @@ public:
     AlphaBetaOld(typename Types::Real min_val, typename Types::Real max_val) : min_val(min_val), max_val(max_val) {}
 
     void run(
-        typename Types::State &state,
-        Model &model,
-        MNode<AlphaBetaOld> *root)
+        Types::State &state,
+        Types::Model &model,
+        MatrixNode *root)
     {
         double_oracle(state, model, root, min_val, max_val);
     }
 
     typename Types::Real double_oracle(
-        typename Types::State &state,
-        Model &model,
-        MNode<AlphaBetaOld> *matrix_node,
-        typename Types::Real alpha,
-        typename Types::Real beta)
+        Types::State &state,
+        Types::Model &model,
+        MatrixNode *matrix_node,
+        Types::Real alpha,
+        Types::Real beta)
     {
         auto &stats = matrix_node->stats;
         state.get_actions();
@@ -126,7 +128,7 @@ public:
                     {
                         // 12: u(si, j ) ← double-oracle(si, j , pi, j, oi, j )
                         typename Types::Real u_ij = typename Types::Rational{0};
-                        CNode<AlphaBetaOld> *chance_node = matrix_node->access(row_idx, col_idx);
+                        ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
                         const typename Types::Action row_action = state.row_actions[row_idx];
                         const typename Types::Action col_action = state.col_actions[col_idx];
@@ -138,7 +140,7 @@ public:
 
                             auto state_copy = state;
                             state_copy.apply_actions(row_action, col_action, chance_action);
-                            MNode<AlphaBetaOld> *matrix_node_next = chance_node->access(state_copy.obs);
+                            MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
 
                             u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.prob;
                             // u_ij is the value of chance node, i.e. expected score over all child matrix nodes
@@ -209,11 +211,11 @@ public:
     }
 
     std::pair<int, typename Types::Real> best_response_row(
-        typename Types::State &state,
-        Model &model,
-        MNode<AlphaBetaOld> *matrix_node,
-        typename Types::Real alpha,
-        typename Types::VectorReal &col_strategy)
+        Types::State &state,
+        Types::Model &model,
+        MatrixNode *matrix_node,
+        Types::Real alpha,
+        Types::VectorReal &col_strategy)
     {
         typename Types::MatrixReal &p = matrix_node->stats.p;
         typename Types::MatrixReal &o = matrix_node->stats.o;
@@ -276,7 +278,7 @@ public:
                     {
                         // 11: u(s_ij) = double_oracle (s_ij, p_ij, o_ij)
                         typename Types::Real u_ij = typename Types::Rational{0};
-                        CNode<AlphaBetaOld> *chance_node = matrix_node->access(row_idx, col_idx);
+                        ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
                         const typename Types::Action row_action = state.row_actions[row_idx];
                         const typename Types::Action col_action = state.col_actions[col_idx];
@@ -287,7 +289,7 @@ public:
                         {
                             auto state_copy = state;
                             state_copy.apply_actions(row_action, col_action, chance_action);
-                            MNode<AlphaBetaOld> *matrix_node_next = chance_node->access(state_copy.obs);
+                            MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                             u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.prob;
                             chance_node->stats.explored += state_copy.prob;
 
@@ -345,11 +347,11 @@ public:
     }
 
     std::pair<int, typename Types::Real> best_response_col(
-        typename Types::State &state,
-        Model &model,
-        MNode<AlphaBetaOld> *matrix_node,
-        typename Types::Real beta,
-        typename Types::VectorReal &row_strategy)
+        Types::State &state,
+        Types::Model &model,
+        MatrixNode *matrix_node,
+        Types::Real beta,
+        Types::VectorReal &row_strategy)
     {
         typename Types::MatrixReal &p = matrix_node->stats.p;
         typename Types::MatrixReal &o = matrix_node->stats.o;
@@ -393,7 +395,7 @@ public:
                     else
                     {
                         typename Types::Real u_ij = typename Types::Rational{0};
-                        CNode<AlphaBetaOld> *chance_node = matrix_node->access(row_idx, col_idx);
+                        ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
                         const typename Types::Action row_action = state.row_actions[row_idx];
                         const typename Types::Action col_action = state.col_actions[col_idx];
@@ -404,7 +406,7 @@ public:
                         {
                             auto state_copy = state;
                             state_copy.apply_actions(row_action, col_action, chance_action);
-                            MNode<AlphaBetaOld> *matrix_node_next = chance_node->access(state_copy.obs);
+                            MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                             u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.prob;
                             chance_node->stats.explored += state_copy.prob;
 
@@ -470,10 +472,10 @@ private:
     }
 
     typename Types::Real solve_submatrix(
-        typename Types::MatrixValue &submatrix,
-        MNode<AlphaBetaOld> *matrix_node,
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy)
+        Types::MatrixValue &submatrix,
+        MatrixNode *matrix_node,
+        Types::VectorReal &row_strategy,
+        Types::VectorReal &col_strategy)
     {
         // define submatrix
         submatrix.fill(matrix_node->stats.I.size(), matrix_node->stats.J.size());
@@ -504,21 +506,21 @@ private:
     }
 
     typename Types::Real row_alpha_beta(
-        typename Types::State &state,
-        Model &model,
-        MNode<AlphaBetaOld> *matrix_node,
-        typename Types::Real alpha,
-        typename Types::Real beta)
+        Types::State &state,
+        Types::Model &model,
+        MatrixNode *matrix_node,
+        Types::Real alpha,
+        Types::Real beta)
     {
         return max_val;
     }
 
     typename Types::Real col_alpha_beta(
-        typename Types::State &state,
-        Model &model,
-        MNode<AlphaBetaOld> *matrix_node,
-        typename Types::Real alpha,
-        typename Types::Real beta)
+        Types::State &state,
+        Types::Model &model,
+        MatrixNode *matrix_node,
+        Types::Real alpha,
+        Types::Real beta)
     {
         return min_val;
     }

@@ -8,34 +8,37 @@
 #include <concepts>
 #include <assert.h>
 
-template <IsValueModel Model, template <class> class MNode = MatrixNode, template <class> class CNode = ChanceNode>
-class AlphaBeta : public AbstractAlgorithm<Model>
+template <IsValueModelTypes Types, typename PairNodes = DefaultNodes>
+class AlphaBeta
 {
 public:
-    struct MatrixStats;
-    struct ChanceStats;
-    struct Types : AbstractAlgorithm<Model>::Types
-    {
-        using MatrixStats = AlphaBeta::MatrixStats;
-        using ChanceStats = AlphaBeta::ChanceStats;
-    };
-
     struct Data
     {
-        typename Types::Probability unexplored{typename Types::Rational{1}};
-        typename Types::Real alpha_explored{0}, beta_explored{0};
+        Types::Probability unexplored{typename Types::Rational{1}};
+        Types::Real alpha_explored{0}, beta_explored{0};
         int next_chance_idx = 0;
         std::vector<typename Types::Observation> chance_actions{};
     };
-
     struct MatrixStats
     {
         DataMatrix<Data> data_matrix{};
-        typename Types::VectorReal row_solution{}, col_solution{};
+        Types::VectorReal row_solution{}, col_solution{};
         unsigned int depth = 0;
 
         int row_pricipal_idx = 0, col_pricipal_idx = 0;
         std::vector<int> I{}, J{};
+    };
+    struct ChanceStats
+    {
+    };
+    using MatrixNode = typename DefaultNodes::template MNode<AlphaBeta>;
+    using ChanceNode = typename DefaultNodes::template CNode<AlphaBeta>;
+    struct T : Types {
+        using Search = AlphaBeta;
+        using MatrixStats = AlphaBeta::MatrixStats;
+        using ChanceStats = AlphaBeta::MatrixStats;
+        using MatrixNode = AlphaBeta::MatrixNode;
+        using ChanceNode = AlphaBeta::ChanceNode;
     };
 
     static bool dont_terminate(typename Types::PRNG &, const Data &)
@@ -50,11 +53,8 @@ public:
                 data.unexplored < x);
     }
 
-    struct ChanceStats
-    {
-    };
 
-    MNode<FullTraversal<Model>> *teacher;
+    typename PairNodes::template MNode<FullTraversal<Types>> *teacher;
 
     const typename Types::Real min_val{Rational<>{0}}; // don't need to use the Game values if you happen to know that State's
     const typename Types::Real max_val{Rational<>{1}};
@@ -66,14 +66,14 @@ public:
     AlphaBeta(typename Types::Real min_val, typename Types::Real max_val) : min_val(min_val), max_val(max_val) {}
 
     AlphaBeta(
-        typename Types::Real min_val, typename Types::Real max_val,
+        Types::Real min_val, typename Types::Real max_val,
         bool (*const terminate)(typename Types::PRNG &, const Data &)) : min_val(min_val), max_val(max_val), terminate{terminate} {}
 
     auto run(
-        typename Types::PRNG &device,
+        Types::PRNG &device,
         const typename Types::State &state,
-        Model &model,
-        MNode<AlphaBeta> &root)
+        typename Types::Model &model,
+        MatrixNode &root)
     {
         auto state_copy = state;
         return double_oracle(device, state_copy, model, &root, min_val, max_val);
@@ -81,21 +81,21 @@ public:
 
     void run(
         size_t ms,
-        typename Types::PRNG &device,
+        Types::PRNG &device,
         const typename Types::State &state,
-        Model &model,
-        MNode<AlphaBeta> &root) {
+        typename Types::Model &model,
+        MatrixNode &root) {
             model.get_inference();
         }
 
     std::pair<typename Types::Real, typename Types::Real>
     double_oracle(
-        typename Types::PRNG &device,
-        typename Types::State &state,
-        Model &model,
-        MNode<AlphaBeta> *matrix_node,
-        typename Types::Real alpha,
-        typename Types::Real beta)
+        Types::PRNG &device,
+        Types::State &state,
+        typename Types::Model &model,
+        MatrixNode *matrix_node,
+        Types::Real alpha,
+        Types::Real beta)
     {
         MatrixStats &stats = matrix_node->stats;
         std::vector<int> &I = stats.I;
@@ -146,14 +146,14 @@ public:
             for (const int row_idx : I)
             {
                 Data &data = stats.data_matrix.get(row_idx, latest_col_idx);
-                CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, latest_col_idx);
+                ChanceNode *chance_node = matrix_node->access(row_idx, latest_col_idx);
                 solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, row_idx, latest_col_idx);
             }
 
             for (const int col_idx : J)
             {
                 Data &data = stats.data_matrix.get(latest_row_idx, col_idx);
-                CNode<AlphaBeta> *chance_node = matrix_node->access(latest_row_idx, col_idx);
+                ChanceNode *chance_node = matrix_node->access(latest_row_idx, col_idx);
                 solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, latest_row_idx, col_idx);
             }
 
@@ -272,12 +272,12 @@ public:
 
     std::pair<int, typename Types::Real>
     best_response_row(
-        typename Types::PRNG &device,
+        Types::PRNG &device,
         const typename Types::State &state,
-        Model &model,
-        MNode<AlphaBeta> *matrix_node,
-        typename Types::Real alpha, typename Types::Real beta,
-        typename Types::VectorReal &col_strategy)
+        typename Types::Model &model,
+        MatrixNode *matrix_node,
+        Types::Real alpha, typename Types::Real beta,
+        Types::VectorReal &col_strategy)
     {
         MatrixStats &stats = matrix_node->stats;
         std::vector<int> &I = stats.I;
@@ -332,8 +332,8 @@ public:
                 }
                 typename Types::State state_copy = state;
                 state_copy.apply_actions(row_action, col_action, data.chance_actions[data.next_chance_idx++]);
-                CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-                MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
+                ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
+                MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                 matrix_node_next->stats.depth = stats.depth + 1;
                 const typename Types::Probability prob = state_copy.prob;
 
@@ -378,12 +378,12 @@ public:
     }
 
     std::pair<int, typename Types::Real> best_response_col(
-        typename Types::PRNG &device,
+        Types::PRNG &device,
         const typename Types::State &state,
-        Model &model,
-        MNode<AlphaBeta> *matrix_node,
-        typename Types::Real alpha, typename Types::Real beta,
-        typename Types::VectorReal &row_strategy)
+        typename Types::Model &model,
+        MatrixNode *matrix_node,
+        Types::Real alpha, typename Types::Real beta,
+        Types::VectorReal &row_strategy)
     {
         MatrixStats &stats = matrix_node->stats;
         std::vector<int> &I = stats.I;
@@ -439,8 +439,8 @@ public:
                 }
                 typename Types::State state_copy = state;
                 state_copy.apply_actions(row_action, col_action, data.chance_actions[data.next_chance_idx++]);
-                CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
-                MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
+                ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
+                MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                 matrix_node_next->stats.depth = stats.depth + 1;
                 const typename Types::Probability prob = state_copy.prob;
 
@@ -522,14 +522,14 @@ private:
     }
 
     inline bool try_solve_chance_node(
-        typename Types::PRNG &device,
+        Types::PRNG &device,
         const typename Types::State &state, // TODO const?
-        typename Types::Model &model,
-        MatrixNode<AlphaBeta> *matrix_node,
+        Types::Model &model,
+        MatrixNode *matrix_node,
         int row_idx, int col_idx)
     {
         MatrixStats &stats = matrix_node->stats;
-        CNode<AlphaBeta> *chance_node = matrix_node->access(row_idx, col_idx);
+        ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
         Data &data = stats.data_matrix.get(row_idx, col_idx);
 
         if (data.unexplored > typename Types::Probability{0})
@@ -554,7 +554,7 @@ private:
                 const typename Types::Observation chance_action = chance_actions[data.next_chance_idx];
                 typename Types::State state_copy = state;
                 state_copy.apply_actions(row_action, col_action, chance_action);
-                MNode<AlphaBeta> *matrix_node_next = chance_node->access(state_copy.obs);
+                MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                 matrix_node_next->stats.depth = stats.depth + 1;
                 const typename Types::Probability prob = state_copy.prob;
 
@@ -571,21 +571,21 @@ private:
     };
 
     typename Types::Real row_alpha_beta(
-        typename Types::State &state,
-        Model &model,
-        MNode<AlphaBeta> *matrix_node,
-        typename Types::Real alpha,
-        typename Types::Real beta)
+        Types::State &state,
+        typename Types::Model &model,
+        MatrixNode *matrix_node,
+        Types::Real alpha,
+        Types::Real beta)
     {
         return max_val;
     }
 
     typename Types::Real col_alpha_beta(
-        typename Types::State &state,
-        Model &model,
-        MNode<AlphaBeta> *matrix_node,
-        typename Types::Real alpha,
-        typename Types::Real beta)
+        Types::State &state,
+        typename Types::Model &model,
+        MatrixNode *matrix_node,
+        Types::Real alpha,
+        Types::Real beta)
     {
         return min_val;
     }
