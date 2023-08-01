@@ -5,7 +5,6 @@
 template <IsValueModel Model>
 class Exp3 : AbstractAlgorithm<Model>
 {
-
 public:
     struct MatrixStats;
     struct ChanceStats;
@@ -16,7 +15,6 @@ public:
         using ChanceStats = Exp3::ChanceStats;
         using Outcome = Exp3::Outcome;
     };
-
     struct MatrixStats
     {
         typename Types::VectorReal row_gains;
@@ -27,11 +25,9 @@ public:
         int visits = 0;
         PairReal<typename Types::Real> value_total{0, 0};
     };
-
     struct ChanceStats
     {
     };
-
     struct Outcome
     {
         ActionIndex row_idx, col_idx;

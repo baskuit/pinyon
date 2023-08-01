@@ -28,7 +28,7 @@ public:
         using MatrixNode = typename PairNodes::template MNode<FullTraversal>;
         using ChanceNode = typename PairNodes::template CNode<FullTraversal>;
     };
-    struct MatrixStats : AbstractAlgorithm<Model>::MatrixStats
+    struct MatrixStats
     {
         typename Types::Value payoff{};
         typename Types::VectorReal row_solution, col_solution;
@@ -38,7 +38,7 @@ public:
         unsigned int depth = 0;
         typename Types::Probability prob;
     };
-    struct ChanceStats : AbstractAlgorithm<Model>::ChanceStats
+    struct ChanceStats
     {
     };
 

@@ -10,6 +10,7 @@ struct Wrapper
     constexpr Wrapper() {}
     constexpr Wrapper(const T value) : value{value} {}
     constexpr explicit operator T() const { return value; }
+    T &get() { return value; }
 };
 
 template <typename T>
@@ -19,7 +20,8 @@ struct ArithmeticType : Wrapper<T>
 
     constexpr ArithmeticType(const T &val) : Wrapper<T>{val} {}
 
-    void canonicalize () {
+    void canonicalize()
+    {
         // if constexpr (requires std::is_same_v<decltype(std::declval<T>().myMethod()), void>) {
         // this->value.canonicalize();
 

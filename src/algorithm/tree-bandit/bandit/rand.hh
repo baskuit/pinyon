@@ -9,7 +9,6 @@ Minimal model for benchmarking purposes (Test speed of state and tree structure)
 template <IsValueModel Model>
 class Rand : public AbstractAlgorithm<Model>
 {
-
 public:
     struct MatrixStats;
     struct ChanceStats;
@@ -22,15 +21,12 @@ public:
     {
         int rows, cols;
     };
-
     struct ChanceStats
     {
     };
     struct Outcome
     {
     };
-
-    Rand() {}
 
     friend std::ostream &operator<<(std::ostream &os, const Rand &session)
     {
@@ -47,8 +43,7 @@ public:
 
     void get_empirical_value(
         MatrixStats &stats,
-        Types::Real &row_value,
-        Types::Real &col_value)
+        Types::Value &value)
     {
     }
 
@@ -61,8 +56,7 @@ public:
 
     void get_refined_value(
         MatrixStats &stats,
-        Types::Real &row_value,
-        Types::Real &col_value)
+        Types::Value &value)
     {
     }
 
