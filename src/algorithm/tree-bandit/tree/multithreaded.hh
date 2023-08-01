@@ -10,7 +10,7 @@
 #include <chrono>
 
 template <
-    class BanditAlgorithm,
+    IsMultithreadedBandit BanditAlgorithm,
     class NodePair = DefaultNodes,
     bool return_if_expand = true>
 class TreeBanditThreaded : public BanditAlgorithm
@@ -43,10 +43,10 @@ public:
 
     size_t run(
         const size_t duration_ms,
-        typename Types::PRNG &device,
-        const typename Types::State &state,
-        typename Types::Model &model,
-        typename Types::MatrixNode &matrix_node)
+        Types::PRNG &device,
+        const Types::State &state,
+        Types::Model &model,
+        Types::MatrixNode &matrix_node)
     {
         std::thread thread_pool[threads];
         size_t iterations[threads];
@@ -68,10 +68,10 @@ public:
 
     size_t run_for_iterations(
         const size_t iterations,
-        typename Types::PRNG &device,
-        const typename Types::State &state,
-        typename Types::Model &model,
-        typename Types::MatrixNode &matrix_node)
+        Types::PRNG &device,
+        const Types::State &state,
+        Types::Model &model,
+        Types::MatrixNode &matrix_node)
     {
         std::thread thread_pool[threads];
         size_t iterations_per_thread = iterations / threads;
@@ -92,10 +92,10 @@ public:
 private:
     void run_thread(
         const size_t duration_ms,
-        typename Types::PRNG *device,
-        const typename Types::State *state,
-        const typename Types::Model *model,
-        typename Types::MatrixNode *matrix_node,
+        Types::PRNG *device,
+        const Types::State *state,
+        const Types::Model *model,
+        Types::MatrixNode *matrix_node,
         size_t *iterations)
     {
         typename Types::PRNG device_thread(device->uniform_64()); // TODO deterministically provide new seed
@@ -119,10 +119,10 @@ private:
 
     void run_thread_for_iterations(
         const size_t iterations,
-        typename Types::PRNG *device,
-        const typename Types::State *state,
-        const typename Types::Model *model,
-        typename Types::MatrixNode *matrix_node)
+        Types::PRNG *device,
+        const Types::State *state,
+        const Types::Model *model,
+        Types::MatrixNode *matrix_node)
     {
         typename Types::PRNG device_thread(device->uniform_64());
         typename Types::Model model_thread{*model};
@@ -135,12 +135,12 @@ private:
         }
     }
 
-    typename Types::MatrixNode *run_iteration(
-        typename Types::PRNG &device,
-        typename Types::State &state,
-        typename Types::Model &model,
-        typename Types::MatrixNode *matrix_node,
-        typename Types::ModelOutput &inference)
+    Types::MatrixNode *run_iteration(
+        Types::PRNG &device,
+        Types::State &state,
+        Types::Model &model,
+        Types::MatrixNode *matrix_node,
+        Types::ModelOutput &inference)
     {
 
         typename Types::Mutex &mtx{matrix_node->stats.mtx};
@@ -208,7 +208,7 @@ private:
 //  TreeBanditThreadPool
 
 template <
-    class BanditAlgorithm,
+    IsMultithreadedBandit BanditAlgorithm,
     class NodePair = DefaultNodes,
     size_t pool_size = 128,
     bool return_if_expand = true>
@@ -247,10 +247,10 @@ public:
 
     size_t run(
         const size_t duration_ms,
-        typename Types::PRNG &device,
-        const typename Types::State &state,
-        typename Types::Model &model,
-        typename Types::MatrixNode &matrix_node)
+        Types::PRNG &device,
+        const Types::State &state,
+        Types::Model &model,
+        Types::MatrixNode &matrix_node)
     {
         std::thread thread_pool[threads];
         size_t iterations[threads];
@@ -272,10 +272,10 @@ public:
 
     size_t run_for_iterations(
         const size_t iterations,
-        typename Types::PRNG &device,
-        const typename Types::State &state,
-        typename Types::Model &model,
-        typename Types::MatrixNode &matrix_node)
+        Types::PRNG &device,
+        const Types::State &state,
+        Types::Model &model,
+        Types::MatrixNode &matrix_node)
     {
         std::thread thread_pool[threads];
         size_t iterations_per_thread = iterations / threads;
@@ -296,10 +296,10 @@ public:
 private:
     void run_thread(
         const size_t duration_ms,
-        typename Types::PRNG *device,
-        const typename Types::State *state,
-        const typename Types::Model *model,
-        typename Types::MatrixNode *matrix_node,
+        Types::PRNG *device,
+        const Types::State *state,
+        const Types::Model *model,
+        Types::MatrixNode *matrix_node,
         size_t *iterations)
     {
         typename Types::PRNG device_thread(device->uniform_64()); // TODO deterministically provide new seed
@@ -323,10 +323,10 @@ private:
 
     void run_thread_for_iterations(
         const size_t iterations,
-        typename Types::PRNG *device,
-        const typename Types::State *state,
-        const typename Types::Model *model,
-        typename Types::MatrixNode *matrix_node)
+        Types::PRNG *device,
+        const Types::State *state,
+        const Types::Model *model,
+        Types::MatrixNode *matrix_node)
     {
         typename Types::PRNG device_thread(device->uniform_64());
         typename Types::Model model_thread{*model};
@@ -339,12 +339,12 @@ private:
         }
     }
 
-    typename Types::MatrixNode *run_iteration(
-        typename Types::PRNG &device,
-        typename Types::State &state,
-        typename Types::Model &model,
-        typename Types::MatrixNode *matrix_node,
-        typename Types::ModelOutput &inference)
+    Types::MatrixNode *run_iteration(
+        Types::PRNG &device,
+        Types::State &state,
+        Types::Model &model,
+        Types::MatrixNode *matrix_node,
+        Types::ModelOutput &inference)
     {
         typename Types::Mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
 
@@ -410,7 +410,7 @@ private:
 
 private:
     void get_mutex_index(
-        typename Types::MatrixNode *matrix_node)
+        Types::MatrixNode *matrix_node)
     {
         matrix_node->stats.mutex_index = (this->current_index.fetch_add(1)) % pool_size;
     }

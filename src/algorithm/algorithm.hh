@@ -52,9 +52,9 @@ concept IsBanditAlgorithm = requires(
     // {
     //     bandit.update_chance_stats(chance_stats, outcome)
     // } -> std::same_as<void>;
-};
+} && IsValueModel<typename Algorithm::Types::Model>;
 
-template <typename Algorithm, typename NodeWrapper>
+template <typename Algorithm>
 concept IsMultithreadedBandit =
     requires(
         Algorithm &bandit,
@@ -75,7 +75,7 @@ concept IsMultithreadedBandit =
     } &&
     IsBanditAlgorithm<Algorithm>;
 
-template <typename Algorithm, typename NodeWrapper>
+template <typename Algorithm>
 concept IsOffPolicyBandit =
     requires(
         Algorithm &bandit,

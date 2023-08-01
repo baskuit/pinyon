@@ -55,26 +55,6 @@ struct DefaultTypes
     using Rational = _Rational;
 };
 
-using SimpleTypes = DefaultTypes<
-    double,
-    int,
-    int,
-    double>;
-
-using RandomTreeFloatTypes = DefaultTypes<
-    double,
-    int,
-    int,
-    double,
-    ConstantSum<1, 1>::Value>;
-
-using RandomTreeRationalTypes = DefaultTypes<
-    mpq_class,
-    int,
-    int,
-    mpq_class,
-    ConstantSum<1, 1>::Value>;
-
 template <typename Real>
 concept IsReal = requires(Real real) {
     static_cast<Real>(real + real);
@@ -127,9 +107,6 @@ concept IsTypeList = requires(
         strategy[0]
     } -> std::same_as<typename Types::Real &>;
     {
-        strategy.clear()
-    } -> std::same_as<void>;
-    {
         actions[0]
     } -> std::same_as<typename Types::Action &>;
     {
@@ -152,3 +129,23 @@ In my tests, this is the only way to get autocomplete for the dependent to work.
 That is, making this a conjunction of `IsReal<typename Types::Real>` etc doesnt work
 
 */
+
+using SimpleTypes = DefaultTypes<
+    double,
+    int,
+    int,
+    double>;
+
+using RandomTreeFloatTypes = DefaultTypes<
+    double,
+    int,
+    int,
+    double,
+    ConstantSum<1, 1>::Value>;
+
+using RandomTreeRationalTypes = DefaultTypes<
+    mpq_class,
+    int,
+    int,
+    mpq_class,
+    ConstantSum<1, 1>::Value>;

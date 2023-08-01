@@ -86,11 +86,11 @@ public:
         get_empirical_value(stats, value);
     }
 
-protected:
+// protected:
     void initialize_stats(
         int iterations,
         const Types::State &state,
-        Types::Model &model,
+        Model &model,
         MatrixStats &stats) const
     {
     }

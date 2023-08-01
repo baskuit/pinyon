@@ -60,7 +60,7 @@ public:
     {
     }
 
-protected:
+// protected:
     void initialize_stats(
         int iterations,
         Types::State &state,
