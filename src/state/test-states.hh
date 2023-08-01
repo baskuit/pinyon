@@ -10,6 +10,8 @@ template <int size>
 class MoldState : public PerfectInfoState<SimpleTypes>
 {
 public:
+    using State = MoldState;
+
     size_t max_depth = 1;
 
     MoldState(size_t max_depth) : max_depth((max_depth >= 0) * max_depth)
@@ -64,4 +66,9 @@ public:
     {
         --this->max_depth;
     }
+};
+
+template <typename Types, int size>
+struct AddTypes<MoldState<size>, Types> {
+
 };

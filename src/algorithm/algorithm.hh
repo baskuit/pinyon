@@ -2,29 +2,19 @@
 
 #include <model/model.hh>
 
-template <IsValueModel _Model>
-class AbstractAlgorithm
-{
-public:
-    struct Types : _Model::Types
-    {
-        using Model = _Model;
-    };
-};
-
-template <typename Algorithm>
-concept IsBanditAlgorithm = requires(
-    Algorithm &bandit,
-    typename Algorithm::Types::PRNG &device,
-    typename Algorithm::Types::State &state,
-    typename Algorithm::Types::Model &model,
-    typename Algorithm::Types::MatrixStats &matrix_stats,
-    typename Algorithm::Types::ChanceStats &chance_stats,
-    typename Algorithm::Types::Outcome &outcome,
-    typename Algorithm::Types::VectorReal &strategy,
-    typename Algorithm::Types::ModelOutput &inference,
-    typename Algorithm::Types::Value &value,
-    typename Algorithm::Types::Real &real) {
+template <typename Types>
+concept IsBanditAlgorithmTypes = requires(
+                                     typename Types::BanditAlgorithm &bandit,
+                                     typename Types::PRNG &device,
+                                     typename Types::State &state,
+                                     typename Types::Model &model,
+                                     typename Types::MatrixStats &matrix_stats,
+                                     typename Types::ChanceStats &chance_stats,
+                                     typename Types::Outcome &outcome,
+                                     typename Types::VectorReal &strategy,
+                                     typename Types::ModelOutput &inference,
+                                     typename Types::Value &value,
+                                     typename Types::Real &real) {
     {
         bandit.get_empirical_strategies(matrix_stats, strategy, strategy)
     } -> std::same_as<void>;
@@ -52,17 +42,17 @@ concept IsBanditAlgorithm = requires(
     // {
     //     bandit.update_chance_stats(chance_stats, outcome)
     // } -> std::same_as<void>;
-} && IsValueModel<typename Algorithm::Types::Model>;
+} && IsValueModelTypes<Types>;
 
-template <typename Algorithm>
+template <typename Types>
 concept IsMultithreadedBandit =
     requires(
-        Algorithm &bandit,
-        typename Algorithm::Types::PRNG &device,
-        typename Algorithm::Types::MatrixStats &matrix_stats,
-        typename Algorithm::Types::ChanceStats &chance_stats,
-        typename Algorithm::Types::Outcome &outcome,
-        typename Algorithm::Types::Mutex &mtx) {
+        typename Types::BanditAlgorithm &bandit,
+        typename Types::PRNG &device,
+        typename Types::MatrixStats &matrix_stats,
+        typename Types::ChanceStats &chance_stats,
+        typename Types::Outcome &outcome,
+        typename Types::Mutex &mtx) {
         {
             bandit.select(device, matrix_stats, outcome, mtx)
         } -> std::same_as<void>;
@@ -73,18 +63,18 @@ concept IsMultithreadedBandit =
             bandit.update_chance_stats(chance_stats, outcome, mtx)
         } -> std::same_as<void>;
     } &&
-    IsBanditAlgorithm<Algorithm>;
+    IsBanditAlgorithmTypes<Types>;
 
-template <typename Algorithm>
+template <typename Types>
 concept IsOffPolicyBandit =
     requires(
-        Algorithm &bandit,
-        typename Algorithm::Types::PRNG &device,
-        typename Algorithm::Types::MatrixStats &matrix_stats,
-        typename Algorithm::Types::ChanceStats &chance_stats,
-        typename Algorithm::Types::Outcome &outcome,
-        typename Algorithm::Types::VectorReal &strategy,
-        typename Algorithm::Types::Real &real) {
+        typename Types::BanditAlgorithm &bandit,
+        typename Types::PRNG &device,
+        typename Types::MatrixStats &matrix_stats,
+        typename Types::ChanceStats &chance_stats,
+        typename Types::Outcome &outcome,
+        typename Types::VectorReal &strategy,
+        typename Types::Real &real) {
         {
             bandit.update_matrix_stats(matrix_stats, outcome, real)
         } -> std::same_as<void>;
@@ -95,17 +85,17 @@ concept IsOffPolicyBandit =
             bandit.get_policy(matrix_stats, strategy, strategy)
         } -> std::same_as<void>;
     } &&
-    IsBanditAlgorithm<Algorithm>;
+    IsBanditAlgorithmTypes<Types>;
 
-template <typename Algorithm>
-concept IsTreeBandit =
+template <typename Types>
+concept IsTreeBanditTypes =
     requires(
-        Algorithm &session,
-        typename Algorithm::Types::PRNG &device,
-        typename Algorithm::Types::State &state,
-        typename Algorithm::Types::Model &model,
-        typename Algorithm::Types::MatrixNode &matrix_node) {
-        Algorithm{};
+        typename Types::TreeAlgorithm &session,
+        typename Types::PRNG &device,
+        typename Types::State &state,
+        typename Types::Model &model,
+        typename Types::MatrixNode &matrix_node) {
+        typename Types::TreeAlgorithm{}; // default constructor is valid
         {
             session.run(0, device, state, model, matrix_node)
         } -> std::same_as<size_t>;
@@ -113,4 +103,4 @@ concept IsTreeBandit =
             session.run_for_iterations(0, device, state, model, matrix_node)
         } -> std::same_as<size_t>;
     } &&
-    IsBanditAlgorithm<Algorithm>;
+    IsBanditAlgorithmTypes<Types>;

@@ -5,11 +5,6 @@
 #include <concepts>
 #include <vector>
 
-template <IsTypeList Types>
-class AbstractState
-{
-};
-
 template <typename Types>
 concept IsStateTypes =
     requires(
@@ -36,25 +31,26 @@ template <typename Types>
 concept IsPerfectInfoStateTypes =
     requires(
         typename Types::State &state,
+        const typename Types::State &const_state,
         typename Types::Action &action) {
         {
-            state.terminal
+            const_state.terminal
         } -> std::same_as<bool &>;
         {
             state.row_actions
-        } -> std::same_as<typename State::Types::VectorAction &>;
+        } -> std::same_as<typename Types::VectorAction &>;
         {
             state.col_actions
-        } -> std::same_as<typename State::Types::VectorAction &>;
+        } -> std::same_as<typename Types::VectorAction &>;
         {
             state.payoff
-        } -> std::same_as<typename State::Types::Value &>;
+        } -> std::same_as<typename Types::Value &>;
         {
             state.obs
-        } -> std::same_as<typename State::Types::Observation &>;
+        } -> std::same_as<typename Types::Observation &>;
         {
             state.prob
-        } -> std::same_as<typename State::Types::Probability &>;
+        } -> std::same_as<typename Types::Probability &>;
         {
             state.apply_actions(action, action)
         } -> std::same_as<void>;
@@ -64,8 +60,8 @@ concept IsPerfectInfoStateTypes =
     } &&
     IsStateTypes<Types>;
 
-template <IsPerfectInfoStateTypes T>
-class PerfectInfoState : public AbstractState<Types>
+template <IsTypeList T>
+class PerfectInfoState
 {
 public:
     bool terminal{false};
@@ -84,7 +80,6 @@ public:
     {
         return terminal;
     }
-
 };
 
 template <typename Types>

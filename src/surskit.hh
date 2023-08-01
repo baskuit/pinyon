@@ -25,6 +25,7 @@
 // Model
 
 #include <model/model.hh>
+#include <model/monte-carlo-model.hh>
 // #include <model/search_model.hh>
 
 #ifdef TORCH

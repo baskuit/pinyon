@@ -2,19 +2,10 @@
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
-template <IsValueModel Model>
-class Exp3 : AbstractAlgorithm<Model>
+template <IsValueModelTypes Types>
+class Exp3
 {
 public:
-    struct MatrixStats;
-    struct ChanceStats;
-    struct Outcome;
-    struct Types : AbstractAlgorithm<Model>::Types
-    {
-        using MatrixStats = Exp3::MatrixStats;
-        using ChanceStats = Exp3::ChanceStats;
-        using Outcome = Exp3::Outcome;
-    };
     struct MatrixStats
     {
         typename Types::VectorReal row_gains;
@@ -90,7 +81,7 @@ public:
     void initialize_stats(
         int iterations,
         const Types::State &state,
-        Model &model,
+        Types::Model &model,
         MatrixStats &stats) const
     {
     }

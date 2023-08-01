@@ -7,39 +7,28 @@
 #include <chrono>
 
 template <
-    IsBanditAlgorithm BanditAlgorithm,
-    class NodePair=DefaultNodes,
+    IsBanditAlgorithmTypes Types,
+    class NodePair = DefaultNodes,
     bool return_if_expand = true>
-class TreeBandit : public BanditAlgorithm
+class TreeBandit : public Types::BanditAlgorithm
 {
 public:
-    struct MatrixStats;
-    struct ChanceStats;
-    struct Types : BanditAlgorithm::Types
-    {
-        using MatrixStats = TreeBandit::MatrixStats;
-        using ChanceStats = TreeBandit::ChanceStats;
-        using MatrixNode = typename NodePair::template MNode<TreeBandit>;
-        using ChanceNode = typename NodePair::template CNode<TreeBandit>;
-    };
+    using Search = TreeBandit;
+    using Types::TreeBandit::ChanceStats;
+    using Types::TreeBandit::MatrixStats;
+    using MatrixNode = typename NodePair::template MNode<TreeBandit>;
+    using ChanceNode = typename NodePair::template CNode<TreeBandit>;
 
-    struct MatrixStats : BanditAlgorithm::MatrixStats
-    {
-    };
-    struct ChanceStats : BanditAlgorithm::ChanceStats
-    {
-    };
+    using Types::BanditAlgorithm::BanditAlgorithm;
 
-    using BanditAlgorithm::BanditAlgorithm;
-
-    TreeBandit(BanditAlgorithm &base) : BanditAlgorithm{base} {}
+    TreeBandit(typename Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
 
     size_t run(
         size_t duration_ms,
-        typename Types::PRNG &device,
-        const typename Types::State &state,
-        typename Types::Model &model,
-        typename Types::MatrixNode &matrix_node)
+        Types::PRNG &device,
+        const Types::State &state,
+        Types::Model &model,
+        Types::MatrixNode &matrix_node)
     {
         auto start = std::chrono::high_resolution_clock::now();
         auto end = std::chrono::high_resolution_clock::now();
@@ -59,10 +48,10 @@ public:
 
     size_t run_for_iterations(
         const size_t iterations,
-        typename Types::PRNG &device,
-        const typename Types::State &state,
-        typename Types::Model &model,
-        typename Types::MatrixNode &matrix_node)
+        Types::PRNG &device,
+        const Types::State &state,
+        Types::Model &model,
+        Types::MatrixNode &matrix_node)
     {
         auto start = std::chrono::high_resolution_clock::now();
         typename Types::ModelOutput inference;
@@ -79,11 +68,11 @@ public:
 
 protected:
     typename Types::MatrixNode *run_iteration(
-        typename Types::PRNG &device,
-        typename Types::State &state,
-        typename Types::Model &model,
-        typename Types::MatrixNode *matrix_node,
-        typename Types::ModelOutput &inference)
+        Types::PRNG &device,
+        Types::State &state,
+        Types::Model &model,
+        Types::MatrixNode *matrix_node,
+        Types::ModelOutput &inference)
     {
         if (!matrix_node->is_terminal())
         {
@@ -132,11 +121,11 @@ protected:
     }
 
     typename Types::MatrixNode *run_iteration_average(
-        typename Types::PRNG &device,
-        typename Types::State &state,
-        typename Types::Model &model,
-        typename Types::MatrixNode *matrix_node,
-        typename Types::ModelOutput &inference)
+        Types::PRNG &device,
+        Types::State &state,
+        Types::Model &model,
+        Types::MatrixNode *matrix_node,
+        Types::ModelOutput &inference)
     {
         if (!matrix_node->is_terminal())
         {
