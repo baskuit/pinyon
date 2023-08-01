@@ -9,6 +9,9 @@
 #include <types/value.hh>
 #include <types/mutex.hh>
 
+template <class Class, typename Types>
+struct AddTypes;
+
 /*
 
 TypeList
@@ -56,7 +59,7 @@ struct DefaultTypes
 };
 
 template <typename Real>
-concept IsReal = requires(Real real) {
+concept IsArithmetic = requires(Real real) {
     static_cast<Real>(real + real);
     {
         real.canonicalize()
@@ -74,61 +77,42 @@ concept IsValue = requires(Value value) {
 };
 
 template <typename Types>
-concept IsTypeList = requires(
-                         Types obj,
-                         typename Types::Real &real,
-                         typename Types::Action &action,
-                         typename Types::Observation &obs,
-                         typename Types::Probability &prob,
-                         typename Types::Value &value,
-                         typename Types::VectorReal &strategy,
-                         typename Types::VectorAction &actions,
-                         typename Types::VectorInt &visits,
-                         typename Types::MatrixReal &real_matrix,
-                         typename Types::MatrixValue &payoff_matrix,
-                         typename Types::MatrixInt &visit_matrix,
-                         typename Types::Mutex &mtx,
-                         typename Types::PRNG &device,
-                         typename Types::Seed &seed,
-                         typename Types::Rational &rational) {
-    // {
-    //     real.canonicalize()
-    // } -> std::same_as<void>;
-    // {
-    //     prob.canonicalize()
-    // } -> std::same_as<void>;
-    // {
-    //     static_cast<typename Types::Real>(real + real)
-    // };
-    {
-        obs == obs
-    } -> std::same_as<bool>;
-    {
-        strategy[0]
-    } -> std::same_as<typename Types::Real &>;
-    {
-        actions[0]
-    } -> std::same_as<typename Types::Action &>;
-    {
-        visits[0]
-    } -> std::same_as<int &>;
-    {
-        real_matrix.get(0, 0)
-    } -> std::same_as<typename Types::Real &>;
-    {
-        payoff_matrix.get(0, 0)
-    } -> std::same_as<typename Types::Value &>;
-    {
-        visit_matrix.get(0, 0)
-    } -> std::same_as<int &>;
-} && IsReal<typename Types::Real> && IsValue<typename Types::Value, typename Types::Real>;
-
-/*
-
-In my tests, this is the only way to get autocomplete for the dependent to work.
-That is, making this a conjunction of `IsReal<typename Types::Real>` etc doesnt work
-
-*/
+concept IsTypeList =
+    requires(
+        Types obj,
+        typename Types::Action &action,
+        typename Types::Observation &obs,
+        typename Types::VectorReal &strategy,
+        typename Types::VectorAction &actions,
+        typename Types::VectorInt &visits,
+        typename Types::MatrixReal &real_matrix,
+        typename Types::MatrixValue &payoff_matrix,
+        typename Types::MatrixInt &visit_matrix) {
+        {
+            obs == obs
+        } -> std::same_as<bool>;
+        {
+            strategy[0]
+        } -> std::same_as<typename Types::Real &>;
+        {
+            actions[0]
+        } -> std::same_as<typename Types::Action &>;
+        {
+            visits[0]
+        } -> std::same_as<int &>;
+        {
+            real_matrix.get(0, 0)
+        } -> std::same_as<typename Types::Real &>;
+        {
+            payoff_matrix.get(0, 0)
+        } -> std::same_as<typename Types::Value &>;
+        {
+            visit_matrix.get(0, 0)
+        } -> std::same_as<int &>;
+    } &&
+    IsArithmetic<typename Types::Real> &&
+    IsArithmetic<typename Types::Probability> &&
+    IsValue<typename Types::Value, typename Types::Real>;
 
 using SimpleTypes = DefaultTypes<
     double,

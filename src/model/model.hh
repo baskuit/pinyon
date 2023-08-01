@@ -4,53 +4,35 @@
 
 #include <vector>
 
-template <IsState _State>
-class AbstractModel
-{
-public:
-    struct Types : _State::Types
-    {
-        using State = _State;
-    };
-};
+template <typename Types>
+concept IsValueModelTypes =
+    requires(
+        typename Types::Model &model,
+        typename Types::ModelInput &input,
+        typename Types::ModelOutput &output,
+        typename Types::State &state) {
+        {
+            output.value
+        } -> std::same_as<typename Types::Value &>;
+        {
+            model.get_inference(
+                input,
+                output)
+        } -> std::same_as<void>;
+        {
+            model.get_input(
+                state,
+                input)
+        } -> std::same_as<void>;
+    } &&
+    IsStateTypes<Types>;
 
-template <typename Model>
-concept IsValueModel = requires(
-                           Model model,
-                           typename Model::Types::ModelInput &input,
-                           typename Model::Types::ModelOutput &output,
-                           typename Model::Types::State &state) {
-    {
-        output.value
-    } -> std::same_as<typename Model::Types::Value &>;
-    {
-        model.get_inference(
-            input,
-            output)
-    } -> std::same_as<void>;
-    {
-        model.get_input(
-            state,
-            input)
-    } -> std::same_as<void>;
-} && IsState<typename Model::Types::State> &&
-                       IsTypeList<typename Model::Types>;
-
-template <IsState State>
+template <IsStateTypes Types>
 class DoubleOracleModel : public AbstractModel<State>
 {
 public:
-    struct ModelOutput;
-    struct Types : AbstractModel<State>::Types
-    {
-        using ModelOutput = DoubleOracleModel::ModelOutput;
-    };
-    struct ModelOutput
-    {
-        typename Types::Value value;
-        typename Types::VectorReal row_policy;
-        typename Types::VectorReal col_policy;
-    };
+    template <typename _Types>
+    struct 
 };
 
 template <typename Model>

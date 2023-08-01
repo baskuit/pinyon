@@ -10,26 +10,21 @@ template <int size>
 class MoldState : public PerfectInfoState<SimpleTypes>
 {
 public:
-    struct Types : PerfectInfoState<SimpleTypes>::Types
-    {
-    };
-
     size_t max_depth = 1;
 
     MoldState(size_t max_depth) : max_depth((max_depth >= 0) * max_depth)
     {
         this->row_actions.resize(size);
         this->col_actions.resize(size);
-
         for (int i = 0; i < size; ++i)
         {
-            this->row_actions[i] = typename Types::Action{i};
-            this->col_actions[i] = typename Types::Action{i};
+            this->row_actions[i] = SimpleTypes::Action{i};
+            this->col_actions[i] = SimpleTypes::Action{i};
         }
-        this->prob = typename Types::Probability{typename Types::Rational{1}};
+        this->prob = SimpleTypes::Probability{1};
     }
 
-    void randomize_transition(Types::PRNG &device)
+    void randomize_transition(SimpleTypes::PRNG &device)
     {
     }
 
@@ -39,19 +34,33 @@ public:
     }
 
     void get_actions(
-        Types::VectorAction &row_actions,
-        Types::VectorAction &col_actions
-    )
+        SimpleTypes::VectorAction &row_actions,
+        SimpleTypes::VectorAction &col_actions)
     {
         row_actions = this->row_actions;
         col_actions = this->col_actions;
         this->is_terminal = (this->max_depth <= 0);
     }
 
+    void apply_actions(
+        SimpleTypes::Action,
+        SimpleTypes::Action)
+    {
+        --this->max_depth;
+    }
+
+    void get_actions(
+        std::vector<SimpleTypes::Observation> &chance_actions,
+        SimpleTypes::Action &,
+        SimpleTypes::Action &)
+    {
+        chance_actions.resize(1);
+    }
 
     void apply_actions(
-        Types::Action row_action,
-        Types::Action col_action)
+        SimpleTypes::Observation,
+        SimpleTypes::Action,
+        SimpleTypes::Action)
     {
         --this->max_depth;
     }
