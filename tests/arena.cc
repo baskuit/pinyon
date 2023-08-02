@@ -1,10 +1,8 @@
 #include <surskit.hh>
 
-using State = Arena<MonteCarloModel<RandomTree<>::T>::T>;
-using Model = MonteCarloModel<State::T>;
-using Algorithm = TreeBanditThreaded<Exp3<Model::T>::T>;
+using Types = TreeBanditThreaded<Exp3<MonteCarloModel<Arena<MonteCarloModel<RandomTree<>::T>::T>::T>::T>::T>::T;
 
-W::StateWrapper<RandomTree<>::T> generator_function(typename State::T::Seed seed)
+W::StateWrapper<RandomTree<>::T> generator_function(Types::Seed seed)
 {
     const size_t max_depth_bound = 5;
     const size_t max_actions = 5;
@@ -22,25 +20,25 @@ W::StateWrapper<RandomTree<>::T> generator_function(typename State::T::Seed seed
 int main()
 {
 
-    // std::vector<W::SearchWrapper<TreeBandit<Exp3<MonteCarloModel<RandomTree<>>>>>> agents = {
-    //     {.01}, {.1}, {1}};
+    std::vector<W::SearchWrapper<Types>> agents = {
+        {.01}, {.1}, {1}};
 
-    // const size_t iterations = 1 << 10;
-    // prng device{0};
-    // W::ModelWrapper<MonteCarloModel<RandomTree<>>> model{device};
+    const size_t iterations = 1 << 10;
+    prng device{0};
+    W::ModelWrapper<MonteCarloModel<RandomTree<>::T>::T> model{device};
 
-    // State arena{iterations, &generator_function, model, agents};
+    Types::State arena{iterations, &generator_function, model, agents};
 
-    // Model arena_model{1337};
-    // Algorithm session{.1};
-    // session.threads = 6;
-    // MatrixNode<Algorithm> root;
+    Types::Model arena_model{1337};
+    Types::Search session{.1};
+    session.threads = 6;
+    Types::MatrixNode root;
 
-    // session.run(1000, device, arena, arena_model, root);
-    // State::Types::VectorReal row_strategy, col_strategy;
-    // session.get_empirical_strategies(root.stats, row_strategy, col_strategy);
-    // math::print(row_strategy);
-    // math::print(col_strategy);
+    session.run(1000, device, arena, arena_model, root);
+    Types::VectorReal row_strategy, col_strategy;
+    session.get_empirical_strategies(root.stats, row_strategy, col_strategy);
+    math::print(row_strategy);
+    math::print(col_strategy);
 
     return 0;
 }

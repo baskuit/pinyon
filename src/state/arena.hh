@@ -64,7 +64,7 @@ public:
         W::Search *row_search = searches[static_cast<int>(row_action)]->clone();
         W::Search *col_search = searches[static_cast<int>(col_action)]->clone();
 
-        W::StateWrapper<typename Types::State> state_copy = (*init_state_generator)(state_seed);
+        W::StateWrapper<Types> state_copy = (*init_state_generator)(state_seed);
         PairReal<double> row_first_payoff = play_vs(row_search, col_search, state_copy, model);
         state_copy = (*init_state_generator)(state_seed);
         PairReal<double> col_first_payoff = play_vs(col_search, row_search, state_copy, model);
