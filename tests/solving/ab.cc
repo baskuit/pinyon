@@ -29,6 +29,9 @@ struct Solve
     using Model = MonteCarloModel<State::T>;
     using ModelFloat = MonteCarloModel<StateFloat::T>;
 
+    using FloatTypes = typename ModelFloat::T;
+    using Types = typename Model::T;
+
 
     typename FullTraversal<Model::T>::MatrixNode root_full{};
     typename FullTraversal<ModelFloat::T>::MatrixNode root_full_f{};

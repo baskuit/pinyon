@@ -81,17 +81,23 @@ protected:
         {
             if (!matrix_node->is_expanded())
             {
-                state.get_actions();
-                matrix_node->expand(state);
-                model.get_inference(state, inference);
-                this->expand(state, matrix_node->stats, inference);
+                if (state.is_terminal())
+                {
+                    matrix_node->set_terminal();
+                    inference.value = state.payoff;
+                }
+                else
+                {
+                    state.get_actions();
+                    model.get_inference(state, inference);
 
+                    matrix_node->expand(state);
+                    this->expand(state, matrix_node->stats, inference);
+                }
                 if constexpr (return_if_expand)
                 {
                     return matrix_node;
                 }
-
-                // TODO do we still have to return if it expands and finds its terminal? Is that what caused that bug?
             }
 
             typename Types::Outcome outcome;

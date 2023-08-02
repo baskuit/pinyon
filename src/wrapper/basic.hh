@@ -1,6 +1,7 @@
 #pragma once
 
 #include <types/matrix.hh>
+#include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
 #include <memory>
@@ -8,11 +9,11 @@
 namespace W
 {
 
-    template <typename>
+    template <IsStateTypes>
     struct StateWrapper;
-    template <typename>
+    template <IsValueModelTypes>
     struct ModelWrapper;
-    template <typename>
+    template <IsSearchTypes>
     struct SearchWrapper;
 
     /*
@@ -36,15 +37,15 @@ namespace W
         virtual bool is_solved() = 0;
         virtual void get_payoff_matrix(Matrix<PairReal<double>> &payoff_matrix) = 0;
 
-        template <typename T>
-        std::shared_ptr<T> derive_ptr()
+        template <typename Types>
+        std::shared_ptr<typename Types::State> derive_ptr()
         {
-            StateWrapper<T> *self = dynamic_cast<StateWrapper<T> *>(this);
+            StateWrapper<Types> *self = dynamic_cast<StateWrapper<Types> *>(this);
             return self->ptr;
         }
     };
 
-    template <typename Types>
+    template <IsStateTypes Types>
     struct StateWrapper : State
     {
         std::shared_ptr<typename Types::State> ptr;
@@ -157,15 +158,15 @@ namespace W
             double row_value, col_value;
         };
         virtual Output get_inference(State &state) = 0;
-        template <typename T>
-        std::shared_ptr<T> derive_ptr()
+        template <typename Types>
+        std::shared_ptr<typename Types::Model> derive_ptr()
         {
-            ModelWrapper<T> *self = dynamic_cast<ModelWrapper<T> *>(this);
+            ModelWrapper<Types> *self = dynamic_cast<ModelWrapper<Types> *>(this);
             return self->ptr;
         }
     };
 
-    template <typename Types>
+    template <IsValueModelTypes Types>
     struct ModelWrapper : Model
     {
         std::shared_ptr<typename Types::Model> ptr;
@@ -183,7 +184,7 @@ namespace W
 
         Output get_inference(State &state)
         {
-            auto raw_state = *state.derive_ptr<typename Types::State>();
+            auto raw_state = *state.derive_ptr<Types>();
             ptr->get_inference(raw_state, output);
             return Output{std::vector<double>{}, std::vector<double>{}, 0, 0};
         };
@@ -212,15 +213,15 @@ namespace W
         // virtual std::vector<double> row_strategy() = 0;
         // virtual std::vector<double> col_strategy() = 0;
         virtual void reset() = 0;
-        template <typename T>
-        std::shared_ptr<T> derive_ptr()
+        template <typename Types>
+        std::shared_ptr<typename Types::Search> derive_ptr()
         {
-            SearchWrapper<T> *self = dynamic_cast<SearchWrapper<T> *>(this);
+            SearchWrapper<Types> *self = dynamic_cast<SearchWrapper<Types> *>(this);
             return self->ptr;
         }
     };
 
-    template <typename Types>
+    template <IsSearchTypes Types>
     struct SearchWrapper : Search
     {
         std::shared_ptr<typename Types::Search> ptr;
@@ -238,16 +239,16 @@ namespace W
 
         void run(size_t iterations, State &state, Model &model)
         {
-            auto state_ptr = state.derive_ptr<typename Types::State>();
-            auto model_ptr = model.derive_ptr<typename Types::Model>();
+            auto state_ptr = state.derive_ptr<Types>();
+            auto model_ptr = model.derive_ptr<Types>();
             typename Types::PRNG device{};
             ptr->run(iterations, device, *state_ptr, *model_ptr, *root);
         }
 
         void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model)
         {
-            auto state_ptr = state.derive_ptr<typename Types::State>();
-            auto model_ptr = model.derive_ptr<typename Types::Model>();
+            auto state_ptr = state.derive_ptr<Types>();
+            auto model_ptr = model.derive_ptr<Types>();
             typename Types::PRNG device{};
             typename Types::MatrixNode root_temp;
             ptr->run(iterations, device, *state_ptr, *model_ptr, root_temp);

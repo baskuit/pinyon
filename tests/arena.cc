@@ -2,9 +2,9 @@
 
 using State = Arena<MonteCarloModel<RandomTree<>::T>::T>;
 using Model = MonteCarloModel<State::T>;
-using Algorithm = TreeBanditThreaded<Exp3<Model>>;
+using Algorithm = TreeBanditThreaded<Exp3<Model::T>::T>;
 
-W::StateWrapper<RandomTree<>> generator_function(typename State::T::Seed seed)
+W::StateWrapper<RandomTree<>::T> generator_function(typename State::T::Seed seed)
 {
     const size_t max_depth_bound = 5;
     const size_t max_actions = 5;
@@ -16,7 +16,7 @@ W::StateWrapper<RandomTree<>> generator_function(typename State::T::Seed seed)
     const size_t actions = device.random_int(max_actions) + 1;
     const size_t transitions = device.random_int(max_transitions) + 1;
 
-    return W::StateWrapper<RandomTree<>>{seed, depth_bound, actions, actions, transitions, Rational<>{0}};
+    return W::StateWrapper<RandomTree<>::T>{seed, depth_bound, actions, actions, transitions, Rational<>{0}};
 }
 
 int main()

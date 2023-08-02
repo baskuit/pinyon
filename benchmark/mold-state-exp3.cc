@@ -15,12 +15,12 @@ int main () {
     
     uint64_t seed = 0;
     prng device(seed);
-    MoldState state(10);
+    MoldState state(1);
     MonteCarlo model(device);
     Search session(.01);
-    Search::MatrixNode root;
-    const size_t iterations = 1000000;
-    session.run(iterations, device, state, model, root);
+    Search::T::MatrixNode root;
+    const size_t iterations = 3;
+    session.run_for_iterations(iterations, device, state, model, root);
 
     return 0;
 }

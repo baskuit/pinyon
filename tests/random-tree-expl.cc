@@ -22,13 +22,13 @@ int main()
 
     const double expl_threshold = .25;
 
-    using Model = MonteCarloModel<RandomTree<>>;
+    using Model = MonteCarloModel<RandomTree<>::T>;
     Model model(device);
-    W::ModelWrapper<Model> model_wrapper(model);
+    W::ModelWrapper<Model::T> model_wrapper(model);
 
-    W::SearchWrapper<TreeBandit<Exp3<Model>>> session_0{};
-    W::SearchWrapper<TreeBanditThreaded<Exp3<Model>>> session_1{};
-    W::SearchWrapper<TreeBanditThreadPool<Exp3<Model>>> session_2{};
+    W::SearchWrapper<TreeBandit<Exp3<Model::T>::T>::T> session_0{};
+    W::SearchWrapper<TreeBanditThreaded<Exp3<Model::T>::T>::T> session_1{};
+    W::SearchWrapper<TreeBanditThreadPool<Exp3<Model::T>::T>::T> session_2{};
     session_1.ptr->threads = 4;
     session_2.ptr->threads = 4;
 
@@ -40,10 +40,10 @@ int main()
     {
         state.get_actions();
 
-        TraversedState<Model> traversed_state(state, model);
+        TraversedState<Model::T> traversed_state(state, model);
         Matrix<PairReal<double>> payoff_matrix{traversed_state.current_node->stats.nash_payoff_matrix};
 
-        W::StateWrapper<RandomTree<>> state_wrapper{state};
+        W::StateWrapper<RandomTree<>::T> state_wrapper{state};
 
         for (W::Search *session_ptr : sessions)
         {

@@ -6,32 +6,34 @@ Computes the savings of serialized alpha beta
 
 */
 
-template <IsDoubleOracleModel Model>
+template <IsDoubleOracleModelTypes Types>
 struct Solve
 {
 
-    using State = typename Model::Types::State;
+    using State = typename Types::State;
+    using Model = typename Types::Model;
+    using Full = FullTraversal<Types>;
+    using AB = AlphaBeta<Types>;
+    using ABO = AlphaBetaOld<Types>;
 
-    MatrixNode<FullTraversal<Model>> root_full{};
-    MatrixNode<AlphaBeta<Model>> root_ab{};
-    MatrixNode<AlphaBetaOld<Model>> root_ab_old{};
-    std::pair<typename Model::Types::Real, typename Model::Types::Real> ab_value;
+    typename Full::MatrixNode root_full{};
+    typename AB::MatrixNode root_ab{};
+    typename ABO::MatrixNode root_ab_old{};
+    std::pair<typename Types::Real, typename Types::Real> ab_value;
 
-    Solve(State &state, Model &model)
+    Solve(typename Types::State &state, Model &model)
     {
-
         prng device{0};
-
-        FullTraversal<Model> session_full{};
+        Full session_full{};
         auto state_copy = state;
         // session_full.run(state_copy, model, &root_full);
 
-        AlphaBeta<Model> session_ab{Rational<>{0}, Rational<>{1}};
-        session_ab.teacher = &root_full;
+        AB session_ab{Rational<>{0}, Rational<>{1}};
+        // session_ab.teacher = &root_full;
         state_copy = state;
         ab_value = session_ab.run(device, state_copy, model, root_ab);
 
-        AlphaBetaOld<Model> session_ab_old{};
+        ABO session_ab_old{};
         session_ab_old.run(state, model, &root_ab_old);
 
     }
@@ -52,13 +54,15 @@ int main()
     int tries = 0;
 
 
+    using Types = MonteCarloModel<RandomTree<RandomTreeRationalTypes>::T>::T;
+
 
     size_t counter = 0;
     for (auto wrapped_state : generator) {
         auto state = *wrapped_state.ptr;
 
-        MonteCarloModel<RandomTree<RandomTreeRationalTypes>> model{0};
-        Solve<MonteCarloModel<RandomTree<RandomTreeRationalTypes>>> solve{state, model};
+        Types::Model model{0};
+        Solve<Types> solve{state, model};
         // std::cout << state.device.get_seed() << std::endl;
 
         // auto a = static_cast<mpq_class>(solve.ab_value.first).get_d();

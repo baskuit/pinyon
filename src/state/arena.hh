@@ -6,7 +6,7 @@ template <IsValueModelTypes Types>
 class Arena : public PerfectInfoState<Types>
 {
 public:
-    struct T {
+    struct T : Types {
         using State = Arena;
     };
 
@@ -22,7 +22,7 @@ public:
     template <typename... Containers>
     Arena(
         const size_t search_iterations,
-        W::StateWrapper<typename Types::State> (*init_state_generator)(typename Types::Seed),
+        W::StateWrapper<typename Types::State::T> (*init_state_generator)(typename Types::Seed),
         const typename Types::Model &model,
         Containers &...containers) : search_iterations{search_iterations}, init_state_generator{init_state_generator}, model{model}
     {

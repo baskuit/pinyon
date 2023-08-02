@@ -26,7 +26,7 @@ int main()
                                                              std::make_tuple(0, 1, 2, 2, 1, 0));
 
     auto models = cartesian_product_per_param
-    <RandomTree<>>
+    <RandomTree<>::T>
         (template_list<MonteCarloModel>{},
         std::tuple<int>(0));
     // auto x = std::make_from_tuple<MonteCarloModel<RandomTree<>>>(std::tuple<int>(0));

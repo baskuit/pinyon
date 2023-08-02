@@ -3,16 +3,16 @@
 int main()
 {
 
-    using Model = MonteCarloModel<MoldState<2>>;
+    using Model = MonteCarloModel<MoldState<2>::T>;
 
-    auto session0 = TreeBandit<Exp3<Model>>{};
-    auto session1 = TreeBanditThreaded<Exp3<Model>>{};
-    auto session2 = TreeBanditThreadPool<Exp3<Model>>{};
+    auto session0 = TreeBandit<Exp3<Model::T>::T>{};
+    auto session1 = TreeBanditThreaded<Exp3<Model::T>::T>{};
+    auto session2 = TreeBanditThreadPool<Exp3<Model::T>::T>{};
 
     std::tuple<
-        TreeBandit<Exp3<Model>>,
-        TreeBanditThreaded<Exp3<Model>>,
-        TreeBanditThreadPool<Exp3<Model>>>
+        TreeBandit<Exp3<Model::T>::T>,
+        TreeBanditThreaded<Exp3<Model::T>::T>,
+        TreeBanditThreadPool<Exp3<Model::T>::T>>
         tuple{session0, session1, session2};
 
     std::get<1>(tuple).threads = 8;
@@ -20,7 +20,7 @@ int main()
 
     auto lambda = [](auto &session)
     {
-        using MatrixNode = typename std::remove_reference<decltype(session)>::type::Types::MatrixNode; // Access the nested A class
+        using MatrixNode = typename std::remove_reference<decltype(session)>::type::T::MatrixNode; // Access the nested A class
         MatrixNode root{};
 
         MoldState<2> state{50};

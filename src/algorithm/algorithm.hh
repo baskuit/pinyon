@@ -47,7 +47,7 @@ concept IsBanditAlgorithmTypes =
     IsValueModelTypes<Types>;
 
 template <typename Types>
-concept IsMultithreadedBandit =
+concept IsMultithreadedBanditTypes =
     requires(
         typename Types::BanditAlgorithm &bandit,
         typename Types::PRNG &device,
@@ -68,7 +68,7 @@ concept IsMultithreadedBandit =
     IsBanditAlgorithmTypes<Types>;
 
 template <typename Types>
-concept IsOffPolicyBandit =
+concept IsOffPolicyBanditTypes =
     requires(
         typename Types::BanditAlgorithm &bandit,
         typename Types::PRNG &device,

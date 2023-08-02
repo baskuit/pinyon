@@ -16,7 +16,7 @@ concept IsPerfectInfoState = requires(
         State::IS_CONSTANT_SUM
     } -> std::same_as<bool>;
     {
-        typename State::Types::Real {}
+        typename State::Types::Real{}
     } -> std::same_as<typename State::Types::Real>;
 
     // assert the existence of dependent type
@@ -24,16 +24,18 @@ concept IsPerfectInfoState = requires(
     typename State::Types::ExistingType;
 };
 
-    template <IsPerfectInfoState State>
-    void test () {
-        State state;
-        state.terminal; // OK, shows bool type
-        state.apply_actions(0, 0); //OK, shows `typename State::Types::Action` param type
-        state.IS_CONSTANT_SUM; // Ok, shows static bool type
-        // State:: will autocomplete all the above as well
-        State::IS_CONSTANT_SUM;
+template <IsPerfectInfoState State>
+void test()
+{
+    State state;
+    state.terminal;            // OK, shows bool type
+    state.apply_actions(0, 0); // OK, shows `typename State::Types::Action` param type
+    state.IS_CONSTANT_SUM;     // Ok, shows static bool type
+    // State:: will autocomplete all the above as well
+    State::IS_CONSTANT_SUM;
 
-        
-        // Not OK, does not autocomplete Types nor Types::ExistingType
-        //typename State::
-    }
+    // Not OK, does not autocomplete Types nor Types::ExistingType
+    // typename State::
+}
+
+int main() {}
