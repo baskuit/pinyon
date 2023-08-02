@@ -13,6 +13,7 @@ template <IsTypeList Types = RandomTreeFloatTypes>
 class RandomTree : public PerfectInfoState<Types>
 {
 public:
+    using State = RandomTree;
     struct T : Types {
         using State = RandomTree;
     };

@@ -18,18 +18,22 @@ template <IsValueModelTypes Types>
 class TraversedState : PerfectInfoState<Types>
 {
 public:
+    using MatrixNode = typename DefaultNodes<FullTraversal<Types>>::MatrixNode;
+    using ChanceNode = typename DefaultNodes<FullTraversal<Types>>::ChanceNode;
+
     struct T : Types {
         using State = TraversedState;
     };
-    std::shared_ptr<MatrixNode<FullTraversal<Types>>> tree;
-    MatrixNode<FullTraversal<Types>> *current_node;
+
+    std::shared_ptr<MatrixNode> tree;
+    MatrixNode *current_node;
 
     TraversedState(
         Types::State &state,
         Types::Model &model,
         int max_depth = -1)
     {
-        this->tree = std::make_shared<MatrixNode<FullTraversal<Types>>>();
+        this->tree = std::make_shared<MatrixNode>();
         this->current_node = &*tree;
         FullTraversal<Types> session{max_depth};
         session.run(state, model, current_node);
@@ -60,7 +64,7 @@ public:
     {
         int row_idx = std::find(this->actions.row_actions.begin(), this->actions.row_actions.end(), row_action) - this->actions.row_actions.begin();
         int col_idx = std::find(this->actions.col_actions.begin(), this->actions.col_actions.end(), col_action) - this->actions.col_actions.begin();
-        ChanceNode<FullTraversal<Types>> *chance_node = current_node->access(row_idx, col_idx);
+        ChanceNode *chance_node = current_node->access(row_idx, col_idx);
         chance_actions = chance_node->stats.chance_actions;
     }
 
@@ -70,7 +74,7 @@ public:
     {
         ActionIndex row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
         ActionIndex col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
-        ChanceNode<FullTraversal<Types>> *chance_node = current_node->access(row_idx, col_idx);
+        ChanceNode *chance_node = current_node->access(row_idx, col_idx);
         const size_t chance_idx = this->seed % chance_node->stats.chance_actions.size();
         typename Types::Observation chance_action = chance_node->stats.chance_actions[chance_idx];
         current_node = chance_node->access(chance_action, 0);

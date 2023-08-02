@@ -10,34 +10,35 @@
 #include <chrono>
 
 template <
-    IsMultithreadedBandit BanditAlgorithm,
-    class NodePair = DefaultNodes,
+    IsMultithreadedBandit Types,
+    template <typename...> typename NodePair = DefaultNodes,
     bool return_if_expand = true>
-class TreeBanditThreaded : public BanditAlgorithm
+class TreeBanditThreaded : public Types
 {
 public:
-    struct MatrixStats;
-    struct ChanceStats;
-    struct Types : BanditAlgorithm::Types
+    struct T;
+    using MatrixNode = NodePair<TreeBanditThreaded::T>::MatrixNode;
+    using ChanceNode = NodePair<TreeBanditThreaded::T>::ChanceNode;
+    struct MatrixStats : Types::MatrixStats
     {
+        typename Types::Mutex mtx{};
+    };
+    struct ChanceStats : Types::ChanceStats
+    {
+        typename Types::Mutex mtx{};
+    };
+    struct T : Types
+    {
+        using Search = TreeBanditThreaded;
         using MatrixStats = TreeBanditThreaded::MatrixStats;
         using ChanceStats = TreeBanditThreaded::ChanceStats;
-        using MatrixNode = typename NodePair::template MNode<TreeBanditThreaded>;
-        using ChanceNode = typename NodePair::template CNode<TreeBanditThreaded>;
+        using MatrixNode = TreeBanditThreaded::MatrixNode;
+        using ChanceNode = TreeBanditThreaded::ChanceNode;
     };
 
-    struct MatrixStats : BanditAlgorithm::MatrixStats
-    {
-        typename Types::Mutex mtx{};
-    };
-    struct ChanceStats : BanditAlgorithm::ChanceStats
-    {
-        typename Types::Mutex mtx{};
-    };
+    using Types::BanditAlgorithm::Types::BanditAlgorithm;
 
-    using BanditAlgorithm::BanditAlgorithm;
-
-    TreeBanditThreaded(BanditAlgorithm &base) : BanditAlgorithm{base} {}
+    TreeBanditThreaded(Types &base) : Types{base} {}
 
     size_t threads = 1;
 
@@ -208,36 +209,37 @@ private:
 //  TreeBanditThreadPool
 
 template <
-    IsMultithreadedBandit BanditAlgorithm,
-    class NodePair = DefaultNodes,
+    IsMultithreadedBandit Types,
+    template <typename...> typename NodePair = DefaultNodes,
     size_t pool_size = 128,
     bool return_if_expand = true>
-class TreeBanditThreadPool : public BanditAlgorithm
+class TreeBanditThreadPool : public Types
 {
 public:
-    struct MatrixStats;
-    struct ChanceStats;
-    struct Types : BanditAlgorithm::Types
-    {
-        using MatrixStats = TreeBanditThreadPool::MatrixStats;
-        using ChanceStats = TreeBanditThreadPool::ChanceStats;
-        using MatrixNode = typename NodePair::template MNode<TreeBanditThreadPool>;
-        using ChanceNode = typename NodePair::template CNode<TreeBanditThreadPool>;
-    };
-
-    struct MatrixStats : BanditAlgorithm::MatrixStats
+    struct T;
+    using MatrixNode = NodePair<TreeBanditThreadPool::T>::MatrixNode;
+    using ChanceNode = NodePair<TreeBanditThreadPool::T>::ChanceNode;
+    struct MatrixStats : Types::MatrixStats
     {
         int mutex_index = 0;
     };
-    struct ChanceStats : BanditAlgorithm::ChanceStats
+    struct ChanceStats : Types::ChanceStats
     {
     };
+    struct T : Types
+    {
+        using Search = TreeBanditThreadPool;
+        using MatrixStats = TreeBanditThreadPool::MatrixStats;
+        using ChanceStats = TreeBanditThreadPool::ChanceStats;
+        using MatrixNode = TreeBanditThreadPool::MatrixNode;
+        using ChanceNode = TreeBanditThreadPool::ChanceNode;
+    };
 
-    using BanditAlgorithm::BanditAlgorithm;
+    using Types::BanditAlgorithm::Types::BanditAlgorithm;
 
-    TreeBanditThreadPool(const BanditAlgorithm &base) : BanditAlgorithm{base} {}
+    TreeBanditThreadPool(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
 
-    TreeBanditThreadPool(const TreeBanditThreadPool &other) : BanditAlgorithm{other}, threads{threads} {}
+    TreeBanditThreadPool(const TreeBanditThreadPool &other) : Types::BanditAlgorithm{other}, threads{threads} {}
     // we want this class to be copyable, but atomics are not copyable
     // so we define a new copy constr that doesnt attempt to copy it.
 

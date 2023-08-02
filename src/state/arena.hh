@@ -6,10 +6,13 @@ template <IsValueModelTypes Types>
 class Arena : public PerfectInfoState<Types>
 {
 public:
+    struct T {
+        using State = Arena;
+    };
 
     size_t search_iterations;
-    W::StateWrapper<typename Types::State> (*init_state_generator)(Types::Seed){nullptr};
-    W::ModelWrapper<typename Types::Model> model{device};
+    W::StateWrapper<typename Types::State::T> (*init_state_generator)(Types::Seed){nullptr};
+    W::ModelWrapper<typename Types::Model::T> model{device};
 
     typename Types::Seed state_seed{};
 

@@ -8,7 +8,7 @@
 #include <concepts>
 #include <assert.h>
 
-template <IsValueModelTypes Types, typename PairNodes = DefaultNodes>
+template <IsValueModelTypes Types, template <typename...> typename NodePair = DefaultNodes>
 class AlphaBeta
 {
 public:
@@ -31,8 +31,9 @@ public:
     struct ChanceStats
     {
     };
-    using MatrixNode = typename DefaultNodes::template MNode<AlphaBeta>;
-    using ChanceNode = typename DefaultNodes::template CNode<AlphaBeta>;
+    struct T;
+    using MatrixNode = NodePair<AlphaBeta::T>::MatrixNode;
+    using ChanceNode = NodePair<AlphaBeta::T>::ChanceNode;
     struct T : Types {
         using Search = AlphaBeta;
         using MatrixStats = AlphaBeta::MatrixStats;
@@ -54,7 +55,7 @@ public:
     }
 
 
-    typename PairNodes::template MNode<FullTraversal<Types>> *teacher;
+    NodePair<FullTraversal<Types>>::MatrixNode *teacher;
 
     const typename Types::Real min_val{Rational<>{0}}; // don't need to use the Game values if you happen to know that State's
     const typename Types::Real max_val{Rational<>{1}};

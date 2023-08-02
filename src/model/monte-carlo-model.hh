@@ -10,6 +10,7 @@ public:
     struct ModelOutput
     {
         typename Types::Value value;
+        typename Types::VectorReal row_policy, col_policy;
     };
     using ModelBatchInput = std::vector<ModelInput>;
     using ModelBatchOutput = std::vector<ModelOutput>;
@@ -25,7 +26,9 @@ public:
 
     MonteCarloModel() {}
 
-    MonteCarloModel(Types::PRNG &device) : device(device) {}
+    MonteCarloModel(const Types::PRNG &device) : device{device} {}
+
+    MonteCarloModel(Types::Seed seed) : device{seed} {}
 
     void get_input(
         const Types::State &state,

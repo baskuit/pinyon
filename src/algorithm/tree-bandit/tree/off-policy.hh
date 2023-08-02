@@ -11,25 +11,28 @@ TODO still no chance node updates (does any algo actually NEED this?)
 */
 
 template <
-    class BanditAlgorithm,
-    class NodePair=DefaultNodes,
+    IsBanditAlgorithmTypes Types,
+    template <typename...> typename NodePair = DefaultNodes,
     bool return_if_expand = true>
-class OffPolicy : public BanditAlgorithm
+class OffPolicy : public Types
 {
 public:
-    struct Types : BanditAlgorithm::Types
-    {
-        using MatrixNode = typename NodePair::template MNode<OffPolicy>;
-        using ChanceNode = typename NodePair::template CNode<OffPolicy>;
+    struct T;
+    using MatrixNode = NodePair<OffPolicy::T>::MatrixNode;
+    using ChanceNode = NodePair<OffPolicy::T>::ChanceNode;
+    struct T : Types {
+        using MatrixNode = OffPolicy::MatrixNode;
+        using ChanceNode = OffPolicy::ChanceNode;
+
     };
 
     struct Frame
     {
         Types::Outcome outcome;
-        MatrixNode<OffPolicy> *matrix_node;
+        MatrixNode *matrix_node;
         Frame(
             typename Types::Real outcome,
-            MatrixNode<OffPolicy> *matrix_node) : outcome{outcome}, matrix_node{matrix_node} {}
+            MatrixNode *matrix_node) : outcome{outcome}, matrix_node{matrix_node} {}
         Frame() {}
     };
     using Trajectory = std::vector<Frame>;
@@ -40,9 +43,8 @@ public:
         typename Types::PRNG &device,
         std::vector<typename Types::State> &states,
         typename Types::Model &model,
-        std::vector<MatrixNode<OffPolicy> *> &matrix_nodes)
+        std::vector<MatrixNode *> &matrix_nodes)
     {
-
         // Perform batched inference on all trees
         // grab `actor` many samples, inference, update
         // do this `leaner` many times
@@ -76,7 +78,7 @@ public:
         typename Types::PRNG &device,
         std::vector<typename Types::State> &states,
         typename Types::Model &model,
-        std::vector<MatrixNode<OffPolicy> *> &matrix_nodes)
+        std::vector<MatrixNode *> &matrix_nodes)
     {
 
         // One inference step
@@ -135,7 +137,7 @@ protected:
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode<OffPolicy> *matrix_node)
+        MatrixNode *matrix_node)
     {
         if (!matrix_node->is_terminal())
         {
@@ -150,8 +152,8 @@ protected:
 
                 matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
-                ChanceNode<OffPolicy> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<OffPolicy> *matrix_node_next = chance_node->access(state.obs);
+                ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                MatrixNode *matrix_node_next = chance_node->access(state.obs);
 
                 get_trajectory(trajectory, device, state, model, matrix_node_next);
                 return;

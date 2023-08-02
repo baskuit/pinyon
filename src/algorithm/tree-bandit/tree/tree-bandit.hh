@@ -8,13 +8,14 @@
 
 template <
     IsBanditAlgorithmTypes Types,
-    class NodePair = DefaultNodes,
+    template <typename...> typename NodePair = DefaultNodes,
     bool return_if_expand = true>
 class TreeBandit : public Types::BanditAlgorithm
 {
 public:
-    using MatrixNode = typename NodePair::template MNode<TreeBandit>;
-    using ChanceNode = typename NodePair::template CNode<TreeBandit>;
+    struct T;
+    using MatrixNode = NodePair<TreeBandit::T>::MatrixNode;
+    using ChanceNode = NodePair<TreeBandit::T>::ChanceNode;
     struct T : Types {
         using Search = TreeBandit;
         using MatrixNode = TreeBandit::MatrixNode;
@@ -30,7 +31,7 @@ public:
         Types::PRNG &device,
         const Types::State &state,
         Types::Model &model,
-        Types::MatrixNode &matrix_node)
+        MatrixNode &matrix_node)
     {
         auto start = std::chrono::high_resolution_clock::now();
         auto end = std::chrono::high_resolution_clock::now();
@@ -53,7 +54,7 @@ public:
         Types::PRNG &device,
         const Types::State &state,
         Types::Model &model,
-        Types::MatrixNode &matrix_node)
+        MatrixNode &matrix_node)
     {
         auto start = std::chrono::high_resolution_clock::now();
         typename Types::ModelOutput inference;
@@ -69,11 +70,11 @@ public:
     }
 
 protected:
-    typename Types::MatrixNode *run_iteration(
+    MatrixNode *run_iteration(
         Types::PRNG &device,
         Types::State &state,
         Types::Model &model,
-        Types::MatrixNode *matrix_node,
+        MatrixNode *matrix_node,
         Types::ModelOutput &inference)
     {
         if (!matrix_node->is_terminal())
@@ -98,10 +99,10 @@ protected:
 
             matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
-            typename Types::ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-            typename Types::MatrixNode *matrix_node_next = chance_node->access(state.obs);
+            ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+            MatrixNode *matrix_node_next = chance_node->access(state.obs);
 
-            typename Types::MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
+            MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
 
             outcome.value = inference.value;
             this->update_matrix_stats(matrix_node->stats, outcome);
@@ -110,7 +111,7 @@ protected:
         }
         else
         {
-            if constexpr (Types::MatrixNode::STORES_VALUE)
+            if constexpr (MatrixNode::STORES_VALUE)
             {
                 matrix_node->get_value(inference.value);
             }
@@ -122,11 +123,11 @@ protected:
         }
     }
 
-    typename Types::MatrixNode *run_iteration_average(
+    MatrixNode *run_iteration_average(
         Types::PRNG &device,
         Types::State &state,
         Types::Model &model,
-        Types::MatrixNode *matrix_node,
+        MatrixNode *matrix_node,
         Types::ModelOutput &inference)
     {
         if (!matrix_node->is_terminal())
@@ -149,10 +150,10 @@ protected:
 
             matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
-            typename Types::ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-            typename Types::MatrixNode *matrix_node_next = chance_node->access(state.obs);
+            ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+            MatrixNode *matrix_node_next = chance_node->access(state.obs);
 
-            typename Types::MatrixNode *matrix_node_leaf = run_iteration_average(device, state, model, matrix_node_next, inference);
+            MatrixNode *matrix_node_leaf = run_iteration_average(device, state, model, matrix_node_next, inference);
 
             this->get_empirical_value(matrix_node_next->stats, outcome.value);
             // TODO use chance node? Breaks if matrix_node_next is terminal?
@@ -162,7 +163,7 @@ protected:
         }
         else
         {
-            if constexpr (Types::MatrixNode::STORES_VALUE)
+            if constexpr (MatrixNode::STORES_VALUE)
             {
                 matrix_node->get_value(inference.value);
             }

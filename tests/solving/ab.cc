@@ -26,16 +26,17 @@ struct Solve
 
     using State = RandomTree<RandomTreeRationalTypes>;
     using StateFloat = RandomTree<>;
-    using Model = MonteCarloModel<State>;
-    using ModelFloat = MonteCarloModel<StateFloat>;
+    using Model = MonteCarloModel<State::T>;
+    using ModelFloat = MonteCarloModel<StateFloat::T>;
 
-    MatrixNode<FullTraversal<Model>> root_full{};
-    MatrixNode<FullTraversal<ModelFloat>> root_full_f{};
 
-    MatrixNode<AlphaBeta<Model>> root_ab{};
-    std::pair<typename Model::Types::Real, typename Model::Types::Real> ab_value;
-    MatrixNode<AlphaBeta<ModelFloat>> root_ab_f{};
-    std::pair<typename ModelFloat::Types::Real, typename ModelFloat::Types::Real> ab_f_value;
+    typename FullTraversal<Model::T>::MatrixNode root_full{};
+    typename FullTraversal<ModelFloat::T>::MatrixNode root_full_f{};
+
+    typename AlphaBeta<Model::T>::MatrixNode root_ab{};
+    std::pair<typename Model::T::Real, typename Model::T::Real> ab_value;
+    typename AlphaBeta<ModelFloat::T>::MatrixNode root_ab_f{};
+    std::pair<typename ModelFloat::T::Real, typename ModelFloat::T::Real> ab_f_value;
 
     using time_t = decltype(std::chrono::high_resolution_clock::now());
     time_t start, end;
@@ -53,10 +54,10 @@ struct Solve
         Model model{device.uniform_64()};
         ModelFloat model_f{device.uniform_64()};
 
-        FullTraversal<Model> session_full{};
-        FullTraversal<ModelFloat> session_full_f{};
-        AlphaBeta<Model> session_ab{Rational<>{0}, Rational<>{1}};
-        AlphaBeta<ModelFloat> session_ab_f{Rational<>{0}, Rational<>{1}};
+        FullTraversal<Model::T> session_full{};
+        FullTraversal<ModelFloat::T> session_full_f{};
+        AlphaBeta<Model::T> session_ab{Rational<>{0}, Rational<>{1}};
+        AlphaBeta<ModelFloat::T> session_ab_f{Rational<>{0}, Rational<>{1}};
 
         start = std::chrono::high_resolution_clock::now();
         session_full.run(state, model, &root_full);
@@ -67,19 +68,6 @@ struct Solve
         session_full_f.run(state_f, model_f, &root_full_f);
         end = std::chrono::high_resolution_clock::now();
         time_full_f = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-
-        // std::cout << "full matrix:" << std::endl;
-        // root_full.stats.nash_payoff_matrix.print();
-        // std::cout << "solutions:" << std::endl;
-        // math::print(root_full.stats.row_solution);
-        // math::print(root_full.stats.col_solution);
-        // std::cout << "full float matrix:" << std::endl;
-        // root_full_f.stats.nash_payoff_matrix.print();
-        // std::cout << "solutions:" << std::endl;
-        // math::print(root_full_f.stats.row_solution);
-        // math::print(root_full_f.stats.col_solution);
-        // std::cout << "ab matrix:" << std::endl;
-        // root_ab.stats.data_matrix.print();
 
         start = std::chrono::high_resolution_clock::now();
         ab_value = session_ab.run(device, state, model, root_ab);

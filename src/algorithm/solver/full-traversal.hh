@@ -15,7 +15,7 @@
     which is a way of turning any StateChance into a SolvedState
 */
 
-template <IsValueModelTypes Types, typename PairNodes = DefaultNodes>
+template <IsValueModelTypes Types, template <typename...> typename NodePair = DefaultNodes>
 class FullTraversal
 {
 public:
@@ -32,13 +32,16 @@ public:
     struct ChanceStats
     {
     };
+    struct T;
+    using MatrixNode = NodePair<FullTraversal::T>::MatrixNode;
+    using ChanceNode = NodePair<FullTraversal::T>::ChanceNode;
     struct T : Types
     {
         using Search = FullTraversal;
         using MatrixStats = FullTraversal::MatrixStats;
         using ChanceStats = FullTraversal::ChanceStats;
-        using MatrixNode = typename PairNodes::template MNode<FullTraversal>;
-        using ChanceNode = typename PairNodes::template CNode<FullTraversal>;
+        using MatrixNode = FullTraversal::MatrixNode;
+        using ChanceNode = FullTraversal::ChanceNode;
     };
 
     const int max_depth = -1;
@@ -49,7 +52,7 @@ public:
     void run(
         Types::State &state,
         Types::Model &model,
-        Types::MatrixNode *matrix_node)
+        MatrixNode *matrix_node)
     {
         // expand node
         state.get_actions();
@@ -89,12 +92,12 @@ public:
                 std::vector<typename Types::Observation> chance_actions;
                 state.get_chance_actions(chance_actions, row_action, col_action);
 
-                typename Types::ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
+                ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
                 for (auto chance_action : chance_actions)
                 {
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, chance_action);
-                    typename Types::MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
+                    MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                     matrix_node_next->stats.depth = stats.depth + 1;
 
                     run(state_copy, model, matrix_node_next);

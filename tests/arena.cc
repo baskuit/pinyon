@@ -1,10 +1,10 @@
 #include <surskit.hh>
 
-using State = Arena<RandomTree<>, MonteCarloModel<RandomTree<>>>;
-using Model = MonteCarloModel<State>;
+using State = Arena<MonteCarloModel<RandomTree<>::T>::T>;
+using Model = MonteCarloModel<State::T>;
 using Algorithm = TreeBanditThreaded<Exp3<Model>>;
 
-W::StateWrapper<RandomTree<>> generator_function(typename State::Types::Seed seed)
+W::StateWrapper<RandomTree<>> generator_function(typename State::T::Seed seed)
 {
     const size_t max_depth_bound = 5;
     const size_t max_actions = 5;

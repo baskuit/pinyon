@@ -44,17 +44,17 @@ namespace W
         }
     };
 
-    template <typename _State>
+    template <typename Types>
     struct StateWrapper : State
     {
-        std::shared_ptr<_State> ptr;
+        std::shared_ptr<typename Types::State> ptr;
 
-        StateWrapper(const _State &state) : ptr{std::make_shared<_State>(state)} {}
+        StateWrapper(const typename Types::State &state) : ptr{std::make_shared<typename Types::State>(state)} {}
 
         template <typename... Args>
-        StateWrapper(Args... args) : ptr(std::make_shared<_State>(args...)) {}
+        StateWrapper(Args... args) : ptr(std::make_shared<typename Types::State>(args...)) {}
 
-        operator _State()
+        operator typename Types::State()
         {
             return *ptr;
         }
@@ -92,7 +92,8 @@ namespace W
 
         bool is_constant_sum()
         {
-            return _State::Types::Value::IS_CONSTANT_SUM;
+            // return Types::Value::IS_CONSTANT_SUM;
+            return false;
         };
         PairReal<double> payoff()
         {
@@ -114,7 +115,7 @@ namespace W
         };
         bool is_solved()
         {
-            return std::derived_from<_State, SolvedState<typename _State::Types>>;
+            return false;
         };
         std::vector<double> row_strategy()
         {
@@ -126,21 +127,21 @@ namespace W
         };
         void get_payoff_matrix(Matrix<PairReal<double>> &payoff_matrix)
         {
-            if constexpr (std::derived_from<_State, SolvedState<typename _State::Types>>)
-            {
-                typename _State::Types::MatrixValue matrix;
-                ptr->get_payoff_matrix(matrix);
-                payoff_matrix = matrix;
-                // payoff_matrix.rows = matrix.rows;
-                // payoff_matrix.cols = matrix.cols;
-                // size_t entry_idx = 0;
-                // for (auto value : matrix)
-                // {
-                //     payoff_matrix[entry_idx].row_value = static_cast<double>(value.get_row_payoff());
-                //     payoff_matrix[entry_idx].col_value = static_cast<double>(value.get_col_payoff());
-                //     ++entry_idx;
-                // }
-            }
+            // if constexpr (std::derived_from<typename Types::State, SolvedState<typename Types>>)
+            // {
+            //     typename Types::MatrixValue matrix;
+            //     ptr->get_payoff_matrix(matrix);
+            //     payoff_matrix = matrix;
+            //     // payoff_matrix.rows = matrix.rows;
+            //     // payoff_matrix.cols = matrix.cols;
+            //     // size_t entry_idx = 0;
+            //     // for (auto value : matrix)
+            //     // {
+            //     //     payoff_matrix[entry_idx].row_value = static_cast<double>(value.get_row_payoff());
+            //     //     payoff_matrix[entry_idx].col_value = static_cast<double>(value.get_col_payoff());
+            //     //     ++entry_idx;
+            //     // }
+            // }
         }
     };
 
@@ -164,25 +165,25 @@ namespace W
         }
     };
 
-    template <typename _Model>
+    template <typename Types>
     struct ModelWrapper : Model
     {
-        std::shared_ptr<_Model> ptr;
-        typename _Model::ModelOutput output{};
-        ModelWrapper(const _Model &model) : ptr{std::make_shared<_Model>(model)} {}
-        ModelWrapper(const _Model &&model) : ptr{std::make_shared<_Model>(model)} {}
+        std::shared_ptr<typename Types::Model> ptr;
+        typename Types::Model::ModelOutput output{};
+        ModelWrapper(const typename Types::Model &model) : ptr{std::make_shared<typename Types::Model>(model)} {}
+        ModelWrapper(const typename Types::Model &&model) : ptr{std::make_shared<typename Types::Model>(model)} {}
         ModelWrapper(const ModelWrapper &model_wrapper) : ptr{model_wrapper.ptr} {}
         template <typename... Args>
-        ModelWrapper(Args... args) : ptr(std::make_shared<_Model>(args...)) {}
+        ModelWrapper(Args... args) : ptr(std::make_shared<typename Types::Model>(args...)) {}
 
-        operator _Model()
+        operator typename Types::Model()
         {
             return *ptr;
         }
 
         Output get_inference(State &state)
         {
-            auto raw_state = *state.derive_ptr<typename _Model::Types::State>();
+            auto raw_state = *state.derive_ptr<typename Types::State>();
             ptr->get_inference(raw_state, output);
             return Output{std::vector<double>{}, std::vector<double>{}, 0, 0};
         };
@@ -219,16 +220,16 @@ namespace W
         }
     };
 
-    template <typename _Algorithm>
+    template <typename Types>
     struct SearchWrapper : Search
     {
-        std::shared_ptr<_Algorithm> ptr;
-        std::shared_ptr<MatrixNode<_Algorithm>> root;
+        std::shared_ptr<typename Types::Search> ptr;
+        std::shared_ptr<typename Types::MatrixNode> root;
 
-        SearchWrapper(const _Algorithm &session) : ptr{std::make_shared<_Algorithm>(session)}, root{std::make_shared<MatrixNode<_Algorithm>>()} {}
+        SearchWrapper(const typename Types::Search &session) : ptr{std::make_shared<typename Types::Search>(session)}, root{std::make_shared<typename Types::MatrixNode>()} {}
 
         template <typename... Args>
-        SearchWrapper(Args... args) : ptr(std::make_shared<_Algorithm>(args...)), root{std::make_shared<MatrixNode<_Algorithm>>()} {}
+        SearchWrapper(Args... args) : ptr(std::make_shared<typename Types::Search>(args...)), root{std::make_shared<typename Types::MatrixNode>()} {}
 
         Search *clone()
         {
@@ -237,23 +238,23 @@ namespace W
 
         void run(size_t iterations, State &state, Model &model)
         {
-            auto state_ptr = state.derive_ptr<typename _Algorithm::Types::State>();
-            auto model_ptr = model.derive_ptr<typename _Algorithm::Types::Model>();
-            typename _Algorithm::Types::PRNG device{};
+            auto state_ptr = state.derive_ptr<typename Types::State>();
+            auto model_ptr = model.derive_ptr<typename Types::Model>();
+            typename Types::PRNG device{};
             ptr->run(iterations, device, *state_ptr, *model_ptr, *root);
         }
 
         void run_and_get_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy, size_t iterations, State &state, Model &model)
         {
-            auto state_ptr = state.derive_ptr<typename _Algorithm::Types::State>();
-            auto model_ptr = model.derive_ptr<typename _Algorithm::Types::Model>();
-            typename _Algorithm::Types::PRNG device{};
-            MatrixNode<_Algorithm> root_temp;
+            auto state_ptr = state.derive_ptr<typename Types::State>();
+            auto model_ptr = model.derive_ptr<typename Types::Model>();
+            typename Types::PRNG device{};
+            typename Types::MatrixNode root_temp;
             ptr->run(iterations, device, *state_ptr, *model_ptr, root_temp);
 
             row_strategy.clear();
             col_strategy.clear();
-            typename _Algorithm::Types::VectorReal r, c;
+            typename Types::VectorReal r, c;
             ptr->get_empirical_strategies(root_temp.stats, r, c);
             for (int i = 0; i < r.size(); ++i)
             {
@@ -267,14 +268,14 @@ namespace W
 
         void reset()
         {
-            root = std::make_shared<MatrixNode<_Algorithm>>();
+            root = std::make_shared<typename Types::MatrixNode>();
         }
 
         void get_empirical_strategies(std::vector<double> &row_strategy, std::vector<double> &col_strategy)
         {
             row_strategy.clear();
             col_strategy.clear();
-            typename _Algorithm::Types::VectorReal r, c;
+            typename Types::VectorReal r, c;
             ptr->get_empirical_strategies(root->stats, r, c);
             for (int i = 0; i < r.size(); ++i)
             {
@@ -292,7 +293,7 @@ namespace W
         };
         double exploitability(State &state)
         {
-            typename _Algorithm::Types::VectorReal r, c;
+            typename Types::VectorReal r, c;
             ptr->get_empirical_strategies(root->stats, r, c);
             Matrix<PairReal<double>> matrix;
             state.get_payoff_matrix(matrix);
@@ -302,7 +303,7 @@ namespace W
 
         double exploitability(Matrix<PairReal<double>> &matrix)
         {
-            typename _Algorithm::Types::VectorReal r, c;
+            typename Types::VectorReal r, c;
             ptr->get_empirical_strategies(root->stats, r, c);
             double expl = static_cast<double>(math::exploitability(matrix, r, c));
             return expl;

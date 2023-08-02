@@ -1,11 +1,8 @@
 #pragma once
 
-template <class _Algorithm>
-class AbstractNode
-{
-public:
-    struct Types : _Algorithm::Types
+template <typename MatrixNode>
+concept IsMatrixNode = requires(MatrixNode matrix_node) {
     {
-        using Algorithm = _Algorithm;
-    };
+        matrix_node.is_terminal()
+    } -> std::same_as<bool>;
 };

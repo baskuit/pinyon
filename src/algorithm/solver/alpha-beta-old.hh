@@ -13,7 +13,7 @@ for Pruning in Simultaneous Move Games>
 
 */
 
-template <IsValueModelTypes Types, typename NodePair = DefaultNodes>
+template <IsValueModelTypes Types, template <typename...> typename NodePair = DefaultNodes>
 class AlphaBetaOld
 {
 public:
@@ -42,8 +42,9 @@ public:
         typename Types::Probability explored{Rational{0}};
         size_t matrix_node_count = 0;
     };
-    using MatrixNode = typename NodePair::template MNode<AlphaBetaOld>;
-    using ChanceNode = typename NodePair::template CNode<AlphaBetaOld>;
+    struct T;
+    using MatrixNode = NodePair<AlphaBetaOld::T>::MatrixNode;
+    using ChanceNode = NodePair<AlphaBetaOld::T>::ChanceNode;
     struct T : Types {
         using Search = AlphaBetaOld;
         using MatrixStats = AlphaBetaOld::MatrixStats;
