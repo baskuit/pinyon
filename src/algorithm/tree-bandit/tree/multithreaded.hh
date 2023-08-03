@@ -221,7 +221,7 @@ struct TreeBanditThreadPool : Types
     using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
     using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
 
-    class Search : Types::BanditAlgorithm
+    class Search : public Types::BanditAlgorithm
     {
     public:
         using Types::BanditAlgorithm::BanditAlgorithm;

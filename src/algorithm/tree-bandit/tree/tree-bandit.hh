@@ -17,7 +17,7 @@ struct TreeBandit : Types
     using MatrixNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>::MatrixNode;
     using ChanceNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>::ChanceNode;
 
-    class Search : Types::BanditAlgorithm
+    class Search : public Types::BanditAlgorithm
     {
     public:
         using Types::BanditAlgorithm::BanditAlgorithm;
