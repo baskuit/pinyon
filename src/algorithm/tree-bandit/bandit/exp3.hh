@@ -25,7 +25,8 @@ public:
         typename Types::Value value;
         typename Types::Real row_mu, col_mu;
     };
-    struct T : Types {
+    struct T : Types
+    {
         using BanditAlgorithm = Exp3;
         using MatrixStats = Exp3::MatrixStats;
         using ChanceStats = Exp3::ChanceStats;
@@ -83,7 +84,7 @@ public:
         get_empirical_value(stats, value);
     }
 
-// protected:
+    // protected:
     void initialize_stats(
         int iterations,
         const Types::State &state,

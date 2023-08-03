@@ -9,9 +9,6 @@
 #include <types/value.hh>
 #include <types/mutex.hh>
 
-template <class Class, typename Types>
-struct AddTypes;
-
 /*
 
 TypeList
@@ -67,20 +64,43 @@ concept IsArithmetic = requires(Real real) {
 };
 
 template <typename Value, typename Real>
-concept IsValue = requires(Value value) {
+concept IsValue = requires(Value &value) {
     {
         value.get_row_value()
     } -> std::same_as<Real>;
     {
         value.get_col_value()
     } -> std::same_as<Real>;
+    {
+        value = value
+        // copy assignable
+    } -> std::same_as<Value &>;
+    // value = value;
 };
 
-template <typename PRNG>
-concept IsPRNG = requires (PRNG &device) {
+template <typename PRNG, typename Seed>
+concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
+    {
+        device = const_device
+        // copy constructable
+    };
     {
         device.random_int(0)
     } -> std::convertible_to<int>;
+    {
+        device.uniform()
+    } -> std::same_as<double>;
+    {
+        device.discard(0)
+    } -> std::same_as<void>;
+    {
+        device.sample_pdf(std::vector<PRNG>{})
+        // asserts PRNG is default constructable and sample_pdf exists universally (surely) for all vector value types
+    } -> std::convertible_to<int>;
+    {
+        device.get_seed()
+    } -> std::same_as<Seed>;
+    PRNG{seed};
 };
 
 template <typename Types>
@@ -120,7 +140,7 @@ concept IsTypeList =
     IsArithmetic<typename Types::Real> &&
     IsArithmetic<typename Types::Probability> &&
     IsValue<typename Types::Value, typename Types::Real> &&
-    IsPRNG<typename Types::PRNG>;
+    IsPRNG<typename Types::PRNG, typename Types::Seed>;
 
 using SimpleTypes = DefaultTypes<
     double,
