@@ -3,6 +3,13 @@
 #include <model/model.hh>
 
 template <typename Types>
+concept IsAlgorithmTypes =
+    requires(
+        typename Types::MatrixStats &matrix_stats,
+        typename Types::ChanceStats &chance_stats) {true;} &&
+    IsStateTypes<Types>;
+
+template <typename Types>
 concept IsBanditAlgorithmTypes =
     requires(
         typename Types::BanditAlgorithm &bandit,
@@ -97,7 +104,7 @@ concept IsTreeBanditTypes =
         typename Types::State &state,
         typename Types::Model &model,
         typename Types::MatrixNode &matrix_node) {
-        typename Types::TreeAlgorithm{}; // default constructor is valid
+        // typename Types::TreeAlgorithm{}; // default constructor is valid
         {
             session.run(0, device, state, model, matrix_node)
         } -> std::same_as<size_t>;

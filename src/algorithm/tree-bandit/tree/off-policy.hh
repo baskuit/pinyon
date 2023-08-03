@@ -18,8 +18,8 @@ class OffPolicy : public Types
 {
 public:
     struct T;
-    using MatrixNode = NodePair<OffPolicy::T>::MatrixNode;
-    using ChanceNode = NodePair<OffPolicy::T>::ChanceNode;
+    using MatrixNode = NodePair<Types>::MatrixNode;
+    using ChanceNode = NodePair<Types>::ChanceNode;
     struct T : Types {
         using MatrixNode = OffPolicy::MatrixNode;
         using ChanceNode = OffPolicy::ChanceNode;

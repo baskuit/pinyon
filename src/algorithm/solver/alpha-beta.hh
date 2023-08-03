@@ -32,9 +32,10 @@ public:
     {
     };
     struct T;
-    using MatrixNode = NodePair<AlphaBeta::T>::MatrixNode;
-    using ChanceNode = NodePair<AlphaBeta::T>::ChanceNode;
-    struct T : Types {
+    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
+    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
+    struct T : Types
+    {
         using Search = AlphaBeta;
         using MatrixStats = AlphaBeta::MatrixStats;
         using ChanceStats = AlphaBeta::MatrixStats;
@@ -42,20 +43,10 @@ public:
         using ChanceNode = AlphaBeta::ChanceNode;
     };
 
-    static bool dont_terminate(typename Types::PRNG &, const Data &)
-    {
-        return false;
-    };
-
-    static bool after_some_time(typename Types::PRNG &device, const Data &data)
-    {
-        const typename Types::Probability x{Rational<>{1, 4}};
-        return (data.next_chance_idx > 1 &&
-                data.unexplored < x);
-    }
-
-
-    NodePair<FullTraversal<Types>>::MatrixNode *teacher;
+    NodePair<
+        Types,
+        typename FullTraversal<Types>::MatrixStats,
+        typename FullTraversal<Types>::ChanceStats>::MatrixNode *teacher;
 
     const typename Types::Real min_val{Rational<>{0}}; // don't need to use the Game values if you happen to know that State's
     const typename Types::Real max_val{Rational<>{1}};
@@ -85,9 +76,10 @@ public:
         Types::PRNG &device,
         const typename Types::State &state,
         typename Types::Model &model,
-        MatrixNode &root) {
-            model.get_inference();
-        }
+        MatrixNode &root)
+    {
+        model.get_inference();
+    }
 
     std::pair<typename Types::Real, typename Types::Real>
     double_oracle(
@@ -591,4 +583,17 @@ private:
         return min_val;
     }
     // Serialized AlphaBeta, TODO
+
+    static bool dont_terminate(typename Types::PRNG &, const Data &)
+    {
+        return false;
+        MatrixNode matrix_node;
+    };
+
+    static bool after_some_time(typename Types::PRNG &device, const Data &data)
+    {
+        const typename Types::Probability x{Rational<>{1, 4}};
+        return (data.next_chance_idx > 1 &&
+                data.unexplored < x);
+    }
 };

@@ -33,12 +33,12 @@ struct Solve
     using Types = typename Model::T;
 
 
-    typename FullTraversal<Model::T>::MatrixNode root_full{};
-    typename FullTraversal<ModelFloat::T>::MatrixNode root_full_f{};
+    FullTraversal<Model::T>::MatrixNode root_full{};
+    FullTraversal<ModelFloat::T>::MatrixNode root_full_f{};
 
-    typename AlphaBeta<Model::T>::MatrixNode root_ab{};
+    AlphaBeta<Model::T>::MatrixNode root_ab{};
     std::pair<typename Model::T::Real, typename Model::T::Real> ab_value;
-    typename AlphaBeta<ModelFloat::T>::MatrixNode root_ab_f{};
+    AlphaBeta<ModelFloat::T>::MatrixNode root_ab_f{};
     std::pair<typename ModelFloat::T::Real, typename ModelFloat::T::Real> ab_f_value;
 
     using time_t = decltype(std::chrono::high_resolution_clock::now());

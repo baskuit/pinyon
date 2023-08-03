@@ -81,6 +81,33 @@ public:
     }
 };
 
+// template <IsTypeList Types>
+// struct PerfectInfoStateTypes : Types
+// {
+//     class PerfectInfoState
+//     {
+//     public:
+//         bool terminal{false};
+//         Types::VectorAction row_actions{};
+//         Types::VectorAction col_actions{};
+//         Types::Value payoff{};
+//         Types::Observation obs{};
+//         Types::Probability prob{};
+
+//         inline Types::Value get_payoff()
+//         {
+//             return payoff;
+//         }
+
+//         inline bool is_terminal()
+//         {
+//             return terminal;
+//         }
+//     };
+//     class MatrixNodes
+//     using State = PerfectInfoState;
+// };
+
 template <typename Types>
 concept IsChanceStateTypes =
     requires(

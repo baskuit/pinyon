@@ -18,8 +18,8 @@ template <IsValueModelTypes Types>
 class TraversedState : PerfectInfoState<Types>
 {
 public:
-    using MatrixNode = typename DefaultNodes<typename FullTraversal<Types>::T>::MatrixNode;
-    using ChanceNode = typename DefaultNodes<typename FullTraversal<Types>::T>::ChanceNode;
+    using MatrixNode = typename DefaultNodes<Types, typename FullTraversal<Types>::MatrixStats,  typename FullTraversal<Types>::ChanceStats>::MatrixNode;
+    using ChanceNode = typename DefaultNodes<Types, typename FullTraversal<Types>::MatrixStats,  typename FullTraversal<Types>::ChanceStats>::ChanceNode;
 
     struct T : Types {
         using State = TraversedState;

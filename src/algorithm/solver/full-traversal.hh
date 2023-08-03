@@ -32,9 +32,8 @@ public:
     struct ChanceStats
     {
     };
-    struct T;
-    using MatrixNode = NodePair<FullTraversal::T>::MatrixNode;
-    using ChanceNode = NodePair<FullTraversal::T>::ChanceNode;
+    using MatrixNode = typename NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
+    using ChanceNode = typename NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
     struct T : Types
     {
         using Search = FullTraversal;

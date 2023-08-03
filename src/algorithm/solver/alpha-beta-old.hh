@@ -43,8 +43,8 @@ public:
         size_t matrix_node_count = 0;
     };
     struct T;
-    using MatrixNode = NodePair<AlphaBetaOld::T>::MatrixNode;
-    using ChanceNode = NodePair<AlphaBetaOld::T>::ChanceNode;
+    using MatrixNode = NodePair<Types>::MatrixNode;
+    using ChanceNode = NodePair<Types>::ChanceNode;
     struct T : Types {
         using Search = AlphaBetaOld;
         using MatrixStats = AlphaBetaOld::MatrixStats;

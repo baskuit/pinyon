@@ -3,8 +3,8 @@
 #include <libsurskit/math.hh>
 #include <tree/node.hh>
 
-template <typename Types>
-struct DefaultNodes
+template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+struct DefaultNodes : Types // Is a Types Object
 {
     class MatrixNode;
 
@@ -24,7 +24,9 @@ struct DefaultNodes
         typename Types::VectorAction row_actions;
         typename Types::VectorAction col_actions;
         typename Types::Observation obs;
-        typename Types::MatrixStats stats;
+        MatrixStats stats;
+
+
 
         MatrixNode(){};
         MatrixNode(typename Types::Observation obs) : obs(obs) {}
@@ -127,7 +129,7 @@ struct DefaultNodes
         ActionIndex row_idx;
         ActionIndex col_idx;
 
-        typename Types::ChanceStats stats;
+        ChanceStats stats;
 
         ChanceNode() {}
         ChanceNode(
@@ -174,22 +176,22 @@ struct DefaultNodes
 };
 
 // We have to hold off on destructor definitions until here
-template <typename Types>
-DefaultNodes<Types>::MatrixNode::~MatrixNode()
+template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+DefaultNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
 {
     while (this->child != nullptr)
     {
-        DefaultNodes<Types>::ChanceNode *victim = this->child;
+        DefaultNodes<Types, MatrixStats, ChanceStats>::ChanceNode *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }
 }
-template <typename Types>
-DefaultNodes<Types>::ChanceNode::~ChanceNode()
+template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+DefaultNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
 {
     while (this->child != nullptr)
     {
-        DefaultNodes<Types>::MatrixNode *victim = this->child;
+        DefaultNodes<Types, MatrixStats, ChanceStats>::MatrixNode *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }

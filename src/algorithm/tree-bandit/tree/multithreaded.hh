@@ -16,9 +16,6 @@ template <
 class TreeBanditThreaded : public Types::BanditAlgorithm
 {
 public:
-    struct T;
-    using MatrixNode = NodePair<TreeBanditThreaded::T>::MatrixNode;
-    using ChanceNode = NodePair<TreeBanditThreaded::T>::ChanceNode;
     struct MatrixStats : Types::MatrixStats
     {
         typename Types::Mutex mtx{};
@@ -27,6 +24,8 @@ public:
     {
         typename Types::Mutex mtx{};
     };
+    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
+    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
     struct T : Types
     {
         using Search = TreeBanditThreaded;
@@ -216,9 +215,6 @@ template <
 class TreeBanditThreadPool : public Types::BanditAlgorithm
 {
 public:
-    struct T;
-    using MatrixNode = NodePair<TreeBanditThreadPool::T>::MatrixNode;
-    using ChanceNode = NodePair<TreeBanditThreadPool::T>::ChanceNode;
     struct MatrixStats : Types::MatrixStats
     {
         int mutex_index = 0;
@@ -226,6 +222,8 @@ public:
     struct ChanceStats : Types::ChanceStats
     {
     };
+    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
+    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
     struct T : Types
     {
         using Search = TreeBanditThreadPool;
