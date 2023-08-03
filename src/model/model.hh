@@ -4,6 +4,11 @@
 
 #include <vector>
 
+template <template <typename> typename _Model, typename Types> 
+struct Types_Model : Types {
+    using ModelTypes = Types;
+};
+
 template <typename Types>
 concept IsValueModelTypes =
     requires(
@@ -44,52 +49,65 @@ concept IsDoubleOracleModelTypes =
     IsValueModelTypes<Types>;
 
 template <IsStateTypes Types>
-class EmptyModel
+struct EmptyModel : Types
 {
-public:
-    using ModelInput = typename Types::State;
-    struct ModelOutput
+
+    struct Inference
     {
         typename Types::Value value;
+        typename Types::VectorReal row_policy, col_policy;
     };
+    using ModelInput = typename Types::State;
+    using ModelOutput = Inference;
     using ModelBatchInput = std::vector<ModelInput>;
     using ModelBatchOutput = std::vector<ModelOutput>;
-    struct T : Types {
-        using Model = EmptyModel;
-        using EmptyModel::ModelInput;
-        using EmptyModel::ModelOutput;
-        using EmptyModel::ModelBatchInput;
-        using EmptyModel::ModelBatchOutput;
-    };
 
-    void get_input(
-        const Types::State &state,
-        ModelInput &input)
+    class Model
     {
-        input = state;
-    }
-
-    void get_batch_input(
-        const std::vector<typename Types::State> &states,
-        ModelBatchInput &inputs)
-    {
-        inputs = states;
-    }
-
-    void get_inference(
-        ModelInput &input,
-        ModelOutput &output)
-    {
-        output.value = typename Types::Value{typename Types::Rational{1, 2}, typename Types::Rational{1, 2}};
-    }
-
-    void get_inference(
-        ModelBatchInput &inputs,
-        ModelBatchOutput &outputs)
-    {
-        for (auto &output : outputs)
+    public:
+        void get_input(
+            const Types::State &state,
+            ModelInput &input)
         {
-            output.value = typename Types::Value{.5, .5};
+            input = state;
         }
-    }
+
+        void get_batch_input(
+            const std::vector<typename Types::State> &states,
+            ModelBatchInput &inputs)
+        {
+            inputs = states;
+        }
+
+        void get_inference(
+            ModelInput &input,
+            ModelOutput &output)
+        {
+            output.value = typename Types::Value{typename Types::Rational{1, 2}, typename Types::Rational{1, 2}};
+        }
+
+        void get_inference(
+            ModelBatchInput &inputs,
+            ModelBatchOutput &outputs)
+        {
+            for (auto &output : outputs)
+            {
+                output.value = typename Types::Value{.5, .5};
+            }
+        }
+
+        void get_value(
+            ModelInput &input,
+            Types::Value &value)
+        {
+            value = typename Types::Value{typename Types::Rational{1, 2}, typename Types::Rational{1, 2}};
+        }
+
+        void add_to_batch_input(
+            Types::State &state,
+            ModelBatchInput &input)
+        {
+            input.push_back(state);
+        }
+    };
 };

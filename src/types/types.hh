@@ -31,6 +31,7 @@ template <
     typename _Rational = Rational<int>>
 struct DefaultTypes
 {
+    using TypeList = DefaultTypes;
     using Real = RealType<_Real>;
     using Action = ActionType<_Action>;
     using Observation = ObservationType<_Observation>;

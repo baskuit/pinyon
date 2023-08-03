@@ -45,12 +45,19 @@ namespace W
         }
     };
 
+    template <typename State>
+    auto WrapState (const State& state) -> StateWrapper<State> {
+        return {state};
+    }
+
     template <IsStateTypes Types>
     struct StateWrapper : State
     {
         std::shared_ptr<typename Types::State> ptr;
 
-        StateWrapper(const typename Types::State &state) : ptr{std::make_shared<typename Types::State>(state)} {}
+        StateWrapper(typename Types::State const &state) : ptr{std::make_shared<typename Types::State>(state)} {
+            state.
+        }
 
         template <typename... Args>
         StateWrapper(Args... args) : ptr(std::make_shared<typename Types::State>(args...)) {}

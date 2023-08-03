@@ -18,15 +18,15 @@
 #include <state/state.hh>
 #include <state/test-states.hh>
 #include <state/random-tree.hh>
-#include <state/traversed.hh>
+// #include <state/traversed.hh>
 
-#include <state/arena.hh>
+// #include <state/arena.hh>
 
 // Model
 
 #include <model/model.hh>
 #include <model/monte-carlo-model.hh>
-// #include <model/search_model.hh>
+#include <model/search-model.hh>
 
 #ifdef TORCH
 #include <model/libtorch_model.hh>
@@ -36,14 +36,14 @@
 
 #include <algorithm/tree-bandit/tree/tree-bandit.hh>
 #include <algorithm/tree-bandit/tree/multithreaded.hh>
-#include <algorithm/tree-bandit/tree/off-policy.hh>
+// #include <algorithm/tree-bandit/tree/off-policy.hh>
 
 #include <algorithm/tree-bandit/bandit/exp3.hh>
 #include <algorithm/tree-bandit/bandit/rand.hh>
 
-#include <algorithm/solver/full-traversal.hh>
-#include <algorithm/solver/alpha-beta.hh>
-#include <algorithm/solver/alpha-beta-old.hh>
+// #include <algorithm/solver/full-traversal.hh>
+// #include <algorithm/solver/alpha-beta.hh>
+// #include <algorithm/solver/alpha-beta-old.hh>
 
 // Tree
 
@@ -54,4 +54,4 @@
 
 // Wrapper
 
-#include <wrapper/basic.hh>
+// #include <wrapper/basic.hh>

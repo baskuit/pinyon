@@ -1,6 +1,6 @@
 #pragma once
 
-#include "model.hh"
+#include <model/model.hh>
 
 #include <torch/torch.h>
 #include <condition_variable>

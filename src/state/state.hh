@@ -5,26 +5,33 @@
 #include <concepts>
 #include <vector>
 
-template <typename Types>
-concept IsStateTypes =
+template <typename State, typename VectorAction, typename Value, typename PRNG>
+concept IsState =
     requires(
-        typename Types::State &state,
-        typename Types::VectorAction &vec,
-        typename Types::PRNG &device) {
+        State &state,
+        VectorAction &actions,
+        PRNG &device) {
         {
             state.is_terminal()
         } -> std::same_as<bool>;
         {
             state.get_payoff()
-        } -> std::same_as<typename Types::Value>;
+        } -> std::same_as<Value>;
         {
-            state.get_actions(
-                vec, vec)
+            state.get_actions(actions, actions)
         } -> std::same_as<void>;
         {
             state.randomize_transition(device)
         } -> std::same_as<void>;
-    } &&
+    };
+
+template <typename Types>
+concept IsStateTypes =
+    IsState<
+        typename Types::State,
+        typename Types::VectorAction,
+        typename Types::Value,
+        typename Types::PRNG> &&
     IsTypeList<Types>;
 
 template <typename Types>
@@ -80,33 +87,6 @@ public:
         return terminal;
     }
 };
-
-// template <IsTypeList Types>
-// struct PerfectInfoStateTypes : Types
-// {
-//     class PerfectInfoState
-//     {
-//     public:
-//         bool terminal{false};
-//         Types::VectorAction row_actions{};
-//         Types::VectorAction col_actions{};
-//         Types::Value payoff{};
-//         Types::Observation obs{};
-//         Types::Probability prob{};
-
-//         inline Types::Value get_payoff()
-//         {
-//             return payoff;
-//         }
-
-//         inline bool is_terminal()
-//         {
-//             return terminal;
-//         }
-//     };
-//     class MatrixNodes
-//     using State = PerfectInfoState;
-// };
 
 template <typename Types>
 concept IsChanceStateTypes =

@@ -6,19 +6,22 @@ Intended to test mostly tree traversal speed
 
 */
 
-int main () {
+int main()
+{
 
-    using MoldState = MoldState<2>;
-    using MonteCarlo = MonteCarloModel<MoldState::T>;
-    using Exp3 = Exp3<MonteCarlo::T>;
-    using Search = TreeBandit<Exp3::T>;
-    
+    using Types = TreeBandit<Exp3<MonteCarloModel<MoldState<2>>>>;
+    using Types_ = TreeBandit<Exp3<MonteCarloModel<MoldState<3>>>>;
+
+    Types::TypeList x{};
+    Types_::TypeList y{};
+    x = y;
+
     uint64_t seed = 0;
     prng device(seed);
-    MoldState state(1);
-    MonteCarlo model(device);
-    Search session(.01);
-    Search::T::MatrixNode root;
+    Types::State state(1);
+    Types::Model model(device);
+    Types::Search session(.01);
+    Types::MatrixNode root;
     const size_t iterations = 3;
     session.run_for_iterations(iterations, device, state, model, root);
 
