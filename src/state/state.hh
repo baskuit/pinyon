@@ -71,11 +71,11 @@ class PerfectInfoState
 {
 public:
     bool terminal{false};
-    T::VectorAction row_actions{};
-    T::VectorAction col_actions{};
-    T::Value payoff{};
-    T::Obs obs{};
-    T::Prob prob{};
+    T::VectorAction row_actions;
+    T::VectorAction col_actions;
+    T::Value payoff;
+    T::Obs obs;
+    T::Prob prob;
 
     inline T::Value get_payoff()
     {
@@ -99,7 +99,7 @@ concept IsChanceStateTypes =
             state.get_chance_actions(chance_actions, action, action)
         } -> std::same_as<void>;
         {
-            state.apply_actions(obs, action, action)
+            state.apply_actions(action, action, obs)
         } -> std::same_as<void>;
     } &&
     IsPerfectInfoStateTypes<Types>;

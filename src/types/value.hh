@@ -38,7 +38,8 @@ struct PairReal
 
     constexpr PairReal operator*(const Real val) const
     {
-        return PairReal{row_value * val, col_value * val};
+        return PairReal{Real{row_value * val}, Real{col_value * val}};
+        // arithmetic types must be explicitly converted to Real members
     }
 
     friend std::ostream &operator<<(std::ostream &os, const PairReal &value)

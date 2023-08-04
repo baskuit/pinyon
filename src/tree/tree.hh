@@ -45,6 +45,16 @@ struct DefaultNodes : Types
             state.apply_actions(row_actions[row_idx], col_actions[col_idx]);
         }
 
+        typename Types::VectorAction get_row_actions () const
+        {
+            return row_actions;
+        }
+
+        typename Types::VectorAction get_col_actions () const
+        {
+            return col_actions;
+        }
+
         typename Types::Action get_row_action(const ActionIndex row_idx) const
         {
             return row_actions[row_idx];

@@ -18,7 +18,7 @@
 template <
     IsValueModelTypes Types,
     template <typename...> typename NodePair = DefaultNodes>
-requires IsChanceStateTypes<Types>
+requires IsChanceStateTypes<Types> 
 struct FullTraversal : Types
 {
     struct MatrixStats
@@ -33,6 +33,8 @@ struct FullTraversal : Types
     };
     struct ChanceStats
     {
+        std::vector<typename Types::Obs> chance_actions;
+        std::vector<typename Types::Prob> chance_strategy;
     };
     using MatrixNode = typename NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
     using ChanceNode = typename NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
@@ -55,7 +57,6 @@ struct FullTraversal : Types
             matrix_node->expand(state);
 
             MatrixStats &stats = matrix_node->stats;
-            stats.prob = state.prob;
 
             if (state.is_terminal())
             {
@@ -82,31 +83,34 @@ struct FullTraversal : Types
             {
                 for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
                 {
-                    const typename Types::Action row_action{matrix_node->row_actions[row_idx]};
-                    const typename Types::Action col_action{matrix_node->col_actions[col_idx]};
-
-                    std::vector<typename Types::Obs> chance_actions;
+                    const typename Types::Action row_action{matrix_node->get_row_action(row_idx)};
+                    const typename Types::Action col_action{matrix_node->get_col_action(col_idx)};
+                    
+                    ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
+                    auto &chance_actions = chance_node->stats.chance_actions;
                     state.get_chance_actions(chance_actions, row_action, col_action);
 
-                    ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
                     for (auto chance_action : chance_actions)
                     {
                         typename Types::State state_copy = state;
                         state_copy.apply_actions(row_action, col_action, chance_action);
                         MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                         matrix_node_next->stats.depth = stats.depth + 1;
+                        matrix_node_next->stats.prob = state_copy.prob;
+                        chance_node->stats.chance_strategy.push_back(state_copy.prob);
 
                         run(state_copy, model, matrix_node_next);
 
-                        stats.nash_payoff_matrix.get(row_idx, col_idx) += matrix_node_next->stats.payoff * matrix_node_next->stats.prob;
+                        stats.nash_payoff_matrix.get(row_idx, col_idx) += 
+                            matrix_node_next->stats.payoff * 
+                            typename Types::Real{matrix_node_next->stats.prob};
                         stats.matrix_node_count += matrix_node_next->stats.matrix_node_count;
                     }
                 }
             }
 
             auto value_pair = LRSNash::solve(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
-            stats.payoff = typename Types::Value{value_pair.first};
-            return;
+            stats.payoff = typename Types::Value{value_pair.first, value_pair.second};
         }
     };
 };

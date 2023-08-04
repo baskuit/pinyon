@@ -19,8 +19,6 @@ struct MoldState : SimpleTypes
     public:
         size_t max_depth = 1;
 
-        State () {}
-
         State(size_t max_depth) : max_depth((max_depth >= 0) * max_depth)
         {
             this->row_actions.resize(size);
@@ -31,6 +29,7 @@ struct MoldState : SimpleTypes
                 this->col_actions[i] = SimpleTypes::Action{i};
             }
             this->prob = SimpleTypes::Prob{1};
+            this->obs = SimpleTypes::Obs{};
         }
 
         void randomize_transition(SimpleTypes::PRNG &device)
@@ -58,18 +57,18 @@ struct MoldState : SimpleTypes
             --this->max_depth;
         }
 
-        void get_actions(
+        void get_chance_actions(
             std::vector<SimpleTypes::Obs> &chance_actions,
-            SimpleTypes::Action &,
-            SimpleTypes::Action &)
+            SimpleTypes::Action,
+            SimpleTypes::Action) const
         {
             chance_actions.resize(1);
         }
 
         void apply_actions(
-            SimpleTypes::Obs,
             SimpleTypes::Action,
-            SimpleTypes::Action)
+            SimpleTypes::Action,
+            SimpleTypes::Obs)
         {
             --this->max_depth;
         }

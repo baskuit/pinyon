@@ -1,5 +1,7 @@
 #pragma once
 
+
+
 template <typename Types>
 concept IsNodeTypes =
     requires(
@@ -8,6 +10,9 @@ concept IsNodeTypes =
         typename Types::Obs &obs,
         typename Types::Prob &prob,
         typename Types::State &state) {
+        {
+            matrix_node->stats
+        } -> std::same_as<typename Types::MatrixStats>;
         {
             matrix_node.access(0, 0)
         } -> std::same_as<typename Types::ChanceNode *>;
@@ -24,6 +29,12 @@ concept IsNodeTypes =
             matrix_node.set_terminal()
         } -> std::same_as<void>;
         {
+            matrix_node.get_row_actions()
+        } -> std::same_as<typename Types::VectorAction>;
+        {
+            matrix_node.get_col_actions()
+        } -> std::same_as<typename Types::VectorAction>;
+        {
             matrix_node.get_row_action(0)
         } -> std::same_as<typename Types::Action>;
         {
@@ -31,15 +42,19 @@ concept IsNodeTypes =
         } -> std::same_as<typename Types::Action>;
         {
             Types::MatrixNode::STORES_VALUE
-        } -> std::convertible_to<bool>;
+        } -> std::same_as<const bool &>;
+
+        {
+            chance_node->stats
+        } -> std::same_as<typename Types::ChanceStats>;
         {
             chance_node.access(obs)
         } -> std::same_as<typename Types::MatrixNode *>;
         {
             chance_node.row_idx
-        } -> std::convertible_to<int>;
+        } -> std::same_as<int &>;
         {
             chance_node.col_idx
-        } -> std::convertible_to<int>;
+        } -> std::same_as<int &>;
     } &&
     IsAlgorithmTypes<Types>;

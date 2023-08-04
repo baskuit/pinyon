@@ -1,5 +1,6 @@
 #pragma once
 
+#include <libsurskit/math.hh>
 #include <model/model.hh>
 #include <state/random-tree.hh>
 #include <algorithm/solver/full-traversal.hh>
@@ -15,7 +16,7 @@ This state is a wrapper for the tree produced by the FullTraversal algorithm
 */
 
 template <IsValueModelTypes Types>
-requires IsChanceStateTypes<Types>
+    requires IsChanceStateTypes<Types>
 struct TraversedState : Types::TypeList
 {
 
@@ -25,18 +26,19 @@ struct TraversedState : Types::TypeList
         using MatrixNode = typename DefaultNodes<Types, typename FullTraversal<Types>::MatrixStats, typename FullTraversal<Types>::ChanceStats>::MatrixNode;
         using ChanceNode = typename DefaultNodes<Types, typename FullTraversal<Types>::MatrixStats, typename FullTraversal<Types>::ChanceStats>::ChanceNode;
 
-        typename Types::State base_state;
+        typename Types::PRNG device{};
         std::shared_ptr<MatrixNode> tree;
         MatrixNode *current_node;
+        double chance_p;
 
         State(
             Types::State &state,
             Types::Model &model,
-            int max_depth = -1) : base_state{state}
+            int max_depth = -1)
         {
             this->tree = std::make_shared<MatrixNode>();
             this->current_node = &*tree;
-            FullTraversal<Types> session{max_depth};
+            typename FullTraversal<Types>::Search session{max_depth};
             session.run(state, model, current_node);
             update_perfect_info_state();
         }
@@ -60,18 +62,26 @@ struct TraversedState : Types::TypeList
         void randomize_transition(
             typename Types::PRNG &device)
         {
-            base_state.randomize_transition(device);
+            chance_p = device.uniform();
         }
 
         void apply_actions(
             Types::Action row_action,
             Types::Action col_action)
         {
-            ActionIndex row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
-            ActionIndex col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
+            int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
+            int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
             ChanceNode *chance_node = current_node->access(row_idx, col_idx);
-            const size_t chance_idx = this->seed % chance_node->stats.chance_actions.size();
-            typename Types::Obs chance_action = chance_node->stats.chance_actions[chance_idx];
+            auto &chance_strategy = chance_node->stats.chance_strategy;
+
+            int chance_idx = 0;
+            while (chance_p > 0 && chance_idx + 1 < chance_strategy.size())
+            {
+                chance_p -= static_cast<double>(chance_strategy[chance_idx]);
+                ++chance_idx;
+            }
+
+            const typename Types::Obs chance_action = chance_node->stats.chance_actions[chance_idx];
             current_node = chance_node->access(chance_action);
             update_perfect_info_state();
         }
@@ -81,8 +91,8 @@ struct TraversedState : Types::TypeList
             Types::Action row_action,
             Types::Action col_action) const
         {
-            int row_idx = std::find(this->actions.row_actions.begin(), this->actions.row_actions.end(), row_action) - this->actions.row_actions.begin();
-            int col_idx = std::find(this->actions.col_actions.begin(), this->actions.col_actions.end(), col_action) - this->actions.col_actions.begin();
+            int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
+            int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
             ChanceNode *chance_node = current_node->access(row_idx, col_idx);
             chance_actions = chance_node->stats.chance_actions;
         }
@@ -92,8 +102,9 @@ struct TraversedState : Types::TypeList
             Types::Action col_action,
             Types::Obs chance_action)
         {
-            base_state.apply_actions(row_action, col_action, chance_action);
-            current_node = current_node->access(row_action, col_action)->access(chance_action);
+            int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
+            int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
+            current_node = current_node->access(row_idx, col_idx)->access(chance_action);
             update_perfect_info_state();
         }
 
