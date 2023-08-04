@@ -79,6 +79,13 @@ concept IsValue = requires(Value &value) {
     // value = value;
 };
 
+template <typename Mutex>
+concept IsMutex = requires(Mutex &mutex) {
+    {
+        mutex.lock()
+    } -> std::same_as<void>;
+};
+
 template <typename PRNG, typename Seed>
 concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
     {
