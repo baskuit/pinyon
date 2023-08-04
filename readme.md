@@ -34,6 +34,24 @@ This library is *format independent*
 
 This also extends to other aspects that are explained in deeper docs :ghost: :scream:
 
+# Installation
+
+## Compiler
+
+This project makes heavy use of the `Concepts` feature of C++20. Furthermore, it also uses `cartiesian_product` from C++23. Support for the latter is spotty, but GCC-13 will work
+
+## GMP
+
+```
+    sudo apt install libgmp3-dev
+```
+
+## Clone and Install
+
+```
+
+```
+
 # Example
 
 The following code snippet is the execution of monte-carlo style tree search using a C++ Pytorch model
