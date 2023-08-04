@@ -110,7 +110,7 @@ struct FullTraversal : Types
             }
 
             auto value_pair = LRSNash::solve(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
-            stats.payoff = typename Types::Value{value_pair.first, value_pair.second};
+            stats.payoff = typename Types::Value{value_pair.first};
         }
     };
 };

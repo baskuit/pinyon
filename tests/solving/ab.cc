@@ -6,16 +6,15 @@ Computes the savings of serialized alpha beta
 
 */
 
-RandomTree<> convert(const RandomTree<RandomTreeRationalTypes> &state, Rational<> threshold)
+RandomTree<>::State convert(const RandomTree<RandomTreeRationalTypes>::State &state, Rational<> threshold)
 {
-    RandomTree<> x{
+    RandomTree<>::State x{
         prng{state.device.get_seed()},
         state.depth_bound,
         state.rows,
         state.cols,
         state.transitions,
         threshold};
-    x.seed = state.seed;
     return x;
 }
 
@@ -24,22 +23,22 @@ mpq_class x;
 struct Solve
 {
 
-    using State = RandomTree<RandomTreeRationalTypes>;
-    using StateFloat = RandomTree<>;
-    using Model = MonteCarloModel<State::T>;
-    using ModelFloat = MonteCarloModel<StateFloat::T>;
-
-    using FloatTypes = typename ModelFloat::T;
-    using Types = typename Model::T;
+    using TypesRational = MonteCarloModel<RandomTree<RandomTreeRationalTypes>>;
+    using TypesFloat = MonteCarloModel<RandomTree<RandomTreeFloatTypes>>;
 
 
-    FullTraversal<Model::T>::MatrixNode root_full{};
-    FullTraversal<ModelFloat::T>::MatrixNode root_full_f{};
+    using State = TypesRational::State;
+    using StateFloat = TypesFloat::State;
+    using Model = TypesRational::Model;
+    using ModelFloat = TypesFloat::Model;
 
-    AlphaBeta<Model::T>::MatrixNode root_ab{};
-    std::pair<typename Model::T::Real, typename Model::T::Real> ab_value;
-    AlphaBeta<ModelFloat::T>::MatrixNode root_ab_f{};
-    std::pair<typename ModelFloat::T::Real, typename ModelFloat::T::Real> ab_f_value;
+    FullTraversal<TypesRational>::MatrixNode root_full{};
+    FullTraversal<TypesFloat>::MatrixNode root_full_f{};
+
+    AlphaBeta<TypesRational>::MatrixNode root_ab{};
+    std::pair<TypesRational::Real, TypesRational::Real> ab_value;
+    AlphaBeta<TypesFloat>::MatrixNode root_ab_f{};
+    std::pair<TypesFloat::Real, TypesFloat::Real> ab_f_value;
 
     using time_t = decltype(std::chrono::high_resolution_clock::now());
     time_t start, end;
@@ -57,10 +56,10 @@ struct Solve
         Model model{device.uniform_64()};
         ModelFloat model_f{device.uniform_64()};
 
-        FullTraversal<Model::T> session_full{};
-        FullTraversal<ModelFloat::T> session_full_f{};
-        AlphaBeta<Model::T> session_ab{Rational<>{0}, Rational<>{1}};
-        AlphaBeta<ModelFloat::T> session_ab_f{Rational<>{0}, Rational<>{1}};
+        FullTraversal<TypesRational>::Search session_full{};
+        FullTraversal<TypesFloat>::Search session_full_f{};
+        AlphaBeta<TypesRational>::Search session_ab{Rational<>{0}, Rational<>{1}};
+        AlphaBeta<TypesFloat>::Search session_ab_f{Rational<>{0}, Rational<>{1}};
 
         start = std::chrono::high_resolution_clock::now();
         session_full.run(state, model, &root_full);

@@ -60,6 +60,16 @@ struct DebugNodes : Types
             return col_actions[col_idx];
         }
 
+        typename Types::VectorAction get_row_actions () const
+        {
+            return row_actions;
+        }
+
+        typename Types::VectorAction get_col_actions () const
+        {
+            return col_actions;
+        }
+
         inline bool is_terminal() const
         {
             return terminal;
@@ -73,6 +83,11 @@ struct DebugNodes : Types
         inline void set_terminal()
         {
             terminal = true;
+        }
+
+        inline void set_terminal(const bool value)
+        {
+            terminal = value;
         }
 
         inline void set_expanded()
@@ -206,7 +221,7 @@ DebugNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
 {
     while (this->child != nullptr)
     {
-        DebugNodes<Types, MatrixStats, ChanceStats>::MatrixNode *victim = this->child;
+        DebugNodes<Types, MatrixStats, ChanceStats>::ChanceNode *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }
@@ -217,7 +232,7 @@ DebugNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
 {
     while (this->child != nullptr)
     {
-        DebugNodes<Types, MatrixStats, ChanceStats>::ChanceNode *victim = this->child;
+        DebugNodes<Types, MatrixStats, ChanceStats>::MatrixNode *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }

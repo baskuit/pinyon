@@ -21,6 +21,7 @@ struct MoldState : SimpleTypes
 
         State(size_t max_depth) : max_depth((max_depth >= 0) * max_depth)
         {
+            this->terminal = (this->max_depth == 0);
             this->row_actions.resize(size);
             this->col_actions.resize(size);
             for (int i = 0; i < size; ++i)
@@ -38,7 +39,6 @@ struct MoldState : SimpleTypes
 
         void get_actions()
         {
-            this->terminal = (this->max_depth <= 0);
         }
 
         void get_actions(
@@ -47,7 +47,6 @@ struct MoldState : SimpleTypes
         {
             row_actions = this->row_actions;
             col_actions = this->col_actions;
-            this->terminal = (this->max_depth <= 0);
         }
 
         void apply_actions(
@@ -55,6 +54,7 @@ struct MoldState : SimpleTypes
             SimpleTypes::Action)
         {
             --this->max_depth;
+            this->terminal = (this->max_depth == 0);
         }
 
         void get_chance_actions(
@@ -71,6 +71,7 @@ struct MoldState : SimpleTypes
             SimpleTypes::Obs)
         {
             --this->max_depth;
+            this->terminal = (this->max_depth == 0);
         }
     };
 
