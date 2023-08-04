@@ -2,7 +2,6 @@
 
 // Util
 
-#include <libsurskit/gambit.hh>
 #include <libsurskit/math.hh>
 #include <libsurskit/lrslib.hh>
 #include <libsurskit/generator.hh>
