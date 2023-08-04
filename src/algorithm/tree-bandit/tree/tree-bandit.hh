@@ -10,13 +10,12 @@ template <
     IsBanditAlgorithmTypes Types,
     template <typename...> typename NodePair = DefaultNodes,
     bool return_if_expand = true>
-    // requires IsNodeTypes<NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>>
+    requires IsNodeTypes<NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>>
 // will auto complete all all this ::MatrixNode but not the alias decl :(
 struct TreeBandit : Types
 {
     using MatrixNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>::MatrixNode;
     using ChanceNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>::ChanceNode;
-
     class Search : public Types::BanditAlgorithm
     {
     public:
