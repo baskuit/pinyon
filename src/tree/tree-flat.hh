@@ -1,177 +1,159 @@
 #pragma once
 
 #include <libsurskit/math.hh>
+#include <state/state.hh>
 #include <tree/node.hh>
 
 #include <unordered_map>
 
-template <typename Algorithm>
-class MatrixNodeFlat;
-
-template <typename Algorithm>
-class ChanceNodeFlat;
-
-struct FlatNodes
+template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+struct FlatNodes : Types
 {
-    template <typename Algorithm>
-    using MNode = MatrixNodeFlat<Algorithm>;
-    template <typename Algorithm>
-    using CNode = ChanceNodeFlat<Algorithm>;
-};
+    class MatrixNode;
 
-template <typename Algorithm>
-class MatrixNodeFlat : public AbstractNode<Algorithm>
-{
-public:
-    static constexpr bool STORES_VALUE = false;
+    class ChanceNode;
 
-    struct Types : AbstractNode<Algorithm>::Types
+    class MatrixNode
     {
-    };
+    public:
+        static constexpr bool STORES_VALUE = false;
 
-    bool terminal = false;
-    bool expanded = false;
-    typename Types::Obs obs;
+        bool terminal = false;
+        bool expanded = false;
+        typename Types::Obs obs;
 
-    typename Types::VectorAction row_actions;
-    typename Types::VectorAction col_actions;
-    typename Types::MatrixStats stats;
+        typename Types::VectorAction row_actions;
+        typename Types::VectorAction col_actions;
+        typename Types::MatrixStats stats;
 
-    ChanceNodeFlat<Algorithm> **edges;
+        ChanceNode **edges;
 
-    MatrixNodeFlat(){};
-    MatrixNodeFlat(
-        typename Types::Obs obs) : obs(obs) {}
-    ~MatrixNodeFlat();
+        MatrixNode(){};
+        MatrixNode(
+            typename Types::Obs obs) : obs(obs) {}
+        ~MatrixNode();
 
-    inline void expand(typename Types::State &state)
-    {
-        expanded = true;
-        row_actions = state.row_actions;
-        col_actions = state.col_actions;
-        const size_t n_children = row_actions.size() * col_actions.size();
-        edges = new ChanceNodeFlat<Algorithm> *[n_children];
-        std::fill_n(edges, n_children, nullptr);
-    }
-
-    void apply_actions(typename Types::State &state, const ActionIndex row_idx, const ActionIndex col_idx) const
-    {
-        state.apply_actions(row_actions[row_idx], col_actions[col_idx]);
-    }
-
-    typename Types::Action get_row_action(const ActionIndex row_idx) const
-    {
-        return row_actions[row_idx];
-    }
-
-    typename Types::Action get_col_action(const ActionIndex col_idx) const
-    {
-        return col_actions[col_idx];
-    }
-
-    inline bool is_terminal() const
-    {
-        return terminal;
-    }
-
-    inline bool is_expanded() const
-    {
-        return expanded;
-    }
-
-    inline void set_terminal()
-    {
-        terminal = true;
-    }
-
-    inline void set_expanded()
-    {
-        expanded = true;
-    }
-
-    inline void get_value(typename Types::Value &value)
-    {
-    }
-
-    ChanceNodeFlat<Algorithm> *access(ActionIndex row_idx, int col_idx)
-    {
-        ActionIndex child_idx = row_idx * col_actions.size() + col_idx;
-        ChanceNodeFlat<Algorithm> *&child = edges[child_idx];
-        if (child == nullptr)
+        inline void expand(typename Types::State &state)
         {
-            child = new ChanceNodeFlat<Algorithm>();
+            expanded = true;
+            row_actions = state.row_actions;
+            col_actions = state.col_actions;
+            const size_t n_children = row_actions.size() * col_actions.size();
+            edges = new ChanceNode *[n_children];
+            std::fill_n(edges, n_children, nullptr);
         }
-        return child;
-    };
 
-    size_t count_matrix_nodes()
-    {
-        size_t c = 1;
-        const size_t n_children = row_actions.size() * col_actions.size();
-
-        for (size_t i = 0; i < n_children; ++i)
+        void apply_actions(typename Types::State &state, const ActionIndex row_idx, const ActionIndex col_idx) const
         {
-            ChanceNodeFlat<Algorithm> *&chance_node = edges[i];
-            if (edges[i] != nullptr)
+            state.apply_actions(row_actions[row_idx], col_actions[col_idx]);
+        }
+
+        typename Types::Action get_row_action(const ActionIndex row_idx) const
+        {
+            return row_actions[row_idx];
+        }
+
+        typename Types::Action get_col_action(const ActionIndex col_idx) const
+        {
+            return col_actions[col_idx];
+        }
+
+        inline bool is_terminal() const
+        {
+            return terminal;
+        }
+
+        inline bool is_expanded() const
+        {
+            return expanded;
+        }
+
+        inline void set_terminal()
+        {
+            terminal = true;
+        }
+
+        inline void set_expanded()
+        {
+            expanded = true;
+        }
+
+        inline void get_value(typename Types::Value &value)
+        {
+        }
+
+        ChanceNode *access(ActionIndex row_idx, int col_idx)
+        {
+            ActionIndex child_idx = row_idx * col_actions.size() + col_idx;
+            ChanceNode *&child = edges[child_idx];
+            if (child == nullptr)
             {
-                c += chance_node->count_matrix_nodes();
+                child = new ChanceNode();
             }
-        }
-        return c;
-    }
-};
-
-// Chance Node
-template <typename Algorithm>
-class ChanceNodeFlat : public AbstractNode<Algorithm>
-{
-public:
-    struct Types : AbstractNode<Algorithm>::Types
-    {
-    };
-
-    std::unordered_map<typename Types::Obs, MatrixNodeFlat<Algorithm> *, typename Types::ObsHash> edges{};
-    typename Types::ChanceStats stats{};
-
-    ChanceNodeFlat() {}
-    ~ChanceNodeFlat();
-
-    MatrixNodeFlat<Algorithm> *access(typename Types::Obs &obs)
-    {
-        MatrixNodeFlat<Algorithm> *&child = edges[obs];
-        if (child == nullptr)
-        {
-            child = new MatrixNodeFlat<Algorithm>(obs);
             return child;
+        };
+
+        size_t count_matrix_nodes()
+        {
+            size_t c = 1;
+            const size_t n_children = row_actions.size() * col_actions.size();
+
+            for (size_t i = 0; i < n_children; ++i)
+            {
+                ChanceNode *&chance_node = edges[i];
+                if (edges[i] != nullptr)
+                {
+                    c += chance_node->count_matrix_nodes();
+                }
+            }
+            return c;
         }
-        return child;
     };
 
-    size_t count_matrix_nodes()
+    class ChanceNode
     {
-        size_t c = 0;
+    public:
+        std::unordered_map<typename Types::Obs, MatrixNode *, typename Types::ObsHash> edges{};
+        typename Types::ChanceStats stats{};
 
-        for (const auto &[obs, matrix_node] : edges)
+        ChanceNode() {}
+        ~ChanceNode();
+
+        MatrixNode *access(typename Types::Obs &obs)
         {
-            if (matrix_node != nullptr)
+            MatrixNode *&child = edges[obs];
+            if (child == nullptr)
             {
-                c += matrix_node->count_matrix_nodes();
+                child = new MatrixNode(obs);
+                return child;
             }
+            return child;
+        };
+
+        size_t count_matrix_nodes()
+        {
+            size_t c = 0;
+
+            for (const auto &[obs, matrix_node] : edges)
+            {
+                if (matrix_node != nullptr)
+                {
+                    c += matrix_node->count_matrix_nodes();
+                }
+            }
+            return c;
         }
-        return c;
-    }
+    };
 };
 
-// We have to hold off on destructor definitions until here
-
-template <typename Algorithm>
-MatrixNodeFlat<Algorithm>::~MatrixNodeFlat()
+template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+FlatNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
 {
     delete[] edges;
 }
 
-template <typename Algorithm>
-ChanceNodeFlat<Algorithm>::~ChanceNodeFlat()
+template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+FlatNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
 {
     for (const auto &[obs, matrix_node] : edges)
     {

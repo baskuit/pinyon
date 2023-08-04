@@ -1,10 +1,11 @@
 #pragma once
 
 #include <libsurskit/math.hh>
+#include <state/state.hh>
 #include <tree/node.hh>
 
 template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
-struct DefaultNodes : Types // Is a Types Object
+struct DefaultNodes : Types
 {
     class MatrixNode;
 

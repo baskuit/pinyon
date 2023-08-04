@@ -20,9 +20,9 @@ struct RandomTree : Types
         size_t depth_bound = 0;
         size_t rows = 0;
         size_t cols = 0;
-        size_t transitions = 1;
+        const size_t transitions = 1;
         int payoff_bias = 0;
-        typename Types::Rational chance_threshold{typename Types::Rational{1, transitions + 1}};
+        typename Types::Rational chance_threshold{1, static_cast<int>(transitions + 1)};
         std::vector<typename Types::Prob> chance_strategies;
         int chance_denominator = 10;
 

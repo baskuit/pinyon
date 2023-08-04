@@ -35,6 +35,8 @@ public:
 
     constexpr Rational(const T p, const T q) : p{p}, q{q} {}
 
+    // constexpr Rational(size_t p, size_t q) : p{p}, q{q} {}
+
     bool operator==(const Rational &y) const
     {
         return (p == y.p) && (q == y.q);
