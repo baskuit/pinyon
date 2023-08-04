@@ -11,8 +11,8 @@ concept IsNodeTypes =
         typename Types::Prob &prob,
         typename Types::State &state) {
         {
-            matrix_node->stats
-        } -> std::same_as<typename Types::MatrixStats>;
+            matrix_node.stats
+        } -> std::same_as<typename Types::MatrixStats &>;
         {
             matrix_node.access(0, 0)
         } -> std::same_as<typename Types::ChanceNode *>;
@@ -45,8 +45,8 @@ concept IsNodeTypes =
         } -> std::same_as<const bool &>;
 
         {
-            chance_node->stats
-        } -> std::same_as<typename Types::ChanceStats>;
+            chance_node.stats
+        } -> std::same_as<typename Types::ChanceStats &>;
         {
             chance_node.access(obs)
         } -> std::same_as<typename Types::MatrixNode *>;

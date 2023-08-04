@@ -3,31 +3,32 @@
 int main()
 {
 
-    using Model = MonteCarloModel<MoldState<2>::T>;
+    using BaseTypes = MonteCarloModel<MoldState<2>>;
 
-    auto session0 = TreeBandit<Exp3<Model::T>::T>{};
-    auto session1 = TreeBanditThreaded<Exp3<Model::T>::T>{};
-    auto session2 = TreeBanditThreadPool<Exp3<Model::T>::T>{};
+    using SessionTypes0 = TreeBandit<Exp3<BaseTypes>>;
+    using SessionTypes1 = TreeBanditThreaded<Exp3<BaseTypes>>;
+    using SessionTypes2 = TreeBanditThreadPool<Exp3<BaseTypes>>;
 
     std::tuple<
-        TreeBandit<Exp3<Model::T>::T>,
-        TreeBanditThreaded<Exp3<Model::T>::T>,
-        TreeBanditThreadPool<Exp3<Model::T>::T>>
-        tuple{session0, session1, session2};
+    SessionTypes0,
+    SessionTypes1,
+    SessionTypes2>
+        tuple{{}, {}, {}};
 
-    std::get<1>(tuple).threads = 8;
-    std::get<2>(tuple).threads = 8;
+    std::vector<int> threads {1, 2, 2};
 
-    auto lambda = [](auto &session)
+    auto lambda = [](auto type_list)
     {
-        using MatrixNode = typename std::remove_reference<decltype(session)>::type::T::MatrixNode; // Access the nested A class
+        using Types = decltype(type_list);
+        using MatrixNode = typename Types::MatrixNode; // Access the nested A class
         MatrixNode root{};
 
-        MoldState<2> state{50};
-        Model model{0};
+        BaseTypes::State state{50};
+        BaseTypes::Model model{0};
 
         const size_t iterations = 1 << 18;
         prng device{0};
+        typename Types::Search session{};
         session.run_for_iterations(iterations, device, state, model, root);
 
         size_t count = root.count_matrix_nodes();
