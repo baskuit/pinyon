@@ -32,7 +32,7 @@ namespace detail
 };
 
 template <
-    template <typename, template <typename> typename, template <typename> typename> typename... TreeBanditTemplates,
+    template <typename...> typename... TreeBanditTemplates,
     typename BanditTuple,
     typename NodeTypePack>
 auto algorithm_generator(BanditTuple bandit_tuple, NodeTypePack node_type_pack)

@@ -4,9 +4,10 @@
 
 template <typename Types>
 concept IsAlgorithmTypes =
-    requires(
-        typename Types::MatrixStats &matrix_stats,
-        typename Types::ChanceStats &chance_stats) {true;} &&
+    requires {
+        typename Types::MatrixStats{};
+        typename Types::ChanceStats{};
+    } &&
     IsStateTypes<Types>;
 
 template <typename Types>
@@ -35,21 +36,21 @@ concept IsBanditAlgorithmTypes =
         {
             bandit.get_refined_value(matrix_stats, value)
         } -> std::same_as<void>;
-        // {
-        //     bandit.initialize_stats(0, state, model, matrix_stats)
-        // } -> std::same_as<void>;
-        // {
-        //     bandit.expand(state, matrix_stats, inference)
-        // } -> std::same_as<void>;
-        // {
-        //     bandit.select(device, matrix_stats, outcome)
-        // } -> std::same_as<void>;
-        // {
-        //     bandit.update_matrix_stats(matrix_stats, outcome)
-        // } -> std::same_as<void>;
-        // {
-        //     bandit.update_chance_stats(chance_stats, outcome)
-        // } -> std::same_as<void>;
+        {
+            bandit.initialize_stats(0, state, model, matrix_stats)
+        } -> std::same_as<void>;
+        {
+            bandit.expand(state, matrix_stats, inference)
+        } -> std::same_as<void>;
+        {
+            bandit.select(device, matrix_stats, outcome)
+        } -> std::same_as<void>;
+        {
+            bandit.update_matrix_stats(matrix_stats, outcome)
+        } -> std::same_as<void>;
+        {
+            bandit.update_chance_stats(chance_stats, outcome)
+        } -> std::same_as<void>;
     } &&
     IsValueModelTypes<Types>;
 
@@ -99,12 +100,17 @@ concept IsOffPolicyBanditTypes =
 template <typename Types>
 concept IsTreeBanditTypes =
     requires(
-        typename Types::TreeAlgorithm &session,
+        typename Types::Search &session,
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         typename Types::MatrixNode &matrix_node) {
-        // typename Types::TreeAlgorithm{}; // default constructor is valid
+        {
+            typename Types::Search{}
+        };
+        {
+            session = session
+        } -> std::same_as<typename Types::Search &>;
         {
             session.run(0, device, state, model, matrix_node)
         } -> std::same_as<size_t>;
