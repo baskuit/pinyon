@@ -1,232 +1,127 @@
 #pragma once
 
-#include "libsurskit/math.hh"
-#include "libsurskit/vector.hh"
+#include <types/types.hh>
 
 #include <concepts>
-struct AbstractTypeList
-{
-};
-// "_Name" so that the Type name does not shadow the template
-template <typename _Action,
-          typename _Observation,
-          typename _Probability,
-          typename _Real,
-          typename _VectorAction,
-          typename _VectorReal,
-          typename _VectorInt,
-          typename _MatrixReal,
-          typename _MatrixInt>
-// TODO requires std::floating_point<_Real>
-struct TypeList : AbstractTypeList
-{
-    using Action = _Action;
-    using Observation = _Observation;
-    using Probability = _Probability;
-    using Real = _Real;
-    using VectorAction = _VectorAction;
-    using VectorReal = _VectorReal;
-    using VectorInt = _VectorInt;
-    using MatrixReal = _MatrixReal;
-    using MatrixInt = _MatrixInt;
-};
+#include <vector>
 
-template <class _TypeList>
-class AbstractState
-{
-public:
-    struct Types : _TypeList
-    {
-        using TypeList = _TypeList;
-    };
-    struct Transition
-    {
-    };
-    struct Actions
-    {
-    };
-};
-
-/*
-Default State. Pretty much every implementation of anything so far assumes that the State object derives from this.
-This is where our most basic assumptions about a "State" manifest. However, I'm not sure if the rest of Surskit makes assumptions
-about this State being totally observed.
-Indeed, the Node access() methods simply assume that the same chance node must be the same
-
-We assume that calculating actions takes work, so we make it explicit.
-The BanditTree algorithm is safe because it always calls actions before running inference or applying actions.
-There may be a way to statically guarantee this.
-*/
-
-template <class TypeList>
-class DefaultState : public AbstractState<TypeList>
-{
-    static_assert(std::derived_from<TypeList, AbstractTypeList>);
-
-public:
-    struct Transition;
-    struct Actions;
-    struct Types : AbstractState<TypeList>::Types
-    {
-        using Transition = DefaultState::Transition;
-        using Actions = DefaultState::Actions;
-    };
-
-    struct Transition : AbstractState<TypeList>::Transition
-    {
-        typename Types::Observation obs;
-        typename Types::Probability prob;
-    };
-
-    struct Actions : AbstractState<TypeList>::Actions
-    {
-        typename Types::VectorAction row_actions;
-        typename Types::VectorAction col_actions;
-        int rows;
-        int cols;
-
-        void print()
+template <typename State, typename VectorAction, typename Value, typename PRNG>
+concept IsState =
+    requires(
+        State &state,
+        VectorAction &actions,
+        PRNG &device) {
         {
-            std::cout << "row_actions: ";
-            for (int i = 0; i < rows; ++i)
-            {
-                std::cout << row_actions[i] << ", ";
-            }
-            std::cout << std::endl;
-            std::cout << "col_actions: ";
-            for (int j = 0; j < cols; ++j)
-            {
-                std::cout << col_actions[j] << ", ";
-            }
-            std::cout << std::endl;
-        }
+            state.is_terminal()
+        } -> std::same_as<bool>;
+        {
+            state.get_payoff()
+        } -> std::same_as<Value>;
+        {
+            state.get_actions(actions, actions)
+        } -> std::same_as<void>;
+        {
+            state.randomize_transition(device)
+        } -> std::same_as<void>;
     };
 
-    bool is_terminal = false;
-    typename Types::Real row_payoff, col_payoff;
-    Transition transition;
-    Actions actions;
+template <typename Types>
+concept IsStateTypes =
+    IsState<
+        typename Types::State,
+        typename Types::VectorAction,
+        typename Types::Value,
+        typename Types::PRNG> &&
+    IsTypeList<Types>;
 
-    void get_actions();
-    void apply_actions(
-        typename Types::Action row_action,
-        typename Types::Action col_action);
-};
+template <typename Types>
+concept IsPerfectInfoStateTypes =
+    requires(
+        typename Types::State &state,
+        typename Types::Action &action) {
+        {
+            state.terminal
+        } -> std::same_as<bool &>;
+        {
+            state.row_actions
+        } -> std::same_as<typename Types::VectorAction &>;
+        {
+            state.col_actions
+        } -> std::same_as<typename Types::VectorAction &>;
+        {
+            state.payoff
+        } -> std::same_as<typename Types::Value &>;
+        {
+            state.obs
+        } -> std::same_as<typename Types::Obs &>;
+        {
+            state.prob
+        } -> std::same_as<typename Types::Prob &>;
+        {
+            state.apply_actions(action, action)
+        } -> std::same_as<void>;
+        {
+            state.get_actions()
+        } -> std::same_as<void>;
+    } &&
+    IsStateTypes<Types>;
 
-/*
-State with known a Nash equilibrium. Payoffs are assumed to be defined and Nash as well.
-*/
-
-template <class TypeList>
-class SolvedState : public DefaultState<TypeList>
+template <IsTypeList T>
+class PerfectInfoState
 {
-    static_assert(std::derived_from<TypeList, AbstractTypeList>);
-
 public:
-    struct Types : DefaultState<TypeList>::Types
+    bool terminal{false};
+    T::VectorAction row_actions{};
+    T::VectorAction col_actions{};
+    T::Value payoff{};
+    T::Obs obs{};
+    T::Prob prob{};
+
+    inline T::Value get_payoff()
     {
-    };
-    typename Types::VectorReal row_strategy, col_strategy;
+        return payoff;
+    }
+
+    inline bool is_terminal()
+    {
+        return terminal;
+    }
 };
 
-/*
-This represents states that accept input for the chance player.
-Since this uses Obs as chance action, this must be fully observed.
+template <typename Types>
+concept IsChanceStateTypes =
+    requires(
+        typename Types::State &state,
+        typename Types::Action &action,
+        typename Types::Obs &obs,
+        std::vector<typename Types::Obs> &chance_actions) {
+        {
+            state.get_chance_actions(chance_actions, action, action)
+        } -> std::same_as<void>;
+        {
+            state.apply_actions(obs, action, action)
+        } -> std::same_as<void>;
+    } &&
+    IsPerfectInfoStateTypes<Types>;
 
-Currently not used by any Search algorithms, but I have ideas.
-*/
-
-template <class TypeList>
-class StateChance : public DefaultState<TypeList>
+template <IsTypeList Types>
+class SolvedState : public PerfectInfoState<Types>
 {
-    static_assert(std::derived_from<TypeList, AbstractTypeList>);
-
 public:
-    struct Types : DefaultState<TypeList>::Types
-    {
-    };
-    void get_chance_actions(
-        std::vector<typename Types::Observation> &chance_actions,
-        typename Types::Action row_action,
-        typename Types::Action col_action);
-    void apply_actions(
-        typename Types::Action row_action,
-        typename Types::Action col_action,
-        typename Types::Observation chance_action);
+    Types::VectorReal row_strategy, col_strategy;
 };
 
-/*
-Handy aliases.
-*/
-
-template <int size, typename Action, typename Observation, typename Probability>
-using StateArray = DefaultState<TypeList<
-    Action,
-    Observation,
-    Probability,
-    double,
-    Array<Action, size>,
-    Array<double, size>,
-    Array<int, size>,
-    Linear::Matrix<double, size>,
-    Linear::Matrix<int, size>>>;
-
-template <typename Action, typename Observation, typename Probability>
-using StateVector = DefaultState<TypeList<
-    Action,
-    Observation,
-    Probability,
-    double,
-    Vector<Action>,
-    Vector<double>,
-    Vector<int>,
-    Linear::MatrixVector<double>,
-    Linear::MatrixVector<int>>>;
-
-template <int size, typename Action, typename Observation, typename Probability>
-using SolvedStateArray = SolvedState<TypeList<
-    Action,
-    Observation,
-    Probability,
-    double,
-    Array<Action, size>,
-    Array<double, size>,
-    Array<int, size>,
-    Linear::Matrix<double, size>,
-    Linear::Matrix<int, size>>>;
-
-template <typename Action, typename Observation, typename Probability>
-using SolvedStateVector = SolvedState<TypeList<
-    Action,
-    Observation,
-    Probability,
-    double,
-    Vector<Action>,
-    Vector<double>,
-    Vector<int>,
-    Linear::MatrixVector<double>,
-    Linear::MatrixVector<int>>>;
-
-template <int size, typename Action, typename Observation, typename Probability>
-using StateChanceArray = StateChance<TypeList<
-    Action,
-    Observation,
-    Probability,
-    double,
-    Array<Action, size>,
-    Array<double, size>,
-    Array<int, size>,
-    Linear::Matrix<double, size>,
-    Linear::Matrix<int, size>>>;
-
-template <typename Action, typename Observation, typename Probability>
-using StateChanceVector = StateChance<TypeList<
-    Action,
-    Observation,
-    Probability,
-    double,
-    Vector<Action>,
-    Vector<double>,
-    Vector<int>,
-    Linear::MatrixVector<double>,
-    Linear::MatrixVector<int>>>;
+template <typename Types>
+concept IsSolvedStateTypes =
+    requires(
+        typename Types::State state,
+        typename Types::VectorReal &strategy,
+        typename Types::MatrixValue &matrix) {
+        {
+            state.get_strategies(strategy, strategy)
+        } -> std::same_as<void>;
+        {
+            state.get_matrix(matrix)
+        } -> std::same_as<void>;
+    } &&
+    IsChanceStateTypes<Types>;

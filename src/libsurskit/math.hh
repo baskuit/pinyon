@@ -1,247 +1,103 @@
 #pragma once
-#include <math.h>
-#include <assert.h>
-#include <stdexcept>
-#include <algorithm>
-#include <vector>
 
-#include "random.hh"
-#include "rational.hh"
-#include "vector.hh"
+#include <types/rational.hh>
+#include <types/random.hh>
+
+#include <cstdint>
+#include <math.h>
+
+using ActionIndex = int;
 
 namespace math
 {
 
-    template <typename VectorIn, typename VectorOut>
-    void power_norm(VectorIn &input, int length, double power, VectorOut &output)
+    template <template <typename...> typename VectorIn, typename InT, template <typename...> typename VectorOut, typename OutT>
+    void power_norm(VectorIn<InT> &input, int length, double power, VectorOut<OutT> &output)
     {
         double sum = 0;
         for (int i = 0; i < length; ++i)
         {
             double x = std::pow(input[i], power);
-            output[i] = x;
+            output[i] = OutT{x};
             sum += x;
         }
         for (int i = 0; i < length; ++i)
         {
-            output[i] = output[i] / sum;
+            output[i] = output[i] / static_cast<OutT>(sum);
         }
     }
 
-    template <typename Vector>
-    void print(Vector &input, int length)
+    template <typename VectorIn>
+    void power_norm(VectorIn &input, double power = 1.0)
     {
+        double sum = 0;
+        const size_t length = input.size();
         for (int i = 0; i < length; ++i)
+        {
+            double x = std::pow(input[i], power);
+            input[i] = x;
+            sum += x;
+        }
+        for (int i = 0; i < length; ++i)
+        {
+            input[i] = input[i] / sum;
+        }
+    }
+
+    template <template <typename...> typename Vector, typename T>
+    void print(Vector<T> &input)
+    {
+        for (int i = 0; i < input.size(); ++i)
         {
             std::cout << input[i] << ", ";
         }
         std::cout << std::endl;
     }
 
-    template <typename Real>
-    Real sigmoid (Real x) {
-        return 1 / (1 + exp(x));
+    template <template <typename...> typename Vector, template <typename> typename Wrapper>
+    void print(Vector<Wrapper<mpq_class>> &input)
+    {
+        for (int i = 0; i < input.size(); ++i)
+        {
+            std::cout << static_cast<mpq_class>(input[i]).get_str() << ", ";
+        }
+        std::cout << std::endl;
     }
-}
 
-namespace Linear
-{
-
-    template <typename T, int size>
-    class Matrix
+    template <typename Real, typename Value, template <typename...> typename Vector, template <typename> typename Matrix>
+    Real exploitability(
+        Matrix<Value> &value_matrix,
+        Vector<Real> &row_strategy,
+        Vector<Real> &col_strategy)
     {
-    public:
-        std::array<T, size * size> data;
-        int rows, cols;
-        Matrix(){};
-        Matrix(int rows, int cols) : rows(rows), cols(cols) {}
+        const size_t rows = value_matrix.rows;
+        const size_t cols = value_matrix.cols;
 
-        void fill(int rows, int cols) {
-            this->rows = rows;
-            this->cols = cols;
-        }
+        Real row_payoff{Rational<>{0}}, col_payoff{Rational<>{0}};
+        Vector<Real> row_response, col_response;
+        row_response.resize(rows); // TODO use surskit interface
+        col_response.resize(cols);
 
-        void fill(int rows, int cols, T value)
+        size_t data_idx = 0;
+        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
         {
-            this->rows = rows;
-            this->cols = cols;
-            std::fill(data.begin(), data.begin() + rows * cols, value);
-        }
-
-        T &get(int i, int j)
-        {
-            return data[i * cols + j];
-        }
-
-        Matrix operator*(T t)
-        {
-            const Matrix &M = *this;
-            Matrix output(M.rows, M.cols);
-            for (int i = 0; i < rows * cols; ++i)
+            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
             {
-                output.data[i] = M.data[i] * t;
-            }
-            return output;
-        }
-
-        Matrix operator+(T t)
-        {
-            const Matrix &M = *this;
-            Matrix output(M.rows, M.cols);
-            for (int i = 0; i < rows * cols; ++i)
-            {
-                output.data[i] = M.data[i] + t;
-            }
-            return output;
-        }
-
-        void print()
-        {
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    std::cout << get(i, j) << ", ";
-                }
-                std::cout << std::endl;
-            }
-        }
-        
-        T max()
-        {
-            const int entries = rows * cols;
-            return *std::max_element(data.begin(), data.begin() + entries);
-        }
-
-        T min()
-        {
-            const int entries = rows * cols;
-            return *std::min_element(data.begin(), data.begin() + entries);
-        }
-    };
-
-    template <typename T>
-    class MatrixVector
-    {
-    public:
-        std::vector<T> data;
-        int rows, cols;
-
-        MatrixVector(){};
-        MatrixVector(int rows, int cols) : data(std::vector<T>(rows * cols)), rows(rows), cols(cols)
-        {
-        }
-
-        void fill(int rows, int cols)
-        {
-            this->rows = rows;
-            this->cols = cols;
-            data.resize(rows * cols);
-        }
-
-        void fill(int rows, int cols, T value)
-        {
-            this->rows = rows;
-            this->cols = cols;
-            const int n = rows * cols;
-            data.resize(n);
-            std::fill(data.begin(), data.begin() + n, value);
-        }
-
-        T &get(int i, int j)
-        {
-            return data[i * cols + j];
-        }
-
-        MatrixVector operator*(T t)
-        {
-            const MatrixVector &M = *this;
-            MatrixVector output(M.rows, M.cols);
-            for (int i = 0; i < rows * cols; ++i)
-            {
-                output.data[i] = M.data[i] * t;
-            }
-            return output;
-        }
-        MatrixVector operator+(T t)
-        {
-            const MatrixVector &M = *this;
-            MatrixVector output(M.rows, M.cols);
-            for (int i = 0; i < rows * cols; ++i)
-            {
-                output.data[i] = M.data[i] + t;
-            }
-            return output;
-        }
-
-        void print()
-        {
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    std::cout << get(i, j) << ", ";
-                }
-                std::cout << std::endl;
-            }
-        }
-
-        T max()
-        {
-            const int entries = rows * cols;
-            return *std::max_element(data.begin(), data.begin() + entries);
-        }
-
-        T min()
-        {
-            const int entries = rows * cols;
-            return *std::min_element(data.begin(), data.begin() + entries);
-        }
-    };
-
-    template <class TypeList>
-    typename TypeList::Real exploitability(
-        typename TypeList::MatrixReal &row_payoff_matrix,
-        typename TypeList::MatrixReal &col_payoff_matrix,
-        typename TypeList::VectorReal &row_strategy,
-        typename TypeList::VectorReal &col_strategy)
-    {
-        const int rows = row_payoff_matrix.rows;
-        const int cols = row_payoff_matrix.cols;
-
-        typename TypeList::Real row_payoff = 0, col_payoff = 0;
-        typename TypeList::VectorReal row_response, col_response;
-        row_response.fill(rows, 0);
-        col_response.fill(cols, 0); // TODO maybe replace this with just a constructor
-        for (int row_idx = 0; row_idx < rows; ++row_idx)
-        {
-            for (int col_idx = 0; col_idx < cols; ++col_idx)
-            {
-                const typename TypeList::Real u = row_payoff_matrix.get(row_idx, col_idx) * col_strategy[col_idx];
-                const typename TypeList::Real v = col_payoff_matrix.get(row_idx, col_idx) * row_strategy[row_idx];
+                const Value &value = value_matrix[data_idx];
+                const Real u{col_strategy[col_idx] * value.get_row_value()};
+                const Real v{row_strategy[row_idx] * value.get_col_value()};
                 row_payoff += u * row_strategy[row_idx];
                 col_payoff += v * col_strategy[col_idx];
                 row_response[row_idx] += u;
                 col_response[col_idx] += v;
+                ++data_idx;
             }
         }
 
-        typename TypeList::Real row_best_response = row_response[0], col_best_response = col_response[0];
-        for (int row_idx = 1; row_idx < rows; ++row_idx)
-        {
-            if (row_response[row_idx] > row_best_response)
-            {
-                row_best_response = row_response[row_idx];
-            }
-        }
-        for (int col_idx = 1; col_idx < cols; ++col_idx)
-        {
-            if (col_response[col_idx] > col_best_response)
-            {
-                col_best_response = col_response[col_idx];
-            }
-        }
+        Real row_best_response{*std::max_element(row_response.begin(), row_response.end())};
+        Real col_best_response{*std::max_element(col_response.begin(), col_response.end())};
 
-        return (row_best_response - row_payoff) + (col_best_response - col_payoff);
+        return Real{row_best_response - row_payoff + col_best_response - col_payoff};
     }
-}
+
+} // end 'math'

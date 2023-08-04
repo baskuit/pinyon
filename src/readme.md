@@ -1,453 +1,391 @@
 
+# Generic Search
+
+Surskit was designed to test search algorithms, which means it must accommodate all the well-studied approaches to game playing in the perfect information regime.
+
+* **State**
+Development on Surskit began before there were any fast Pokemon simulators available, so already there is no concrete game that we can assume as a base. Under the umbrella of "competitive", there are many different generations and formats that are fundamentally distinct games. 
+Furthermore, the techniques and algorithms we want to investigate are not limited to any specific game.
+* **Model**
+We borrow this term from machine learning, where it typically refers to a trained neural network.
+Search is simply looking ahead; we still need a way to estimate the game value of the future states our search algorithm visits. This is left to the 'Model'.
+There are three major inference schemes in computer game playing. The oldest and simplest is the handcrafted heuristic. Conventional chess engines have used this approach until relatively recently, and it's safe to say that most bespoke game-playing rely on this too. This approach is the simplest for three and has the potential to be the fastest, which is critical for playing strength.
+The second is the large neural network, a la Alpha Zero. One advantage of neural networks is that they are capable of much more sophisticated inference than a manual device. This approach was dominant in computer chess until the advent of the small [NNUE](https://en.wikipedia.org/wiki/Efficiently_updatable_neural_network). These networks tend to have less powerful inference than the former but they compensate with increased performance. Their inferences per second can be orders of magnitude larger.
+
+* **Algorithm**
+I chose to emulate proven projects in chess. For this, [LeelaChessZero](https://lczero.org/) and [Stockfish](https://stockfishchess.org/) were the inspiration for the 'tree-bandit' and 'solver' folders respectively. Both have achieved fantastic results in computer chess while taking drastically different approaches to search.
+The former is a generalization of the 'Monte Carlo' tree search which was proven with AlphaZero and afterward successfully applied to many domains.
+The latter models the iterative deepening approaches of Stockfish and most chess engines.
+
+* **TypeList**
+This may be thought of as an antecedent to the `State` family.  It encapsulates the various primitive and object data types that are used everywhere. Certain types like `Action` and `Observation` depend on the game in question or its implementation. Others are variable for performance reasons or just to make the library more flexible and extensible. For example, the default PRNG device is a Mersenne twister, which could easily be substituted from a faster scheme. This is as simple as including the implementation into the project and making a one line adjustment to the using declaration in the `Types` object.
+
+* **Node**
+This family was only recently given more than one implementation. The performance of the search is highly sensitive to the tree structure. In all search algorithms, a transition of a state is always paired with an equivalent operation of matrix nodes where a child node is produced from the parent.
+
+## Hierarchy
+
+The families of types above can be ordered by dependency.
+
+> TypeList < State < Model < Algorithm < Node
+
+The methods of a family of types necessarily refer to the concrete types of the lower family
+```cpp
+State::apply_actions(Action row_action, Action col_action);
+
+Model::get_inference(State& state, ModelOutput& output);
+
+Algorithm::run(State& state, Model& model);
+```
+
+## Advantages of Modularity
+
+### Testing
+
+### Uncertainty
+
+### Tuning
+
+# Realizing
+
+The above is a useful framework for thinking about search abstractly, but it must be implemented in a performant manner to be useful
+
+## Language
+
+C++ was a natural choice for this library.
+
+* As a compiled language, it is orders of magnitude faster that interpreted languages like Python and NodeJS. It cannot be overstated how important this is for search to have a chance at producing strong play. Compilers for C++ are also highly sophisticated and can perform clever optimizations that can mitigate the cost of high abstraction.
+* Stockfish and Leela Chess Zero are both implemented in C++.
+* C++ is one of the most popular compiled languages. This is important since this is a library. Other people should use it!
 
 
+In programming, the capability of the code to work with different types and implementations is called *Polymorphism*
 
+The paradigm of type families at the start of this document must be codified in C++'s static typing. This is a non trivial design challenge and it took several refactors until I devised a convention that I felt was simple but expressive enough for useful modularity.
 
-# Types
-Surskit attempts to codify search using four types, each 'higher' than the previous: 
+## A naive approach
 
- > State
- > Model
- > Algorithm
- > Tree
+Polymorphism can be achieved in C++ using classes and inheritance:
 
-- Each of these types is actually a generic template (e.g. `DefaultState<TypeList>`, `MonteCarloModel<State>`, `MatrixNode<Algorithm>`) that accepts a specialization of the type just below it.
- 	- The motivation for templating is to design a polymorphic interface without incurring the runtime penalty of virtual table lookup.
-For a basic example of this, see the `rollout` method in the implementation of`MonteCarloModel<State>` below:
-		
-			void rollout(State &state) {
-				while (!state.is_terminal) {
-					const int row_idx = this->device.random_int(state.actions.rows);
-					const int col_idx = this->device.random_int(state.actions.cols);
-					const typename Types::Action row_action = state.actions.row_actions[row_idx];
-					const typename Types::Action col_action = state.actions.col_actions[col_idx];
-					state.apply_actions(row_action, col_action);
-					state.get_actions();
-				}
-			}
+As a way to refer to a family of types in general, we define an abstract base class for each family. Each actual type in the family will derive from that abstract class, which establishes a shared interface (`get_actions` for states, `get_inference` for models, etc.)
+```cpp
+class State {
+	virtual void get_actions () = 0;
+};
 
-* Each class specialization is derived from another class specialization of the same generic type.
+class Battle : public State {
+	void get_actions () override {
+		// ...
+	}
+};
 
-	- For example, `MonteCarloModel<MatrixGame<...>>` is derived from `DoubleOracle<MatrixGame<...>>`, which in turn is derived from `AbstractModel<MatrixGame<...>>`.
+// Rollout method 
+void rollout (State& state) {
+	while (!state.is_terminal()) {
+		state.get_actions();
+		Action row_action, col_action;
+		// select random actions for both row and column players
+		state.apply_actions(row_action, col_action);
+	}
+}
 
-- And each type has a class which is base to all. These are `AbstractState<TypeList>`, `AbstractModel<State>`, `AbstractAlgorithm<Model>`, `AbstractTree<Algorithm>`.
+int main () {
+	Battle battle{};
+	rollout(battle);
+	// battle is accepted as an arg because the `Battle` type is derived from the `State` type
+}
+```
+This pseudo code demonstrates how the random rollout process, which is used in the Monte Carlo model, could be implemented so that it works for any state. 
 
-- Every class has a nested type list called `Types`. For a super class, this struct always inherits from the `Types` of the subclass. For the base classes (e.g. `AbstractModel`), `Types` will inherit from the`Types` of the lower template parameter class, except `AbstractState<TypeList>`, whose `Types` inherits from the template parameter directly.
+The `get_actions` method of the base class is marked `virtual`, which means it's intended to be called on an instance of a class *derived* from `State`, and that class will provide its own implementation of the method.
 
+This approach has a fatal flaw however. It is called *dynamic* polymorphism because type checking is performed at run-time. Each time the program encounters a virtual method, it must lookup the implementation in a *v-table*. This operation takes time and seriously compromises performance due to the high number of virtual function calls in generic search code.
 
-	Besides the aforementioned inheritance, the below also illustrates the pattern for supplying `Types` with more aliases within the scope of the class. 
+## Templates to the Rescue
+
+Templates in C++ allow a generic class or function to be defined with a type or multiple types as a parameter.
+```cpp
+template <typename State>
+void rollout (State &state) {
+	while (!state.is_terminal()) {
+		// state.apply_actions(); etc
+	}
+}
+```
+Thus instead of the program performing a v-table lookup at runtime, the different invocations or *specializations* of the template are determined during compilation.
+```cpp
+int main () {
+	Battle battle{};
+	rollout(battle); // bound to the function rollout<Battle> at compile-time.
+``` 
+This feature is extremely powerful and besides solving the demands of type-correctness, **it allows many classes to act as generic implementations of high level transformations**
+E.g.
+```cpp
+	using Model = MonteCarloModel<Battle>;
+	// type alias for brevity
+	Model model{};
+```
+The Monte Carlo estimation method is encapsulated as a model and can be applied to *any* type with the state interface. If a class is missing the method `void apply_action(Action, Action)` or the property `is_terminal`, etc. then there will be a compilation error.
+```cpp
+	const int depth_to_solve = 3;
+	TraversedState<Model> solved_battle {battle, model, depth_to_solve};
+	// Expands the game tree rooted at the battle up to depth 3 
+	// and solves for Nash Equilibrium strategies and payoff.
+```
+These generic transformations and classes have the same performance as if they were hard-coded for just one type.
 	
-		class Exp3p : public _TreeBandit<Model, Exp3p<Model, _TreeBandit>>
-		{
-			public:
-			struct MatrixStats;
-			struct ChanceStats;
-			struct Types : _TreeBandit<Model, Exp3p<Model, _TreeBandit>>::Types
-			{
-				using MatrixStats = Exp3p::MatrixStats;
-				using ChanceStats = Exp3p::ChanceStats;
-			};
-			struct MatrixStats : _TreeBandit<Model, Exp3p<Model, _TreeBandit>>::MatrixStats
-			{
-				//...
-			}
-		};
-	This pattern improves readability by confining this boilerplate to the top of the class block.
-	
+# Implementation Details
 
-##  Typelist
-This is the template parameter to states that determines the types native to the state's implementation, as well as the types that are indispensable for calculation up the hierarchy.
-More precisely, it is expected that a TypeList contain the following aliases:
+The expressiveness of templates allows for many different design patterns to solve the polymorphism problem. When applied to an entire library of code, these patterns become conventions that should be followed as functionality is added. In fact, the user should be able to write correct simply by mimicking the implementation of existing Surskit classes, without needing to understand the convention.
 
-* `Action` 
-For the contrived games that are implemented with Surskit, this is always just `int`. However some games may have a string data type e.g. 'exd5' instead.
-* `Observation` 
-This represents the observation during a transition just after committing actions. This type is used by the tree structure to distinguish between different outcomes. 
-* `Probability` 
-The numeric type used to represent the probability of a given transition occurring. If it is known, both `double` and `Rational` are good candidates. However many games do not implement or reveal this number. In that case, `bool` may be a good choice to indicate this, where the probability of a given transition is always `true`.
-* `Real` 
-Aka `double`. More precision may be desired.
-* `VectorAction`
-* `VectorReal`
-* `VectorInt` 
-These vectors are only expected to range over the legal actions at a given matrix node. 
-As such the primary state implementation uses `std::array<Action, MAX_ACTIONS>` etc.
- Some games may have a large upper bound on the number of actions, and storing them in standard array may not be feasible.  In this case, the use of `std::vector<Action>` is encouraged. This is especially true if using MatrixUCB or a variant, since then the use of arrays would require `MAX_ACTIONS * MAX_ACTIONS` elements.
+One of the simplest conventions and the one described here follows from considering the ordering we gave the families of types earlier.
 
-* `MatrixInt` 
-* `MatrixReal`
-The 'math' header contains a simple implementation of matrices via standard arrays and standard vectors.
+> When defining a type (such as `MonteCarloModel` for example), we position the prerequisite type in the family just below as the first template parameter: 
+> 
+> `RandomTree<SimpleTypes>`
+> `MonteCarloModel<Battle>`
+>  `Exp3<TorchModel>`
+>  etc.
+> 
+This convention can be seen on clear display in the following boilerplate alias declarations
+```cpp
+using State = MoldState<9>;
+using Model = MonteCarloModel<State>;
+using Search = TreeBandit<Exp3<Model>>;
 
-## State
-	template <class _TypeList>
-	class AbstractState {
-	public:
-	    struct Types : _TypeList {
-	        using TypeList = _TypeList;
-	    };
-	    struct Transition {};
-	    struct Actions {};
-	};
+const size_t depth = 20;
+State state{depth};
+Model model{};
+const double gamma = .1;
+Search session{gamma};
+```
 
-In general, a state represents a partially-observed, stochastic, two-player matrix game. A state has an `Actions` type (not to be confused with `Action`) which stores information about the legal moves of *both* players, and a `Transition` type, which stores any information observed from the state after committing joint actions. This terminology mirrors that of a Markov Decision Process.
-Note that all these structs are empty. Indeed the abstract classes only inform the user what must be implemented in the derived classes. 
-
-### `DefaultState<TypeList> : AbstractState<TypeList>`
-
-Currently, all implemented higher classes assume that the state is derived from `DefaultState`. The design of this state is outlined below.
-
-	class DefaultState : public AbstractState<TypeList>
-	{
-	    struct Transition : AbstractState<TypeList>::Transition {
-	        typename Types::Observation obs;
-	        typename Types::Probability prob;
-	    };
-
-	    struct Actions : AbstractState<TypeList>::Actions {
-	        typename Types::VectorAction row_actions;
-	        typename Types::VectorAction col_actions;
-	        int rows;
-	        int cols;
-	    };
-	    typename Types::Real row_payoff, col_payoff;
-	    bool is_terminal = false;
-	    Transition transition;
-	    Actions actions;
-
-	    void get_actions();
-	    void apply_actions(
-	        typename Types::Action row_action,
-	        typename Types::Action col_action);
-	};
-The `Actions` and `Transitions` structs are implemented and included as *members*. We populate these members with methods `get_actions` and `apply_actions` that modify them in place.
-The payoffs for both row and column players are members. These payoffs are assumed only to be  initialized in the `apply_actions` method, after the state has transitioned to terminal. No reward is received for a non-terminal transition.
-Lastly there is a boolean indicator of whether the state is terminal. This is also updated in `apply_actions`.
-It is not assumed that states are constructed with valid actions, payoff, or transition data in place. This is because this information may be costly to calculate. The user may have to call `get_actions()` on a state before using it. 
-A state must also be copyable. This is because the state will be 'rolled out' (mutated) during search, so these operations must be performed on a copy to keep the original state unmodified. 
-
-`DefaultState` has a smaller scope of representation than `AbstractState`. Its purpose is to codify a *perfect information* game. 
-Thus the search tree assumes that the `Observation` uniquely identifies different transitions and has no handling of any 'mix-up' that may result from incomplete observations.
-Imperfect information games are beyond the scope of vanilla Surskit, and in fact convergence guarantees on such games would require something like Counterfactual Regret. Nevertheless, `DefaultState` is not base because the user may find that the look-ahead functionality of Surskit is useful in some imperfect info contexts.
-
-###	`SolvedState<TypeList> : DefaultState<TypeList>`
-This class is used to represent a state whose Nash equilibrium strategies and payoffs are known *a priori*.
-It has additional  members  `row_strategy, col_strategy`, and the `row_payoff, col_payoff` members inherited from `DefaultState` are assumed to be initialized and valid even when the state is not terminal.
+If we unroll these alias declaration, we can see that the type of the final search object is
+`TreeBandit<Exp3<MonteCarloModel<MoldState<9>>>>`!
 
 
+In the definition for the `TreeBandit` class, the compiler is only given the type of the bandit algorithm `Exp3<...>` explicitly, not the model or state or any other lower types. This raises the question:
+How exactly are the identities of all the lower types determined in the code of the higher families?
 
-### `StateChance<TypeList> : DefaultState<TypeList>`
+## Types Struct
 
-This class is for states that provide a means for controlling the actions of the 'chance player', meaning that the user can dictate how a state transitions. This is codified with the undefined  overload method
+Every class which belongs to one of the type families has a special `Types` struct defined within its class scope. The only exception to this are the structs of the `Types` family, since they themselves are their own Types struct.
 
-	    void apply_actions(
-	        typename Types::Action row_action,
-	        typename Types::Action col_action,
-	        typename Types::Observation chance_action);
-	        
-There are currently no provided algorithms that exploit this functionality, but the potential benefits are clear.
+```cpp
+template <class Model>
+class Exp3 : public AbstractAlgorithm<Model> {
+	// ...
+};
+```
 
-## Model
+Consider the code for the Exp3 algorithm above. We've explicitly declared the type of the 'model' class to simply be the `Model` template parameter type. In scope of the class, we can simply use this type directly
 
-	template <class _State>
-	class AbstractModel {
-	public:
-	    struct Inference;
-	    struct Types : _State::Types {
-	        using State = _State;
-	        using Inference = AbstractModel::Inference;
-	    };
-	    struct Inference {};
-	    void get_inference(
-	        typename Types::State &state,
-	        typename Types::Inference &inference);
-	};
+```cpp
+	void get_inference (Model &model) {
+		// contrived example
+	}
+```
 
-A model provides knowledge about a state which is contained in the `Inference` struct.
+But then how would we refer to the lower types? We could also pass the lower types as a template parameter, but that would quickly become unwieldy.
 
-### `DoubleOracleModel<State> : AbstractModel<State>`
+```cpp
+using State = MoldState<9>;
+using Model = MonteCarloModel<State>;
+using BanditAlgorithm = Exp3<Model, State>
+using Search = TreeBandit<BanditAlgorithm, Model, State>;
+```
+Even worse than before!
 
-Conventional models like heuristic-based value estimation, monte carlo, and neural networks all sit under the umbrella of the double oracle model, which provides a value and policy estimate for both players.
+The solution is to store alias declarations inside the `Types` struct and access them with the scope operator `Types::`
+```cpp
+	typename Types::Real gamma = .01;
+	typename Types::VectorAction row_actions, col_actions;
+// same real and vector type that was declared in the TypesStruct
+	void run (
+		const size_t iterations,
+		const typename Types::State &state,
+		const typename Types::Model &model,
+		MatrixNode *matrix_node
+	) {
+		// ...
+	}
+```
+The idiom `typename Types::Name` essentially means that within the `Types` struct, there is some declaration
+`using Name = // Some concrete type specifiation`
+for each possible lower type. These declarations are only made once, and they are then inherited as we go up the hierarchy of type families.
 
-### `MonteCarloModel<State> : DoubleOracleModel<State>`
+## Ancestry of the Types Struct
 
-A universal model that is able to provide unbiased estimates for any perfect-information state. Its value estimates are the payoff of a state after a random rollout and its policy estimates are the uniform distribution over legal actions.
+The most primitive declaration are made in the lowest 'Types' family. See the default implementation below.
 
-### `SolvedMonteCarloModel<State> : MonteCarloModel<State>`
+```cpp
+// template param declarations here
+struct Types
+{
+    using Rational = _Rational;
+    using Real = RealType<_Real>;
 
-The state template class must be derived from `SolvedState`. That is because this model works just like a normal Monte Carlo model, only that it simulates a strong policy estimate by modifying the de facto solutions via the Lp norm. This model is intended to test the use of policy priors in search algorithms.
+    using Action = ActionType<_Action>;
+    using Observation = ObservationType<_Observation>;
+    using ObservationHash = ObservationHashType<_Observation>;
+    using Probability = ProbabilityType<_Probability>;
 
-## Algorithm
+    using Seed = _Seed;
+    using PRNG = _PRNG;
 
-	template <class _Model>
-	class AbstractAlgorithm {
-	public:
-	    struct MatrixStats {};
-	    struct ChanceStats {};
-	    struct Types : _Model::Types {
-	        using Model = _Model;
-	        using MatrixStats = AbstractAlgorithm::MatrixStats;
-	        using ChanceStats = AbstractAlgorithm::ChanceStats;
-	    };
-	};
+    using Value = ValueStruct<Real, true>;
 
-An algorithm determines how a tree is expanded and produces value/policy solutions for a state.
-Besides any methods that an algorithm may use in its operation, it also provides `MatrixStats` and `ChanceStats` structs while will be stored inside each matrix node and chance node, respectively.  These structs encapsulate the information the algorithm needs in its tree expansion and calculations.
+    using VectorReal = _VectorReal<Real>;
+    using VectorAction = _VectorAction<Action>;
+    using VectorInt = _VectorInt<int>;
 
-### MCTS
+    using MatrixReal = _MatrixReal<Real>;
+    using MatrixInt = _MatrixInt<int>;
+    using MatrixValue = Matrix<Value>;
 
-The MatrixUCB and Exp3p algorithms are both instances of a [Monte Carlo Tree Search](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search), where a tree is iteratively expanded via playouts. In the following, it is assumed that the reader is familiar with the fundamentals of this process.
+    using Strategy = VectorReal;
+};
+```
 
-The usual formula for determining what actions to select during a playout is known as Upper Confidence Bounds. The application of this selection process to a tree structure is sometimes known as Upper Confidence Trees. 
+Thus `typename Types::Value` in will be deduced by the compiler to mean `_ValueStruct<Real, true>`.
 
-It is well known that this formula, when used to select the actions of the row and column players independently, fails to produce Nash equilibrium strategies. 
-The reason for this is best explained with some math terminology. UCB is a solution to a class of problems called [Multi Armed Bandits](https://en.wikipedia.org/wiki/Multi-armed_bandit). It is a principled way of selecting actions during playouts. However, UCB is a solution to the *stochastic* bandits problem, where the quality of an action is more or less fixed. This assumption does not hold in simultaneous move games because the quality of an action also depends on the selection of the opponent.
+Lets see how these declarations become accessible to the implementation of `RandomTree`.
 
-The two algorithms provided with Surskit amend this by using a more suitable bandit algorithm:
-
-* Exp3p is a solution to the *adversarial* bandit problem. The selection process is robust to the fact that the quality of an action depends on the selection for the other player.
-
-* MatrixUCB recovers the stochastic assumption by making the selection over *joint  actions* for both players.
-
-### `TreeBanditBase : public AbstractAlgorithm<Model>`
-
-The class encapsulates the iterative selection, expansion and back-propagation process that is common to vanilla MTCS, Exp3p, and MatrixUCB. It introduces a helper struct called `Outcome` which stores the outcome of the bandit selection process at each node that is visited in the playout. This information consists of: the actions selected, the sampled probability of selecting those actions, and the reward received (the reward being the model's value estimate for the leaf node at the end of the playout.)
-The user interfaces with this class with its methods `run`, which asks for a specific number  of playouts to perform, `run_for_duration` which performs playouts until the time is up, and `get_strategies`, which gives the 'final answer' for the root node using the accumulated stats in the search tree.
-
-This class is actually incomplete, and has three derivations. 
-
-* `TreeBandit : public TreeBanditBase<Model, Algorithm>`
-Single threaded
-
-* `TreeBanditThreaded : public TreeBanditBase<Model, Algorithm>`
-A multi-threaded version that stores a mutex in each matrix node. This has lower contention but higher memory cost.
-
-* `TreeBanditPool : public TreeBanditBase<Model, Algorithm>`
-A mult-threaded version that uses a pool of mutexes for the entire tree. Each matrix node is assigned an index that speficies a mutex. This has lower memory cost but higher contention.
-
-These classes differ only by their implementation of the playout function and data they have to add to the matrix stats for that purpose.
-Each of these templates accepts a model specialization, of course, but also an Algorithm. This is where we specify Exp3p, MatrixUCB, or any other bandit algorithm.
-
- See the single threaded playout function below:
-
-
-    MatrixNode<Algorithm> *playout(
-        prng &device,
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixNode<Algorithm> *matrix_node) 
-	{
-        if (!matrix_node->is_terminal) {
-            if (matrix_node->is_expanded) {
-                typename Types::Outcome outcome;
-
-                this->_select(device, matrix_node, outcome);
-
-                typename Types::Action row_action = matrix_node->actions.row_actions[outcome.row_idx];
-                typename Types::Action col_action = matrix_node->actions.col_actions[outcome.col_idx];
-                state.apply_actions(row_action, col_action);
-
-                ChanceNode<Algorithm> *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode<Algorithm> *matrix_node_next = chance_node->access(state.transition);
-
-                MatrixNode<Algorithm> *matrix_node_leaf = this->playout(device, state, model, matrix_node_next);
-
-                outcome.row_value = matrix_node_leaf->inference.row_value;
-                outcome.col_value = matrix_node_leaf->inference.col_value;
-                this->_update_matrix_node(matrix_node, outcome);
-                this->_update_chance_node(chance_node, outcome);
-                return matrix_node_leaf;
-            }
-            else {
-                this->_expand(state, model, matrix_node);
-                return matrix_node;
-            }
-        }
-        else {
-            return matrix_node;
-        }
-    }
-
-The methods `expand`, `update_matrix_node`, `update_chance_node`, and `select` are members of  the `TreeBanditBase` class, but `TreeBanditBase` is actually a *CRTP base class*. The methods are implemented in the particular bandit algorithm class like so:
-
-	// from TreeBanditBase
-    void update_matrix_node(
-        MatrixNode<Algorithm> *matrix_node,
-        Outcome &outcome) {
-        return static_cast<Algorithm *>(this)->_update_matrix_node(
-            matrix_node,
-            outcome);
-    }
-
-and 
-
-	// from Exp3p
-    void _update_chance_node(
-        ChanceNode<Exp3p> *chance_node,
-        typename Types::Outcome &outcome)
+```cpp
+template <typename _Types = RandomTreeTypes>
+class RandomTree : public ChanceState<_Types>
+{
+public:
+    struct Types : ChanceState<_Types>::Types
     {
-        chance_node->stats.row_value_total += outcome.row_value;
-        chance_node->stats.col_value_total += outcome.col_value;
-        chance_node->stats.visits += 1;
-    }
-
-The result of this inheritance scheme is quite powerful. The user can write their own bandit algorithm by simply implementing `select`, `expand`, `update_matrix_node`, `update_chance_node`. The bandit algorithm is then compatible with the single and multi threaded search processes, and can be initialized with just:
-
-	CustomBandit<Model, TreeBanditThreaded> session(device);
-	session.run(playouts, state, model, root);
-
-
-
-## Tree
-
-	template <class _Algorithm>
-	class AbstractNode {
-	public:
-	    struct Types : _Algorithm::Types {
-	        using Algorithm = _Algorithm;
-	    };
-	};
-There is currently only one implementation of a search tree, via `MatrixNode` and `ChanceNode`.
-
-A matrix node represents a decision point by both players. It contains all the information provided by the model and all the statistics necessary for it's base algorithm to select actions and traverse further down the tree.
-
-A chance node represents all the possible transition that are possible once a given pair of joint actions has been committed.
-
-### `MatrixNode : public AbstractNode<Algorithm>`
-
-	class MatrixNode : public AbstractNode<Algorithm> {
-	public:
-	    struct Types : AbstractNode<Algorithm>::Types {};
-
-	    ChanceNode<Algorithm> *parent = nullptr;
-	    ChanceNode<Algorithm> *child = nullptr;
-	    MatrixNode<Algorithm> *prev = nullptr;
-	    MatrixNode<Algorithm> *next = nullptr;
-
-	    bool is_terminal = false;
-	    bool is_expanded = false;
-
-	    typename Types::Actions actions;
-	    typename Types::Transition transition;
-	    typename Types::Inference inference;
-	    typename Types::MatrixStats stats;
-	    
-	    ChanceNode<Algorithm> *access(int row_idx, int col_idx);
-	};
-
-The tree structure is provided by the four pointer members. Rather than storing a vector of pointers that refer to the children of a node, we use a linked list. Only the first child is stored in the parent, and all of the child's siblings are accessible via `next`. Explicitly, the children of `matrix_node` would be `matrix_node->child`, `matrix_node->child->next`, `matrix_node->child->next->next` and so on.
-
-Note that the parent and children of a `MatrixNode` are `ChanceNodes`, while the siblings prev and next are of the same type. The analogous is true for the pointer members of a `ChanceNode`.
-
-As the tree is being traversed,  the search uses only information that is stored in the nodes. It will query the state and model only when necessary, during the expansion of a new matrix node.
-Thus we store a copy of `Actions`, `is_terminal`, and `inference` in each matrix node.
-
-A `Transition` object (recall this is just an `Observation` key and a `Probability` value) is stored in each matrix node. This is used by the chance node parent to match the observed transition with the correct child.
-
-Lastly, a `MatrixStats` object is stored, which is defined inside the template `Algorithm` parameter.
-
-### `ChanceNode : public AbstractNode<Algorithm>`
-
-	template <typename Algorithm>
-	class ChanceNode : public AbstractNode<Algorithm>
-	{
-	public:
-	    struct Types : AbstractNode<Algorithm>::Types {};
-
-	    MatrixNode<Algorithm> *parent = nullptr;
-	    MatrixNode<Algorithm> *child = nullptr;
-	    ChanceNode<Algorithm> *prev = nullptr;
-	    ChanceNode<Algorithm> *next = nullptr;
-
-	    int row_idx;
-	    int col_idx;
-
-	    typename Types::ChanceStats stats;
-
-The chance node stores considerably less data since no decisions are made here. Its primary purpose is to point us the the correct matrix node given a state's particular transition. 
-
-Similarly to how a matrix node will store the transition object that 'led to it', a chance node will also store the indices of the actions of the row and column player that make up the joint action. The use of these identifiers is evident in the implementations of both the access functions.
-
-    ChanceNode<Algorithm> *access(int row_idx, int col_idx)
-    {
-        if (this->child == nullptr)
-        {
-            this->child = new ChanceNode<Algorithm>(this, nullptr, row_idx, col_idx);
-            return this->child;
-        }
-        ChanceNode<Algorithm> *current = this->child;
-        ChanceNode<Algorithm> *previous = this->child;
-        while (current != nullptr)
-        {
-            previous = current;
-            if (current->row_idx == row_idx && current->col_idx == col_idx)
-            {
-                return current;
-            }
-            current = current->next;
-        }
-        ChanceNode<Algorithm> *child = new ChanceNode<Algorithm>(this, previous, row_idx, col_idx);
-        previous->next = child;
-        return child;
-    };
-and 
-
-    MatrixNode<Algorithm> *access(typename Types::Transition &transition)
-    {
-        if (this->child == nullptr)
-        {
-            MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, nullptr, transition);
-            this->child = child;
-            return child;
-        }
-        MatrixNode<Algorithm> *current = this->child;
-        MatrixNode<Algorithm> *previous = this->child;
-        while (current != nullptr)
-        {
-            previous = current;
-            if (current->transition.obs == transition.obs)
-            {
-                return current;
-            }
-            current = current->next;
-        }
-        MatrixNode<Algorithm> *child = new MatrixNode<Algorithm>(this, previous, transition);
-        previous->next = child;
-        return child;
     };
 
-The last thing to cover is resource management. 
-A node owns its children but not its siblings. 
-Destructing a node will thus delete all its children  and remove it from it parents linked list of children. See below:
+    typename Types::PRNG device;
+    typename Types::Seed seed{};
+	//...
+};
+```
+In the scope of `RandomTree` the name Types refers to the struct that was just declared (per convention) at the top of the class block. This particular struct does not have any *new* declarations in its body, but it did inherit the declarations from `ChanceState<_Types>::Types`, which is the corresponding types struct of`ChanceState`. We can follow this chain of inheritance all the way back to the original types struct.
 
-	template <typename Algorithm>
-	MatrixNode<Algorithm>::~MatrixNode()
-	{
-	    while (this->child != nullptr)
-	    {
-	        ChanceNode<Algorithm> *victim = this->child;
-	        this->child = this->child->next;
-	        delete victim;
-	    }
-	}
+```cpp
+template <class _Types>
+class ChanceState : public PerfectInfoState<_Types>
+{
+public:
+    struct Types : PerfectInfoState<_Types>::Types
+    {
+    };
+```
 
-	template <typename Algorithm>
-	ChanceNode<Algorithm>::~ChanceNode()
-	{
-	    while (this->child != nullptr)
-	    {
-	        MatrixNode<Algorithm> *victim = this->child;
-	        this->child = this->child->next;
-	        delete victim;
-	    }
+```cpp
+template <class _Types>
+class PerfectInfoState : public AbstractState<_Types>
+{
+public:
+    struct Types : AbstractState<_Types>::Types
+    {
+    };
+```
+
+```cpp
+template <class _Types>
+class AbstractState
+{
+public:
+    struct Types : _Types
+    {
+        using TypeList = _Types;
+    };
+```
+
+Thus the chain of inheritance for `RandomTree<RandomTreeTypes>::Types` is
+```
+RandomTreeTypes
+	AbstractState<RandomTreeTypes>::Types
+		PerfectInfoState<RandomTreeTypes>::Types
+			ChanceState<RandomTreeTypes>::Types
+				RandomTree<RandomTreeTypes>::Types
+```
+
+which does in fact contain the declarations.
+
+### In General
+
+Lets say we have a class `Class_N` which is of some family `F`. Then there is a unique path of inheritance
+
+```cpp
+class AbstractClass
+	class Class_1
+		class Class_2
+			...
+			class Class_N
+```
+
+all the way back to the abstract class for that family. Then the types struct of each class will mirror this inheritance pattern
+
+```cpp
+struct AbstractClass::Types
+	struct Class_1::Types
+		struct Class_2::Types
+			...
+			struct Class_N::Types
+```
+
+But it does not stop there, as we want to pull the types from the lower families. Recall that `AbstractClass`, while not derived from any other class, is a template of the form
+
+```cpp
+template <class LowerClass>
+class AbstractClass {
+	struct Types : LowerClass::Types {
 	};
+};
+```
 
-Thus a simple way to ensure that everything is cleaned up is to instantiate the root node at the stack level, so that it and all of it's children will be destructed when it leaves scope.
+```cpp
+template <class TypeList>
+class AbstractState {
+	struct Types : TypeList {
+	};
+}; // slightly different inheritance when the lower family is the Type family
+```
 
-	void scoped_search_example () {
-		MatrixNode<Algorithm> root;
-		session.search(10000, state, model, root);
-		// tree will be created and destroyed within the execution of this function.
-	}
+**The Types struct of an abstract class will inherit from the types struct of the template parameters**. In this way, the inheritance of `Types` will 'jump' levels all the way back to the most primitive `TypeList` class with all the most basic alias declarations.
 
-The tree does not currently support more advanced memory management like pruning or hash tables.
+### Adding New Types
+
+Sometime we have to introduce types other than the basic `Action`, `VectorInt` types. For example, a model
+
+```cpp
+template <class State>
+class DoubleOracleModel : public AbstractModel<State> {
+public:
+    struct ModelOutput;
+    struct Types : AbstractModel<State>::Types {
+        using ModelOutput = DoubleOracleModel::ModelOutput;
+    };
+    struct ModelOutput{
+        typename Types::Value value;
+        typename Types::VectorReal row_policy;
+        typename Types::VectorReal col_policy;};
+};
+```
+will define types to handle input and output. The general pattern is below:
+
+```cpp
+template <class Lower>
+class UpperDerived : public UpperBase<Lower> {
+    struct SomeStruct; //forward declaration
+    struct Types :: UpperBase<Lower>::Types {
+        using SomeStruct = UpperDerived::SomeStruct;
+    };
+    struct SomeStruct; // implementation
+};
+```
+The reason for the forward declaration is just so that the `Types` stays as close to the top of the class block as possible.
+Now we can use `typename Types::ModelOutput` in the same class block as well as any derived or templated classes.
+
+# What Else?
+
+# Basic Examples
+
 

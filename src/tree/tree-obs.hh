@@ -5,8 +5,13 @@
 #include <tree/node.hh>
 
 template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
-struct DefaultNodes : Types
+struct LNodes : Types
 {
+    /*
+    Instead of MatrixNodes storing their obs memeber, they are bundled with 'Edge' struct
+    which is basically a linked list that the chance node parent owns
+    */
+
     class MatrixNode;
 
     class ChanceNode;
@@ -17,20 +22,15 @@ struct DefaultNodes : Types
         static constexpr bool STORES_VALUE = false;
 
         ChanceNode *child = nullptr;
-        MatrixNode *next = nullptr;
 
         bool terminal = false;
         bool expanded = false;
 
         typename Types::VectorAction row_actions;
         typename Types::VectorAction col_actions;
-        typename Types::Obs obs;
-        MatrixStats stats;
-
-
+        typename Types::MatrixStats stats;
 
         MatrixNode(){};
-        MatrixNode(typename Types::Obs obs) : obs(obs) {}
         ~MatrixNode();
 
         inline void expand(typename Types::State &state)
@@ -70,11 +70,6 @@ struct DefaultNodes : Types
             terminal = true;
         }
 
-        inline void set_terminal(const bool value)
-        {
-            terminal = value;
-        }
-
         inline void set_expanded()
         {
             expanded = true;
@@ -107,6 +102,25 @@ struct DefaultNodes : Types
             return child;
         };
 
+        size_t count_siblings()
+        {
+            // called on a matrix node to see how many branches its chance node parent has
+            size_t c = 1;
+            MatrixNode *current = this->next;
+            while (current != nullptr)
+            {
+                ++c;
+                current = current->next;
+            }
+            current = this->prev;
+            while (current != nullptr)
+            {
+                ++c;
+                current = current->prev;
+            }
+            return c;
+        }
+
         size_t count_matrix_nodes()
         {
             size_t c = 1;
@@ -120,17 +134,32 @@ struct DefaultNodes : Types
         }
     };
 
-    // Chance Node
     class ChanceNode
     {
     public:
-        MatrixNode *child = nullptr;
+        struct Edge
+        {
+            MatrixNode *matrix_node = nullptr;
+            typename Types::Obs obs;
+            Edge *next = nullptr;
+            Edge() {}
+            Edge(
+                MatrixNode *matrix_node,
+                typename Types::Obs obs) : matrix_node(matrix_node), obs(obs) {}
+            ~Edge()
+            {
+                delete matrix_node;
+                delete next;
+            }
+        };
+
         ChanceNode *next = nullptr;
+        Edge edge;
 
         ActionIndex row_idx;
         ActionIndex col_idx;
 
-        ChanceStats stats;
+        typename Types::ChanceStats stats;
 
         ChanceNode() {}
         ChanceNode(
@@ -138,37 +167,39 @@ struct DefaultNodes : Types
             ActionIndex col_idx) : row_idx(row_idx), col_idx(col_idx) {}
         ~ChanceNode();
 
-        MatrixNode *access(const typename Types::Obs &obs)
+        MatrixNode *access(typename Types::Obs &obs) // TODO check speed on pass-by
         {
-            if (this->child == nullptr)
+            if (edge.matrix_node == nullptr)
             {
-                MatrixNode *child = new MatrixNode(obs);
-                this->child = child;
+                MatrixNode *child = new MatrixNode();
+                edge.matrix_node = child;
+                edge.obs = obs;
                 return child;
             }
-            MatrixNode *current = this->child;
-            MatrixNode *previous = this->child;
+            Edge *current = &edge;
+            Edge *previous = &edge;
             while (current != nullptr)
             {
                 previous = current;
                 if (current->obs == obs)
                 {
-                    return current;
+                    return current->matrix_node;
                 }
                 current = current->next;
             }
-            MatrixNode *child = new MatrixNode(obs);
-            previous->next = child;
+            MatrixNode *child = new MatrixNode();
+            Edge *child_wrapper = new Edge(child, obs);
+            previous->next = child_wrapper;
             return child;
         };
 
         size_t count_matrix_nodes()
         {
             size_t c = 0;
-            MatrixNode *current = this->child;
+            auto current = &(this->edge);
             while (current != nullptr)
             {
-                c += current->count_matrix_nodes();
+                c += current->matrix_node->count_matrix_nodes();
                 current = current->next;
             }
             return c;
@@ -176,23 +207,22 @@ struct DefaultNodes : Types
     };
 };
 
-// We have to hold off on destructor definitions until here
 template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
-DefaultNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
+LNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
 {
     while (this->child != nullptr)
     {
-        DefaultNodes<Types, MatrixStats, ChanceStats>::ChanceNode *victim = this->child;
+        LNodes<Types, MatrixStats, ChanceStats>::ChanceNode *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }
 }
 template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
-DefaultNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
+LNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
 {
     while (this->child != nullptr)
     {
-        DefaultNodes<Types, MatrixStats, ChanceStats>::MatrixNode *victim = this->child;
+        LNodes<Types, MatrixStats, ChanceStats>::MatrixNode *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }

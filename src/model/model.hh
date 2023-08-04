@@ -1,129 +1,113 @@
 #pragma once
 
-#include "state/state.hh"
+#include <state/state.hh>
 
-template <class _State>
-class AbstractModel
+#include <vector>
+
+template <template <typename> typename _Model, typename Types> 
+struct Types_Model : Types {
+    using ModelTypes = Types;
+};
+
+template <typename Types>
+concept IsValueModelTypes =
+    requires(
+        typename Types::Model &model,
+        typename Types::ModelInput &input,
+        typename Types::ModelOutput &output,
+        typename Types::State &state) {
+        {
+            output.value
+        } -> std::same_as<typename Types::Value &>;
+        {
+            model.get_inference(
+                input,
+                output)
+        } -> std::same_as<void>;
+        {
+            model.get_input(
+                state,
+                input)
+        } -> std::same_as<void>;
+    } &&
+    IsStateTypes<Types>;
+
+template <typename Types>
+concept IsDoubleOracleModelTypes =
+    requires(
+        typename Types::Model &model,
+        typename Types::ModelInput &input,
+        typename Types::ModelOutput &output,
+        typename Types::State &state) {
+        {
+            output.row_policy
+        } -> std::same_as<typename Types::VectorReal &>;
+        {
+            output.col_policy
+        } -> std::same_as<typename Types::VectorReal &>;
+    } &&
+    IsValueModelTypes<Types>;
+
+template <IsStateTypes Types>
+struct EmptyModel : Types
 {
-public:
-    struct Inference;
-    struct Types : _State::Types
-    {
-        using State = _State;
-        using Inference = AbstractModel::Inference;
-    };
+
     struct Inference
     {
+        typename Types::Value value;
+        typename Types::VectorReal row_policy, col_policy;
     };
+    using ModelInput = typename Types::State;
+    using ModelOutput = Inference;
+    using ModelBatchInput = std::vector<ModelInput>;
+    using ModelBatchOutput = std::vector<ModelOutput>;
 
-    void get_inference(
-        typename Types::State &state,
-        typename Types::Inference &inference);
-};
-
-/*
-Similar to `State`, in that virtually all models will be derived from it.
-*/
-
-template <class State>
-
-class DoubleOracleModel : public AbstractModel<State>
-{
-    static_assert(std::derived_from<State, AbstractState<typename State::Types::TypeList>>);
-
-public:
-    struct Inference;
-    struct Types : AbstractModel<State>::Types
+    class Model
     {
-        using Inference = DoubleOracleModel::Inference;
-    };
-
-    struct Inference : AbstractModel<State>::Inference
-    {
-        typename Types::Real row_value;
-        typename Types::Real col_value;
-        typename Types::VectorReal row_policy;
-        typename Types::VectorReal col_policy;
-    };
-};
-
-/*
-Universal model.
-*/
-
-template <class State>
-class MonteCarloModel : public DoubleOracleModel<State>
-{
-    static_assert(std::derived_from<State, AbstractState<typename State::Types::TypeList>>);
-
-public:
-    struct Types : DoubleOracleModel<State>::Types
-    {
-    };
-
-    prng device;
-
-    MonteCarloModel(prng &device) : device(device.get_seed()) {}
-
-    void get_inference(
-        typename Types::State &state,
-        typename Types::Inference &inference)
-    {
-        const typename Types::Real row_uniform = 1 / (typename Types::Real)state.actions.rows;
-        inference.row_policy.fill(state.actions.rows, row_uniform);
-        const typename Types::Real col_uniform = 1 / (typename Types::Real)state.actions.cols;
-        inference.col_policy.fill(state.actions.cols, col_uniform);
-
-        this->rollout(state);
-        inference.row_value = state.row_payoff;
-        inference.col_value = state.col_payoff;
-    }
-
-protected:
-    void rollout(State &state)
-    {
-        while (!state.is_terminal)
+    public:
+        void get_input(
+            const Types::State &state,
+            ModelInput &input)
         {
-            const int row_idx = this->device.random_int(state.actions.rows);
-            const int col_idx = this->device.random_int(state.actions.cols);
-            const typename Types::Action row_action = state.actions.row_actions[row_idx];
-            const typename Types::Action col_action = state.actions.col_actions[col_idx];
-            state.apply_actions(row_action, col_action);
-            state.get_actions();
+            input = state;
         }
-    }
-};
 
-/*
-MonteCarlo model that uses a priori solutions to simulate expert inference
-*/
+        void get_batch_input(
+            const std::vector<typename Types::State> &states,
+            ModelBatchInput &inputs)
+        {
+            inputs = states;
+        }
 
-template <class State>
-class SolvedMonteCarloModel : public MonteCarloModel<State>
-{   
-    static_assert(std::derived_from<State, SolvedState<typename State::Types::TypeList>>);
+        void get_inference(
+            ModelInput &input,
+            ModelOutput &output)
+        {
+            output.value = typename Types::Value{typename Types::Rational{1, 2}, typename Types::Rational{1, 2}};
+        }
 
-public:
-    struct Types : DoubleOracleModel<State>::Types
-    {
+        void get_inference(
+            ModelBatchInput &inputs,
+            ModelBatchOutput &outputs)
+        {
+            for (auto &output : outputs)
+            {
+                output.value = typename Types::Value{.5, .5};
+            }
+        }
+
+        void get_value(
+            ModelInput &input,
+            Types::Value &value)
+        {
+            value = typename Types::Value{typename Types::Rational{1, 2}, typename Types::Rational{1, 2}};
+        }
+
+        void add_to_batch_input(
+            Types::State &state,
+            ModelBatchInput &input)
+        {
+            input.push_back(state);
+        }
     };
-
-    typename Types::Real power = 1;
-    typename Types::Real epsilon = .005; // unused
-
-    SolvedMonteCarloModel(prng &device) : MonteCarloModel<State>(device) {}
-
-    SolvedMonteCarloModel(prng &device, typename Types::Real power, typename Types::Real epsilon) : 
-        MonteCarloModel<State>(device), power(power), epsilon(epsilon) {}
-
-    void get_inference(
-        typename Types::State &state,
-        typename Types::Inference &inference)
-    {
-        math::power_norm(state.row_strategy, state.actions.rows, power, inference.row_policy);
-        math::power_norm(state.col_strategy, state.actions.cols, power, inference.col_policy);
-        this->rollout(state);
-        inference.row_value = state.row_payoff;
-        inference.col_value = state.col_payoff;
-    }
 };
