@@ -31,7 +31,7 @@ public:
 
     bool terminal = false;
     bool expanded = false;
-    typename Types::Observation obs;
+    typename Types::Obs obs;
 
     typename Types::VectorAction row_actions;
     typename Types::VectorAction col_actions;
@@ -41,7 +41,7 @@ public:
 
     MatrixNodeFlat(){};
     MatrixNodeFlat(
-        typename Types::Observation obs) : obs(obs) {}
+        typename Types::Obs obs) : obs(obs) {}
     ~MatrixNodeFlat();
 
     inline void expand(typename Types::State &state)
@@ -130,13 +130,13 @@ public:
     {
     };
 
-    std::unordered_map<typename Types::Observation, MatrixNodeFlat<Algorithm> *, typename Types::ObservationHash> edges{};
+    std::unordered_map<typename Types::Obs, MatrixNodeFlat<Algorithm> *, typename Types::ObsHash> edges{};
     typename Types::ChanceStats stats{};
 
     ChanceNodeFlat() {}
     ~ChanceNodeFlat();
 
-    MatrixNodeFlat<Algorithm> *access(typename Types::Observation &obs)
+    MatrixNodeFlat<Algorithm> *access(typename Types::Obs &obs)
     {
         MatrixNodeFlat<Algorithm> *&child = edges[obs];
         if (child == nullptr)

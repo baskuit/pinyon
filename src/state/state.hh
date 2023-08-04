@@ -53,10 +53,10 @@ concept IsPerfectInfoStateTypes =
         } -> std::same_as<typename Types::Value &>;
         {
             state.obs
-        } -> std::same_as<typename Types::Observation &>;
+        } -> std::same_as<typename Types::Obs &>;
         {
             state.prob
-        } -> std::same_as<typename Types::Probability &>;
+        } -> std::same_as<typename Types::Prob &>;
         {
             state.apply_actions(action, action)
         } -> std::same_as<void>;
@@ -74,8 +74,8 @@ public:
     T::VectorAction row_actions{};
     T::VectorAction col_actions{};
     T::Value payoff{};
-    T::Observation obs{};
-    T::Probability prob{};
+    T::Obs obs{};
+    T::Prob prob{};
 
     inline T::Value get_payoff()
     {
@@ -93,8 +93,8 @@ concept IsChanceStateTypes =
     requires(
         typename Types::State &state,
         typename Types::Action &action,
-        typename Types::Observation &obs,
-        std::vector<typename Types::Observation> &chance_actions) {
+        typename Types::Obs &obs,
+        std::vector<typename Types::Obs> &chance_actions) {
         {
             state.get_chance_actions(chance_actions, action, action)
         } -> std::same_as<void>;

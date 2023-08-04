@@ -36,11 +36,11 @@ struct AlphaBetaOld : Types
         size_t matrix_node_count_last = 0;
 
         unsigned int depth = 0;
-        typename Types::Probability prob;
+        typename Types::Prob prob;
     };
     struct ChanceStats
     {
-        typename Types::Probability explored{Rational{0}};
+        typename Types::Prob explored{Rational{0}};
         size_t matrix_node_count = 0;
     };
     using MatrixNode = NodePair<Types>::MatrixNode;
@@ -130,7 +130,7 @@ struct AlphaBetaOld : Types
                             const typename Types::Action row_action = state.row_actions[row_idx];
                             const typename Types::Action col_action = state.col_actions[col_idx];
 
-                            std::vector<typename Types::Observation> chance_actions;
+                            std::vector<typename Types::Obs> chance_actions;
                             state.get_chance_actions(chance_actions, row_action, col_action);
                             for (const auto chance_action : chance_actions)
                             {
@@ -280,7 +280,7 @@ struct AlphaBetaOld : Types
                             const typename Types::Action row_action = state.row_actions[row_idx];
                             const typename Types::Action col_action = state.col_actions[col_idx];
 
-                            std::vector<typename Types::Observation> chance_actions;
+                            std::vector<typename Types::Obs> chance_actions;
                             state.get_chance_actions(chance_actions, row_action, col_action);
                             for (const auto chance_action : chance_actions)
                             {
@@ -304,7 +304,7 @@ struct AlphaBetaOld : Types
                             // 12: pi, j ← u(si, j ); oi, j ← u(si, j)
                             p_ij = u_ij;
                             o_ij = u_ij;
-                            // const typename Types::Probability unexplored {chance_node->stats.explored * typename Types::Real{-1} + typename Types::Real{1}};
+                            // const typename Types::Prob unexplored {chance_node->stats.explored * typename Types::Real{-1} + typename Types::Real{1}};
                             // if (!skip_row_idx)
                             // {
                             //     p_ij = u_ij;
@@ -397,7 +397,7 @@ struct AlphaBetaOld : Types
                             const typename Types::Action row_action = state.row_actions[row_idx];
                             const typename Types::Action col_action = state.col_actions[col_idx];
 
-                            std::vector<typename Types::Observation> chance_actions;
+                            std::vector<typename Types::Obs> chance_actions;
                             state.get_chance_actions(chance_actions, row_action, col_action);
                             for (const auto chance_action : chance_actions)
                             {

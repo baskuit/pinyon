@@ -5,8 +5,8 @@ concept IsNodeTypes =
     requires(
         typename Types::MatrixNode &matrix_node,
         typename Types::ChanceNode &chance_node,
-        typename Types::Observation &obs,
-        typename Types::Probability &prob,
+        typename Types::Obs &obs,
+        typename Types::Prob &prob,
         typename Types::State &state) {
         {
             matrix_node.access(0, 0)

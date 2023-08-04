@@ -18,8 +18,8 @@ TypeList
 template <
     typename _Real,
     typename _Action,
-    typename _Observation,
-    typename _Probability,
+    typename _Obs,
+    typename _Prob,
 
     template <typename...> typename _Value = PairReal,
     template <typename...> typename _Vector = std::vector,
@@ -34,8 +34,8 @@ struct DefaultTypes
     using TypeList = DefaultTypes;
     using Real = RealType<_Real>;
     using Action = ActionType<_Action>;
-    using Observation = ObservationType<_Observation>;
-    using Probability = ProbabilityType<_Probability>;
+    using Obs = ObsType<_Obs>;
+    using Prob = ProbType<_Prob>;
 
     using Value = _Value<Real>;
     using VectorReal = _Vector<Real>;
@@ -49,7 +49,7 @@ struct DefaultTypes
     template <typename... Args>
     using Matrix = _Matrix<Args...>;
 
-    using ObservationHash = ObservationHashType<_Observation>;
+    using ObsHash = ObsHashType<_Obs>;
     using Mutex = std::mutex;
     using Seed = _Seed;
     using PRNG = _PRNG;
@@ -135,7 +135,7 @@ concept IsTypeList =
     requires(
         Types obj,
         typename Types::Action &action,
-        typename Types::Observation &obs,
+        typename Types::Obs &obs,
         typename Types::MatrixReal &real_matrix,
         typename Types::MatrixValue &payoff_matrix,
         typename Types::MatrixInt &visit_matrix) {
@@ -153,7 +153,7 @@ concept IsTypeList =
         } -> std::same_as<int &>;
     } &&
     IsArithmetic<typename Types::Real> &&
-    IsArithmetic<typename Types::Probability> &&
+    IsArithmetic<typename Types::Prob> &&
     IsValue<typename Types::Value, typename Types::Real> &&
     IsPRNG<typename Types::PRNG, typename Types::Seed> &&
     IsMutex<typename Types::Mutex> &&

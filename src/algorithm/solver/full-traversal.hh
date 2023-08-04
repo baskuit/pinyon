@@ -28,7 +28,7 @@ struct FullTraversal : Types
 
         size_t matrix_node_count = 1;
         unsigned int depth = 0;
-        typename Types::Probability prob;
+        typename Types::Prob prob;
     };
     struct ChanceStats
     {
@@ -84,7 +84,7 @@ struct FullTraversal : Types
                     const typename Types::Action row_action{matrix_node->row_actions[row_idx]};
                     const typename Types::Action col_action{matrix_node->col_actions[col_idx]};
 
-                    std::vector<typename Types::Observation> chance_actions;
+                    std::vector<typename Types::Obs> chance_actions;
                     state.get_chance_actions(chance_actions, row_action, col_action);
 
                     ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);

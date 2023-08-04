@@ -157,12 +157,12 @@ public:
     struct Edge
     {
         MatrixNodeL<Algorithm> *matrix_node = nullptr;
-        typename Types::Observation obs;
+        typename Types::Obs obs;
         Edge *next = nullptr;
         Edge() {}
         Edge(
             MatrixNodeL<Algorithm> *matrix_node,
-            typename Types::Observation obs) : matrix_node(matrix_node), obs(obs) {}
+            typename Types::Obs obs) : matrix_node(matrix_node), obs(obs) {}
         ~Edge()
         {
             delete matrix_node;
@@ -184,7 +184,7 @@ public:
         ActionIndex col_idx) : row_idx(row_idx), col_idx(col_idx) {}
     ~ChanceNodeL();
 
-    MatrixNodeL<Algorithm> *access(typename Types::Observation &obs) // TODO check speed on pass-by
+    MatrixNodeL<Algorithm> *access(typename Types::Obs &obs) // TODO check speed on pass-by
     {
         if (edge.matrix_node == nullptr)
         {

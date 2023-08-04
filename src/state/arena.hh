@@ -73,7 +73,7 @@ public:
         this->payoff = static_cast<Types::Value>(avg_payoff.get_row_value(), avg_payoff.get_col_value());
 
         this->terminal = true;
-        this->obs = typename Types::Observation{device.random_int(1 << 16)};
+        this->obs = typename Types::Obs{device.random_int(1 << 16)};
 
         delete row_search;
         delete col_search;

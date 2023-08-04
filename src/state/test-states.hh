@@ -30,7 +30,7 @@ struct MoldState : SimpleTypes
                 this->row_actions[i] = SimpleTypes::Action{i};
                 this->col_actions[i] = SimpleTypes::Action{i};
             }
-            this->prob = SimpleTypes::Probability{1};
+            this->prob = SimpleTypes::Prob{1};
         }
 
         void randomize_transition(SimpleTypes::PRNG &device)
@@ -59,7 +59,7 @@ struct MoldState : SimpleTypes
         }
 
         void get_actions(
-            std::vector<SimpleTypes::Observation> &chance_actions,
+            std::vector<SimpleTypes::Obs> &chance_actions,
             SimpleTypes::Action &,
             SimpleTypes::Action &)
         {
@@ -67,7 +67,7 @@ struct MoldState : SimpleTypes
         }
 
         void apply_actions(
-            SimpleTypes::Observation,
+            SimpleTypes::Obs,
             SimpleTypes::Action,
             SimpleTypes::Action)
         {

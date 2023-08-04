@@ -23,13 +23,13 @@ struct DefaultNodes : Types // Is a Types Object
 
         typename Types::VectorAction row_actions;
         typename Types::VectorAction col_actions;
-        typename Types::Observation obs;
+        typename Types::Obs obs;
         MatrixStats stats;
 
 
 
         MatrixNode(){};
-        MatrixNode(typename Types::Observation obs) : obs(obs) {}
+        MatrixNode(typename Types::Obs obs) : obs(obs) {}
         ~MatrixNode();
 
         inline void expand(typename Types::State &state)
@@ -137,7 +137,7 @@ struct DefaultNodes : Types // Is a Types Object
             ActionIndex col_idx) : row_idx(row_idx), col_idx(col_idx) {}
         ~ChanceNode();
 
-        MatrixNode *access(const typename Types::Observation &obs)
+        MatrixNode *access(const typename Types::Obs &obs)
         {
             if (this->child == nullptr)
             {

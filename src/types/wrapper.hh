@@ -176,30 +176,30 @@ struct RealType : ArithmeticType<T>
 };
 
 template <typename T>
-struct ProbabilityType : ArithmeticType<T>
+struct ProbType : ArithmeticType<T>
 {
-    constexpr ProbabilityType() : ArithmeticType<T>{} {}
-    constexpr ProbabilityType(const T &val) : ArithmeticType<T>{val}
+    constexpr ProbType() : ArithmeticType<T>{} {}
+    constexpr ProbType(const T &val) : ArithmeticType<T>{val}
     {
         if constexpr (std::is_same_v<T, mpq_class>)
         {
         }
     }
     template <typename Integral>
-    constexpr ProbabilityType(const Rational<Integral> &val) : ArithmeticType<T>{T{val}}
+    constexpr ProbType(const Rational<Integral> &val) : ArithmeticType<T>{T{val}}
     {
         if constexpr (std::is_same_v<T, mpq_class>)
         {
         }
     }
-    constexpr explicit ProbabilityType(const ArithmeticType<T> val) : ArithmeticType<T>{val}
+    constexpr explicit ProbType(const ArithmeticType<T> val) : ArithmeticType<T>{val}
     {
         if constexpr (std::is_same_v<T, mpq_class>)
         {
             mpq_canonicalize(this->value.get_mpq_t());
         }
     }
-    ProbabilityType &operator=(const ArithmeticType<T> &val)
+    ProbType &operator=(const ArithmeticType<T> &val)
     {
         this->value = val.value;
         if constexpr (std::is_same_v<T, mpq_class>)
@@ -210,29 +210,29 @@ struct ProbabilityType : ArithmeticType<T>
 };
 
 template <typename T>
-struct ObservationType : Wrapper<T>
+struct ObsType : Wrapper<T>
 {
-    constexpr ObservationType(const T &value) : Wrapper<T>{value} {}
-    constexpr ObservationType() : Wrapper<T>{} {}
-    bool operator==(const ObservationType &other) const
+    constexpr ObsType(const T &value) : Wrapper<T>{value} {}
+    constexpr ObsType() : Wrapper<T>{} {}
+    bool operator==(const ObsType &other) const
     {
         return this->value == other.value;
     }
 };
 
 template <typename T>
-struct ObservationHashType
+struct ObsHashType
 {
-    size_t operator()(const ObservationType<T> &t) const
+    size_t operator()(const ObsType<T> &t) const
     {
         return std::hash(static_cast<T>(t));
     }
 };
 
 template <>
-struct ObservationHashType<std::array<uint8_t, 64>>
+struct ObsHashType<std::array<uint8_t, 64>>
 {
-    size_t operator()(const ObservationType<std::array<uint8_t, 64>> &t) const
+    size_t operator()(const ObsType<std::array<uint8_t, 64>> &t) const
     {
         const uint64_t *a = reinterpret_cast<const uint64_t *>(static_cast<std::array<uint8_t, 64>>(t).data());
         size_t hash = 0;

@@ -4,7 +4,7 @@
 #include <types/types.hh>
 #include <types/random.hh>
 #include <state/state.hh>
-// #include <wrapper/basic.hh>
+#include <wrapper/basic.hh>
 
 #include <vector>
 #include <ranges>
@@ -23,7 +23,7 @@ struct RandomTree : Types
         size_t transitions = 1;
         int payoff_bias = 0;
         typename Types::Rational chance_threshold{typename Types::Rational{1, transitions + 1}};
-        std::vector<typename Types::Probability> chance_strategies;
+        std::vector<typename Types::Prob> chance_strategies;
         int chance_denominator = 10;
 
         int (*depth_bound_func)(State *, int) = &(State::depth_bound_default);
@@ -32,7 +32,7 @@ struct RandomTree : Types
 
         // everything above determines the abstract game tree exactly
 
-        std::vector<typename Types::Probability> chance_strategy;
+        std::vector<typename Types::Prob> chance_strategy;
         // just a helper for the sample_pdf function in apply_actions
 
         State () {}
@@ -113,17 +113,17 @@ struct RandomTree : Types
         }
 
         void get_chance_actions(
-            std::vector<typename Types::Observation> &chance_actions,
+            std::vector<typename Types::Obs> &chance_actions,
             const Types::Action row_action,
             const Types::Action col_action) const
         {
             chance_actions.clear();
-            const size_t start_idx = get_transition_idx(row_action, col_action, typename Types::Observation{0});
+            const size_t start_idx = get_transition_idx(row_action, col_action, typename Types::Obs{0});
             for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
             {
-                if (chance_strategies[start_idx + chance_idx] > typename Types::Probability{0})
+                if (chance_strategies[start_idx + chance_idx] > typename Types::Prob{0})
                 {
-                    chance_actions.push_back(typename Types::Observation{chance_idx});
+                    chance_actions.push_back(typename Types::Obs{chance_idx});
                 }
             }
         }
@@ -131,7 +131,7 @@ struct RandomTree : Types
         void apply_actions(
             Types::Action row_action,
             Types::Action col_action,
-            Types::Observation chance_action)
+            Types::Obs chance_action)
         {
 
             const ActionIndex transition_idx = get_transition_idx(row_action, col_action, chance_action);
@@ -164,9 +164,9 @@ struct RandomTree : Types
             Types::Action row_action,
             Types::Action col_action)
         {
-            std::vector<typename Types::Observation> chance_actions{};
+            std::vector<typename Types::Obs> chance_actions{};
             get_chance_actions(chance_actions, row_action, col_action);
-            typename Types::Observation chance_action = chance_actions[this->transition_seed % chance_actions.size()];
+            typename Types::Obs chance_action = chance_actions[this->transition_seed % chance_actions.size()];
             apply_actions(row_action, col_action, chance_action);
         }
 
@@ -192,7 +192,7 @@ struct RandomTree : Types
         inline size_t get_transition_idx(
             Types::Action row_action,
             Types::Action col_action,
-            Types::Observation chance_action) const
+            Types::Obs chance_action) const
         {
             const ActionIndex row_idx{row_action};
             const ActionIndex col_idx{col_action};
@@ -238,7 +238,7 @@ struct RandomTree : Types
                     {
                         auto &x = chance_strategies_[start_idx + chance_idx];
                         x = x / prob_sum; // reduced here
-                        chance_strategies[start_idx + chance_idx] = typename Types::Probability{x};
+                        chance_strategies[start_idx + chance_idx] = typename Types::Prob{x};
                     }
                 }
             }
@@ -252,32 +252,32 @@ Helper class to generate random tree instances for testing
 
 */
 
-// template <typename TypeList = RandomTreeFloatTypes>
-// struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<typename RandomTree<TypeList>::T>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>
-// {
-//     inline static prng device{};
+template <typename TypeList = RandomTreeFloatTypes>
+struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTree<TypeList>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>
+{
+    inline static prng device{};
 
-//     static W::StateWrapper<typename RandomTree<TypeList>::T> constr(std::tuple<size_t, size_t, size_t, Rational<>, size_t> tuple) // static otherwise implcit this arg messes up signature
-//     {
-//         return W::StateWrapper<typename RandomTree<TypeList>::T>{
-//             RandomTreeGenerator::device.uniform_64(),
-//             static_cast<int>(std::get<0>(tuple)),
-//             std::get<1>(tuple),
-//             std::get<1>(tuple),
-//             std::get<2>(tuple),
-//             std::get<3>(tuple)};
-//     };
+    static W::StateWrapper<RandomTree<TypeList>> constr(std::tuple<size_t, size_t, size_t, Rational<>, size_t> tuple) // static otherwise implcit this arg messes up signature
+    {
+        return W::StateWrapper<typename RandomTree<TypeList>::T>{
+            RandomTreeGenerator::device.uniform_64(),
+            static_cast<int>(std::get<0>(tuple)),
+            std::get<1>(tuple),
+            std::get<1>(tuple),
+            std::get<2>(tuple),
+            std::get<3>(tuple)};
+    };
 
-//     RandomTreeGenerator(
-//         prng device,
-//         std::vector<size_t> depth_bound_vec,
-//         std::vector<size_t> actions_vec,
-//         std::vector<size_t> chance_action_vec,
-//         std::vector<Rational<>> chance_threshold_vec,
-//         std::vector<size_t> trial_vec)
-//         : CartesianProductGenerator<W::StateWrapper<typename RandomTree<TypeList>::T>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>{
-//               constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec}
-//     {
-//         RandomTreeGenerator::device = prng{device};
-//     }
-// };
+    RandomTreeGenerator(
+        prng device,
+        std::vector<size_t> depth_bound_vec,
+        std::vector<size_t> actions_vec,
+        std::vector<size_t> chance_action_vec,
+        std::vector<Rational<>> chance_threshold_vec,
+        std::vector<size_t> trial_vec)
+        : CartesianProductGenerator<W::StateWrapper<typename RandomTree<TypeList>::T>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>{
+              constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec}
+    {
+        RandomTreeGenerator::device = prng{device};
+    }
+};

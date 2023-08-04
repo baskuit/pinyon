@@ -13,10 +13,10 @@ struct AlphaBeta : Types
 {
     struct Data
     {
-        Types::Probability unexplored{typename Types::Rational{1}};
+        Types::Prob unexplored{typename Types::Rational{1}};
         Types::Real alpha_explored{0}, beta_explored{0};
         int next_chance_idx = 0;
-        std::vector<typename Types::Observation> chance_actions{};
+        std::vector<typename Types::Obs> chance_actions{};
     };
     struct MatrixStats
     {
@@ -321,7 +321,7 @@ struct AlphaBeta : Types
                     ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
                     MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                     matrix_node_next->stats.depth = stats.depth + 1;
-                    const typename Types::Probability prob = state_copy.prob;
+                    const typename Types::Prob prob = state_copy.prob;
 
                     auto alpha_beta_pair = double_oracle(
                         device,
@@ -428,7 +428,7 @@ struct AlphaBeta : Types
                     ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
                     MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                     matrix_node_next->stats.depth = stats.depth + 1;
-                    const typename Types::Probability prob = state_copy.prob;
+                    const typename Types::Prob prob = state_copy.prob;
 
                     auto alpha_beta_pair = double_oracle(
                         device,
@@ -518,7 +518,7 @@ struct AlphaBeta : Types
             ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
             Data &data = stats.data_matrix.get(row_idx, col_idx);
 
-            if (data.unexplored > typename Types::Probability{0})
+            if (data.unexplored > typename Types::Prob{0})
             {
                 auto row_action = state.row_actions[row_idx];
                 auto col_action = state.col_actions[col_idx];
@@ -537,12 +537,12 @@ struct AlphaBeta : Types
                         break;
                     }
 
-                    const typename Types::Observation chance_action = chance_actions[data.next_chance_idx];
+                    const typename Types::Obs chance_action = chance_actions[data.next_chance_idx];
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, chance_action);
                     MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                     matrix_node_next->stats.depth = stats.depth + 1;
-                    const typename Types::Probability prob = state_copy.prob;
+                    const typename Types::Prob prob = state_copy.prob;
 
                     auto alpha_beta = double_oracle(device, state_copy, model, matrix_node_next, min_val, max_val);
 
@@ -585,7 +585,7 @@ struct AlphaBeta : Types
 
         static bool after_some_time(typename Types::PRNG &device, const Data &data)
         {
-            const typename Types::Probability x{Rational<>{1, 4}};
+            const typename Types::Prob x{Rational<>{1, 4}};
             return (data.next_chance_idx > 1 &&
                     data.unexplored < x);
         }

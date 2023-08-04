@@ -41,16 +41,16 @@ public:
 
     typename Types::VectorAction row_actions;
     typename Types::VectorAction col_actions;
-    typename Types::Observation obs;
+    typename Types::Obs obs;
     typename Types::MatrixStats stats;
 
     MatrixNodeDebug(){};
     MatrixNodeDebug(
-        typename Types::Observation obs) : obs(obs) {}
+        typename Types::Obs obs) : obs(obs) {}
     MatrixNodeDebug(
         ChanceNodeDebug<Algorithm> *parent,
         MatrixNodeDebug<Algorithm> *prev,
-        typename Types::Observation obs) : parent(parent), prev(prev), obs(obs) {}
+        typename Types::Obs obs) : parent(parent), prev(prev), obs(obs) {}
     ~MatrixNodeDebug();
 
     inline void expand(typename Types::State &state)
@@ -184,7 +184,7 @@ public:
         ActionIndex col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
     ~ChanceNodeDebug();
 
-    MatrixNodeDebug<Algorithm> *access(typename Types::Observation &obs)
+    MatrixNodeDebug<Algorithm> *access(typename Types::Obs &obs)
     {
         if (this->child == nullptr)
         {

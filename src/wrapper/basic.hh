@@ -8,7 +8,6 @@
 
 namespace W
 {
-
     /*
 
     Forward declaration
@@ -36,8 +35,8 @@ namespace W
     {
         using Rational = Rational<>;
         using Real = double;
-        using Probability = double;
-        using Observation = bool;
+        using Prob = double;
+        using Obs = bool;
         using Value = PairReal<double>;
         using Action = int;
         using VectorAction = std::vector<int>;
@@ -89,7 +88,6 @@ namespace W
 
         StateWrapper(typename Types::State const &state) : ptr{std::make_shared<typename Types::State>(state)}
         {
-            state.
         }
         template <typename... Args>
         StateWrapper(Args... args) : ptr(std::make_shared<typename Types::State>(args...)) {}
@@ -153,6 +151,13 @@ namespace W
                 get_inference(batch_input[i], batch_output[i]);
             }
         }
+
+        template <typename Types>
+        std::shared_ptr<typename Types::Model> derive_ptr()
+        {
+            ModelWrapper<Types> *self = dynamic_cast<ModelWrapper<Types> *>(this);
+            return self->ptr;
+        }
     };
 
     template <IsValueModelTypes Types>
@@ -168,7 +173,7 @@ namespace W
             Types::ModelInput &input, 
             Types::ModelOutput &output)
         {
-            auto raw_state = *input.derive_ptr<Types>();
+            auto raw_state = *input.template derive_ptr<Types>();
             ptr->get_inference(raw_state, output);
         };
 
@@ -179,7 +184,7 @@ namespace W
     };
 
     /*
-
+1
     Search
 
     */
@@ -187,7 +192,9 @@ namespace W
     struct Search
     {
         virtual void run(size_t iterations, State &state, Model &model) = 0;
-        std::shared_ptr<typename Types::Search> derive_ptr()
+        
+        template <typename Types>
+        std::shared_ptr<State> derive_ptr()
         {
             SearchWrapper<Types> *self = dynamic_cast<SearchWrapper<Types> *>(this);
             return self->ptr;
@@ -202,10 +209,10 @@ namespace W
         std::shared_ptr<typename Types::Search> ptr;
         // std::shared_ptr<typename Types::MatrixNode> root;
 
-        SearchWrapper(const typename Types::Search &session) : ptr{std::make_shared<typename Types::Search>(session)}, root{std::make_shared<typename Types::MatrixNode>()} {}
+        SearchWrapper(const typename Types::Search &session) : ptr{std::make_shared<typename Types::Search>(session)} {}
 
         template <typename... Args>
-        SearchWrapper(Args... args) : ptr(std::make_shared<typename Types::Search>(args...)), root{std::make_shared<typename Types::MatrixNode>()} {}
+        SearchWrapper(Args... args) : ptr(std::make_shared<typename Types::Search>(args...)) {}
 
         void run(size_t iterations, State &state, Model &model)
         {

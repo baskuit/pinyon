@@ -58,7 +58,7 @@ public:
     }
 
     void get_chance_actions(
-        std::vector<typename Types::Observation> &chance_actions,
+        std::vector<typename Types::Obs> &chance_actions,
         Types::Action row_action,
         Types::Action col_action) const
     {
@@ -76,7 +76,7 @@ public:
         ActionIndex col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
         ChanceNode *chance_node = current_node->access(row_idx, col_idx);
         const size_t chance_idx = this->seed % chance_node->stats.chance_actions.size();
-        typename Types::Observation chance_action = chance_node->stats.chance_actions[chance_idx];
+        typename Types::Obs chance_action = chance_node->stats.chance_actions[chance_idx];
         current_node = chance_node->access(chance_action, 0);
         update_solved_state_info();
     }
@@ -84,7 +84,7 @@ public:
     void apply_actions(
         Types::Action row_action,
         Types::Action col_action,
-        Types::Observation chance_action)
+        Types::Obs chance_action)
     {
         current_node = current_node->access(row_action, col_action)->access(chance_action, 0);
         update_solved_state_info();
