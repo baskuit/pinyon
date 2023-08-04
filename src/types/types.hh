@@ -84,7 +84,26 @@ concept IsMutex = requires(Mutex &mutex) {
     {
         mutex.lock()
     } -> std::same_as<void>;
+    {
+        mutex.unlock()
+    } -> std::same_as<void>;
 };
+
+template <typename Vector, typename T>
+concept IsVector = requires(Vector &vector, T &value) {
+    {
+        vector[0]
+    } -> std::same_as<T &>;
+    {
+        vector.resize(0)
+    } -> std::same_as<void>;
+    {
+        vector.resize(0, value)
+    } -> std::same_as<void>;
+    {
+        vector.clear()
+    } -> std::same_as<void>;
+} && std::ranges::sized_range<Vector>;
 
 template <typename PRNG, typename Seed>
 concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
@@ -117,24 +136,12 @@ concept IsTypeList =
         Types obj,
         typename Types::Action &action,
         typename Types::Observation &obs,
-        typename Types::VectorReal &strategy,
-        typename Types::VectorAction &actions,
-        typename Types::VectorInt &visits,
         typename Types::MatrixReal &real_matrix,
         typename Types::MatrixValue &payoff_matrix,
         typename Types::MatrixInt &visit_matrix) {
         {
             obs == obs
         } -> std::same_as<bool>;
-        {
-            strategy[0]
-        } -> std::same_as<typename Types::Real &>;
-        {
-            actions[0]
-        } -> std::same_as<typename Types::Action &>;
-        {
-            visits[0]
-        } -> std::same_as<int &>;
         {
             real_matrix.get(0, 0)
         } -> std::same_as<typename Types::Real &>;
@@ -148,7 +155,17 @@ concept IsTypeList =
     IsArithmetic<typename Types::Real> &&
     IsArithmetic<typename Types::Probability> &&
     IsValue<typename Types::Value, typename Types::Real> &&
-    IsPRNG<typename Types::PRNG, typename Types::Seed>;
+    IsPRNG<typename Types::PRNG, typename Types::Seed> &&
+    IsMutex<typename Types::Mutex> &&
+    IsVector<typename Types::VectorReal, typename Types::Real> &&
+    IsVector<typename Types::VectorInt, int> &&
+    IsVector<typename Types::VectorAction, typename Types::Action>;
+
+/*
+
+Instances
+
+*/
 
 using SimpleTypes = DefaultTypes<
     double,

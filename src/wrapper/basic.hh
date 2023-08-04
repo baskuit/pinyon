@@ -58,8 +58,6 @@ namespace W
         using State = W::State;
         using Model = W::Model;
         using Search = W::Search;
-        /*
-         */
     };
 
     /*
@@ -183,7 +181,7 @@ namespace W
     /*
 
     Search
-    
+
     */
 
     struct Search
