@@ -1,4 +1,3 @@
-#include <libsurskit/gambit.hh>
 #include <tree/tree.hh>
 #include <algorithm/algorithm.hh>
 
