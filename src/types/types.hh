@@ -64,6 +64,13 @@ concept IsArithmetic = requires(Real real) {
     } -> std::same_as<void>;
 };
 
+template <typename Obs>
+concept IsObs = requires(Obs obs) {
+    {
+        obs == obs
+    } -> std::same_as<bool>;
+};
+
 template <typename Value, typename Real>
 concept IsValue = requires(Value &value) {
     {
@@ -105,6 +112,19 @@ concept IsVector = requires(Vector &vector, T &value) {
     } -> std::same_as<void>;
 } && std::ranges::sized_range<Vector>;
 
+template <typename Matrix, typename T>
+concept IsMatrix = requires(Matrix &matrix, T &value) {
+    {
+        Matrix{0, 0}
+    } -> std::same_as<Matrix>;
+    {
+        matrix[0]
+    } -> std::same_as<T &>;
+    {
+        matrix.fill(0, 0)
+    } -> std::same_as<void>;
+}; // also require IsVector?
+
 template <typename PRNG, typename Seed>
 concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
     {
@@ -132,26 +152,7 @@ concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
 
 template <typename Types>
 concept IsTypeList =
-    requires(
-        Types obj,
-        typename Types::Action &action,
-        typename Types::Obs &obs,
-        typename Types::MatrixReal &real_matrix,
-        typename Types::MatrixValue &payoff_matrix,
-        typename Types::MatrixInt &visit_matrix) {
-        {
-            obs == obs
-        } -> std::same_as<bool>;
-        {
-            real_matrix.get(0, 0)
-        } -> std::same_as<typename Types::Real &>;
-        {
-            payoff_matrix.get(0, 0)
-        } -> std::same_as<typename Types::Value &>;
-        {
-            visit_matrix.get(0, 0)
-        } -> std::same_as<int &>;
-    } &&
+    IsObs<typename Types::Obs> &&
     IsArithmetic<typename Types::Real> &&
     IsArithmetic<typename Types::Prob> &&
     IsValue<typename Types::Value, typename Types::Real> &&
@@ -159,7 +160,10 @@ concept IsTypeList =
     IsMutex<typename Types::Mutex> &&
     IsVector<typename Types::VectorReal, typename Types::Real> &&
     IsVector<typename Types::VectorInt, int> &&
-    IsVector<typename Types::VectorAction, typename Types::Action>;
+    IsVector<typename Types::VectorAction, typename Types::Action> &&
+    IsMatrix<typename Types::MatrixReal, typename Types::Real> &&
+    IsMatrix<typename Types::MatrixValue, typename Types::Value> &&
+    IsMatrix<typename Types::MatrixInt, int>;
 
 /*
 
