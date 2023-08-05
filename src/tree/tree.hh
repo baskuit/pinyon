@@ -128,6 +128,28 @@ struct DefaultNodes : Types
             }
             return c;
         }
+
+        ChanceNode &access_ref (int row_idx, int col_idx) {
+            if (this->child == nullptr)
+            {
+                this->child = new ChanceNode(row_idx, col_idx);
+                return *this->child;
+            }
+            ChanceNode *current = this->child;
+            ChanceNode *previous = this->child;
+            while (current != nullptr)
+            {
+                previous = current;
+                if (current->row_idx == row_idx && current->col_idx == col_idx)
+                {
+                    return *current;
+                }
+                current = current->next;
+            }
+            ChanceNode *child = new ChanceNode(row_idx, col_idx);
+            previous->next = child;
+            return *child;
+        }
     };
 
     // Chance Node
@@ -183,6 +205,30 @@ struct DefaultNodes : Types
             }
             return c;
         }
+
+        MatrixNode &access_ref(const typename Types::Obs &obs)
+        {
+            if (this->child == nullptr)
+            {
+                MatrixNode *child = new MatrixNode(obs);
+                this->child = child;
+                return *child;
+            }
+            MatrixNode *current = this->child;
+            MatrixNode *previous = this->child;
+            while (current != nullptr)
+            {
+                previous = current;
+                if (current->obs == obs)
+                {
+                    return *current;
+                }
+                current = current->next;
+            }
+            MatrixNode *child = new MatrixNode(obs);
+            previous->next = child;
+            return *child;
+        };
     };
 };
 

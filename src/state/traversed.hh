@@ -13,30 +13,36 @@
 
 This state is a wrapper for the tree produced by the FullTraversal algorithm
 
+Its typelist is the typelist of the inner State, Model type
+
 */
 
 template <IsValueModelTypes Types>
     requires IsChanceStateTypes<Types>
 struct TraversedState : Types::TypeList
 {
+    template <IsNodeTypes NodePair>
+    class State_;
 
-    class State : PerfectInfoState<typename Types::TypeList>
+    using State = State_<DefaultNodes<Types, typename FullTraversal<Types>::MatrixStats, typename FullTraversal<Types>::ChanceStats>>;
+
+    // This hidden template impl allows for type hints
+    template <IsNodeTypes NodePair>
+    class State_ : PerfectInfoState<typename Types::TypeList>
     {
     public:
-        using MatrixNode = typename DefaultNodes<Types, typename FullTraversal<Types>::MatrixStats, typename FullTraversal<Types>::ChanceStats>::MatrixNode;
-        using ChanceNode = typename DefaultNodes<Types, typename FullTraversal<Types>::MatrixStats, typename FullTraversal<Types>::ChanceStats>::ChanceNode;
 
         typename Types::PRNG device{};
-        std::shared_ptr<MatrixNode> tree;
-        MatrixNode *current_node;
+        std::shared_ptr<typename NodePair::MatrixNode> tree;
+        typename NodePair::MatrixNode *current_node;
         double chance_p;
 
-        State(
+        State_(
             Types::State &state,
             Types::Model &model,
             int max_depth = -1)
         {
-            this->tree = std::make_shared<MatrixNode>();
+            this->tree = std::make_shared<typename NodePair::MatrixNode>();
             this->current_node = &*tree;
             typename FullTraversal<Types>::Search session{max_depth};
             session.run(state, model, current_node);
@@ -48,6 +54,7 @@ struct TraversedState : Types::TypeList
             this->row_actions = current_node->row_actions;
             this->col_actions = current_node->col_actions;
             sort_actions(this->row_actions, this->col_actions, this->row_strategy, this->col_strategy);
+                    typename NodePair::MatrixNode *node;
         }
 
         void get_actions(
@@ -71,7 +78,7 @@ struct TraversedState : Types::TypeList
         {
             int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
             int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
-            ChanceNode *chance_node = current_node->access(row_idx, col_idx);
+            typename NodePair::ChanceNode *chance_node = current_node->access(row_idx, col_idx);
             auto &chance_strategy = chance_node->stats.chance_strategy;
 
             int chance_idx = 0;
@@ -93,7 +100,7 @@ struct TraversedState : Types::TypeList
         {
             int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
             int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
-            ChanceNode *chance_node = current_node->access(row_idx, col_idx);
+            typename NodePair::ChanceNode *chance_node = current_node->access(row_idx, col_idx);
             chance_actions = chance_node->stats.chance_actions;
         }
 

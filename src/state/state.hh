@@ -86,6 +86,31 @@ public:
     {
         return terminal;
     }
+
+    inline void init_range_actions(size_t rows, size_t cols)
+    {
+        row_actions.resize(rows);
+        col_actions.resize(cols);
+        for (int i = 0; i < rows; ++i)
+        {
+            this->row_actions[i] = typename T::Action{i};
+        }
+        for (int i = 0; i < cols; ++i)
+        {
+            this->col_actions[i] = typename T::Action{i};
+        }
+    }
+
+    inline void init_range_actions(size_t size)
+    {
+        row_actions.resize(size);
+        col_actions.resize(size);
+        for (int i = 0; i < size; ++i)
+        {
+            this->row_actions[i] = typename T::Action{i};
+            this->col_actions[i] = typename T::Action{i};
+        }
+    }
 };
 
 template <typename Types>

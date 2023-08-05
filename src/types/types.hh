@@ -38,7 +38,7 @@ struct DefaultTypes
     // There are not too many types so, we avoid boilerplate `using ModelTypes = ` etc
     // by providing just `Types::TypeList`
 
-    using Rational = _Rational;
+    using Q = _Rational;
     using Real = RealType<_Real>;
 
     using Action = ActionType<_Action>;
@@ -167,7 +167,7 @@ concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
 
 template <typename Types>
 concept IsTypeList =
-    IsObs<typename Types::Obs> &&
+    // IsObs<typename Types::Obs> &&
     IsArithmetic<typename Types::Real> &&
     IsArithmetic<typename Types::Prob> &&
     IsValue<typename Types::Value, typename Types::Real> &&

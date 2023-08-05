@@ -1,10 +1,10 @@
 #pragma once
 
+#include <libsurskit/dynamic-wrappers.hh>
 #include <libsurskit/generator.hh>
 #include <types/types.hh>
 #include <types/random.hh>
 #include <state/state.hh>
-#include <wrapper/basic.hh>
 
 #include <vector>
 #include <ranges>
@@ -84,16 +84,7 @@ struct RandomTree : Types
 
         void get_actions()
         {
-            this->row_actions.resize(rows);
-            this->col_actions.resize(cols);
-            for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
-            {
-                this->row_actions[row_idx] = typename Types::Action{row_idx};
-            };
-            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
-            {
-                this->col_actions[col_idx] = typename Types::Action{col_idx};
-            };
+            this->init_range_actions(rows, cols);
         }
 
         void get_actions(
@@ -253,13 +244,14 @@ Helper class to generate random tree instances for testing
 */
 
 template <typename TypeList = RandomTreeFloatTypes>
-struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTree<TypeList>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>
+struct RandomTreeGenerator : CartesianProductGenerator<W::Types::State, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>
 {
     inline static prng device{};
 
-    static W::StateWrapper<RandomTree<TypeList>> constr(std::tuple<size_t, size_t, size_t, Rational<>, size_t> tuple) // static otherwise implcit this arg messes up signature
+    // static otherwise implcit this arg messes up signature
+    static W::Types::State constr(std::tuple<size_t, size_t, size_t, Rational<>, size_t> tuple) 
     {
-        return W::StateWrapper<RandomTree<TypeList>>{
+        return W::Types::State {
             RandomTreeGenerator::device.uniform_64(),
             static_cast<int>(std::get<0>(tuple)),
             std::get<1>(tuple),
@@ -275,7 +267,7 @@ struct RandomTreeGenerator : CartesianProductGenerator<W::StateWrapper<RandomTre
         std::vector<size_t> chance_action_vec,
         std::vector<Rational<>> chance_threshold_vec,
         std::vector<size_t> trial_vec)
-        : CartesianProductGenerator<W::StateWrapper<RandomTree<TypeList>>, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>{
+        : CartesianProductGenerator<W::Types::State, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>{
               constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec}
     {
         RandomTreeGenerator::device = prng{device};

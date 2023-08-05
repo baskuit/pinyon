@@ -22,13 +22,7 @@ struct MoldState : SimpleTypes
         State(size_t max_depth) : max_depth((max_depth >= 0) * max_depth)
         {
             this->terminal = (this->max_depth == 0);
-            this->row_actions.resize(size);
-            this->col_actions.resize(size);
-            for (int i = 0; i < size; ++i)
-            {
-                this->row_actions[i] = SimpleTypes::Action{i};
-                this->col_actions[i] = SimpleTypes::Action{i};
-            }
+            this->init_range_actions(size);
             this->prob = SimpleTypes::Prob{1};
             this->obs = SimpleTypes::Obs{};
         }
