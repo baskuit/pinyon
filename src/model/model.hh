@@ -83,7 +83,7 @@ struct EmptyModel : Types
             ModelInput &input,
             ModelOutput &output)
         {
-            output.value = typename Types::Value{typename Types::Rational{1, 2}, typename Types::Rational{1, 2}};
+            output.value = typename Types::Value{typename Types::Q{1, 2}, typename Types::Q{1, 2}};
         }
 
         void get_inference(
@@ -100,7 +100,7 @@ struct EmptyModel : Types
             ModelInput &input,
             Types::Value &value)
         {
-            value = typename Types::Value{typename Types::Rational{1, 2}, typename Types::Rational{1, 2}};
+            value = typename Types::Value{typename Types::Q{1, 2}, typename Types::Q{1, 2}};
         }
 
         void add_to_batch_input(

@@ -13,7 +13,7 @@ struct AlphaBeta : Types
 {
     struct Data
     {
-        Types::Prob unexplored{typename Types::Rational{1}};
+        Types::Prob unexplored{typename Types::Q{1}};
         Types::Real alpha_explored{0}, beta_explored{0};
         int next_chance_idx = 0;
         std::vector<typename Types::Obs> chance_actions{};
@@ -286,7 +286,7 @@ struct AlphaBeta : Types
                     typename Types::Real priority;
                     if (row_idx_in_I)
                     {
-                        priority = typename Types::Rational{0};
+                        priority = typename Types::Q{0};
                     }
                     else
                     {
@@ -341,7 +341,7 @@ struct AlphaBeta : Types
                     // assert(data.unexplored >= typename Types::Real{0});
                     // assert(total_unexplored >= typename Types::Real{0});
 
-                    max_priority = typename Types::Rational{0};
+                    max_priority = typename Types::Q{0};
                     for (int i = 0; i < J.size(); ++i)
                     {
                         const typename Types::Real priority = priority_scores[i];
@@ -392,7 +392,7 @@ struct AlphaBeta : Types
                     typename Types::Real priority;
                     if (col_idx_in_J)
                     {
-                        priority = typename Types::Rational{0};
+                        priority = typename Types::Q{0};
                     }
                     else
                     {

@@ -123,7 +123,7 @@ struct AlphaBetaOld : Types
                         if (p_ij < o_ij)
                         {
                             // 12: u(si, j ) ← double-oracle(si, j , pi, j, oi, j )
-                            typename Types::Real u_ij = typename Types::Rational{0};
+                            typename Types::Real u_ij = typename Types::Q{0};
                             ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
                             const typename Types::Action row_action = state.row_actions[row_idx];
@@ -239,7 +239,7 @@ struct AlphaBetaOld : Types
                 // We don't perform serialized alpha-beta
                 // Furthermore, I'm not sure what this step does that lines 7, 8 in double_oracle don't
 
-                typename Types::Real expected_o_payoff = typename Types::Rational{0};
+                typename Types::Real expected_o_payoff = typename Types::Q{0};
                 for (int j = 0; j < J.size(); ++j)
                 {
                     expected_o_payoff += col_strategy[j] * o.get(row_idx, J[j]);
@@ -273,7 +273,7 @@ struct AlphaBetaOld : Types
                         else
                         {
                             // 11: u(s_ij) = double_oracle (s_ij, p_ij, o_ij)
-                            typename Types::Real u_ij = typename Types::Rational{0};
+                            typename Types::Real u_ij = typename Types::Q{0};
                             ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
                             const typename Types::Action row_action = state.row_actions[row_idx];
@@ -325,7 +325,7 @@ struct AlphaBetaOld : Types
                 }
 
                 // 13 - 14
-                typename Types::Real expected_row_payoff = typename Types::Rational{0};
+                typename Types::Real expected_row_payoff = typename Types::Q{0};
                 for (int j = 0; j < J.size(); ++j)
                 {
                     const int col_idx = J[j];
@@ -361,7 +361,7 @@ struct AlphaBetaOld : Types
             {
                 bool cont = false;
 
-                typename Types::Real expected_p_payoff = typename Types::Rational{0};
+                typename Types::Real expected_p_payoff = typename Types::Q{0};
                 for (int i = 0; i < I.size(); ++i)
                 {
                     expected_p_payoff += row_strategy[i] * p.get(I[i], col_idx);
@@ -390,7 +390,7 @@ struct AlphaBetaOld : Types
                         }
                         else
                         {
-                            typename Types::Real u_ij = typename Types::Rational{0};
+                            typename Types::Real u_ij = typename Types::Q{0};
                             ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
                             const typename Types::Action row_action = state.row_actions[row_idx];
@@ -432,7 +432,7 @@ struct AlphaBetaOld : Types
                     continue;
                 }
 
-                typename Types::Real expected_col_payoff = typename Types::Rational{0};
+                typename Types::Real expected_col_payoff = typename Types::Q{0};
                 for (int i = 0; i < I.size(); ++i)
                 {
                     expected_col_payoff += row_strategy[i] * p.get(I[i], col_idx);
@@ -493,7 +493,7 @@ struct AlphaBetaOld : Types
 
             LRSNash::solve(submatrix, row_strategy, col_strategy);
 
-            typename Types::Real value = typename Types::Rational{0};
+            typename Types::Real value = typename Types::Q{0};
             for (int row_idx = 0; row_idx < submatrix.rows; ++row_idx)
             {
                 for (int col_idx = 0; col_idx < submatrix.cols; ++col_idx)

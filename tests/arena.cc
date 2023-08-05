@@ -1,6 +1,6 @@
 #include <surskit.hh>
 
-using Types = TreeBanditThreaded<Exp3<MonteCarloModel<Arena<MonteCarloModel<RandomTree<>>>>>>::T;
+using Types = TreeBanditThreaded<Exp3<MonteCarloModel<Arena<MonteCarloModel<RandomTree<>>>>>>;
 
 W::StateWrapper<RandomTree<>> generator_function(Types::Seed seed)
 {

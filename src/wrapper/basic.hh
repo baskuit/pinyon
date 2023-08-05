@@ -33,7 +33,7 @@ namespace W
 
     struct Types
     {
-        using Rational = Rational<>;
+        using Q = Rational<>;
         using Real = double;
         using Prob = double;
         using Obs = bool;
@@ -81,12 +81,12 @@ namespace W
         }
     };
 
-    template <IsStateTypes Types>
+    template <IsStateTypes T>
     struct StateWrapper : State
     {
-        std::shared_ptr<typename Types::State> ptr;
+        std::shared_ptr<typename T::State> ptr;
 
-        StateWrapper(typename Types::State const &state) : ptr{std::make_shared<typename Types::State>(state)}
+        StateWrapper(typename T::State const &state) : ptr{std::make_shared<typename T::State>(state)}
         {
         }
         template <typename... Args>

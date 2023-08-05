@@ -8,6 +8,7 @@
 #include <types/random.hh>
 #include <types/value.hh>
 #include <types/mutex.hh>
+#include <any>
 
 /*
 
@@ -32,10 +33,18 @@ template <
 struct DefaultTypes
 {
     using TypeList = DefaultTypes;
+    // I don't know how to deduce a 'minimal typelist' in a generic way
+    // for things like Search and Model, so we need to provide some declarations
+    // There are not too many types so, we avoid boilerplate `using ModelTypes = ` etc
+    // by providing just `Types::TypeList`
+
+    using Rational = _Rational;
     using Real = RealType<_Real>;
+
     using Action = ActionType<_Action>;
     using Obs = ObsType<_Obs>;
     using Prob = ProbType<_Prob>;
+    // These are the wrappers for strong typing
 
     using Value = _Value<Real>;
     using VectorReal = _Vector<Real>;
@@ -44,31 +53,41 @@ struct DefaultTypes
     using MatrixReal = _Matrix<Real>;
     using MatrixInt = _Matrix<int>;
     using MatrixValue = _Matrix<Value>;
+    // Portmanteau names to avoid
+    // `Types::template Matrix<typename Types::Real>`
+
     template <typename... Args>
     using Vector = _Vector<Args...>;
     template <typename... Args>
     using Matrix = _Matrix<Args...>;
 
-    using ObsHash = ObsHashType<_Obs>;
     using Mutex = std::mutex;
-    using Seed = _Seed;
     using PRNG = _PRNG;
-    using Rational = _Rational;
+    using Seed = _Seed;
+
+    using ObsHash = ObsHashType<_Obs>;
 };
 
-template <typename Real>
-concept IsArithmetic = requires(Real real) {
-    static_cast<Real>(real + real);
+template <typename T>
+concept IsArithmetic = requires(T x) {
+    static_cast<T>(x + x);
+    static_cast<T>(x - x);
+    static_cast<T>(x * x);
+    static_cast<T>(x / x);
+    // RealType<T>{} + ProbType<T>{} will be of type ArthmeticType<T>
+    // the static_cast expressions test that there is a way to cast the result back to RealType<T>, ProbType<T>
     {
-        real.canonicalize()
+        x.canonicalize()
     } -> std::same_as<void>;
 };
 
 template <typename Obs>
 concept IsObs = requires(Obs obs) {
     {
-        obs == obs
+        operator==(obs, obs)
     } -> std::same_as<bool>;
+    // Obs type is just a small and sure way to identify distinct transitions 
+    // of a State after commiting the same joint actions
 };
 
 template <typename Value, typename Real>
@@ -83,7 +102,6 @@ concept IsValue = requires(Value &value) {
         value = value
         // copy assignable
     } -> std::same_as<Value &>;
-    // value = value;
 };
 
 template <typename Mutex>
@@ -99,7 +117,7 @@ concept IsMutex = requires(Mutex &mutex) {
 template <typename Vector, typename T>
 concept IsVector = requires(Vector &vector, T &value) {
     {
-        vector[0]
+        vector.operator[](0)
     } -> std::same_as<T &>;
     {
         vector.resize(0)
@@ -117,9 +135,6 @@ concept IsMatrix = requires(Matrix &matrix, T &value) {
     {
         Matrix{0, 0}
     } -> std::same_as<Matrix>;
-    {
-        matrix[0]
-    } -> std::same_as<T &>;
     {
         matrix.fill(0, 0)
     } -> std::same_as<void>;
@@ -141,7 +156,7 @@ concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
         device.discard(0)
     } -> std::same_as<void>;
     {
-        device.sample_pdf(std::vector<PRNG>{})
+        device.sample_pdf(std::vector<std::any>{})
         // asserts PRNG is default constructable and sample_pdf exists universally (surely) for all vector value types
     } -> std::convertible_to<int>;
     {

@@ -22,7 +22,7 @@ struct RandomTree : Types
         size_t cols = 0;
         const size_t transitions = 1;
         int payoff_bias = 0;
-        const typename Types::Rational chance_threshold{1, static_cast<int>(transitions + 1)};
+        const typename Types::Q chance_threshold{1, static_cast<int>(transitions + 1)};
         std::vector<typename Types::Prob> chance_strategies;
         int chance_denominator = 10;
 
@@ -43,7 +43,7 @@ struct RandomTree : Types
             size_t rows,
             size_t cols,
             size_t transitions,
-            const Types::Rational &chance_threshold)
+            const Types::Q &chance_threshold)
             : device{device},
               depth_bound{depth_bound},
               rows{rows},
@@ -60,7 +60,7 @@ struct RandomTree : Types
             size_t rows,
             size_t cols,
             size_t transitions,
-            Types::Rational chance_threshold,
+            Types::Q chance_threshold,
             int (*depth_bound_func)(State *, int),
             int (*actions_func)(State *, int),
             int (*payoff_bias_func)(State *, int))
@@ -148,7 +148,7 @@ struct RandomTree : Types
             if (depth_bound == 0)
             {
                 this->terminal = true;
-                typename Types::Rational row_payoff{(payoff_bias > 0) - (payoff_bias < 0) + 1, 2};
+                typename Types::Q row_payoff{(payoff_bias > 0) - (payoff_bias < 0) + 1, 2};
                 row_payoff.canonicalize();
                 this->payoff = typename Types::Value{typename Types::Real{row_payoff}};
             }
@@ -202,7 +202,7 @@ struct RandomTree : Types
 
         void get_chance_strategies()
         {
-            typename Types::template Vector<typename Types::Rational> chance_strategies_;
+            typename Types::template Vector<typename Types::Q> chance_strategies_;
             chance_strategies_.resize(rows * cols * transitions);
             chance_strategies.resize(rows * cols * transitions);
             for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
@@ -214,12 +214,12 @@ struct RandomTree : Types
                     ActionIndex start_idx = row_idx * cols * transitions + col_idx * transitions;
 
                     // get unnormalized distro
-                    typename Types::Rational prob_sum{typename Types::Rational(0)};
+                    typename Types::Q prob_sum{typename Types::Q(0)};
                     for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
                     {
                         const int num = device.random_int(chance_denominator) + 1;
 
-                        typename Types::Rational x{num, chance_denominator};
+                        typename Types::Q x{num, chance_denominator};
                         if (x < chance_threshold)
                         {
                             x = Rational<>{0};
@@ -228,10 +228,10 @@ struct RandomTree : Types
                         prob_sum += x;
                     }
 
-                    if (prob_sum == typename Types::Rational{0})
+                    if (prob_sum == typename Types::Q{0})
                     {
-                        chance_strategies_[start_idx] = typename Types::Rational{1};
-                        prob_sum = typename Types::Rational{1};
+                        chance_strategies_[start_idx] = typename Types::Q{1};
+                        prob_sum = typename Types::Q{1};
                     }
 
                     for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
