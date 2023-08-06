@@ -30,7 +30,7 @@ concept IsValueModelTypes =
                 input)
         } -> std::same_as<void>;
     } &&
-    IsStateTypes<Types>;
+    IsPerfectInfoStateTypes<Types>; // this basically enforces that everything is perfect info (has Obs, Prob, data members)
 
 template <typename Types>
 concept IsDoubleOracleModelTypes =

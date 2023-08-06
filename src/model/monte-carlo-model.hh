@@ -24,9 +24,7 @@ struct MonteCarloModel : Types
         Model() {}
 
         Model(const Types::PRNG &device) : device{device} {}
-
-        Model(Types::Seed seed) : device{seed} {}
-
+        
         void get_input(
             const Types::State &state,
             ModelInput &input)

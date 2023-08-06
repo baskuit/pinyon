@@ -20,7 +20,7 @@ namespace W
 
     struct Types : DefaultTypes<double, int, bool, double>
     {
-        using ModelInput = State;
+        using ModelInput = W::State;
         struct ModelOutput
         {
             PairReal<double> value;
