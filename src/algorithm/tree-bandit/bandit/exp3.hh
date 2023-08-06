@@ -5,6 +5,10 @@
 template <IsValueModelTypes Types>
 struct Exp3 : Types
 {
+
+    using Real = typename Types::Real;
+    // alias decl kill intellisense currently but you only lose canonicalize()
+
     struct MatrixStats
     {
         typename Types::VectorReal row_gains;
@@ -13,7 +17,7 @@ struct Exp3 : Types
         typename Types::VectorInt col_visits;
 
         int visits = 0;
-        PairReal<typename Types::Real> value_total{0, 0};
+        PairReal<Real> value_total{0, 0};
     };
     struct ChanceStats
     {
@@ -22,18 +26,18 @@ struct Exp3 : Types
     {
         ActionIndex row_idx, col_idx;
         typename Types::Value value;
-        typename Types::Real row_mu, col_mu;
+        Real row_mu, col_mu;
     };
 
     class BanditAlgorithm
     {
     public:
-        const typename Types::Real gamma{.01};
-        const typename Types::Real one_minus_gamma{gamma * -1 + 1};
+        const Real gamma{.01};
+        const Real one_minus_gamma{gamma * -1 + 1};
 
         BanditAlgorithm() {}
 
-        constexpr BanditAlgorithm(Types::Real gamma) : gamma(gamma), one_minus_gamma{gamma * -1 + 1} {}
+        constexpr BanditAlgorithm(Real gamma) : gamma(gamma), one_minus_gamma{gamma * -1 + 1} {}
 
         friend std::ostream &operator<<(std::ostream &os, const Exp3 &session)
         {
@@ -56,7 +60,7 @@ struct Exp3 : Types
             MatrixStats &stats,
             Types::Value &value) const
         {
-            const typename Types::Real den = 1 / (stats.total_visits + (stats.total_visits == 0));
+            const Real den = 1 / (stats.total_visits + (stats.total_visits == 0));
             value = stats.value_total * den;
         }
 
@@ -115,10 +119,10 @@ struct Exp3 : Types
             }
             else
             {
-                const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
+                const Real eta{gamma / static_cast<Real>(rows)};
                 softmax(row_forecast, stats.row_gains, rows, eta);
                 std::transform(row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
-                               [eta, one_minus_gamma](typename Types::Real value)
+                               [eta, one_minus_gamma](Real value)
                                { return one_minus_gamma * value + eta; });
             }
             if (cols == 1)
@@ -127,25 +131,25 @@ struct Exp3 : Types
             }
             else
             {
-                const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
+                const Real eta{gamma / static_cast<Real>(cols)};
                 softmax(col_forecast, stats.col_gains, cols, eta);
                 std::transform(col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
-                               [eta, one_minus_gamma](typename Types::Real value)
+                               [eta, one_minus_gamma](Real value)
                                { return one_minus_gamma * value + eta; });
             }
             const int row_idx = device.sample_pdf(row_forecast, rows);
             const int col_idx = device.sample_pdf(col_forecast, cols);
             outcome.row_idx = row_idx;
             outcome.col_idx = col_idx;
-            outcome.row_mu = static_cast<typename Types::Real>(row_forecast[row_idx]);
-            outcome.col_mu = static_cast<typename Types::Real>(col_forecast[col_idx]);
+            outcome.row_mu = static_cast<Real>(row_forecast[row_idx]);
+            outcome.col_mu = static_cast<Real>(col_forecast[col_idx]);
         }
 
         void update_matrix_stats(
             MatrixStats &stats,
             Outcome &outcome) const
         {
-            stats.value_total += PairReal<typename Types::Real>{outcome.value.get_row_value(), outcome.value.get_col_value()};
+            stats.value_total += PairReal<Real>{outcome.value.get_row_value(), outcome.value.get_col_value()};
             stats.visits += 1;
             stats.row_visits[outcome.row_idx] += 1;
             stats.col_visits[outcome.col_idx] += 1;
@@ -195,10 +199,10 @@ struct Exp3 : Types
             }
             else
             {
-                const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
+                const Real eta{gamma / static_cast<Real>(rows)};
                 softmax(row_forecast, row_forecast, rows, eta);
                 std::transform(row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
-                               [eta, one_minus_gamma](typename Types::Real value)
+                               [eta, one_minus_gamma](Real value)
                                { return one_minus_gamma * value + eta; });
             }
             if (cols == 1)
@@ -207,18 +211,18 @@ struct Exp3 : Types
             }
             else
             {
-                const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
+                const Real eta{gamma / static_cast<Real>(cols)};
                 softmax(col_forecast, col_forecast, cols, eta);
                 std::transform(col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
-                               [eta, one_minus_gamma](typename Types::Real value)
+                               [eta, one_minus_gamma](Real value)
                                { return one_minus_gamma * value + eta; });
             }
             const int row_idx = device.sample_pdf(row_forecast, rows);
             const int col_idx = device.sample_pdf(col_forecast, cols);
             outcome.row_idx = row_idx;
             outcome.col_idx = col_idx;
-            outcome.row_mu = static_cast<typename Types::Real>(row_forecast[row_idx]);
-            outcome.col_mu = static_cast<typename Types::Real>(col_forecast[col_idx]);
+            outcome.row_mu = static_cast<Real>(row_forecast[row_idx]);
+            outcome.col_mu = static_cast<Real>(col_forecast[col_idx]);
         }
 
         void update_matrix_stats(
@@ -262,7 +266,7 @@ struct Exp3 : Types
         void update_matrix_stats(
             MatrixStats &stats,
             Outcome &outcome,
-            Types::Real learning_rate) const
+            Real learning_rate) const
         {
             stats.value_total += outcome.value * learning_rate;
             stats.visits += 1;
@@ -275,7 +279,7 @@ struct Exp3 : Types
         void update_chance_stats(
             ChanceStats &stats,
             Outcome &outcome,
-            Types::Real learning_rate) const
+            Real learning_rate) const
         {
         }
 
@@ -293,10 +297,10 @@ struct Exp3 : Types
             }
             else
             {
-                const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
+                const Real eta{gamma / static_cast<Real>(rows)};
                 softmax(row_policy, stats.row_gains, rows, eta);
                 std::transform(row_policy.begin(), row_policy.begin() + rows, row_policy.begin(),
-                               [eta, one_minus_gamma](typename Types::Real value)
+                               [eta, one_minus_gamma](Real value)
                                { return one_minus_gamma * value + eta; });
             }
             if (cols == 1)
@@ -305,10 +309,10 @@ struct Exp3 : Types
             }
             else
             {
-                const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
+                const Real eta{gamma / static_cast<Real>(cols)};
                 softmax(col_policy, stats.col_gains, cols, eta);
                 std::transform(col_policy.begin(), col_policy.begin() + cols, col_policy.begin(),
-                               [eta, one_minus_gamma](typename Types::Real value)
+                               [eta, one_minus_gamma](Real value)
                                { return one_minus_gamma * value + eta; });
             }
         }
@@ -318,12 +322,12 @@ struct Exp3 : Types
             Types::VectorReal &forecast,
             Types::VectorReal &gains,
             const size_t k,
-            Types::Real eta) const
+            Real eta) const
         {
-            typename Types::Real sum = 0;
+            Real sum = 0;
             for (size_t i = 0; i < k; ++i)
             {
-                const typename Types::Real y{std::exp(static_cast<double>(gains[i] * eta))};
+                const Real y{std::exp(static_cast<double>(gains[i] * eta))};
                 forecast[i] = y;
                 sum += y;
             }
@@ -342,18 +346,18 @@ struct Exp3 : Types
             const auto &one_minus_gamma = this->one_minus_gamma;
             if (rows > 1)
             {
-                const typename Types::Real eta{gamma / static_cast<typename Types::Real>(rows)};
+                const Real eta{gamma / static_cast<Real>(rows)};
                 std::transform(row_strategy.begin(), row_strategy.begin() + rows, row_strategy.begin(),
-                               [eta, one_minus_gamma](typename Types::Real value)
+                               [eta, one_minus_gamma](Real value)
                                { return (value - eta) / one_minus_gamma; });
             }
             if (cols > 1)
             {
-                const typename Types::Real eta{gamma / static_cast<typename Types::Real>(cols)};
+                const Real eta{gamma / static_cast<Real>(cols)};
                 std::transform(col_strategy.begin(), col_strategy.begin() + cols, col_strategy.begin(),
-                               [eta, one_minus_gamma](typename Types::Real value)
+                               [eta, one_minus_gamma](Real value)
                                { return (value - eta) / one_minus_gamma; });
             }
-        } // TODO can produce negative values but this shouldnt cause problems I think.
+        } // TODO can produce negative values but this shouldnt cause problems.
     };
 };
