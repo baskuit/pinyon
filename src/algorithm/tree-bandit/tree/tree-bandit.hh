@@ -28,7 +28,7 @@ struct TreeBandit : Types
             Types::PRNG &device,
             const Types::State &state,
             Types::Model &model,
-            MatrixNode &matrix_node)
+            MatrixNode &matrix_node) const
         {
             auto start = std::chrono::high_resolution_clock::now();
             auto end = std::chrono::high_resolution_clock::now();
@@ -51,7 +51,7 @@ struct TreeBandit : Types
             Types::PRNG &device,
             const Types::State &state,
             Types::Model &model,
-            MatrixNode &matrix_node)
+            MatrixNode &matrix_node) const
         {
             auto start = std::chrono::high_resolution_clock::now();
             typename Types::ModelOutput inference;
@@ -72,7 +72,7 @@ struct TreeBandit : Types
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Types::ModelOutput &inference)
+            Types::ModelOutput &inference) const
         {
             if (!matrix_node->is_terminal())
             {
@@ -131,7 +131,7 @@ struct TreeBandit : Types
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Types::ModelOutput &inference)
+            Types::ModelOutput &inference) const
         {
             if (!matrix_node->is_terminal())
             {

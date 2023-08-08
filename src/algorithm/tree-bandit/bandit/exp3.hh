@@ -95,7 +95,7 @@ struct Exp3 : Types
         void expand(
             Types::State &state,
             MatrixStats &stats,
-            Types::ModelOutput &inference)
+            Types::ModelOutput &inference) const
         {
             stats.row_visits.resize(state.row_actions.size(), 0);
             stats.col_visits.resize(state.col_actions.size(), 0);
@@ -257,7 +257,7 @@ struct Exp3 : Types
         void update_chance_stats(
             ChanceStats &stats,
             Outcome &outcome,
-            Types::Mutex &mtx)
+            Types::Mutex &mtx) const
         {
         }
 
@@ -339,7 +339,7 @@ struct Exp3 : Types
 
         inline void denoise(
             Types::VectorReal &row_strategy,
-            Types::VectorReal &col_strategy)
+            Types::VectorReal &col_strategy) const
         {
             const int rows = row_strategy.size();
             const int cols = col_strategy.size();

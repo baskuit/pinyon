@@ -109,11 +109,9 @@ namespace W
                 State *state_ptr,
                 Types::ModelOutput &output)
             {
-                typename T::State state = *reinterpret_cast<typename T::State *>(state_ptr);
-                typename T::ModelInput input;
-                model.get_input(state, input);
+                typename T::State &state = dynamic_cast<StateWrapper<T>*>(state_ptr)->state;
                 typename T::ModelOutput output_;
-                model.get_inference(input, output_);
+                model.get_inference(state, output_);
                 output.value = Types::Value{output_.value.get_row_value(), output_.value.get_col_value()};
                 // if constexpr (T::ModelOutput::row_policy)
                 // {
@@ -125,7 +123,7 @@ namespace W
                 State *state_ptr,
                 Types::ModelInput &input)
             {
-                typename T::State state = *reinterpret_cast<typename T::State *>(state_ptr);
+                typename T::State state = *dynamic_cast<typename T::State *>(state_ptr);
                 // input.ptr = std::make_unique<typename T::State>(state);
             }
         };
@@ -137,7 +135,7 @@ namespace W
         template <IsNodeTypes T>
         struct MatrixNodeWrapper : MatrixNode
         {
-            typename T::MatrixNode root{};
+            typename T::MatrixNode matrix_node{};
 
             std::unique_ptr<Detail::MatrixNode> create_new() const
             {
@@ -150,7 +148,7 @@ namespace W
             virtual size_t run(
                 size_t duration_ms,
                 Types::PRNG &device,
-                const Detail::State *state_ptr,
+                Detail::State *state_ptr,
                 Detail::Model *model_ptr,
                 Detail::MatrixNode *matrix_node_ptr) const = 0;
         };
@@ -170,14 +168,15 @@ namespace W
             size_t run(
                 size_t duration_ms,
                 Types::PRNG &device,
-                const Detail::State *state_ptr,
+                Detail::State *state_ptr,
                 Detail::Model *model_ptr,
                 Detail::MatrixNode *matrix_node_ptr) const
             {
-                typename T::PRNG device_{device.uniform_64()};
-                typename T::State &state = *reinterpret_cast<typename T::State *>(state_ptr);
-                typename T::Model &model = *reinterpret_cast<typename T::Model *>(model_ptr);
-                typename T::MatrixNode &matrix_node = *reinterpret_cast<typename T::MatrixNode *>(matrix_node_ptr);
+                typename T::PRNG device_{};
+
+                typename T::State &state = dynamic_cast<StateWrapper<T>*>(state_ptr)->state;
+                typename T::Model &model = dynamic_cast<ModelWrapper<T>*>(model_ptr)->model;
+                typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeWrapper<T>*>(matrix_node_ptr)->matrix_node;
 
                 size_t iterations = session.run(duration_ms, device_, state, model, matrix_node);
                 return iterations;
@@ -278,7 +277,7 @@ namespace W
         std::unique_ptr<Detail::Model> ptr;
 
         template <IsValueModelTypes T, typename... Args>
-        Model(T, const Args &...args) : ptr(std::make_shared<Detail::ModelWrapper<T>>(args...)) {}
+        Model(T, const Args &...args) : ptr(std::make_unique<Detail::ModelWrapper<T>>(args...)) {}
 
         void get_inference(
             Types::ModelInput &input,
@@ -306,18 +305,18 @@ namespace W
         std::unique_ptr<Detail::Search> ptr;
 
         template <IsSearchTypes T, typename... Args>
-        Search(T, const Args &...args) : ptr(std::make_shared<Detail::SearchWrapper<T>>(args...)) {}
+        Search(T, const Args &...args) : ptr(std::make_unique<Detail::SearchWrapper<T>>(args...)) {}
 
         void run(
             size_t duration_ms,
             Types::PRNG &device,
-            const Types::State &state,
+            Types::State &state,
             Types::Model &model,
-            Types::MatrixNode &matrix_node)
+            Types::MatrixNode &matrix_node) const
         {
-            const Detail::State *const state_ptr = &*state.ptr;
-            Detail::Model *const model_ptr = &*model.ptr;
-            Detail::MatrixNode *const matrix_node_ptr = &*matrix_node.ptr;
+            Detail::State * state_ptr = &*state.ptr;
+            Detail::Model * model_ptr = &*model.ptr;
+            Detail::MatrixNode * matrix_node_ptr = &*matrix_node.ptr;
             ptr->run(duration_ms, device, state_ptr, model_ptr, matrix_node_ptr);
         }
     };
