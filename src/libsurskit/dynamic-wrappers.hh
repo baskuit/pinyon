@@ -144,7 +144,14 @@ namespace W
         struct Search
         {
             virtual std::unique_ptr<Detail::Search> clone() const = 0;
+            virtual std::unique_ptr<Detail::MatrixNode> get_matrix_node () const = 0;
             virtual size_t run(
+                size_t duration_ms,
+                Types::PRNG &device,
+                Detail::State *state_ptr,
+                Detail::Model *model_ptr,
+                Detail::MatrixNode *matrix_node_ptr) const = 0;
+            virtual size_t run_for_iterations(
                 size_t duration_ms,
                 Types::PRNG &device,
                 Detail::State *state_ptr,
@@ -164,6 +171,10 @@ namespace W
                 return std::make_unique<SearchWrapper<T>>(*this);
             }
 
+            std::unique_ptr<Detail::MatrixNode> get_matrix_node () const {
+                return std::make_unique<MatrixNodeWrapper<T>>();
+            }
+
             size_t run(
                 size_t duration_ms,
                 Types::PRNG &device,
@@ -175,9 +186,18 @@ namespace W
                 typename T::State &state = dynamic_cast<StateWrapper<T> *>(state_ptr)->state;
                 typename T::Model &model = dynamic_cast<ModelWrapper<T> *>(model_ptr)->model;
                 typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeWrapper<T> *>(matrix_node_ptr)->matrix_node;
-
                 size_t iterations = session.run(duration_ms, device_, state, model, matrix_node);
                 return iterations;
+            }
+            size_t run_for_iterations(
+                size_t iterations, Types::PRNG &device, Detail::State *state_ptr, Detail::Model *model_ptr, Detail::MatrixNode *matrix_node_ptr) const
+            {
+                typename T::PRNG device_{device.uniform_64()};
+                typename T::State &state = dynamic_cast<StateWrapper<T> *>(state_ptr)->state;
+                typename T::Model &model = dynamic_cast<ModelWrapper<T> *>(model_ptr)->model;
+                typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeWrapper<T> *>(matrix_node_ptr)->matrix_node;
+                size_t ms = session.run_for_iterations(iterations, device_, state, model, matrix_node);
+                return ms;
             }
         };
 
@@ -310,6 +330,8 @@ namespace W
     {
         std::unique_ptr<Detail::MatrixNode> ptr;
 
+        MatrixNode (std::unique_ptr<Detail::MatrixNode> ptr) : ptr{std::move(ptr)} {}
+
         template <IsNodeTypes T>
         MatrixNode(T) : ptr{std::make_unique<Detail::MatrixNodeWrapper<T>>()} {}
     };
@@ -332,6 +354,10 @@ namespace W
             return *this;
         }
 
+        MatrixNode get_matrix_node () const {
+            return MatrixNode{ptr->get_matrix_node()};
+        }
+
         size_t run(
             size_t duration_ms,
             Types::PRNG &device,
@@ -344,20 +370,36 @@ namespace W
             Detail::MatrixNode *matrix_node_ptr = &*matrix_node.ptr;
             return ptr->run(duration_ms, device, state_ptr, model_ptr, matrix_node_ptr);
         }
+
+        size_t run_for_iterations(
+            size_t iterations,
+            Types::PRNG &device,
+            Types::State &state,
+            Types::Model &model,
+            Types::MatrixNode &matrix_node) const
+        {
+            Detail::State *state_ptr = &*(state.ptr);
+            Detail::Model *model_ptr = &*model.ptr;
+            Detail::MatrixNode *matrix_node_ptr = &*matrix_node.ptr;
+            return ptr->run_for_iterations(iterations, device, state_ptr, model_ptr, matrix_node_ptr);
+        }
     };
 
     template <typename T>
-    Types::State get_w_state (const typename T::State& state) {
+    Types::State get_w_state(const typename T::State &state)
+    {
         return Types::State{T{}, state};
     }
 
     template <typename T>
-    Types::Model get_w_model (const typename T::Model& model) {
+    Types::Model get_w_model(const typename T::Model &model)
+    {
         return Types::Model{T{}, model};
     }
 
     template <typename T>
-    Types::Search get_w_search (const typename T::Search& search) {
+    Types::Search get_w_search(const typename T::Search &search)
+    {
         return Types::Search{T{}, search};
     }
 

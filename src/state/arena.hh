@@ -58,7 +58,7 @@ struct Arena : SimpleTypes
             // W::Types::Search *row_search = searches[static_cast<int>(row_action)]->clone();
             // W::Types::Search *col_search = searches[static_cast<int>(col_action)]->clone();
 
-            // W::Types::State *state_copy = (*init_state_generator)(state_seed);
+            W::Types::State state = (*state_generator)(state_seed);
             // W::Types::Value row_first_payoff = play_vs(row_search, col_search, state_copy, model);
             // state_copy = (*init_state_generator)(state_seed);
             // W::Types::Value col_first_payoff = play_vs(col_search, row_search, state_copy, model);
@@ -74,24 +74,24 @@ struct Arena : SimpleTypes
 
     private:
         W::Types::Value play_vs(
-            W::Types::Search *row_search,
-            W::Types::Search *col_search,
-            W::Types::State *state,
-            W::Types::Model *model)
+            W::Types::Search &row_search,
+            W::Types::Search &col_search,
+            W::Types::State &state,
+            W::Types::Model &model)
         {
+            state.get_actions();
+            while (!state.is_terminal())
+            {
+                W::Types::VectorReal row_strategy, col_strategy;
+                W::Types::PRNG device;
+                W::Types::MatrixNode matrix_node{row_search.get_matrix_node()};
+                row_search.run_for_iterations(search_iterations, device, state, model, matrix_node);
+
+                // ActionIndex col_idx = device.sample_pdf(col_strategy);
+                // state.apply_actions(row_idx, col_idx);
+                // state.get_actions();
+            }
             return {};
-            // state.get_actions();
-            // while (!state.is_terminal())
-            // {
-            //     std::vector<double> row_strategy, col_strategy;
-            //     row_search->run_and_get_strategies(row_strategy, col_strategy, search_iterations, state, model);
-            //     ActionIndex row_idx = device.sample_pdf(row_strategy);
-            //     col_search->run_and_get_strategies(row_strategy, col_strategy, search_iterations, state, model);
-            //     ActionIndex col_idx = device.sample_pdf(col_strategy);
-            //     state.apply_actions(row_idx, col_idx);
-            //     state.get_actions();
-            // }
-            // return W::Types::Value{state.row_payoff(), state.col_payoff()};
         }
     };
 };
