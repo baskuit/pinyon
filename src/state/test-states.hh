@@ -19,7 +19,7 @@ struct MoldState : SimpleTypes
     public:
         size_t max_depth = 1;
 
-        State(size_t max_depth) : max_depth((max_depth >= 0) * max_depth)
+        State(size_t max_depth) : max_depth{max_depth}
         {
             this->terminal = (this->max_depth == 0);
             this->init_range_actions(size);

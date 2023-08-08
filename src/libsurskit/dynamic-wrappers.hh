@@ -28,17 +28,15 @@ namespace W
         using MatrixNode = W::MatrixNode;
     };
 
-
     /*
-    
-    
-    
+
+
+
     EEE
 
-    
-    
-    */
 
+
+    */
 
     namespace Detail
     {
@@ -109,7 +107,7 @@ namespace W
                 State *state_ptr,
                 Types::ModelOutput &output)
             {
-                typename T::State &state = dynamic_cast<StateWrapper<T>*>(state_ptr)->state;
+                typename T::State &state = dynamic_cast<StateWrapper<T> *>(state_ptr)->state;
                 typename T::ModelOutput output_;
                 model.get_inference(state, output_);
                 output.value = Types::Value{output_.value.get_row_value(), output_.value.get_col_value()};
@@ -145,6 +143,7 @@ namespace W
 
         struct Search
         {
+            virtual std::unique_ptr<Detail::Search> clone() const = 0;
             virtual size_t run(
                 size_t duration_ms,
                 Types::PRNG &device,
@@ -162,7 +161,7 @@ namespace W
 
             std::unique_ptr<Detail::Search> clone() const
             {
-                return std::make_unique<SearchWrapper>(*this);
+                return std::make_unique<SearchWrapper<T>>(*this);
             }
 
             size_t run(
@@ -172,11 +171,10 @@ namespace W
                 Detail::Model *model_ptr,
                 Detail::MatrixNode *matrix_node_ptr) const
             {
-                typename T::PRNG device_{};
-
-                typename T::State &state = dynamic_cast<StateWrapper<T>*>(state_ptr)->state;
-                typename T::Model &model = dynamic_cast<ModelWrapper<T>*>(model_ptr)->model;
-                typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeWrapper<T>*>(matrix_node_ptr)->matrix_node;
+                typename T::PRNG device_{device.uniform_64()};
+                typename T::State &state = dynamic_cast<StateWrapper<T> *>(state_ptr)->state;
+                typename T::Model &model = dynamic_cast<ModelWrapper<T> *>(model_ptr)->model;
+                typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeWrapper<T> *>(matrix_node_ptr)->matrix_node;
 
                 size_t iterations = session.run(duration_ms, device_, state, model, matrix_node);
                 return iterations;
@@ -213,6 +211,8 @@ namespace W
         template <IsStateTypes T, typename... Args>
         State(T, const Args &...args) : ptr(std::make_unique<Detail::StateWrapper<T>>(args...))
         {
+            typename T::State &sss = (dynamic_cast<Detail::StateWrapper<T> *>(&*ptr))->state;
+            std::cout << "constr: max depth: " << sss.max_depth << std::endl;
         }
 
         bool is_terminal() const
@@ -279,6 +279,17 @@ namespace W
         template <IsValueModelTypes T, typename... Args>
         Model(T, const Args &...args) : ptr(std::make_unique<Detail::ModelWrapper<T>>(args...)) {}
 
+        Model(const Model &other)
+        {
+            ptr = other.ptr->clone();
+        }
+
+        Model &operator=(const Model &other)
+        {
+            ptr = other.ptr->clone();
+            return *this;
+        }
+
         void get_inference(
             Types::ModelInput &input,
             Types::ModelOutput &output)
@@ -298,6 +309,9 @@ namespace W
     struct MatrixNode
     {
         std::unique_ptr<Detail::MatrixNode> ptr;
+
+        template <IsNodeTypes T>
+        MatrixNode(T) : ptr{std::make_unique<Detail::MatrixNodeWrapper<T>>()} {}
     };
 
     struct Search
@@ -307,18 +321,44 @@ namespace W
         template <IsSearchTypes T, typename... Args>
         Search(T, const Args &...args) : ptr(std::make_unique<Detail::SearchWrapper<T>>(args...)) {}
 
-        void run(
+        Search(const Search &other)
+        {
+            ptr = other.ptr->clone();
+        }
+
+        Search &operator=(const Search &other)
+        {
+            ptr = other.ptr->clone();
+            return *this;
+        }
+
+        size_t run(
             size_t duration_ms,
             Types::PRNG &device,
             Types::State &state,
             Types::Model &model,
             Types::MatrixNode &matrix_node) const
         {
-            Detail::State * state_ptr = &*state.ptr;
-            Detail::Model * model_ptr = &*model.ptr;
-            Detail::MatrixNode * matrix_node_ptr = &*matrix_node.ptr;
-            ptr->run(duration_ms, device, state_ptr, model_ptr, matrix_node_ptr);
+            Detail::State *state_ptr = &*(state.ptr);
+            Detail::Model *model_ptr = &*model.ptr;
+            Detail::MatrixNode *matrix_node_ptr = &*matrix_node.ptr;
+            return ptr->run(duration_ms, device, state_ptr, model_ptr, matrix_node_ptr);
         }
     };
+
+    template <typename T>
+    Types::State get_w_state (const typename T::State& state) {
+        return Types::State{T{}, state};
+    }
+
+    template <typename T>
+    Types::Model get_w_model (const typename T::Model& model) {
+        return Types::Model{T{}, model};
+    }
+
+    template <typename T>
+    Types::Search get_w_search (const typename T::Search& search) {
+        return Types::Search{T{}, search};
+    }
 
 }

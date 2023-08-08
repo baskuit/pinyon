@@ -1,73 +1,75 @@
-#include <wrapper/basic.hh>
+#include <libsurskit/dynamic-wrappers.hh>
+#include <types/types.hh>
 
 #include <utility>
 
-template <IsValueModelTypes Types>
-struct Arena : Types::TypeList
+struct Arena : SimpleTypes
 {
 
-    class State : public PerfectInfoState<Types::TypesList>
+    class State : public PerfectInfoState<SimpleTypes>
     {
     public:
         size_t search_iterations;
-        W::Types::State *(*init_state_generator)(Types::Seed){nullptr};
-        W::Types::Model *model{device};
+        W::Types::State (*state_generator)(SimpleTypes::Seed){nullptr};
+        SimpleTypes::Seed state_seed{};
 
-        typename Types::Seed state_seed{};
+        W::Types::Model model;
+        std::vector<W::Types::Search> searches{};
 
-        prng device{};
-        std::vector<W::Types::Search *> searches{};
 
-        template <typename... Containers>
-        Arena(
+        State(
             const size_t search_iterations,
-            W::Types::State (*init_state_generator)(typename Types::Seed),
-            const W::Types::Model *model,
-            Containers &...containers)
-            : search_iterations{search_iterations}, init_state_generator{init_state_generator}, model{model}
+            W::Types::State (*init_state_generator)(SimpleTypes::Seed),
+            W::Types::Model &model,
+            std::vector<W::Types::Search> &searches)
+            : search_iterations{search_iterations}, state_generator{init_state_generator}, model{model}, searches{searches}
         {
-            (std::transform(containers.begin(), containers.end(), std::back_inserter(searches),
-                            [](auto &search)
-                            { return &search; }),
-             ...);
-
+            // (std::transform(containers.begin(), containers.end(), std::back_inserter(searches),
+            //                 [](auto &search)
+            //                 { return &search; }),
+            //  ...);
             this->init_range_actions(searches.size());
         }
+
+
 
         void get_actions() const {}
 
         void get_actions(
-            Types::VectorAction &row_actions,
-            Types::VectorAction &col_actions) const
+            SimpleTypes::VectorAction &row_actions,
+            SimpleTypes::VectorAction &col_actions) const
         {
             row_actions = this->row_actions;
             col_actions = this->col_actions;
         }
 
-        void randomize_transition(Types::PRNG &device)
+        void randomize_transition(SimpleTypes::PRNG &device)
         {
             state_seed = device.uniform_64();
         }
 
         void apply_actions(
-            Types::Action row_action,
-            Types::Action col_action)
+            SimpleTypes::Action row_action,
+            SimpleTypes::Action col_action)
         {
-            W::Types::Search *row_search = searches[static_cast<int>(row_action)]->clone();
-            W::Types::Search *col_search = searches[static_cast<int>(col_action)]->clone();
+            W::Types::Search row_search = searches[static_cast<int>(row_action)];
+            W::Types::Search col_search = searches[static_cast<int>(col_action)];
 
-            W::Types::State *state_copy = (*init_state_generator)(state_seed);
-            W::Types::Value row_first_payoff = play_vs(row_search, col_search, state_copy, model);
-            state_copy = (*init_state_generator)(state_seed);
-            W::Types::Value col_first_payoff = play_vs(col_search, row_search, state_copy, model);
-            W::Types::Value avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
-            this->payoff = static_cast<W::Types::Value>(avg_payoff.get_row_value(), avg_payoff.get_col_value());
+            // W::Types::Search *row_search = searches[static_cast<int>(row_action)]->clone();
+            // W::Types::Search *col_search = searches[static_cast<int>(col_action)]->clone();
 
-            this->terminal = true;
-            this->obs = typename Types::Obs{device.random_int(1 << 16)};
+            // W::Types::State *state_copy = (*init_state_generator)(state_seed);
+            // W::Types::Value row_first_payoff = play_vs(row_search, col_search, state_copy, model);
+            // state_copy = (*init_state_generator)(state_seed);
+            // W::Types::Value col_first_payoff = play_vs(col_search, row_search, state_copy, model);
+            // W::Types::Value avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
+            // this->payoff = static_cast<W::Types::Value>(avg_payoff.get_row_value(), avg_payoff.get_col_value());
 
-            delete row_search;
-            delete col_search;
+            // this->terminal = true;
+            // this->obs = typename Types::Obs{device.random_int(1 << 16)};
+
+            // delete row_search;
+            // delete col_search;
         }
 
     private:
@@ -77,18 +79,19 @@ struct Arena : Types::TypeList
             W::Types::State *state,
             W::Types::Model *model)
         {
-            state.get_actions();
-            while (!state.is_terminal())
-            {
-                std::vector<double> row_strategy, col_strategy;
-                row_search->run_and_get_strategies(row_strategy, col_strategy, search_iterations, state, model);
-                ActionIndex row_idx = device.sample_pdf(row_strategy);
-                col_search->run_and_get_strategies(row_strategy, col_strategy, search_iterations, state, model);
-                ActionIndex col_idx = device.sample_pdf(col_strategy);
-                state.apply_actions(row_idx, col_idx);
-                state.get_actions();
-            }
-            return W::Types::Value{state.row_payoff(), state.col_payoff()};
+            return {};
+            // state.get_actions();
+            // while (!state.is_terminal())
+            // {
+            //     std::vector<double> row_strategy, col_strategy;
+            //     row_search->run_and_get_strategies(row_strategy, col_strategy, search_iterations, state, model);
+            //     ActionIndex row_idx = device.sample_pdf(row_strategy);
+            //     col_search->run_and_get_strategies(row_strategy, col_strategy, search_iterations, state, model);
+            //     ActionIndex col_idx = device.sample_pdf(col_strategy);
+            //     state.apply_actions(row_idx, col_idx);
+            //     state.get_actions();
+            // }
+            // return W::Types::Value{state.row_payoff(), state.col_payoff()};
         }
     };
 };

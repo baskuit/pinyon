@@ -7,6 +7,7 @@
 #include <libsurskit/generator.hh>
 #include <libsurskit/template-prod.hh>
 #include <libsurskit/algorithm-generator.hh>
+#include <libsurskit/dynamic-wrappers.hh>
 
 // Types
 
@@ -18,6 +19,7 @@
 #include <state/test-states.hh>
 #include <state/random-tree.hh>
 #include <state/traversed.hh>
+#include <state/arena.hh>
 
 // #include <state/arena.hh>
 
@@ -50,7 +52,3 @@
 #include <tree/tree-obs.hh>
 #include <tree/tree-debug.hh>
 #include <tree/tree-flat.hh>
-
-// Wrapper
-
-// #include <wrapper/basic.hh>
