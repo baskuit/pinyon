@@ -125,4 +125,5 @@ concept IsSearchTypes =
     requires(
         typename Types::Search &session) {
         true;
-    };
+    } &&
+    IsValueModelTypes<Types>;
