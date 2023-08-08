@@ -123,7 +123,13 @@ concept IsTreeBanditTypes =
 template <typename Types>
 concept IsSearchTypes =
     requires(
-        typename Types::Search &session) {
-        true;
+        typename Types::Search &session,
+        typename Types::PRNG &device,
+        typename Types::State &state,
+        typename Types::Model &model,
+        typename Types::MatrixNode &matrix_node) {
+        {
+            session.run(0, device, state, model, matrix_node)
+        } -> std::same_as<size_t>;
     } &&
     IsValueModelTypes<Types>;

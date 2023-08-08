@@ -9,6 +9,7 @@ template <typename State, typename VectorAction, typename Value, typename PRNG>
 concept IsState =
     requires(
         State &state,
+        const State &const_state,
         VectorAction &actions,
         PRNG &device) {
         {
@@ -17,9 +18,9 @@ concept IsState =
         {
             state.get_payoff()
         } -> std::same_as<Value>;
-        {
-            state.get_actions(actions, actions)
-        } -> std::same_as<void>;
+        // {
+        //     const_state.get_actions(actions, actions)
+        // } -> std::same_as<void>;
         {
             state.randomize_transition(device)
         } -> std::same_as<void>;
