@@ -37,11 +37,11 @@ namespace W
 
         struct State
         {
-            virtual void get_actions(Types::VectorAction &, Types::VectorAction &) = 0;
+            // virtual void get_actions(Types::VectorAction &, Types::VectorAction &) = 0;
             virtual void get_actions(size_t &rows, size_t &cols) = 0;
             virtual void apply_actions(Types::Action row_idx, Types::Action col_idx) = 0;
             virtual bool is_terminal() const = 0;
-            virtual Types::Value get_payoff() = 0;
+            virtual Types::Value get_payoff() const = 0;
         };
         template <IsPerfectInfoStateTypes T>
         struct StateWrapper : State
@@ -64,7 +64,9 @@ namespace W
             };
             void apply_actions(typename Types::Action row_idx, typename Types::Action col_idx)
             {
-                state.apply_actions(state.row_actions[row_idx], state.col_actions[col_idx]);
+                state.apply_actions(
+                    state.row_actions[static_cast<int>(row_idx)], 
+                    state.col_actions[static_cast<int>(col_idx)]);
             };
             bool is_terminal() const
             {
@@ -120,8 +122,26 @@ namespace W
     {
         std::unique_ptr<Detail::State> ptr;
         template <IsTypeList Types, typename... Args>
-        State(const Args &...args) : ptr(std::make_shared<Detail::StateWrapper<Types>>(args...)) {}
+        State(Types types, const Args &...args) : ptr(std::make_unique<Detail::StateWrapper<Types>>(args...)) {}
+        // State (const std::unique_ptr<Detail::State> ptr) : ptr{ptr} {}
+        
+        // template <typename _State>
+        // State (const &State_ state_) : ptr(std::make_unique<Detail>)
+        
+        void get_actions(size_t &rows, size_t &cols)
+        {
+            auto &state = *ptr;
+            state.get_actions(rows, cols);
+            // rows = state.row_actions.size();
+            // cols = state.col_actions.size();
+        };
     };
+
+    template <IsTypeList Types, typename... Args>
+    auto make_state(Args &...args) -> State
+    {
+        return State{};
+    }
 
     struct Model
     {

@@ -131,18 +131,18 @@ int main()
     int tries = 0;
 
     size_t counter = 0;
-    for (auto wrapped_state : generator)
-    {
-        auto state = *wrapped_state.ptr;
+    // for (auto wrapped_state : generator)
+    // {
+    //     auto state = *wrapped_state.ptr;
 
-        Solve solve{state, threshold};
-        solve.count();
+    //     Solve solve{state, threshold};
+    //     solve.count();
 
-        std::cout << "full: " << solve.time_full << " full_f: " << solve.time_full_f << " ab: " << solve.time_ab << " ab_f: " << solve.time_ab_f << std::endl;
-        std::cout << "full: " << solve.count_full << " full_f: " << solve.count_full_f << " ab: " << solve.count_ab << " ab_f: " << solve.count_ab_f << std::endl;
+    //     std::cout << "full: " << solve.time_full << " full_f: " << solve.time_full_f << " ab: " << solve.time_ab << " ab_f: " << solve.time_ab_f << std::endl;
+    //     std::cout << "full: " << solve.count_full << " full_f: " << solve.count_full_f << " ab: " << solve.count_ab << " ab_f: " << solve.count_ab_f << std::endl;
 
-        ++counter;
-    }
+    //     ++counter;
+    // }
 
     return counter;
 }

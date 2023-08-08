@@ -77,12 +77,12 @@ public:
     T::Obs obs;
     T::Prob prob;
 
-    inline T::Value get_payoff()
+    inline T::Value get_payoff() const
     {
         return payoff;
     }
 
-    inline bool is_terminal()
+    inline bool is_terminal() const
     {
         return terminal;
     }
