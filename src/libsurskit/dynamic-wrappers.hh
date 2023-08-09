@@ -112,10 +112,10 @@ namespace W
         struct ModelT : Model
         {
             using T = ModelTypes<StateTypes<TypeList>>;
-            typename T::Model model;
+            typename T::Model data;
 
             template <typename... Args>
-            ModelT(Args... args) : model{args...} {}
+            ModelT(Args... args) : data{args...} {}
 
             std::unique_ptr<Detail::Model> clone() const
             {
@@ -128,7 +128,7 @@ namespace W
             {
                 typename T::State &state = dynamic_cast<typename T::State *>(state_ptr)->data;
                 typename T::ModelOutput output_;
-                model.get_inference(state, output_);
+                data.get_inference(state, output_);
                 output.value = Types::Value{output_.value.get_row_value(), output_.value.get_col_value()};
                 // if constexpr (T::ModelOutput::row_policy)
                 // {
@@ -187,14 +187,14 @@ namespace W
         struct SearchT : Search
         {
             using T = SearchTypes<ModelTypes<StateTypes<TypeList>>>;
-            typename T::Search session;
+            typename T::Search data;
 
             template <typename... Args>
-            SearchT(Args... args) : session{args...} {}
+            SearchT(Args... args) : data{args...} {}
 
             std::unique_ptr<Detail::Search> clone() const
             {
-                return std::make_unique<SearchT<T>>(*this);
+                return std::make_unique<SearchT<TypeList, StateTypes, ModelTypes, SearchTypes>>(*this);
             }
 
             std::unique_ptr<Detail::MatrixNode> get_matrix_node() const
@@ -210,20 +210,20 @@ namespace W
                 Detail::MatrixNode *matrix_node_ptr) const
             {
                 typename T::PRNG device_{device.uniform_64()};
-                typename T::State &state = dynamic_cast<StateT<T> *>(state_ptr)->state;
-                typename T::Model &model = dynamic_cast<ModelT<T> *>(model_ptr)->model;
+                typename T::State &state = dynamic_cast<SearchT<TypeList, StateTypes, ModelTypes, SearchTypes> *>(state_ptr)->data;
+                typename T::Model &model = dynamic_cast<ModelT<TypeList, StateTypes, ModelTypes> *>(model_ptr)->data;
                 typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeWrapper<T> *>(matrix_node_ptr)->matrix_node;
-                size_t iterations = session.run(duration_ms, device_, state, model, matrix_node);
+                size_t iterations = data.run(duration_ms, device_, state, model, matrix_node);
                 return iterations;
             }
             size_t run_for_iterations(
                 size_t iterations, Types::PRNG &device, Detail::State *state_ptr, Detail::Model *model_ptr, Detail::MatrixNode *matrix_node_ptr) const
             {
                 typename T::PRNG device_{device.uniform_64()};
-                typename T::State &state = dynamic_cast<StateT<T> *>(state_ptr)->state;
-                typename T::Model &model = dynamic_cast<ModelT<T> *>(model_ptr)->model;
+                typename T::State &state = dynamic_cast<SearchT<TypeList, StateTypes, ModelTypes, SearchTypes> *>(state_ptr)->data;
+                typename T::Model &model = dynamic_cast<ModelT<TypeList, StateTypes, ModelTypes> *>(model_ptr)->data;
                 typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeWrapper<T> *>(matrix_node_ptr)->matrix_node;
-                size_t ms = session.run_for_iterations(iterations, device_, state, model, matrix_node);
+                size_t ms = data.run_for_iterations(iterations, device_, state, model, matrix_node);
                 return ms;
             }
         };
@@ -255,8 +255,11 @@ namespace W
             return *this;
         }
 
-        template <IsTypeList TypeList, template <typename...> typename StateTypes, typename... Args>
-        State(const Args &...args) : ptr(std::make_unique<Detail::StateT<TypeList, StateTypes>>(args...)) {}
+        template <
+            IsTypeList TypeList,
+            template <typename...> typename StateTypes,
+            typename... Args>
+        State(StateTypes<TypeList>, const Args &...args) : ptr(std::make_unique<Detail::StateT<TypeList, StateTypes>>(args...)) {}
 
         bool is_terminal() const
         {
@@ -319,8 +322,12 @@ namespace W
     {
         std::unique_ptr<Detail::Model> ptr;
 
-        template <IsValueModelTypes T, typename... Args>
-        Model(T, const Args &...args) : ptr(std::make_unique<Detail::ModelT<T>>(args...)) {}
+        template <
+            typename Types,
+            template <typename...> typename StateTypes,
+            template <typename...> typename ModelTypes,
+            typename... Args>
+        Model(const Args &...args) : ptr(std::make_unique<Detail::ModelT<Types, StateTypes, ModelTypes>>(args...)) {}
 
         Model(const Model &other)
         {
@@ -363,8 +370,13 @@ namespace W
     {
         std::unique_ptr<Detail::Search> ptr;
 
-        template <IsSearchTypes T, typename... Args>
-        Search(T, const Args &...args) : ptr(std::make_unique<Detail::SearchT<T>>(args...)) {}
+        template <
+            typename Types,
+            template <typename...> typename StateTypes,
+            template <typename...> typename ModelTypes,
+            template <typename...> typename SearchTypes,
+            typename... Args>
+        Search(const Args &...args) : ptr(std::make_unique<Detail::SearchT<Types, StateTypes, ModelTypes, SearchTypes>>(args...)) {}
 
         Search(const Search &other)
         {
@@ -409,11 +421,15 @@ namespace W
         }
     };
 
-    template <typename T>
-    Types::State get_w_state(const typename T::State &state)
-    {
-        return Types::State{T{}, state};
-    }
+//     template <
+//         IsTypeList TypeList,
+//         template <typename...> typename StateTypes,
+//         typename... Args>
+// // State(const Args &...args) : ptr(std::make_unique<Detail::StateT<TypeList, StateTypes>>(args...)) {}
+//     Types::State get_w_state(const Args... &state)
+//     {
+//         return Types::State{T{}, state};
+//     }
 
     template <typename T>
     Types::Model get_w_model(const typename T::Model &model)
