@@ -19,7 +19,7 @@
 #include <state/test-states.hh>
 #include <state/random-tree.hh>
 #include <state/traversed.hh>
-#include <state/arena.hh>
+// #include <state/arena.hh>
 
 // #include <state/arena.hh>
 
