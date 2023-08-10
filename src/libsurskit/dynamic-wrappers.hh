@@ -5,6 +5,16 @@
 
 #include <memory>
 
+/*
+
+_ in template types just to not shadow the using declaration
+_ prefix used for virtual methods in Dynamic namespace,
+because they mirror but are not related to their name-likes in the static realm
+
+
+
+*/
+
 namespace TypeListNormalizer
 {
     // State
@@ -86,15 +96,15 @@ namespace W
         using MatrixNode = W::MatrixNode;
     };
 
-    namespace Detail
+    namespace Dynamic
     {
         struct State
         {
-            virtual std::unique_ptr<Detail::State> clone() const = 0;
-            virtual void get_actions(size_t &rows, size_t &cols) = 0;
-            virtual void apply_actions(Types::Action row_idx, Types::Action col_idx) = 0;
-            virtual bool is_terminal() const = 0;
-            virtual Types::Value get_payoff() const = 0;
+            virtual std::unique_ptr<Dynamic::State> clone() const = 0;
+            virtual void _get_actions(size_t &rows, size_t &cols) = 0;
+            virtual void _apply_actions(Types::Action row_idx, Types::Action col_idx) = 0;
+            virtual bool _is_terminal() const = 0;
+            virtual Types::Value _get_payoff() const = 0;
         };
         template <typename T>
         struct StateT : State
@@ -104,28 +114,28 @@ namespace W
             template <typename... Args>
             StateT(Args... args) : data{args...} {}
 
-            std::unique_ptr<Detail::State> clone() const
+            std::unique_ptr<Dynamic::State> clone() const
             {
                 return std::make_unique<StateT>(*this);
             }
 
-            void get_actions(size_t &rows, size_t &cols)
+            void _get_actions(size_t &rows, size_t &cols)
             {
                 data.get_actions();
                 rows = data.row_actions.size();
                 cols = data.col_actions.size();
             };
-            void apply_actions(typename Types::Action row_idx, typename Types::Action col_idx)
+            void _apply_actions(typename Types::Action row_idx, typename Types::Action col_idx)
             {
                 data.apply_actions(
                     data.row_actions[static_cast<int>(row_idx)],
                     data.col_actions[static_cast<int>(col_idx)]);
             };
-            bool is_terminal() const
+            bool _is_terminal() const
             {
                 return data.is_terminal();
             };
-            Types::Value get_payoff() const
+            Types::Value _get_payoff() const
             {
                 return Types::Value{
                     static_cast<double>(data.payoff.get_row_value()),
@@ -135,8 +145,8 @@ namespace W
 
         struct Model
         {
-            virtual std::unique_ptr<Detail::Model> clone() const = 0;
-            virtual void get_inference(Detail::State *, Types::ModelOutput &) = 0;
+            virtual std::unique_ptr<Dynamic::Model> clone() const = 0;
+            virtual void _get_inference(Dynamic::State *, Types::ModelOutput &) = 0;
         };
         template <typename T>
         struct ModelT : Model
@@ -146,16 +156,16 @@ namespace W
             template <typename... Args>
             ModelT(Args... args) : data{args...} {}
 
-            std::unique_ptr<Detail::Model> clone() const
+            std::unique_ptr<Dynamic::Model> clone() const
             {
                 return std::make_unique<ModelT>(*this);
             }
 
-            void get_inference(
-                Detail::State *state_ptr,
+            void _get_inference(
+                Dynamic::State *state_ptr,
                 Types::ModelOutput &output)
             {
-                Detail::StateT<TypeListNormalizer::MStateTypes<T>> *x = dynamic_cast<Detail::StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr);
+                Dynamic::StateT<TypeListNormalizer::MStateTypes<T>> *x = dynamic_cast<Dynamic::StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr);
                 typename T::State &state = (*x).data;
                 typename T::ModelOutput output_;
                 data.get_inference(state, output_);
@@ -169,14 +179,14 @@ namespace W
 
         struct MatrixNode
         {
-            virtual std::unique_ptr<Detail::MatrixNode> create_new() const = 0;
+            virtual std::unique_ptr<Dynamic::MatrixNode> create_new() const = 0;
         };
         template <typename T>
         struct MatrixNodeT : MatrixNode
         {
-            typename T::MatrixNode matrix_node{};
+            typename T::MatrixNode data{};
 
-            std::unique_ptr<Detail::MatrixNode> create_new() const
+            std::unique_ptr<Dynamic::MatrixNode> create_new() const
             {
                 return std::make_unique<MatrixNodeT>();
             }
@@ -184,20 +194,20 @@ namespace W
 
         struct Search
         {
-            virtual std::unique_ptr<Detail::Search> clone() const = 0;
-            virtual std::unique_ptr<Detail::MatrixNode> get_matrix_node() const = 0;
-            // virtual size_t run(
-            //     size_t duration_ms,
-            //     Types::PRNG &device,
-            //     Detail::State *state_ptr,
-            //     Detail::Model *model_ptr,
-            //     Detail::MatrixNode *matrix_node_ptr) const = 0;
-            // virtual size_t run_for_iterations(
-            //     size_t duration_ms,
-            //     Types::PRNG &device,
-            //     Detail::State *state_ptr,
-            //     Detail::Model *model_ptr,
-            //     Detail::MatrixNode *matrix_node_ptr) const = 0;
+            virtual std::unique_ptr<Dynamic::Search> clone() const = 0;
+            virtual std::unique_ptr<Dynamic::MatrixNode> get_matrix_node() const = 0;
+            virtual size_t _run(
+                size_t duration_ms,
+                Types::PRNG &device,
+                Dynamic::State *state_ptr,
+                Dynamic::Model *model_ptr,
+                Dynamic::MatrixNode *matrix_node_ptr) const = 0;
+            virtual size_t _run_for_iterations(
+                size_t duration_ms,
+                Types::PRNG &device,
+                Dynamic::State *state_ptr,
+                Dynamic::Model *model_ptr,
+                Dynamic::MatrixNode *matrix_node_ptr) const = 0;
         };
         template <typename T>
         struct SearchT : Search
@@ -207,61 +217,56 @@ namespace W
             template <typename... Args>
             SearchT(Args... args) : data{args...} {}
 
-            std::unique_ptr<Detail::Search> clone() const
+            std::unique_ptr<Dynamic::Search> clone() const
             {
                 return std::make_unique<SearchT>(*this);
             }
 
-            std::unique_ptr<Detail::MatrixNode> get_matrix_node() const
+            std::unique_ptr<Dynamic::MatrixNode> get_matrix_node() const
             {
-                return std::make_unique<MatrixNodeT<T>>();
+                return std::make_unique<MatrixNodeT<TypeListNormalizer::MSearchTypes<T>>>();
             }
 
-            // size_t run(
-            //     size_t duration_ms,
-            //     Types::PRNG &device,
-            //     Detail::State *state_ptr,
-            //     Detail::Model *model_ptr,
-            //     Detail::MatrixNode *matrix_node_ptr) const
-            // {
-            //     typename T::PRNG device_{device.uniform_64()};
-            //     typename T::State &state = dynamic_cast<SearchT<TypeListNormalizer::MSearchTypes<Types>> *>(state_ptr)->data;
-            //     typename T::Model &model = dynamic_cast<ModelT<TypeListNormalizer::MModelTypes<Types>> *>(model_ptr)->data;
-            //     typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<T> *>(matrix_node_ptr)->matrix_node;
-            //     size_t iterations = data.run(duration_ms, device_, state, model, matrix_node);
-            //     return iterations;
-            // }
-            // size_t run_for_iterations(
-            //     size_t iterations, 
-            //     Types::PRNG &device,
-            //     Detail::State *state_ptr,
-            //     Detail::Model *model_ptr,
-            //     Detail::MatrixNode *matrix_node_ptr) const
-            // {
-            //     typename T::PRNG device_{device.uniform_64()};
-            //     typename T::State &state = dynamic_cast<SearchT<TypeListNormalizer::MSearchTypes<Types>> *>(state_ptr)->data;
-            //     typename T::Model &model = dynamic_cast<ModelT<TypeListNormalizer::MModelTypes<Types>> *>(model_ptr)->data;
-            //     typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<T> *>(matrix_node_ptr)->matrix_node;
-            //     size_t ms = data.run_for_iterations(iterations, device_, state, model, matrix_node);
-            //     return ms;
-            // }
+            size_t _run(
+                size_t duration_ms,
+                Types::PRNG &device,
+                Dynamic::State *state_ptr,
+                Dynamic::Model *model_ptr,
+                Dynamic::MatrixNode *matrix_node_ptr) const
+            {
+                typename T::PRNG device_{device.uniform_64()};
+                typename T::State &state = dynamic_cast<StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr)->data;
+                typename T::Model &model = dynamic_cast<ModelT<TypeListNormalizer::MModelTypes<T>> *>(model_ptr)->data;
+                typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<T> *>(matrix_node_ptr)->data;
+                size_t iterations = data.run(duration_ms, device_, state, model, matrix_node);
+                return iterations;
+            }
+            size_t _run_for_iterations(
+                size_t iterations, 
+                Types::PRNG &device,
+                Dynamic::State *state_ptr,
+                Dynamic::Model *model_ptr,
+                Dynamic::MatrixNode *matrix_node_ptr) const
+            {
+                typename T::PRNG device_{device.uniform_64()};
+                typename T::State &state = dynamic_cast<StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr)->data;
+                typename T::Model &model = dynamic_cast<ModelT<TypeListNormalizer::MModelTypes<T>> *>(model_ptr)->data;
+                typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<TypeListNormalizer::MSearchTypes<T>> *>(matrix_node_ptr)->data;
+                size_t ms = data.run_for_iterations(iterations, device_, state, model, matrix_node);
+                return ms;
+            }
         };
 
     }
 
-    /*
 
-
-
-    Types::State etc
-
-
-
-    */
 
     struct State : PerfectInfoState<Types>
     {
-        std::unique_ptr<Detail::State> ptr;
+        std::unique_ptr<Dynamic::State> ptr;
+
+        template <typename T, typename... Args>
+        State(T, const Args &...args) : ptr{std::make_unique<Dynamic::StateT<TypeListNormalizer::MStateTypes<T>>>(args...)} {}
 
         State(const State &other)
         {
@@ -274,17 +279,14 @@ namespace W
             return *this;
         }
 
-        template <typename T, typename... Args>
-        State(T, const Args &...args) : ptr{std::make_unique<Detail::StateT<TypeListNormalizer::MStateTypes<T>>>(args...)} {}
-
         bool is_terminal() const
         {
-            return ptr->is_terminal();
+            return ptr->_is_terminal();
         }
 
         Types::Value get_payoff() const
         {
-            return ptr->get_payoff();
+            return ptr->_get_payoff();
         }
 
         void get_actions(
@@ -292,7 +294,7 @@ namespace W
             Types::VectorAction &col_actions) const
         {
             size_t rows, cols;
-            ptr->get_actions(rows, cols);
+            ptr->_get_actions(rows, cols);
             row_actions.resize(rows);
             col_actions.resize(cols);
             for (int i = 0; i < rows; ++i)
@@ -313,7 +315,7 @@ namespace W
         void get_actions()
         {
             size_t rows, cols;
-            ptr->get_actions(rows, cols);
+            ptr->_get_actions(rows, cols);
             this->row_actions.resize(rows);
             this->col_actions.resize(cols);
             for (int i = 0; i < rows; ++i)
@@ -330,16 +332,17 @@ namespace W
             Types::Action row_action,
             Types::Action col_action)
         {
-            ptr->apply_actions(row_action, col_action);
+            ptr->_apply_actions(row_action, col_action);
         }
     };
 
     struct Model
     {
-        std::unique_ptr<Detail::Model> ptr;
+        std::unique_ptr<Dynamic::Model> ptr;
 
         template <typename T, typename... Args>
-        Model(T, const Args &...args) : ptr(std::make_unique<Detail::ModelT<TypeListNormalizer::MModelTypes<T>>>(args...)) {}
+        Model(T, const Args &...args) : ptr(std::make_unique<Dynamic::ModelT<TypeListNormalizer::MModelTypes<T>>>(args...)) {}
+
         Model(const Model &other)
         {
             ptr = other.ptr->clone();
@@ -355,8 +358,8 @@ namespace W
             Types::ModelInput &input,
             Types::ModelOutput &output)
         {
-            Detail::State *state_ptr = &*input.ptr;
-            ptr->get_inference(state_ptr, output);
+            Dynamic::State *state_ptr = &*input.ptr;
+            ptr->_get_inference(state_ptr, output);
         }
 
         void get_input(
@@ -369,63 +372,75 @@ namespace W
 
     struct MatrixNode
     {
-        std::unique_ptr<Detail::MatrixNode> ptr;
+        std::unique_ptr<Dynamic::MatrixNode> ptr;
 
-        MatrixNode(std::unique_ptr<Detail::MatrixNode> ptr) : ptr{std::move(ptr)} {}
+        MatrixNode(std::unique_ptr<Dynamic::MatrixNode> ptr) : ptr{std::move(ptr)} {}
 
         template <typename T>
-        MatrixNode() : ptr{std::make_unique<Detail::MatrixNodeT<TypeListNormalizer::MSearchTypes<T>>>()} {}
+        MatrixNode(T) : ptr{std::make_unique<Dynamic::MatrixNodeT<TypeListNormalizer::MSearchTypes<T>>>()} {}
     };
 
-    // struct Search
-    // {
-    //     std::unique_ptr<Detail::Search> ptr;
+    struct Search
+    {
+        std::unique_ptr<Dynamic::Search> ptr;
 
-    //     template <typename Types, typename... Args>
-    //     Search(const Args &...args) : ptr(std::make_unique<Detail::SearchT<TypeListNormalizer::MSearchTypes<Types>>>(args...)) {}
+        template <typename T, typename... Args>
+        Search(T, const Args &...args) : ptr(std::make_unique<Dynamic::SearchT<TypeListNormalizer::MSearchTypes<T>>>(args...)) {}
 
-    //     Search(const Search &other)
-    //     {
-    //         ptr = other.ptr->clone();
-    //     }
+        Search(const Search &other)
+        {
+            ptr = other.ptr->clone();
+        }
 
-    //     Search &operator=(const Search &other)
-    //     {
-    //         ptr = other.ptr->clone();
-    //         return *this;
-    //     }
+        Search &operator=(const Search &other)
+        {
+            ptr = other.ptr->clone();
+            return *this;
+        }
 
-    //     MatrixNode get_matrix_node() const
-    //     {
-    //         return MatrixNode{ptr->get_matrix_node()};
-    //     }
+        MatrixNode get_matrix_node() const
+        {
+            return MatrixNode{ptr->get_matrix_node()};
+        }
 
-    //     size_t run(
-    //         size_t duration_ms,
-    //         Types::PRNG &device,
-    //         Types::State &state,
-    //         Types::Model &model,
-    //         Types::MatrixNode &matrix_node) const
-    //     {
-    //         Detail::State *state_ptr = &*(state.ptr);
-    //         Detail::Model *model_ptr = &*model.ptr;
-    //         Detail::MatrixNode *matrix_node_ptr = &*matrix_node.ptr;
-    //         return ptr->run(duration_ms, device, state_ptr, model_ptr, matrix_node_ptr);
-    //     }
+        size_t run(
+            size_t duration_ms,
+            Types::PRNG &device,
+            Types::State &state,
+            Types::Model &model,
+            Types::MatrixNode &matrix_node) const
+        {
+            Dynamic::State *state_ptr = &*(state.ptr);
+            Dynamic::Model *model_ptr = &*model.ptr;
+            Dynamic::MatrixNode *matrix_node_ptr = &*matrix_node.ptr;
+            return ptr->_run(duration_ms, device, state_ptr, model_ptr, matrix_node_ptr);
+        }
 
-    //     size_t run_for_iterations(
-    //         size_t iterations,
-    //         Types::PRNG &device,
-    //         Types::State &state,
-    //         Types::Model &model,
-    //         Types::MatrixNode &matrix_node) const
-    //     {
-    //         Detail::State *state_ptr = &*(state.ptr);
-    //         Detail::Model *model_ptr = &*model.ptr;
-    //         Detail::MatrixNode *matrix_node_ptr = &*matrix_node.ptr;
-    //         return ptr->run_for_iterations(iterations, device, state_ptr, model_ptr, matrix_node_ptr);
-    //     }
-    // };
+        size_t run_for_iterations(
+            size_t iterations,
+            Types::PRNG &device,
+            Types::State &state,
+            Types::Model &model,
+            Types::MatrixNode &matrix_node) const
+        {
+            Dynamic::State *state_ptr = &*(state.ptr);
+            Dynamic::Model *model_ptr = &*model.ptr;
+            Dynamic::MatrixNode *matrix_node_ptr = &*matrix_node.ptr;
+            return ptr->_run_for_iterations(iterations, device, state_ptr, model_ptr, matrix_node_ptr);
+        }
+    };
+
+    /*
+    
+    These functions are the intended interface.
+
+    */
+
+    template <typename T>
+    Types::State get_w_state(const typename T::State &state)
+    {
+        return Types::State{T{}, state};
+    }
 
     template <typename T>
     Types::Model get_w_model(const typename T::Model &model)
@@ -433,10 +448,16 @@ namespace W
         return Types::Model{T{}, model};
     }
 
+    template <typename T>
+    Types::Search get_w_search(const typename T::Search &search)
+    {
+        return Types::Search{T{}, search};
+    }
+
     // template <typename T>
-    // Types::Search get_w_search(const typename T::Search &search)
+    // Types::MatrixNode get_w_matrix_node()
     // {
-    //     return Types::Search{T{}, search};
+    //     return Types::MatrixNode
     // }
 
 }

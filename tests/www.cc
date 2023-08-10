@@ -2,25 +2,36 @@
 
 using Types = TreeBandit<Exp3<MonteCarloModel<MoldState<2>>>>;
 
+
 int main() {
-    W::Types::State state{Types{}, size_t{10}};
-    W::Types::Model model{Types{}, uint64_t{}};
-    W::Types::Search search{Types{}, typename Types::Search{}};
+    // using W::Types::State;
+
+    auto state = W::get_w_state<Types>(10);
+    auto model = W::get_w_model<Types>(Types::Model{});
+    auto search = W::get_w_search<Types>(Types::Search{});
     W::Types::MatrixNode matrix_node{Types{}};
-
-    // W::Types::ModelOutput output;
-    // model.get_inference(state, output);
-
+    W::Types::ModelOutput inference;
     W::Types::PRNG device{};
+    // model.get_inference(state, inference);
+    search.run_for_iterations(1000, device, state, model, matrix_node);
+    
+    
+    // W::Types::Search search{Types{}, typename Types::Search{}};
+    // W::Types::MatrixNode matrix_node{Types{}};
 
-    size_t iterations = search.run(
-        10,
-        device,
-        state,
-        model,
-        matrix_node
-    );
+    // // W::Types::ModelOutput output;
+    // // model.get_inference(state, output);
 
-    std::cout << iterations << std::endl;
+    // W::Types::PRNG device{};
+
+    // size_t iterations = search.run(
+    //     10,
+    //     device,
+    //     state,
+    //     model,
+    //     matrix_node
+    // );
+
+    // std::cout << iterations << std::endl;
 
 }
