@@ -16,7 +16,6 @@ struct Arena : SimpleTypes
         W::Types::Model model;
         std::vector<W::Types::Search> searches{};
 
-
         State(
             const size_t search_iterations,
             W::Types::State (*init_state_generator)(SimpleTypes::Seed),

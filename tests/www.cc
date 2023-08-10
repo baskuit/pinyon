@@ -6,9 +6,9 @@ using Types = TreeBandit<Exp3<MonteCarloModel<MoldState<2>>>>;
 int main() {
     // using W::Types::State;
 
-    auto state = W::get_w_state<Types>(10);
-    auto model = W::get_w_model<Types>(Types::Model{});
-    auto search = W::get_w_search<Types>(Types::Search{});
+    auto state = W::make_state<Types>(10);
+    auto model = W::make_model<Types>(Types::Model{});
+    auto search = W::make_search<Types>(Types::Search{});
     W::Types::MatrixNode matrix_node{Types{}};
     W::Types::ModelOutput inference;
     W::Types::PRNG device{};

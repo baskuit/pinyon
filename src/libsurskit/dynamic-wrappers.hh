@@ -266,7 +266,7 @@ namespace W
         std::unique_ptr<Dynamic::State> ptr;
 
         template <typename T, typename... Args>
-        State(T, const Args &...args) : ptr{std::make_unique<Dynamic::StateT<TypeListNormalizer::MStateTypes<T>>>(args...)} {}
+        explicit State(T, const Args &...args) : ptr{std::make_unique<Dynamic::StateT<TypeListNormalizer::MStateTypes<T>>>(args...)} {}
 
         State(const State &other)
         {
@@ -341,7 +341,7 @@ namespace W
         std::unique_ptr<Dynamic::Model> ptr;
 
         template <typename T, typename... Args>
-        Model(T, const Args &...args) : ptr(std::make_unique<Dynamic::ModelT<TypeListNormalizer::MModelTypes<T>>>(args...)) {}
+        explicit Model(T, const Args &...args) : ptr(std::make_unique<Dynamic::ModelT<TypeListNormalizer::MModelTypes<T>>>(args...)) {}
 
         Model(const Model &other)
         {
@@ -385,12 +385,13 @@ namespace W
         std::unique_ptr<Dynamic::Search> ptr;
 
         template <typename T, typename... Args>
-        Search(T, const Args &...args) : ptr(std::make_unique<Dynamic::SearchT<TypeListNormalizer::MSearchTypes<T>>>(args...)) {}
+        explicit Search(T, const Args &...args) : ptr(std::make_unique<Dynamic::SearchT<TypeListNormalizer::MSearchTypes<T>>>(args...)) {}
 
         Search(const Search &other)
         {
             ptr = other.ptr->clone();
         }
+
 
         Search &operator=(const Search &other)
         {
@@ -436,28 +437,28 @@ namespace W
 
     */
 
-    template <typename T>
-    Types::State get_w_state(const typename T::State &state)
+    template <typename TypeList>
+    Types::State make_state(const typename TypeList::State &state)
     {
-        return Types::State{T{}, state};
+        return Types::State{TypeList{}, state};
     }
 
-    template <typename T>
-    Types::Model get_w_model(const typename T::Model &model)
+    template <typename TypeList>
+    Types::Model make_model(const typename TypeList::Model &model)
     {
-        return Types::Model{T{}, model};
+        return Types::Model{TypeList{}, model};
     }
 
-    template <typename T>
-    Types::Search get_w_search(const typename T::Search &search)
+    template <typename TypeList>
+    Types::Search make_search(const typename TypeList::Search &search)
     {
-        return Types::Search{T{}, search};
+        return Types::Search{TypeList{}, search};
     }
 
-    // template <typename T>
-    // Types::MatrixNode get_w_matrix_node()
-    // {
-    //     return Types::MatrixNode
-    // }
+    template <typename TypeList>
+    Types::MatrixNode make_root()
+    {
+        return Types::MatrixNode{TypeList{}};
+    }
 
 }
