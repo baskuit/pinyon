@@ -457,22 +457,22 @@ namespace W
 
     */
 
-    template <typename TypeList>
-    Types::State make_state(const typename TypeList::State &state)
+    template <typename TypeList, typename... Args>
+    Types::State make_state(const Args&... args)
     {
-        return Types::State{TypeList{}, state};
+        return Types::State{TypeList{}, args...};
     }
 
-    template <typename TypeList>
-    Types::Model make_model(const typename TypeList::Model &model)
+    template <typename TypeList, typename... Args>
+    Types::Model make_model(const Args&... args)
     {
-        return Types::Model{TypeList{}, model};
+        return Types::Model{TypeList{}, args...};
     }
 
-    template <typename TypeList>
-    Types::Search make_search(const typename TypeList::Search &search)
+    template <typename TypeList, typename... Args>
+    Types::Search make_search(const Args&... args)
     {
-        return Types::Search{TypeList{}, search};
+        return Types::Search{TypeList{}, args...};
     }
 
     template <typename TypeList>
