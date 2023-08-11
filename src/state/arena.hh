@@ -5,7 +5,6 @@
 
 struct Arena : SimpleTypes
 {
-
     class State : public PerfectInfoState<SimpleTypes>
     {
     public:
@@ -60,7 +59,7 @@ struct Arena : SimpleTypes
 
             this->payoff = SimpleTypes::Value{avg_payoff.get_row_value(), avg_payoff.get_col_value()};
             this->terminal = true;
-            this->obs = SimpleTypes::Obs{device.get_seed()};
+            this->obs = SimpleTypes::Obs{static_cast<int>(device.get_seed())};
 
         }
 

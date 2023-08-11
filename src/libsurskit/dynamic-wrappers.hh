@@ -15,26 +15,38 @@ because they mirror but are not related to their name-likes in the static realm
 
 */
 
+/*
+
+The "W" namespace provides a wrapper for the State, Model, Search paradigm that works regardless of the type list
+
+*/
+
 namespace TypeListNormalizer
 {
     // State
-    template <typename _State>
+    template <
+        typename _PRNG,
+        typename _State>
     struct MinimalStateTypes
     {
+        using PRNG = _PRNG;
         using State = _State;
     };
 
     template <typename Types>
-    using MStateTypes =
-        MinimalStateTypes<typename Types::State>;
+    using MStateTypes = MinimalStateTypes<
+        typename Types::PRNG,
+        typename Types::State>;
 
     // Model
     template <
+        typename _PRNG,
         typename _State,
         typename _Model,
         typename _ModelOutput>
     struct MinimalModelTypes
     {
+        using PRNG = _PRNG;
         using State = _State;
         using Model = _Model;
         using ModelOutput = _ModelOutput;
@@ -42,6 +54,7 @@ namespace TypeListNormalizer
 
     template <typename Types>
     using MModelTypes = MinimalModelTypes<
+        typename Types::PRNG,
         typename Types::State,
         typename Types::Model,
         typename Types::ModelOutput>;
@@ -104,10 +117,11 @@ namespace W
         struct State
         {
             virtual std::unique_ptr<Dynamic::State> clone() const = 0;
-            virtual void _get_actions(size_t &rows, size_t &cols) = 0;
-            virtual void _apply_actions(Types::Action row_idx, Types::Action col_idx) = 0;
+            virtual void _get_actions(size_t &, size_t &) = 0;
+            virtual void _apply_actions(Types::Action, Types::Action) = 0;
             virtual bool _is_terminal() const = 0;
             virtual Types::Value _get_payoff() const = 0;
+            virtual void _randomize_transition(Types::PRNG &) = 0;
         };
         template <typename T>
         struct StateT : State
@@ -144,6 +158,11 @@ namespace W
                     static_cast<double>(data.payoff.get_row_value()),
                     static_cast<double>(data.payoff.get_col_value())};
             }
+            void _randomize_transition(Types::PRNG &device)
+            {
+                typename T::PRNG local_device{device.uniform_64()};
+                return data.randomize_transition(local_device);
+            }
         };
 
         struct Model
@@ -168,8 +187,7 @@ namespace W
                 Dynamic::State *state_ptr,
                 Types::ModelOutput &output)
             {
-                Dynamic::StateT<TypeListNormalizer::MStateTypes<T>> *x = dynamic_cast<Dynamic::StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr);
-                typename T::State &state = (*x).data;
+                typename T::State &state = dynamic_cast<Dynamic::StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr)->data;
                 typename T::ModelOutput output_;
                 data.get_inference(state, output_);
                 output.value = Types::Value{output_.value.get_row_value(), output_.value.get_col_value()};
@@ -211,7 +229,7 @@ namespace W
                 Dynamic::State *state_ptr,
                 Dynamic::Model *model_ptr,
                 Dynamic::MatrixNode *matrix_node_ptr) const = 0;
-            virtual void _get_strategies (
+            virtual void _get_strategies(
                 Dynamic::MatrixNode *matrix_node_ptr,
                 Types::VectorReal &row_strategy,
                 Types::VectorReal &col_strategy) const = 0;
@@ -245,11 +263,12 @@ namespace W
                 typename T::State &state = dynamic_cast<StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr)->data;
                 typename T::Model &model = dynamic_cast<ModelT<TypeListNormalizer::MModelTypes<T>> *>(model_ptr)->data;
                 typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<T> *>(matrix_node_ptr)->data;
-                size_t iterations = data.run(duration_ms, device_, state, model, matrix_node);
+                // T is a normalized typelist, and we use the same one for the matrix node as we do for the search
+                const size_t iterations = data.run(duration_ms, device_, state, model, matrix_node);
                 return iterations;
             }
             size_t _run_for_iterations(
-                size_t iterations, 
+                size_t iterations,
                 Types::PRNG &device,
                 Dynamic::State *state_ptr,
                 Dynamic::Model *model_ptr,
@@ -259,26 +278,26 @@ namespace W
                 typename T::State &state = dynamic_cast<StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr)->data;
                 typename T::Model &model = dynamic_cast<ModelT<TypeListNormalizer::MModelTypes<T>> *>(model_ptr)->data;
                 typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<TypeListNormalizer::MSearchTypes<T>> *>(matrix_node_ptr)->data;
-                size_t ms = data.run_for_iterations(iterations, device_, state, model, matrix_node);
+                const size_t ms = data.run_for_iterations(iterations, device_, state, model, matrix_node);
                 return ms;
             }
-            void _get_strategies (
+            void _get_strategies(
                 Dynamic::MatrixNode *matrix_node_ptr,
                 Types::VectorReal &row_strategy,
-                Types::VectorReal &col_strategy) const 
+                Types::VectorReal &col_strategy) const
             {
-                typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<TypeListNormalizer::MSearchTypes<T>> *>(matrix_node_ptr)->data;
+                typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<T> *>(matrix_node_ptr)->data;
                 typename T::VectorReal r, c;
                 data.get_empirical_strategies(matrix_node.stats, r, c);
-                // for (x : r) {
-                std::cout << matrix_node.stats.row_visits[0] << std::endl;
-                // }
+
+                row_strategy.resize(r.size());
+                col_strategy.resize(c.size());
+                std::copy(r.begin(), r.end(), row_strategy.begin());
+                std::copy(c.begin(), c.end(), col_strategy.begin());
             }
         };
 
     }
-
-
 
     struct State : PerfectInfoState<Types>
     {
@@ -326,9 +345,10 @@ namespace W
             }
         };
 
-        void randomize_transitions(
-            Types::PRNG &)
+        void randomize_transition(
+            Types::PRNG &device)
         {
+            return ptr->_randomize_transition(device);
         }
 
         void get_actions()
@@ -442,35 +462,35 @@ namespace W
             return ptr->_run_for_iterations(iterations, device, state.ptr.get(), model.ptr.get(), matrix_node.ptr.get());
         }
 
-        void get_strategies (
+        void get_strategies(
             Types::MatrixNode &matrix_node,
             Types::VectorReal &row_strategy,
-            Types::VectorReal &col_strategy
-        ) {
+            Types::VectorReal &col_strategy)
+        {
             ptr->_get_strategies(matrix_node.ptr.get(), row_strategy, col_strategy);
         }
     };
 
     /*
-    
+
     These functions are the intended interface.
 
     */
 
     template <typename TypeList, typename... Args>
-    Types::State make_state(const Args&... args)
+    Types::State make_state(const Args &...args)
     {
         return Types::State{TypeList{}, args...};
     }
 
     template <typename TypeList, typename... Args>
-    Types::Model make_model(const Args&... args)
+    Types::Model make_model(const Args &...args)
     {
         return Types::Model{TypeList{}, args...};
     }
 
     template <typename TypeList, typename... Args>
-    Types::Search make_search(const Args&... args)
+    Types::Search make_search(const Args &...args)
     {
         return Types::Search{TypeList{}, args...};
     }
