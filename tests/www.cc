@@ -13,7 +13,9 @@ int main() {
     W::Types::ModelOutput inference;
     W::Types::PRNG device{};
     // model.get_inference(state, inference);
+    W::Types::VectorReal row_strategy, col_strategy;
     search.run_for_iterations(1000, device, state, model, matrix_node);
+    search.get_strategies(matrix_node, row_strategy, col_strategy);
     
     
     // W::Types::Search search{Types{}, typename Types::Search{}};

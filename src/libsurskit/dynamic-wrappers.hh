@@ -49,6 +49,7 @@ namespace TypeListNormalizer
     // Search
     template <
         typename _PRNG,
+        typename _VectorReal,
         typename _State,
         typename _Model,
         typename _ModelOutput,
@@ -57,6 +58,7 @@ namespace TypeListNormalizer
     struct MinimalSearchTypes
     {
         using PRNG = _PRNG;
+        using VectorReal = _VectorReal;
         using State = _State;
         using Model = _Model;
         using ModelOutput = _ModelOutput;
@@ -67,6 +69,7 @@ namespace TypeListNormalizer
     template <typename Types>
     using MSearchTypes = MinimalSearchTypes<
         typename Types::PRNG,
+        typename Types::VectorReal,
         typename Types::State,
         typename Types::Model,
         typename Types::ModelOutput,
@@ -208,6 +211,10 @@ namespace W
                 Dynamic::State *state_ptr,
                 Dynamic::Model *model_ptr,
                 Dynamic::MatrixNode *matrix_node_ptr) const = 0;
+            virtual void _get_strategies (
+                Dynamic::MatrixNode *matrix_node_ptr,
+                Types::VectorReal &row_strategy,
+                Types::VectorReal &col_strategy) const = 0;
         };
         template <typename T>
         struct SearchT : Search
@@ -254,6 +261,18 @@ namespace W
                 typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<TypeListNormalizer::MSearchTypes<T>> *>(matrix_node_ptr)->data;
                 size_t ms = data.run_for_iterations(iterations, device_, state, model, matrix_node);
                 return ms;
+            }
+            void _get_strategies (
+                Dynamic::MatrixNode *matrix_node_ptr,
+                Types::VectorReal &row_strategy,
+                Types::VectorReal &col_strategy) const 
+            {
+                typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<TypeListNormalizer::MSearchTypes<T>> *>(matrix_node_ptr)->data;
+                typename T::VectorReal r, c;
+                data.get_empirical_strategies(matrix_node.stats, r, c);
+                // for (x : r) {
+                std::cout << matrix_node.stats.row_visits[0] << std::endl;
+                // }
             }
         };
 
@@ -392,7 +411,6 @@ namespace W
             ptr = other.ptr->clone();
         }
 
-
         Search &operator=(const Search &other)
         {
             ptr = other.ptr->clone();
@@ -411,10 +429,7 @@ namespace W
             Types::Model &model,
             Types::MatrixNode &matrix_node) const
         {
-            Dynamic::State *state_ptr = &*(state.ptr);
-            Dynamic::Model *model_ptr = &*model.ptr;
-            Dynamic::MatrixNode *matrix_node_ptr = &*matrix_node.ptr;
-            return ptr->_run(duration_ms, device, state_ptr, model_ptr, matrix_node_ptr);
+            return ptr->_run(duration_ms, device, state.ptr.get(), model.ptr.get(), matrix_node.ptr.get());
         }
 
         size_t run_for_iterations(
@@ -424,10 +439,15 @@ namespace W
             Types::Model &model,
             Types::MatrixNode &matrix_node) const
         {
-            Dynamic::State *state_ptr = &*(state.ptr);
-            Dynamic::Model *model_ptr = &*model.ptr;
-            Dynamic::MatrixNode *matrix_node_ptr = &*matrix_node.ptr;
-            return ptr->_run_for_iterations(iterations, device, state_ptr, model_ptr, matrix_node_ptr);
+            return ptr->_run_for_iterations(iterations, device, state.ptr.get(), model.ptr.get(), matrix_node.ptr.get());
+        }
+
+        void get_strategies (
+            Types::MatrixNode &matrix_node,
+            Types::VectorReal &row_strategy,
+            Types::VectorReal &col_strategy
+        ) {
+            ptr->_get_strategies(matrix_node.ptr.get(), row_strategy, col_strategy);
         }
     };
 

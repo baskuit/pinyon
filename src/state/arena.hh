@@ -23,10 +23,6 @@ struct Arena : SimpleTypes
             std::vector<W::Types::Search> &searches)
             : search_iterations{search_iterations}, state_generator{init_state_generator}, model{model}, searches{searches}
         {
-            // (std::transform(containers.begin(), containers.end(), std::back_inserter(searches),
-            //                 [](auto &search)
-            //                 { return &search; }),
-            //  ...);
             this->init_range_actions(searches.size());
         }
 
@@ -51,46 +47,45 @@ struct Arena : SimpleTypes
             SimpleTypes::Action row_action,
             SimpleTypes::Action col_action)
         {
+            W::Types::PRNG device;
             W::Types::Search row_search = searches[static_cast<int>(row_action)];
             W::Types::Search col_search = searches[static_cast<int>(col_action)];
-
-            // W::Types::Search *row_search = searches[static_cast<int>(row_action)]->clone();
-            // W::Types::Search *col_search = searches[static_cast<int>(col_action)]->clone();
+            // copy constr will clone the unique_ptr member
 
             W::Types::State state = (*state_generator)(state_seed);
-            // W::Types::Value row_first_payoff = play_vs(row_search, col_search, state_copy, model);
-            // state_copy = (*init_state_generator)(state_seed);
-            // W::Types::Value col_first_payoff = play_vs(col_search, row_search, state_copy, model);
-            // W::Types::Value avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
-            // this->payoff = static_cast<W::Types::Value>(avg_payoff.get_row_value(), avg_payoff.get_col_value());
+            W::Types::Value row_first_payoff = play_vs(device, row_search, col_search, state, model);
+            W::Types::Value col_first_payoff = play_vs(device, col_search, row_search, state, model);
 
-            // this->terminal = true;
-            // this->obs = typename Types::Obs{device.random_int(1 << 16)};
+            W::Types::Value avg_payoff = (row_first_payoff + col_first_payoff) * 0.5;
 
-            // delete row_search;
-            // delete col_search;
+            this->payoff = SimpleTypes::Value{avg_payoff.get_row_value(), avg_payoff.get_col_value()};
+            this->terminal = true;
+            this->obs = SimpleTypes::Obs{device.get_seed()};
+
         }
 
     private:
         W::Types::Value play_vs(
+            W::Types::PRNG &device,
             W::Types::Search &row_search,
             W::Types::Search &col_search,
-            W::Types::State &state,
+            const W::Types::State &state_,
             W::Types::Model &model)
         {
+            W::Types::State state = state_;
             state.get_actions();
             while (!state.is_terminal())
             {
                 W::Types::VectorReal row_strategy, col_strategy;
-                W::Types::PRNG device;
                 W::Types::MatrixNode matrix_node{row_search.get_matrix_node()};
                 row_search.run_for_iterations(search_iterations, device, state, model, matrix_node);
-
-                // ActionIndex col_idx = device.sample_pdf(col_strategy);
-                // state.apply_actions(row_idx, col_idx);
-                // state.get_actions();
+                row_search.get_strategies(matrix_node, row_strategy, col_strategy);
+                int row_idx = device.sample_pdf(row_strategy);
+                int col_idx = device.sample_pdf(col_strategy);
+                state.apply_actions(row_idx, col_idx);
+                state.get_actions();
             }
-            return {};
+            return state.get_payoff();
         }
     };
 };

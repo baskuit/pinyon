@@ -33,7 +33,7 @@ struct PairReal
 
     constexpr PairReal operator+(const PairReal other) const
     {
-        return PairReal{row_value + other.row_value, col_value + other.col_value};
+        return PairReal{Real{row_value + other.row_value}, Real{col_value + other.col_value}};
     }
 
     constexpr PairReal operator*(const Real val) const
