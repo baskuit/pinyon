@@ -42,6 +42,12 @@ namespace detail
         //                   args);
     }
 
+    template <template <typename...> typename Template, typename... TemplateParams>
+    auto type_list_cart_prod_helper (type_list<TemplateParams...>) -> std::tuple<Template<TemplateParams>...>
+    {
+        return {Template<TemplateParams>{}...};
+    }
+
 }
 
 template <template <typename> typename... Templates, typename ParamPack, typename... Args>
@@ -74,4 +80,26 @@ template <typename TemplatePack, typename... Args>
 auto cartesian_product_per_param(TemplatePack template_pack, std::tuple<Args...>& args_per_param)
 {
     return std::tuple_cat(detail::cartesian_product_per_param_helper<Args>(template_pack, std::make_tuple(args_per_param))...);
+}
+
+/*
+
+New
+
+*/
+
+template <template <typename...> typename... Templates, typename TemplateParams>
+auto type_list_cart_prod (TemplateParams template_params)
+{
+    return std::tuple_cat(
+        detail::type_list_cart_prod_helper<Templates>(template_params)...
+    );
+}
+
+template <template <typename...> typename... Templates, typename TemplateParams, typename T>
+auto type_list_cart_prod_named (TemplateParams template_params)
+{
+    return std::tuple_cat(
+        detail::type_list_cart_prod_helper<Templates>(template_params)...
+    );
 }

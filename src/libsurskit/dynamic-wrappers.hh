@@ -116,6 +116,7 @@ namespace W
     {
         struct State
         {
+            virtual ~State() = default;
             virtual std::unique_ptr<Dynamic::State> clone() const = 0;
             virtual void _get_actions(size_t &, size_t &) = 0;
             virtual void _apply_actions(Types::Action, Types::Action) = 0;
@@ -167,6 +168,7 @@ namespace W
 
         struct Model
         {
+            virtual ~Model() = default;
             virtual std::unique_ptr<Dynamic::Model> clone() const = 0;
             virtual void _get_inference(Dynamic::State *, Types::ModelOutput &) = 0;
         };
@@ -200,6 +202,7 @@ namespace W
 
         struct MatrixNode
         {
+            virtual ~MatrixNode() = default;
             virtual std::unique_ptr<Dynamic::MatrixNode> create_new() const = 0;
         };
         template <typename T>
@@ -215,6 +218,7 @@ namespace W
 
         struct Search
         {
+            virtual ~Search() = default;
             virtual std::unique_ptr<Dynamic::Search> clone() const = 0;
             virtual std::unique_ptr<Dynamic::MatrixNode> get_matrix_node() const = 0;
             virtual size_t _run(

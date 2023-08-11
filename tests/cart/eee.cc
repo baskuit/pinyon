@@ -22,14 +22,16 @@ public:
 int main()
 {
 
-    auto states = cartesian_product_per_template<RandomTree>(type_list<RandomTreeFloatTypes>(),
-                                                             std::make_tuple(0, 1, 2, 2, 1, 0));
+    auto types = type_list_cart_prod<RandomTree>(type_list<RandomTreeFloatTypes>{});
 
-    auto models = cartesian_product_per_param
-    <RandomTree<>>
-        (template_list<MonteCarloModel>{},
-        std::tuple<int>(0));
-    // auto x = std::make_from_tuple<MonteCarloModel<RandomTree<>>>(std::tuple<int>(0));
+    // auto states = cartesian_product_per_template<RandomTree>(type_list<RandomTreeFloatTypes>(),
+    //                                                          std::make_tuple(0, 1, 2, 2, 1, 0));
+
+    // auto models = cartesian_product_per_param
+    // <RandomTree<>>
+    //     (template_list<MonteCarloModel>{},
+    //     std::tuple<int>(0));
+    // // auto x = std::make_from_tuple<MonteCarloModel<RandomTree<>>>(std::tuple<int>(0));
 
 
     // auto models = cartesian_product
@@ -46,7 +48,7 @@ int main()
     //     <TreeBandit>
     //         (bandit_algorithms);
 
-    auto count = std::tuple_size_v<decltype(states)>;
+    // auto count = std::tuple_size_v<decltype(states)>;
 
-    std::cout << count << " algorithm sessions were generated!" << std::endl;
+    // std::cout << count << " algorithm sessions were generated!" << std::endl;
 }
