@@ -9,11 +9,10 @@ W::Types::State generator_function(W::Types::Seed seed)
     prng device{seed};
 
     const size_t depth_bound = device.random_int(max_depth_bound) + 1;
-    const size_t actions = device.random_int(max_actions) + 1;
+    const size_t actions = device.random_int(max_actions) + 2;
     const size_t transitions = device.random_int(max_transitions) + 1;
     
     return W::make_state<RandomTree<>>(seed, depth_bound, actions, actions, transitions, Rational<>{0});
-    // return W::StateWrapper<RandomTree<>>{seed, depth_bound, actions, actions, transitions, Rational<>{0}};
 }
 
 int main()
@@ -35,10 +34,11 @@ int main()
     ArenaTypes::State arena{iterations, &generator_function, model, agents};
     ArenaTypes::Model arena_model{1337};
     ArenaTypes::Search search{.1};
-    search.threads = 6;
+    search.threads = 4;
     ArenaTypes::MatrixNode root;
 
-    search.run_for_iterations(12, device, arena, arena_model, root);
+    const size_t arena_search_iterations = 1 << 15;
+    search.run_for_iterations(arena_search_iterations, device, arena, arena_model, root);
     ArenaTypes::VectorReal row_strategy, col_strategy;
     search.get_empirical_strategies(root.stats, row_strategy, col_strategy);
     math::print(row_strategy);
