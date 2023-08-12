@@ -310,7 +310,7 @@ struct AlphaBeta : Types
                     const typename Types::Action col_action = state.col_actions[col_idx];
                     if (data.chance_actions.size() == 0)
                     {
-                        state.get_chance_actions(data.chance_actions, row_action, col_action);
+                        state.get_chance_actions(row_action, col_action, data.chance_actions);
                     }
                     if (data.next_chance_idx >= data.chance_actions.size())
                     {
@@ -416,7 +416,7 @@ struct AlphaBeta : Types
                     const typename Types::Action row_action = state.row_actions[row_idx];
                     if (data.chance_actions.size() == 0)
                     {
-                        state.get_chance_actions(data.chance_actions, row_action, col_action);
+                        state.get_chance_actions(row_action, col_action, data.chance_actions);
                     }
 
                     if (data.next_chance_idx >= data.chance_actions.size())
@@ -526,7 +526,7 @@ struct AlphaBeta : Types
                 auto &chance_actions = data.chance_actions;
                 if (chance_actions.size() == 0)
                 {
-                    state.get_chance_actions(chance_actions, row_action, col_action); // TODO arg order
+                    state.get_chance_actions(row_action, col_action, chance_actions); // TODO arg order
                 }
 
                 // go through all chance actions

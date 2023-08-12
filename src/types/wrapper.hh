@@ -249,4 +249,9 @@ struct ActionType : Wrapper<T>
 {
     constexpr ActionType(const T &value) : Wrapper<T>{value} {}
     constexpr ActionType() : Wrapper<T>{} {}
+    ActionType &operator=(const T &value)
+    {
+        this->value = value;
+        return *this;
+    }
 };

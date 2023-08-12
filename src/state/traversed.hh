@@ -94,9 +94,9 @@ struct TraversedState : Types::TypeList
         }
 
         void get_chance_actions(
-            std::vector<typename Types::Obs> &chance_actions,
             Types::Action row_action,
-            Types::Action col_action) const
+            Types::Action col_action,
+            std::vector<typename Types::Obs> &chance_actions) const
         {
             int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
             int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();

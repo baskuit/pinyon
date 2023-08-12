@@ -52,9 +52,9 @@ struct MoldState : SimpleTypes
         }
 
         void get_chance_actions(
-            std::vector<SimpleTypes::Obs> &chance_actions,
             SimpleTypes::Action,
-            SimpleTypes::Action) const
+            SimpleTypes::Action,
+            std::vector<SimpleTypes::Obs> &chance_actions) const
         {
             chance_actions.resize(1);
         }

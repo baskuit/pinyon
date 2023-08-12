@@ -104,9 +104,9 @@ struct RandomTree : Types
         }
 
         void get_chance_actions(
-            std::vector<typename Types::Obs> &chance_actions,
             const Types::Action row_action,
-            const Types::Action col_action) const
+            const Types::Action col_action,
+            std::vector<typename Types::Obs> &chance_actions) const
         {
             chance_actions.clear();
             const size_t start_idx = get_transition_idx(row_action, col_action, typename Types::Obs{0});
@@ -156,7 +156,7 @@ struct RandomTree : Types
             Types::Action col_action)
         {
             std::vector<typename Types::Obs> chance_actions{};
-            get_chance_actions(chance_actions, row_action, col_action);
+            get_chance_actions(row_action, col_action, chance_actions);
             typename Types::Obs chance_action = chance_actions[this->transition_seed % chance_actions.size()];
             apply_actions(row_action, col_action, chance_action);
         }

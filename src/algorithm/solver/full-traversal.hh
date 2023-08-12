@@ -88,7 +88,7 @@ struct FullTraversal : Types
                     
                     ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
                     auto &chance_actions = chance_node->stats.chance_actions;
-                    state.get_chance_actions(chance_actions, row_action, col_action);
+                    state.get_chance_actions(row_action, col_action, chance_actions);
 
                     for (auto chance_action : chance_actions)
                     {

@@ -130,7 +130,7 @@ struct AlphaBetaOld : Types
                             const typename Types::Action col_action = state.col_actions[col_idx];
 
                             std::vector<typename Types::Obs> chance_actions;
-                            state.get_chance_actions(chance_actions, row_action, col_action);
+                            state.get_chance_actions(row_action, col_action, chance_actions);
                             for (const auto chance_action : chance_actions)
                             {
 
@@ -280,7 +280,7 @@ struct AlphaBetaOld : Types
                             const typename Types::Action col_action = state.col_actions[col_idx];
 
                             std::vector<typename Types::Obs> chance_actions;
-                            state.get_chance_actions(chance_actions, row_action, col_action);
+                            state.get_chance_actions(row_action, col_action, chance_actions);
                             for (const auto chance_action : chance_actions)
                             {
                                 auto state_copy = state;
@@ -397,7 +397,7 @@ struct AlphaBetaOld : Types
                             const typename Types::Action col_action = state.col_actions[col_idx];
 
                             std::vector<typename Types::Obs> chance_actions;
-                            state.get_chance_actions(chance_actions, row_action, col_action);
+                            state.get_chance_actions(row_action, col_action, chance_actions);
                             for (const auto chance_action : chance_actions)
                             {
                                 auto state_copy = state;

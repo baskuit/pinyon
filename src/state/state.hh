@@ -5,41 +5,36 @@
 #include <concepts>
 #include <vector>
 
-template <typename State, typename VectorAction, typename Value, typename PRNG>
-concept IsState =
+template <typename Types>
+concept IsStateTypes =
     requires(
-        State &state,
-        const State &const_state,
-        VectorAction &actions,
-        PRNG &device) {
+        typename Types::State &state,
+        const typename Types::State &const_state,
+        typename Types::Action &action,
+        typename Types::VectorAction &actions,
+        typename Types::PRNG &device) {
         {
             state.is_terminal()
         } -> std::same_as<bool>;
         {
             state.get_payoff()
-        } -> std::same_as<Value>;
-        // {
-        //     const_state.get_actions(actions, actions)
-        // } -> std::same_as<void>;
+        } -> std::same_as<typename Types::Value>;
+        {
+            state.apply_actions(action, action)
+        } -> std::same_as<void>;
+        {
+            const_state.get_actions(actions, actions)
+        } -> std::same_as<void>;
         {
             state.randomize_transition(device)
         } -> std::same_as<void>;
-    };
-
-template <typename Types>
-concept IsStateTypes =
-    IsState<
-        typename Types::State,
-        typename Types::VectorAction,
-        typename Types::Value,
-        typename Types::PRNG> &&
+    } &&
     IsTypeList<Types>;
 
 template <typename Types>
 concept IsPerfectInfoStateTypes =
     requires(
-        typename Types::State &state,
-        typename Types::Action &action) {
+        typename Types::State &state) {
         {
             state.terminal
         } -> std::same_as<bool &>;
@@ -59,26 +54,23 @@ concept IsPerfectInfoStateTypes =
             state.prob
         } -> std::same_as<typename Types::Prob &>;
         {
-            state.apply_actions(action, action)
-        } -> std::same_as<void>;
-        {
             state.get_actions()
         } -> std::same_as<void>;
     } &&
     IsStateTypes<Types>;
 
-template <IsTypeList T>
+template <IsTypeList Types>
 class PerfectInfoState
 {
 public:
     bool terminal{false};
-    T::VectorAction row_actions;
-    T::VectorAction col_actions;
-    T::Value payoff;
-    T::Obs obs;
-    T::Prob prob;
+    Types::VectorAction row_actions;
+    Types::VectorAction col_actions;
+    Types::Value payoff;
+    Types::Obs obs;
+    Types::Prob prob;
 
-    inline T::Value get_payoff() const
+    inline Types::Value get_payoff() const
     {
         return payoff;
     }
@@ -94,11 +86,11 @@ public:
         col_actions.resize(cols);
         for (int i = 0; i < rows; ++i)
         {
-            this->row_actions[i] = typename T::Action{i};
+            this->row_actions[i] = i;
         }
         for (int i = 0; i < cols; ++i)
         {
-            this->col_actions[i] = typename T::Action{i};
+            this->col_actions[i] = i;
         }
     }
 
@@ -108,8 +100,8 @@ public:
         col_actions.resize(size);
         for (int i = 0; i < size; ++i)
         {
-            this->row_actions[i] = typename T::Action{i};
-            this->col_actions[i] = typename T::Action{i};
+            this->row_actions[i] = i;
+            this->col_actions[i] = i;
         }
     }
 };
@@ -122,7 +114,7 @@ concept IsChanceStateTypes =
         typename Types::Obs &obs,
         std::vector<typename Types::Obs> &chance_actions) {
         {
-            state.get_chance_actions(chance_actions, action, action)
+            state.get_chance_actions(action, action, chance_actions)
         } -> std::same_as<void>;
         {
             state.apply_actions(action, action, obs)
