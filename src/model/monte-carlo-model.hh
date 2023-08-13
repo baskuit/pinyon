@@ -3,7 +3,7 @@
 #include <state/state.hh>
 #include <model/model.hh>
 
-template <IsPerfectInfoStateTypes Types, bool HasPolicy = false>
+template <CONCEPT(IsPerfectInfoStateTypes, Types), bool HasPolicy = false>
 struct MonteCarloModel : Types
 {
     struct Inference

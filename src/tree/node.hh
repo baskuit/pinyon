@@ -6,6 +6,7 @@ template <typename Types>
 concept IsNodeTypes =
     requires(
         typename Types::MatrixNode &matrix_node,
+        const typename Types::MatrixNode &const_matrix_node,
         typename Types::ChanceNode &chance_node,
         typename Types::Obs &obs,
         typename Types::Prob &prob,
@@ -20,7 +21,7 @@ concept IsNodeTypes =
             matrix_node.expand(state)
         } -> std::same_as<void>;
         {
-            matrix_node.is_terminal()
+            const_matrix_node.is_terminal()
         } -> std::same_as<bool>;
         {
             matrix_node.set_terminal(true)
@@ -29,16 +30,16 @@ concept IsNodeTypes =
             matrix_node.set_terminal()
         } -> std::same_as<void>;
         {
-            matrix_node.get_row_actions()
+            const_matrix_node.get_row_actions()
         } -> std::same_as<typename Types::VectorAction>;
         {
-            matrix_node.get_col_actions()
+            const_matrix_node.get_col_actions()
         } -> std::same_as<typename Types::VectorAction>;
         {
-            matrix_node.get_row_action(0)
+            const_matrix_node.get_row_action(0)
         } -> std::same_as<typename Types::Action>;
         {
-            matrix_node.get_col_action(0)
+            const_matrix_node.get_col_action(0)
         } -> std::same_as<typename Types::Action>;
         {
             Types::MatrixNode::STORES_VALUE

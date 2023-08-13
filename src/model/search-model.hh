@@ -12,7 +12,7 @@ so that inference at the leafs is stronger than a normal model
 
 */
 
-template <IsSearchTypes Types, bool HasPolicy = false>
+template <CONCEPT(IsSearchTypes, Types), bool HasPolicy = false>
 struct SearchModel : Types::TypeList
 {
     // onle way to recover any types object is via Types::TypeList.
@@ -109,7 +109,7 @@ template <typename Types, typename OldTypes>
 concept Foo = std::derived_from<Types, OldTypes> && AssertModelDoesNotExist<OldTypes>::value;
 
 
-template <IsSearchTypes Types, IsStateTypes OldTypes>
+template <CONCEPT(IsSearchTypes, Types), IsStateTypes OldTypes>
 // requires AssertModelDoesNotExist<OldTypes>::value && std::derived_from<Types, OldTypes>
 requires Foo<Types, OldTypes>
 auto SearchModel_(Types, OldTypes) -> SearchModel<Types>

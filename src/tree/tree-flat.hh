@@ -6,7 +6,7 @@
 
 #include <unordered_map>
 
-template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
 struct FlatNodes : Types
 {
     class MatrixNode;
@@ -146,13 +146,13 @@ struct FlatNodes : Types
     };
 };
 
-template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
 FlatNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
 {
     delete[] edges;
 }
 
-template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
 FlatNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
 {
     for (const auto &[obs, matrix_node] : edges)

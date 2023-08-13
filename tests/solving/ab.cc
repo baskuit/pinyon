@@ -118,7 +118,7 @@ struct Solve
 int main()
 {
     x.canonicalize();
-    Rational<> threshold = Rational<>{1, 2};
+    Rational<> threshold{1, 2};
     RandomTreeGenerator<RandomTreeRationalTypes> generator{
         prng{0},
         {1, 2, 3},

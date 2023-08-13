@@ -27,7 +27,8 @@ struct MoldState : SimpleTypes
             this->obs = SimpleTypes::Obs{};
         }
 
-        void randomize_transition(SimpleTypes::PRNG &device)
+        void randomize_transition(
+            SimpleTypes::PRNG &device)
         {
         }
 
@@ -37,7 +38,7 @@ struct MoldState : SimpleTypes
 
         void get_actions(
             SimpleTypes::VectorAction &row_actions,
-            SimpleTypes::VectorAction &col_actions)
+            SimpleTypes::VectorAction &col_actions) const
         {
             row_actions = this->row_actions;
             col_actions = this->col_actions;

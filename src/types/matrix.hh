@@ -21,8 +21,9 @@ public:
     {
         rows = matrix.rows;
         cols = matrix.cols;
-        std::transform(matrix.begin(), matrix.end(), this->begin(), [](const U &element)
-                       { return static_cast<T>(element); });
+        std::transform(
+            matrix.begin(), matrix.end(), this->begin(), [](const U &element)
+            { return static_cast<T>(element); });
     }
 
     void fill(size_t rows, size_t cols)
@@ -76,8 +77,9 @@ public:
     {
         rows = matrix.rows;
         cols = matrix.cols;
-        std::transform(matrix.begin(), matrix.end(), this->begin(), [](const U &element)
-                       { return static_cast<T>(element); });
+        std::transform(
+            matrix.begin(), matrix.end(), this->begin(), [](const U &element)
+            { return static_cast<T>(element); });
     }
 
     void fill(size_t rows, size_t cols)
@@ -105,9 +107,10 @@ public:
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
-        std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](T a)
-                       { return a * t; });
+        std::transform(
+            this->begin(), this->begin() + rows * cols, output.begin(),
+            [t](T a)
+            { return a * t; });
         return output;
     }
 
@@ -115,9 +118,10 @@ public:
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
-        std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](T a)
-                       { return a + t; });
+        std::transform(
+            this->begin(), this->begin() + rows * cols, output.begin(),
+            [t](T a)
+            { return a + t; });
         return output;
     }
 
@@ -125,9 +129,10 @@ public:
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
-        std::transform(this->begin(), this->begin() + rows * cols, t.begin(), output.begin(),
-                       [](T a, T b)
-                       { return a + b; });
+        std::transform(
+            this->begin(), this->begin() + rows * cols, t.begin(), output.begin(),
+            [](T a, T b)
+            { return a + b; });
         return output;
     }
 
@@ -181,7 +186,7 @@ public:
     }
 
     template <typename T>
-    operator Matrix<T> () const 
+    operator Matrix<T>() const
     {
         Matrix<T> output{this->rows, this->cols};
         for (int entry_idx = 0; entry_idx < rows * cols; ++entry_idx)
@@ -217,9 +222,10 @@ public:
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
-        std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](Value<Real> a)
-                       { return a * t; });
+        std::transform(
+            this->begin(), this->begin() + rows * cols, output.begin(),
+            [t](Value<Real> a)
+            { return a * t; });
         return output;
     }
 
@@ -227,9 +233,10 @@ public:
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
-        std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](Value<Real> a)
-                       { return a + t; });
+        std::transform(
+            this->begin(), this->begin() + rows * cols, output.begin(),
+            [t](Value<Real> a)
+            { return a + t; });
         return output;
     }
 
@@ -238,9 +245,10 @@ public:
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
-        std::transform(this->begin(), this->begin() + rows * cols, output.begin(),
-                       [t](U a)
-                       { return a + t; });
+        std::transform(
+            this->begin(), this->begin() + rows * cols, output.begin(),
+            [t](U a)
+            { return a + t; });
         return output;
     }
 
@@ -248,41 +256,46 @@ public:
     {
         const Matrix &M = *this;
         Matrix output(M.rows, M.cols);
-        std::transform(this->begin(), this->begin() + rows * cols, t.begin(), output.begin(),
-                       [](Value<Real> a, Value<Real> b)
-                       { return a + b; });
+        std::transform(
+            this->begin(), this->begin() + rows * cols, t.begin(), output.begin(),
+            [](Value<Real> a, Value<Real> b)
+            { return a + b; });
         return output;
     }
 
     Real max() const
     {
         const size_t entries = rows * cols;
-        auto max_row = std::max_element(this->begin(), this->begin() + entries,
-                                        [](const auto &a, const auto &b)
-                                        {
-                                            return a.get_row_value() < b.get_row_value();
-                                        });
-        auto max_col = std::max_element(this->begin(), this->begin() + entries,
-                                        [](const auto &a, const auto &b)
-                                        {
-                                            return a.get_col_value() < b.get_col_value();
-                                        });
+        auto max_row = std::max_element(
+            this->begin(), this->begin() + entries,
+            [](const auto &a, const auto &b)
+            {
+                return a.get_row_value() < b.get_row_value();
+            });
+        auto max_col = std::max_element(
+            this->begin(), this->begin() + entries,
+            [](const auto &a, const auto &b)
+            {
+                return a.get_col_value() < b.get_col_value();
+            });
         return std::max(max_row->get_row_value(), max_col->get_col_value());
     }
 
     Real min() const
     {
         const size_t entries = rows * cols;
-        auto min_row = std::min_element(this->begin(), this->begin() + entries,
-                                        [](const auto &a, const auto &b)
-                                        {
-                                            return a.get_row_value() < b.get_row_value();
-                                        });
-        auto min_col = std::min_element(this->begin(), this->begin() + entries,
-                                        [](const auto &a, const auto &b)
-                                        {
-                                            return a.get_col_value() < b.get_col_value();
-                                        });
+        auto min_row = std::min_element(
+            this->begin(), this->begin() + entries,
+            [](const auto &a, const auto &b)
+            {
+                return a.get_row_value() < b.get_row_value();
+            });
+        auto min_col = std::min_element(
+            this->begin(), this->begin() + entries,
+            [](const auto &a, const auto &b)
+            {
+                return a.get_col_value() < b.get_col_value();
+            });
         return std::min(min_row->get_row_value(), min_col->get_col_value());
     }
 

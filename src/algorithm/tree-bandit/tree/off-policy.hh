@@ -11,7 +11,7 @@ TODO still no chance node updates (does any algo actually NEED this?)
 */
 
 template <
-    IsBanditAlgorithmTypes Types,
+    CONCEPT(IsBanditAlgorithmTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
     bool return_if_expand = true>
 struct OffPolicy : Types

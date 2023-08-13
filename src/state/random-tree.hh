@@ -9,7 +9,7 @@
 #include <vector>
 #include <ranges>
 
-template <IsTypeList Types = RandomTreeFloatTypes>
+template <CONCEPT(IsTypeList, Types) = RandomTreeFloatTypes>
 struct RandomTree : Types
 {
     class State : public PerfectInfoState<Types>
@@ -185,17 +185,19 @@ struct RandomTree : Types
             Types::Action col_action,
             Types::Obs chance_action) const
         {
-            const ActionIndex row_idx{row_action};
-            const ActionIndex col_idx{col_action};
-            const ActionIndex chance_idx{chance_action};
+            const int row_idx{row_action};
+            const int col_idx{col_action};
+            const int chance_idx{chance_action};
             return row_idx * cols * transitions + col_idx * transitions + chance_idx;
         }
 
         void get_chance_strategies()
         {
-            typename Types::template Vector<typename Types::Q> chance_strategies_;
+            std::vector<typename Types::Q> chance_strategies_;
+            // place holder that uses Q rationals, because they are better behaved than mpq_class Prob's
+            // I had trouble with that when fixing this function last time
             chance_strategies_.resize(rows * cols * transitions);
-            chance_strategies.resize(rows * cols * transitions);
+            this->chance_strategies.resize(rows * cols * transitions);
             for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
             {
 
@@ -205,7 +207,7 @@ struct RandomTree : Types
                     ActionIndex start_idx = row_idx * cols * transitions + col_idx * transitions;
 
                     // get unnormalized distro
-                    typename Types::Q prob_sum{typename Types::Q(0)};
+                    typename Types::Q prob_sum{0};
                     for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
                     {
                         const int num = device.random_int(chance_denominator) + 1;
@@ -213,7 +215,7 @@ struct RandomTree : Types
                         typename Types::Q x{num, chance_denominator};
                         if (x < chance_threshold)
                         {
-                            x = Rational<>{0};
+                            x = 0;
                         }
                         chance_strategies_[start_idx + chance_idx] = x;
                         prob_sum += x;
@@ -221,15 +223,15 @@ struct RandomTree : Types
 
                     if (prob_sum == typename Types::Q{0})
                     {
-                        chance_strategies_[start_idx] = typename Types::Q{1};
-                        prob_sum = typename Types::Q{1};
+                        chance_strategies_[start_idx] = 1;
+                        prob_sum = 1;
                     }
 
-                    for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
+                    for (int chance_idx = 0; chance_idx < transitions; ++chance_idx)
                     {
                         auto &x = chance_strategies_[start_idx + chance_idx];
-                        x = x / prob_sum; // reduced here
-                        chance_strategies[start_idx + chance_idx] = typename Types::Prob{x};
+                        x = x / prob_sum;
+                        this->chance_strategies[start_idx + chance_idx] = x;
                     }
                 }
             }
@@ -252,6 +254,7 @@ struct RandomTreeGenerator : CartesianProductGenerator<W::Types::State, std::vec
     static W::Types::State constr(std::tuple<size_t, size_t, size_t, Rational<>, size_t> tuple) 
     {
         return W::Types::State {
+            RandomTree<TypeList>{},
             RandomTreeGenerator::device.uniform_64(),
             static_cast<int>(std::get<0>(tuple)),
             std::get<1>(tuple),

@@ -17,17 +17,17 @@ Its typelist is the typelist of the inner State, Model type
 
 */
 
-template <IsValueModelTypes Types>
+template <CONCEPT(IsValueModelTypes, Types)>
     requires IsChanceStateTypes<Types>
 struct TraversedState : Types::TypeList
 {
-    template <IsNodeTypes NodePair>
+    template <CONCEPT(IsNodeTypes, NodePair)>
     class State_;
 
     using State = State_<DefaultNodes<Types, typename FullTraversal<Types>::MatrixStats, typename FullTraversal<Types>::ChanceStats>>;
 
     // This hidden template impl allows for type hints
-    template <IsNodeTypes NodePair>
+    template <CONCEPT(IsNodeTypes, NodePair)>
     class State_ : PerfectInfoState<typename Types::TypeList>
     {
     public:

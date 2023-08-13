@@ -7,7 +7,7 @@
 #include <chrono>
 
 template <
-    IsBanditAlgorithmTypes Types,
+    CONCEPT(IsBanditAlgorithmTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
     bool return_if_expand = true>
     requires IsNodeTypes<NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>>

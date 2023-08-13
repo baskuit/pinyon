@@ -1,6 +1,7 @@
 #pragma once
 
 #include <types/types.hh>
+#include <types/concepts.hh>
 
 #include <concepts>
 #include <vector>
@@ -59,7 +60,7 @@ concept IsPerfectInfoStateTypes =
     } &&
     IsStateTypes<Types>;
 
-template <IsTypeList Types>
+template <CONCEPT(IsTypeList, Types)>
 class PerfectInfoState
 {
 public:
@@ -121,13 +122,6 @@ concept IsChanceStateTypes =
         } -> std::same_as<void>;
     } &&
     IsPerfectInfoStateTypes<Types>;
-
-template <IsTypeList Types>
-class SolvedState : public PerfectInfoState<Types>
-{
-public:
-    Types::VectorReal row_strategy, col_strategy;
-};
 
 template <typename Types>
 concept IsSolvedStateTypes =

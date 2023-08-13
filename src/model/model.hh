@@ -48,7 +48,7 @@ concept IsDoubleOracleModelTypes =
     } &&
     IsValueModelTypes<Types>;
 
-template <IsStateTypes Types>
+template <CONCEPT(IsStateTypes, Types)>
 struct EmptyModel : Types
 {
 

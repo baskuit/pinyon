@@ -341,11 +341,11 @@ namespace W
             col_actions.resize(cols);
             for (int i = 0; i < rows; ++i)
             {
-                row_actions[i] = typename Types::Action{i};
+                row_actions[i] = i;
             }
             for (int i = 0; i < cols; ++i)
             {
-                col_actions[i] = typename Types::Action{i};
+                col_actions[i] = i;
             }
         };
 
@@ -359,16 +359,7 @@ namespace W
         {
             size_t rows, cols;
             ptr->_get_actions(rows, cols);
-            this->row_actions.resize(rows);
-            this->col_actions.resize(cols);
-            for (int i = 0; i < rows; ++i)
-            {
-                this->row_actions[i] = typename Types::Action{i};
-            }
-            for (int i = 0; i < cols; ++i)
-            {
-                this->col_actions[i] = typename Types::Action{i};
-            }
+            this->init_range_actions(rows, cols);
         }
 
         void apply_actions(

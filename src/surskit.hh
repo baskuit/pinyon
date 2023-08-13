@@ -12,6 +12,7 @@
 // Types
 
 #include <types/types.hh>
+#include <types/concepts.hh>
 
 // State
 

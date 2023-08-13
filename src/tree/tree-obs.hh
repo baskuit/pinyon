@@ -4,7 +4,7 @@
 #include <state/state.hh>
 #include <tree/node.hh>
 
-template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
 struct LNodes : Types
 {
     /*
@@ -207,7 +207,7 @@ struct LNodes : Types
     };
 };
 
-template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
 LNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
 {
     while (this->child != nullptr)
@@ -217,7 +217,7 @@ LNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
         delete victim;
     }
 }
-template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
 LNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
 {
     while (this->child != nullptr)

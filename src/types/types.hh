@@ -86,7 +86,7 @@ concept IsObs = requires(Obs obs) {
     {
         operator==(obs, obs)
     } -> std::same_as<bool>;
-    // Obs type is just a small and sure way to identify distinct transitions 
+    // Obs type is just a small and sure way to identify distinct transitions
     // of a State after commiting the same joint actions
 };
 

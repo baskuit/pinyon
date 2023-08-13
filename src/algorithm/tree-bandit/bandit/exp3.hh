@@ -2,7 +2,7 @@
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
-template <IsValueModelTypes Types>
+template <CONCEPT(IsValueModelTypes, Types)>
 struct Exp3 : Types
 {
 

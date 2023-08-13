@@ -173,6 +173,13 @@ struct RealType : ArithmeticType<T>
         }
         return os;
     }
+    explicit operator double() const {
+        if constexpr (std::is_same_v<T, mpq_class>) {
+            return this->value.get_d();
+        } else {
+            return static_cast<double>(this->value);
+        }
+    }
 };
 
 template <typename T>
@@ -206,6 +213,13 @@ struct ProbType : ArithmeticType<T>
         {
         }
         return *this;
+    }
+    explicit operator double() const {
+        if constexpr (std::is_same_v<T, mpq_class>) {
+            return this->value.get_d();
+        } else {
+            return static_cast<double>(this->value);
+        }
     }
 };
 

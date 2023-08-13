@@ -7,7 +7,7 @@
 Minimal model for benchmarking purposes (Test speed of state and tree structure)
 */
 
-template <IsValueModelTypes Types>
+template <CONCEPT(IsValueModelTypes, Types)>
 struct Rand : Types
 {
     struct MatrixStats

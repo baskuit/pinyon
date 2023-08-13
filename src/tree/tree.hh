@@ -4,7 +4,7 @@
 #include <state/state.hh>
 #include <tree/node.hh>
 
-template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
 struct DefaultNodes : Types
 {
     class MatrixNode;
@@ -233,7 +233,7 @@ struct DefaultNodes : Types
 };
 
 // We have to hold off on destructor definitions until here
-template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
 DefaultNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
 {
     while (this->child != nullptr)
@@ -243,7 +243,7 @@ DefaultNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
         delete victim;
     }
 }
-template <IsStateTypes Types, typename MatrixStats, typename ChanceStats>
+template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
 DefaultNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
 {
     while (this->child != nullptr)
