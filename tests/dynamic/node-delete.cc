@@ -19,7 +19,7 @@ int main()
     const size_t n = 1 << 30;
     for (size_t i = 0; i < n; ++i)
     {
-        auto root = W::make_root<Types>();
+        auto root = W::make_node<Types>();
         search.run_for_iterations(1024, device, state, model, root);
         auto x = dynamic_cast<W::Dynamic::MatrixNodeT<TypeListNormalizer::MSearchTypes<Types>> *>(root.ptr.get());
         auto y = x->data;

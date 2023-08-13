@@ -7,22 +7,42 @@
 
 /*
 
-_ in template types just to not shadow the using declaration
-_ prefix used for virtual methods in Dynamic namespace,
-because they mirror but are not related to their name-likes in the static realm
+Even if two State types are equal, e.g. `Types1 = MonteCarloModel<MoldState<2>>::State` and `Types2 = MoldState<2>::State`,
+the StateT<>, ModelT<>, SearchT<> classes might not be convertible. That is,
 
+StateT<MoldState<2>>, StateT<MonteCarloModel<MoldState<2>>> might not be compatible.
+This would basically defeat the purpose of wrapping, so it has to be addressed.
 
+The solution is the 'normalize' the typelists so that the resulting StateT<> instantiations are equal as long as their primary
+and ancillary data types are equal.
 
-*/
+W::Types is a specific type list that is should allow every other type list to be 'converted' to it via wrapping
+this is assumed a few things about type lists
+e.g. Reals are assumed to have a conversion to double, get_actions() output has fixed ordering (see below), etc
+Also note: this is the reason for the conversion to double operator for RealType<>, ProbType<>
+mpq_class can't convert, it uses get_d(), so we handle this at the level of the wrapper by adding conversion operator
+this unfortunatley means the library won't immediately compile if the RealType etc. wrappers are removed
+although its very close
 
-/*
-
-The "W" namespace provides a wrapper for the State, Model, Search paradigm that works regardless of the type list
+The only StateT etc. constructor is templated and an instance of that *type list* is used as the first parameter.
+The make_state etc. factory functions are the final layer so that this type list can be provided via a template parameter list
+e.g. auto state = make_state<TreeBandit<...>>(// ...args)
+and without constructing the type list, which is verbotten
 
 */
 
 namespace TypeListNormalizer
 {
+
+    /*
+
+    _ in template types just to not shadow the using declaration
+    _ prefix used for virtual methods in Dynamic namespace,
+    because they mirror but are not related to their name-likes in the static realm
+
+
+    */
+
     // State
     template <
         typename _PRNG,
@@ -98,7 +118,8 @@ namespace W
     struct MatrixNode;
 
     struct Types : DefaultTypes<double, int, bool, double>
-    // Actions=int, using the fact that the order of get_actions() is assumed to be fixed
+    // as long as the order of output of get_actions is fixed we can equate actions with their indices
+    // so here _ActionsType (template arg) is int
     {
         using ModelInput = W::State;
         struct ModelOutput
@@ -491,9 +512,8 @@ namespace W
     }
 
     template <typename TypeList>
-    Types::MatrixNode make_root()
+    Types::MatrixNode make_node()
     {
         return Types::MatrixNode{TypeList{}};
     }
-
 }

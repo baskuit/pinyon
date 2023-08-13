@@ -20,7 +20,6 @@ foreach(TEST_FILE ${TEST_FILES})
 
     add_executable(${TEST_TARGET_NAME} ${TEST_FILE})
     target_link_libraries(${TEST_TARGET_NAME} surskit)
-    # target_compile_definitions(${TEST_TARGET_NAME} PRIVATE "fconcepts-diagnostics-depth=50")
 
     add_test(NAME ${TEST_TARGET_NAME} COMMAND ${TEST_TARGET_NAME})
     set_target_properties(${TEST_TARGET_NAME} PROPERTIES
@@ -38,11 +37,3 @@ foreach(FILE ${BENCHMARK_FILES})
     set_target_properties(${B_NAME} PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/benchmark)
 endforeach()
-
-# Python Module
-
-# add_subdirectory(extern/pybind11)
-# pybind11_add_module(pysurskit pybind/main.cpp)
-# target_link_libraries(pysurskit PRIVATE surskit)
-# # target_link_libraries(pysurskit PRIVATE gambit)
-# set_target_properties(pysurskit PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pybind)

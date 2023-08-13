@@ -11,7 +11,7 @@ template <
     template <typename...> typename NodePair = DefaultNodes,
     bool return_if_expand = true>
     requires IsNodeTypes<NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>>
-// will auto complete all all this ::MatrixNode but not the alias decl :(
+// will auto complete all all this + ::MatrixNode but not the alias decl :(
 struct TreeBandit : Types
 {
     using MatrixNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>::MatrixNode;

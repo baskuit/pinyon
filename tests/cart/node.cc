@@ -16,8 +16,7 @@ int main()
         tuple{{}, {}, {}};
 
     std::vector<int> threads {1, 2, 2};
-
-    auto lambda = [](auto type_list)
+    auto lambda = [](auto )
     {
         using Types = decltype(type_list);
         using MatrixNode = typename Types::MatrixNode; // Access the nested A class
@@ -35,7 +34,7 @@ int main()
 
         double ratio = count / (double) iterations;
 
-        std::cout << ratio << std::endl;
+        std::cout << ratio << ", diff =" << std::abs(double{count - iterations}) << std::endl;
     };
 
     // Apply the lambda to all elements of the tuple using std::apply
