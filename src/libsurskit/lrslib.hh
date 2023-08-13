@@ -12,8 +12,9 @@ namespace LRSNash
     // {
     // }
 
-    template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper>
-    std::pair<Wrapper<mpq_class>, Wrapper<mpq_class>>
+    // Solve matrix of mpq_class
+    template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Value, template <typename> typename Wrapper>
+    Value<Wrapper<mpq_class>>
     solve(
         Matrix<PairReal<Wrapper<mpq_class>>> &payoff_matrix,
         Vector<Wrapper<mpq_class>> &row_strategy,
@@ -59,11 +60,19 @@ namespace LRSNash
         delete[] row_solution_data;
         delete[] col_solution_data;
 
-        return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
+        if constexpr (Value<Wrapper<mpq_class>>::IS_CONSTANT_SUM == true)
+        {
+            return {Wrapper<mpq_class>{row_payoff}};
+        }
+        else
+        {
+            return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
+        }
     }
 
-    template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Wrapper>
-    std::pair<Wrapper<mpq_class>, Wrapper<mpq_class>>
+    // Solve constant-sum (ConstantSum<1, 1>) matrix of mpq_class
+    template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Value, template <typename> typename Wrapper>
+    Value<Wrapper<mpq_class>>
     solve(
         Matrix<ConstantSum<1, 1>::Value<Wrapper<mpq_class>>> &payoff_matrix,
         Vector<Wrapper<mpq_class>> &row_strategy,
@@ -110,11 +119,19 @@ namespace LRSNash
         delete[] row_solution_data;
         delete[] col_solution_data;
 
-        return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
+        if constexpr (Value<Wrapper<mpq_class>>::IS_CONSTANT_SUM == true)
+        {
+            return {Wrapper<mpq_class>{row_payoff}};
+        }
+        else
+        {
+            return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
+        }
     }
 
+    // Solve for everything else, mostly for doubles
     template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Value, typename Real>
-    std::pair<Real, Real>
+    Value<Real>
     solve(
         Matrix<Value<Real>> &payoff_matrix,
         Vector<Real> &row_strategy,
@@ -127,7 +144,7 @@ namespace LRSNash
 
         const Real min = payoff_matrix.min();
         const Real max = payoff_matrix.max();
-        const Real range{max == min ? 1 : max - min};
+        const Real range{max == min ? Real{1} : max - min};
 
         std::vector<long> payoff_data;
         payoff_data.resize(2 * entries);
@@ -137,8 +154,8 @@ namespace LRSNash
         for (size_t i = 0; i < entries; ++i)
         {
             Value<Real> &value = payoff_matrix[i];
-            double a{(value.get_row_value() - min) / range * den};
-            double b{(value.get_col_value() - min) / range * den};
+            double a{(value.get_row_value() - min) / range * Real{den}};
+            double b{(value.get_col_value() - min) / range * Real{den}};
             payoff_data[2 * i] = ceil(a);
             payoff_data[2 * i + 1] = ceil(b);
         }
@@ -179,7 +196,14 @@ namespace LRSNash
         delete[] row_solution_data;
         delete[] col_solution_data;
 
-        return {row_payoff, col_payoff};
+        if constexpr (Value<Real>::IS_CONSTANT_SUM == true)
+        {
+            return {row_payoff};
+        }
+        else
+        {
+            return {row_payoff, col_payoff};
+        }
     }
 
 }; // End namespace LRSNash
