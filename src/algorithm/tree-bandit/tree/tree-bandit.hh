@@ -86,7 +86,7 @@ struct TreeBandit : Types
                     else
                     {
                         state.get_actions();
-                        model.get_inference(state, inference);
+                        model.inference(state, inference);
 
                         matrix_node->expand(state);
                         this->expand(state, matrix_node->stats, inference);
@@ -139,7 +139,7 @@ struct TreeBandit : Types
                 {
                     state.get_actions();
                     matrix_node->expand(state);
-                    model.get_inference(state, inference);
+                    model.inference(state, inference);
                     this->expand(state, matrix_node->stats, inference);
 
                     if constexpr (return_if_expand)

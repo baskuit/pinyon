@@ -12,7 +12,7 @@ int main() {
     W::Types::MatrixNode matrix_node{Types{}};
     W::Types::ModelOutput inference;
     W::Types::PRNG device{};
-    // model.get_inference(state, inference);
+    // model.inference(state, inference);
     W::Types::VectorReal row_strategy, col_strategy;
     search.run_for_iterations(1000, device, state, model, matrix_node);
     search.get_strategies(matrix_node, row_strategy, col_strategy);
@@ -22,7 +22,7 @@ int main() {
     // W::Types::MatrixNode matrix_node{Types{}};
 
     // // W::Types::ModelOutput output;
-    // // model.get_inference(state, output);
+    // // model.inference(state, output);
 
     // W::Types::PRNG device{};
 

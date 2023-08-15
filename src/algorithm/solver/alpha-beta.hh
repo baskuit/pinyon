@@ -71,7 +71,7 @@ struct AlphaBeta : Types
             typename Types::Model &model,
             MatrixNode &root)
         {
-            model.get_inference();
+            model.inference();
         }
 
         std::pair<typename Types::Real, typename Types::Real>
@@ -101,7 +101,7 @@ struct AlphaBeta : Types
             {
                 matrix_node->set_terminal();
                 typename Types::ModelOutput inference;
-                model.get_inference(state, inference);
+                model.inference(state, inference);
                 return {inference.value.get_row_value(), inference.value.get_row_value()};
             }
 

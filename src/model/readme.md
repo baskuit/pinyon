@@ -30,15 +30,15 @@ Their definitions vary considerably depending on the derived class. In the Monte
         const typename Types::State &state,
         typename Types::ModelBatchInput &input);
 
-    void get_inference(
+    void inference(
         typename Types::ModelInput &input,
         typename Types::ModelOutput &output);
 
-    void get_inference(
+    void inference(
         typename Types::ModelBatchInput &inputs,
         typename Types::ModelBatchOutput &outputs);
 
-    void get_inference(
+    void inference(
         const std::vector<typename Types::State> &states,
         typename Types::ModelBatchOutput &outputs); // TODO add this!
 ```

@@ -41,7 +41,7 @@ public:
     std::mutex output_mutex;
     std::condition_variable output_cv;
 
-    void get_inference(torch::Tensor &thread_input_tensor, torch::Tensor &thread_output_tensor) // normally would call on a state and matrix_node.
+    void inference(torch::Tensor &thread_input_tensor, torch::Tensor &thread_output_tensor) // normally would call on a state and matrix_node.
     {
 
         /*
@@ -52,7 +52,7 @@ public:
         */
 
         // FAKE WORK: Populate minibatch input
-        // NORMALLY: Done by thread before calling get_inference()
+        // NORMALLY: Done by thread before calling inference()
         thread_input_tensor = torch::empty({minibatch_size, size_of_battle});
         for (size_t i = 0; i < minibatch_size; ++i) {
             const auto x = torch::rand({size_of_battle});

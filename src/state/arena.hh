@@ -84,21 +84,19 @@ struct Arena : SimpleTypes
             state.get_actions();
             while (!state.is_terminal())
             {
-                row_model.get_inference(state, row_output);
-                col_model.get_inference(state, col_output);
+                row_model.inference(state, row_output);
+                col_model.inference(state, col_output);
                 const int row_idx = device.sample_pdf(row_output.row_policy);
                 const int col_idx = device.sample_pdf(col_output.col_policy);
 
-
-
-                // std::cout << "row player inference" << std::endl;
-                // math::print(row_output.row_policy);
-                // math::print(col_output.row_policy);
-                // std::cout << "col" << std::endl;
-                // math::print(row_output.col_policy);
-                // math::print(col_output.col_policy);
-                // std::cout << "selected: " << row_idx << ' ' << col_idx << std::endl;
-                // std::cout << std::endl;
+                std::cout << "row player inference" << std::endl;
+                math::print(row_output.row_policy);
+                math::print(col_output.row_policy);
+                std::cout << "col" << std::endl;
+                math::print(row_output.col_policy);
+                math::print(col_output.col_policy);
+                std::cout << "selected: " << row_idx << ' ' << col_idx << std::endl;
+                std::cout << std::endl;
 
                 state.apply_actions(row_idx, col_idx);
                 state.get_actions();

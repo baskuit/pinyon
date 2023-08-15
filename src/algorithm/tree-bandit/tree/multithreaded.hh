@@ -155,7 +155,7 @@ struct TreeBanditThreaded : Types
                     else
                     {
                         state.get_actions();
-                        model.get_inference(state, inference);
+                        model.inference(state, inference);
 
                         mtx.lock();
                         matrix_node->expand(state);
@@ -357,7 +357,7 @@ struct TreeBanditThreadPool : Types
                     else
                     {
                         state.get_actions();
-                        model.get_inference(state, inference);
+                        model.inference(state, inference);
                         get_mutex_index(matrix_node);
 
                         mtx.lock();

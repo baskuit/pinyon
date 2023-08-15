@@ -37,7 +37,7 @@ struct MonteCarloModel : Types
             inputs = states;
         }
 
-        void get_inference(
+        void inference(
             ModelInput &input,
             ModelOutput &output)
         {
@@ -52,7 +52,7 @@ struct MonteCarloModel : Types
             output.value = input.payoff;
         }
 
-        void get_inference(
+        void inference(
             ModelBatchInput &inputs,
             ModelBatchOutput &outputs)
         {
@@ -61,7 +61,7 @@ struct MonteCarloModel : Types
             {
                 auto &input = inputs[i];
                 auto &output = outputs[i];
-                get_inference(input, output);
+                inference(input, output);
             }
         }
 

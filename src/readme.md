@@ -33,7 +33,7 @@ The methods of a family of types necessarily refer to the concrete types of the 
 ```cpp
 State::apply_actions(Action row_action, Action col_action);
 
-Model::get_inference(State& state, ModelOutput& output);
+Model::inference(State& state, ModelOutput& output);
 
 Algorithm::run(State& state, Model& model);
 ```
@@ -67,7 +67,7 @@ The paradigm of type families at the start of this document must be codified in 
 
 Polymorphism can be achieved in C++ using classes and inheritance:
 
-As a way to refer to a family of types in general, we define an abstract base class for each family. Each actual type in the family will derive from that abstract class, which establishes a shared interface (`get_actions` for states, `get_inference` for models, etc.)
+As a way to refer to a family of types in general, we define an abstract base class for each family. Each actual type in the family will derive from that abstract class, which establishes a shared interface (`get_actions` for states, `inference` for models, etc.)
 ```cpp
 class State {
 	virtual void get_actions () = 0;
@@ -181,7 +181,7 @@ class Exp3 : public AbstractAlgorithm<Model> {
 Consider the code for the Exp3 algorithm above. We've explicitly declared the type of the 'model' class to simply be the `Model` template parameter type. In scope of the class, we can simply use this type directly
 
 ```cpp
-	void get_inference (Model &model) {
+	void inference (Model &model) {
 		// contrived example
 	}
 ```

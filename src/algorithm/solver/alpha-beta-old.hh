@@ -86,7 +86,7 @@ struct AlphaBetaOld : Types
             {
                 matrix_node->set_terminal();
                 typename Types::ModelOutput inference;
-                model.get_inference(state, inference);
+                model.inference(state, inference);
                 stats.row_value = inference.value.get_row_value();
                 return stats.row_value;
             }

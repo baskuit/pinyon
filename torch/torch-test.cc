@@ -54,7 +54,7 @@ void thread_loop_inference(Wrapper *wrapper, size_t num_batches_to_process, int 
             matrix_node_vector.push_back(matrix_node);
         }
 
-        wrapper->get_inference(thread_input_tensor, thread_output_tensor);
+        wrapper->inference(thread_input_tensor, thread_output_tensor);
 
         for (size_t b = 0; b < subbatch_size; ++b)
         {

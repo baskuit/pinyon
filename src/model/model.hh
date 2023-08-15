@@ -16,7 +16,7 @@ concept IsValueModelTypes =
             output.value
         } -> std::same_as<typename Types::Value &>;
         {
-            model.get_inference(
+            model.inference(
                 input,
                 output)
         } -> std::same_as<void>;
@@ -74,7 +74,7 @@ struct EmptyModel : Types
             inputs = states;
         }
 
-        void get_inference(
+        void inference(
             ModelInput &input,
             ModelOutput &output)
         {
@@ -93,7 +93,7 @@ struct EmptyModel : Types
             }
         }
 
-        void get_inference(
+        void inference(
             ModelBatchInput &inputs,
             ModelBatchOutput &outputs)
         {

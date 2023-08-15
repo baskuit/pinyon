@@ -191,7 +191,7 @@ namespace W
         {
             virtual ~Model() = default;
             virtual std::unique_ptr<Dynamic::Model> clone() const = 0;
-            virtual void _get_inference(Dynamic::State *, Types::ModelOutput &) = 0;
+            virtual void _inference(Dynamic::State *, Types::ModelOutput &) = 0;
         };
         template <typename T>
         struct ModelT : Model
@@ -206,13 +206,13 @@ namespace W
                 return std::make_unique<ModelT>(*this);
             }
 
-            void _get_inference(
+            void _inference(
                 Dynamic::State *state_ptr,
                 Types::ModelOutput &output)
             {
                 typename T::State &state = dynamic_cast<Dynamic::StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr)->data;
                 typename T::ModelOutput output_;
-                data.get_inference(state, output_);
+                data.inference(state, output_);
                 output.value = Types::Value{output_.value.get_row_value(), output_.value.get_col_value()};
                 // TODO
                 output.row_policy.resize(state.row_actions.size());
@@ -417,12 +417,12 @@ namespace W
             return *this;
         }
 
-        void get_inference(
+        void inference(
             const Types::ModelInput &input,
             Types::ModelOutput &output)
         {
             Dynamic::State *state_ptr = input.ptr.get();
-            ptr->_get_inference(state_ptr, output);
+            ptr->_inference(state_ptr, output);
         }
 
         void get_input(

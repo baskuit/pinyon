@@ -60,7 +60,7 @@ struct OffPolicy : Types
                                  actor_iterations_per, device, states, model, matrix_nodes);
                 // populate trajectories vector and batch input
 
-                model.get_inference(input, output);
+                model.inference(input, output);
 
                 update_using_trajectories(trajectories, output);
             }

@@ -26,7 +26,7 @@ public:
     torch::Tensor batch_output_tensor = torch::zeros({batch_size, 1});
 
     // wrapper will only allow you to ride if you have ticket
-    // this only works if at least subbatches many threads are calling get_inference
+    // this only works if at least subbatches many threads are calling inference
     // if any more threads call, their ticket number is too high to ride
     std::atomic<int> ticket{0};
 
@@ -43,7 +43,7 @@ public:
         offsets.resize(subbatches);
     };
 
-    void get_inference(int &start_index) // normally would call on a state and matrix_node.
+    void inference(int &start_index) // normally would call on a state and matrix_node.
     {
 
         /*
@@ -70,7 +70,7 @@ public:
         int &offset = offsets[thread_id];
         const int index = start_index + offset;
 
-        // write to chunk, increment for next get_inference() call
+        // write to chunk, increment for next inference() call
         batch_input_tensor[index] = observation_tensor;
         offset += 1;
 

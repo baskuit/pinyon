@@ -65,7 +65,7 @@ struct TreeBanditSearchModel : Types::TypeList
             inputs = states;
         }
 
-        void get_inference(
+        void inference(
             ModelInput &input,
             ModelOutput &output)
         {
@@ -82,14 +82,14 @@ struct TreeBanditSearchModel : Types::TypeList
             session.get_empirical_value(root.stats, output.value);
         }
 
-        void get_inference(
+        void inference(
             ModelBatchInput &inputs,
             ModelBatchOutput &outputs) const
         {
             outputs.resize(inputs.size());
             for (size_t i = 0; i < inputs.size(); ++i)
             {
-                get_inference(inputs[i], outputs[i]);
+                inference(inputs[i], outputs[i]);
             }
         }
 

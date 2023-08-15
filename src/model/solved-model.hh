@@ -32,7 +32,7 @@ struct SolvedStateModel : Types
             inputs = states;
         }
 
-        void get_inference(
+        void inference(
             ModelInput &input,
             ModelOutput &output)
         {
@@ -41,7 +41,7 @@ struct SolvedStateModel : Types
             // std::cout << "printing matrix" << std::endl;
         }
 
-        void get_inference(
+        void inference(
             ModelBatchInput &inputs,
             ModelBatchOutput &outputs)
         {

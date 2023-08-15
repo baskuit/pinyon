@@ -11,7 +11,7 @@
 /*
 Thread-safe inference wrapper for Libtorch model.
 
-Needs `n_threads` Threads to call get_inference `n_calls_per_thread` times before model is invoked.
+Needs `n_threads` Threads to call inference `n_calls_per_thread` times before model is invoked.
 */
 
 template <class State, class LibtorchModel>
@@ -48,7 +48,7 @@ public:
         offsets.resize(n_threads); // default val is 0
         assert(n_calls_per_thread * n_threads == batch_size);
     }
-    void get_inference(int &start_index, torch::Tensor &observation_tesor) // normally would call on a state and matrix_node.
+    void inference(int &start_index, torch::Tensor &observation_tesor) // normally would call on a state and matrix_node.
     {
         if (start_index < 0)
         {
