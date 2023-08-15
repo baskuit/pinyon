@@ -56,7 +56,7 @@ int main()
     ArenaTypes::PRNG device{0};
     ArenaTypes::State arena{&generator_function, models};
     ArenaTypes::Model arena_model{1337};
-    ArenaTypes::Search search{ArenaTypes::BanditAlgorithm{.10}, 6};
+    ArenaTypes::Search search{ArenaTypes::BanditAlgorithm{.10}, threads};
     ArenaTypes::MatrixNode root;
 
     const size_t arena_search_iterations = 1 << 17;
