@@ -13,10 +13,10 @@ int main()
     SessionTypes0,
     SessionTypes1,
     SessionTypes2>
-        tuple{{}, {}, {}};
+        search_type_tuple{{}, {}, {}};
 
     std::vector<int> threads {1, 2, 2};
-    auto lambda = [](auto )
+    auto lambda = [](auto type_list)
     {
         using Types = decltype(type_list);
         using MatrixNode = typename Types::MatrixNode; // Access the nested A class
@@ -40,7 +40,7 @@ int main()
     // Apply the lambda to all elements of the tuple using std::apply
     std::apply([&lambda](auto &...elements)
                { (lambda(elements), ...); },
-               tuple);
+               search_type_tuple);
 
     return 0;
 }

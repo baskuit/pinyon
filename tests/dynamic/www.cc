@@ -7,7 +7,7 @@ int main() {
     // using W::Types::State;
 
     auto state = W::make_state<Types>(10);
-    auto model = W::make_model<Types>(Types::Model{});
+    auto model = W::make_model<Types>(Types::Model{0});
     auto search = W::make_search<Types>(Types::Search{});
     W::Types::MatrixNode matrix_node{Types{}};
     W::Types::ModelOutput inference;
