@@ -1,48 +1,63 @@
 #include <surskit.hh>
 
-W::Types::State generator_function(W::Types::Seed seed)
+#include <algorithm/tree-bandit/bandit/exp3-fat.hh>
+
+using SolvedStateTypes = TraversedState<EmptyModel<RandomTree<>>>;
+
+W::Types::State generator_function(const W::Types::Seed seed)
 {
-    const size_t max_depth_bound = 5;
-    const size_t max_actions = 5;
-    const size_t max_transitions = 3;
+    // const size_t max_depth_bound = 5;
+    // const size_t max_actions = 3;
+    // const size_t max_transitions = 1;
 
-    prng device{seed};
+    // prng device{seed};
 
-    const size_t depth_bound = device.random_int(max_depth_bound) + 1;
-    const size_t actions = device.random_int(max_actions) + 2;
-    const size_t transitions = device.random_int(max_transitions) + 1;
-    
-    return W::make_state<RandomTree<>>(seed, depth_bound, actions, actions, transitions, Rational<>{0});
+    const size_t depth_bound = 1; // device.random_int(max_depth_bound) + 1;
+    const size_t actions = 5;     // device.random_int(max_actions) + 2;
+    const size_t transitions = 1; // device.random_int(max_transitions) + 1;
+
+    RandomTree<>::State random_tree{seed, depth_bound, actions, actions, transitions, Rational<>{0}};
+    EmptyModel<RandomTree<>>::Model random_tree_model{};
+    SolvedStateTypes::State solved_random_tree{random_tree, random_tree_model};
+
+    return W::make_state<SolvedStateTypes>(solved_random_tree);
 }
 
 int main()
 {
 
-    using Types = TreeBandit<Exp3<MonteCarloModel<RandomTree<>>>>;
-    using ArenaTypes = TreeBanditThreaded<Exp3<MonteCarloModel<Arena>>>;
+    using MCTypes = TreeBandit<Exp3<MonteCarloModel<SolvedStateTypes>>>;
+    // Exp3 search types on a solved random tree
+    using MCTypesModel = TreeBanditSearchModel<MCTypes>;
+    // Model type that treats search output as its inference
+    using ArenaTypes = TreeBandit<Exp3Fat<MonteCarloModel<Arena>>>;
+    // Type list for multithreaded exp3 over Arena state
 
-    std::vector<W::Types::Search> agents = {
-        W::make_search<Types>(.01), 
-        W::make_search<Types>(0.1), 
-        W::make_search<Types>(1.0)
-    };
+    const size_t monte_carlo_iterations = 1 << 10;
 
-    const size_t iterations = 1 << 10;
-    prng device{0};
-    auto model = W::make_model<Types>(device);
+    EmptyModel<SolvedStateTypes>::Model
+        model_r{};
+    MCTypesModel::Model
+        model_b{monte_carlo_iterations, MCTypes::PRNG{0}, MCTypes::Model{0}, MCTypes::Search{.10}};
+    SolvedStateModel<SolvedStateTypes>::Model
+        model_s{};
 
-    ArenaTypes::State arena{iterations, &generator_function, model, agents};
+    std::vector<W::Types::Model> models{
+        // W::make_model<Rand<EmptyModel<SolvedStateTypes>>>(model_r),
+        W::make_model<SolvedStateModel<SolvedStateTypes>>(model_s),
+        W::make_model<MCTypesModel>(model_b)};
+
+    const size_t threads = 4;
+    ArenaTypes::PRNG device{0};
+    ArenaTypes::State arena{&generator_function, models};
     ArenaTypes::Model arena_model{1337};
-    ArenaTypes::Search search{.1};
-    search.threads = 4;
+    ArenaTypes::Search search{ArenaTypes::BanditAlgorithm{.01}};
     ArenaTypes::MatrixNode root;
 
-    const size_t arena_search_iterations = 1 << 15;
+    const size_t arena_search_iterations = 1 << 14;
     search.run_for_iterations(arena_search_iterations, device, arena, arena_model, root);
-    ArenaTypes::VectorReal row_strategy, col_strategy;
-    search.get_empirical_strategies(root.stats, row_strategy, col_strategy);
-    math::print(row_strategy);
-    math::print(col_strategy);
+
+    root.stats.matrix.print();
 
     return 0;
 }

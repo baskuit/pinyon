@@ -6,8 +6,6 @@
 #include <cstdint>
 #include <math.h>
 
-using ActionIndex = int;
-
 namespace math
 {
 
@@ -79,9 +77,9 @@ namespace math
         col_response.resize(cols);
 
         size_t data_idx = 0;
-        for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
+        for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
+            for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
                 const Value &value = value_matrix[data_idx];
                 const Real u{col_strategy[col_idx] * value.get_row_value()};

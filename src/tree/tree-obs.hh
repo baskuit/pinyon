@@ -16,6 +16,9 @@ struct LNodes : Types
 
     class ChanceNode;
 
+    using MatrixStats = MStats;
+    using ChanceStats = CStats;
+
     class MatrixNode
     {
     public:
@@ -33,24 +36,24 @@ struct LNodes : Types
         MatrixNode(){};
         ~MatrixNode();
 
-        inline void expand(typename Types::State &state)
+        inline void expand(Types::State &state)
         {
             expanded = true;
             row_actions = state.row_actions;
             col_actions = state.col_actions;
         }
 
-        void apply_actions(typename Types::State &state, const ActionIndex row_idx, const ActionIndex col_idx) const
+        void apply_actions(Types::State &state, const int row_idx, const int col_idx) const
         {
             state.apply_actions(row_actions[row_idx], col_actions[col_idx]);
         }
 
-        typename Types::Action get_row_action(const ActionIndex row_idx) const
+        Types::Action get_row_action(const int row_idx) const
         {
             return row_actions[row_idx];
         }
 
-        typename Types::Action get_col_action(const ActionIndex col_idx) const
+        Types::Action get_col_action(const int col_idx) const
         {
             return col_actions[col_idx];
         }
@@ -75,11 +78,11 @@ struct LNodes : Types
             expanded = true;
         }
 
-        inline void get_value(typename Types::Value &value)
+        inline void get_value(Types::Value &value) const
         {
         }
 
-        ChanceNode *access(ActionIndex row_idx, int col_idx)
+        ChanceNode *access(int row_idx, int col_idx)
         {
             if (this->child == nullptr)
             {
@@ -100,6 +103,26 @@ struct LNodes : Types
             ChanceNode *child = new ChanceNode(row_idx, col_idx);
             previous->next = child;
             return child;
+        };
+
+        const ChanceNode *access(int row_idx, int col_idx) const
+        {
+            if (this->child == nullptr)
+            {
+                return this->child;
+            }
+            const ChanceNode *current = this->child;
+            const ChanceNode *previous = this->child;
+            while (current != nullptr)
+            {
+                previous = current;
+                if (current->row_idx == row_idx && current->col_idx == col_idx)
+                {
+                    return current;
+                }
+                current = current->next;
+            }
+            return current;
         };
 
         size_t count_siblings()
@@ -156,41 +179,59 @@ struct LNodes : Types
         ChanceNode *next = nullptr;
         Edge edge;
 
-        ActionIndex row_idx;
-        ActionIndex col_idx;
+        int row_idx;
+        int col_idx;
 
         typename Types::ChanceStats stats;
 
         ChanceNode() {}
         ChanceNode(
-            ActionIndex row_idx,
-            ActionIndex col_idx) : row_idx(row_idx), col_idx(col_idx) {}
+            int row_idx,
+            int col_idx) : row_idx(row_idx), col_idx(col_idx) {}
         ~ChanceNode();
 
-        MatrixNode *access(typename Types::Obs &obs) // TODO check speed on pass-by
+        MatrixNode *access(const Types::Obs &obs)
         {
-            if (edge.matrix_node == nullptr)
+            if (this->child == nullptr)
             {
-                MatrixNode *child = new MatrixNode();
-                edge.matrix_node = child;
-                edge.obs = obs;
+                MatrixNode *child = new MatrixNode(obs);
+                this->child = child;
                 return child;
             }
-            Edge *current = &edge;
-            Edge *previous = &edge;
+            MatrixNode *current = this->child;
+            MatrixNode *previous = this->child;
             while (current != nullptr)
             {
                 previous = current;
                 if (current->obs == obs)
                 {
-                    return current->matrix_node;
+                    return current;
                 }
                 current = current->next;
             }
-            MatrixNode *child = new MatrixNode();
-            Edge *child_wrapper = new Edge(child, obs);
-            previous->next = child_wrapper;
+            MatrixNode *child = new MatrixNode(obs);
+            previous->next = child;
             return child;
+        };
+
+        const MatrixNode *access(const Types::Obs &obs) const
+        {
+            if (this->child == nullptr)
+            {
+                return this->child;
+            }
+            const MatrixNode *current = this->child;
+            const MatrixNode *previous = this->child;
+            while (current != nullptr)
+            {
+                previous = current;
+                if (current->obs == obs)
+                {
+                    return current;
+                }
+                current = current->next;
+            }
+            return current;
         };
 
         size_t count_matrix_nodes()

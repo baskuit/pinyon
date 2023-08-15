@@ -1,13 +1,12 @@
 #pragma once
 
-
-
 template <typename Types>
 concept IsNodeTypes =
     requires(
         typename Types::MatrixNode &matrix_node,
         const typename Types::MatrixNode &const_matrix_node,
         typename Types::ChanceNode &chance_node,
+        const typename Types::ChanceNode &const_chance_node,
         typename Types::Obs &obs,
         typename Types::Prob &prob,
         typename Types::State &state) {
@@ -17,6 +16,9 @@ concept IsNodeTypes =
         {
             matrix_node.access(0, 0)
         } -> std::same_as<typename Types::ChanceNode *>;
+        {
+            const_matrix_node.access(0, 0)
+        } -> std::same_as<const typename Types::ChanceNode *>;
         {
             matrix_node.expand(state)
         } -> std::same_as<void>;
@@ -52,10 +54,12 @@ concept IsNodeTypes =
             chance_node.access(obs)
         } -> std::same_as<typename Types::MatrixNode *>;
         {
+            const_chance_node.access(obs)
+        } -> std::same_as<const typename Types::MatrixNode *>;
+        {
             chance_node.row_idx
         } -> std::same_as<int &>;
         {
             chance_node.col_idx
         } -> std::same_as<int &>;
-    } &&
-    IsAlgorithmTypes<Types>;
+    };

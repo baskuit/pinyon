@@ -50,7 +50,7 @@ struct FullTraversal : Types
         void run(
             Types::State &state,
             Types::Model &model,
-            MatrixNode *matrix_node)
+            MatrixNode *matrix_node) const
         {
             // expand node
             state.get_actions();
@@ -79,9 +79,9 @@ struct FullTraversal : Types
             stats.col_solution.resize(cols);
 
             // recurse
-            for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
+            for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
-                for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
+                for (int col_idx = 0; col_idx < cols; ++col_idx)
                 {
                     const typename Types::Action row_action{matrix_node->get_row_action(row_idx)};
                     const typename Types::Action col_action{matrix_node->get_col_action(col_idx)};

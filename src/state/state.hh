@@ -132,8 +132,8 @@ concept IsSolvedStateTypes =
         {
             state.get_strategies(strategy, strategy)
         } -> std::same_as<void>;
-        {
-            state.get_matrix(matrix)
-        } -> std::same_as<void>;
+        // {
+        //     state.get_matrix(matrix)
+        // } -> std::same_as<void>;
     } &&
     IsChanceStateTypes<Types>;

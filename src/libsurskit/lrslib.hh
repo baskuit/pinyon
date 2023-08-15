@@ -136,7 +136,7 @@ namespace LRSNash
         Matrix<Value<Real>> &payoff_matrix,
         Vector<Real> &row_strategy,
         Vector<Real> &col_strategy,
-        long den = 100)
+        int den = 100)
     {
         const size_t rows = payoff_matrix.rows;
         const size_t cols = payoff_matrix.cols;
@@ -154,8 +154,8 @@ namespace LRSNash
         for (size_t i = 0; i < entries; ++i)
         {
             Value<Real> &value = payoff_matrix[i];
-            double a{(value.get_row_value() - min) / range * Real{den}};
-            double b{(value.get_col_value() - min) / range * Real{den}};
+            double a{(value.get_row_value() - min) / range *Real{static_cast<double>(den)}};
+            double b{(value.get_col_value() - min) / range *Real{static_cast<double>(den)}};
             payoff_data[2 * i] = ceil(a);
             payoff_data[2 * i + 1] = ceil(b);
         }

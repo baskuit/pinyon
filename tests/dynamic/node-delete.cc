@@ -23,8 +23,6 @@ int main()
         search.run_for_iterations(1024, device, state, model, root);
         auto x = dynamic_cast<W::Dynamic::MatrixNodeT<TypeListNormalizer::MSearchTypes<Types>> *>(root.ptr.get());
         auto y = x->data;
-        // std::cout << y.count_matrix_nodes() << std::endl;
-        // std::cout << '!' << std::endl;
-        // delete &y;
+
     }
 }

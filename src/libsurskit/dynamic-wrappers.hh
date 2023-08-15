@@ -214,10 +214,18 @@ namespace W
                 typename T::ModelOutput output_;
                 data.get_inference(state, output_);
                 output.value = Types::Value{output_.value.get_row_value(), output_.value.get_col_value()};
-                // if constexpr (T::ModelOutput::row_policy)
-                // {
-                //     output.row_policy.resize(output_);
-                // }
+                // TODO
+                output.row_policy.resize(state.row_actions.size());
+                output.col_policy.resize(state.col_actions.size());
+
+                for (int i = 0; i < state.row_actions.size(); ++i)
+                {
+                    output.row_policy[i] = static_cast<double>(output_.row_policy[i]);
+                }
+                for (int i = 0; i < state.col_actions.size(); ++i)
+                {
+                    output.col_policy[i] = static_cast<double>(output_.col_policy[i]);
+                }
             }
         };
 
@@ -410,7 +418,7 @@ namespace W
         }
 
         void get_inference(
-            Types::ModelInput &input,
+            const Types::ModelInput &input,
             Types::ModelOutput &output)
         {
             Dynamic::State *state_ptr = &*input.ptr;
@@ -418,8 +426,8 @@ namespace W
         }
 
         void get_input(
-            Types::State &input,
-            Types::ModelInput &state)
+            const Types::State &state,
+            Types::ModelInput &input)
         {
             input = state;
         }

@@ -13,6 +13,9 @@ struct FlatNodes : Types
 
     class ChanceNode;
 
+    using MatrixStats = MStats;
+    using ChanceStats = CStats;
+
     class MatrixNode
     {
     public:
@@ -29,11 +32,10 @@ struct FlatNodes : Types
         ChanceNode **edges;
 
         MatrixNode(){};
-        MatrixNode(
-            typename Types::Obs obs) : obs(obs) {}
+        MatrixNode(Types::Obs obs) : obs(obs) {}
         ~MatrixNode();
 
-        inline void expand(typename Types::State &state)
+        inline void expand(Types::State &state)
         {
             expanded = true;
             row_actions = state.row_actions;
@@ -43,17 +45,17 @@ struct FlatNodes : Types
             std::fill_n(edges, n_children, nullptr);
         }
 
-        void apply_actions(typename Types::State &state, const ActionIndex row_idx, const ActionIndex col_idx) const
+        void apply_actions(Types::State &state, const int row_idx, const int col_idx) const
         {
             state.apply_actions(row_actions[row_idx], col_actions[col_idx]);
         }
 
-        typename Types::Action get_row_action(const ActionIndex row_idx) const
+        Types::Action get_row_action(const int row_idx) const
         {
             return row_actions[row_idx];
         }
 
-        typename Types::Action get_col_action(const ActionIndex col_idx) const
+        Types::Action get_col_action(const int col_idx) const
         {
             return col_actions[col_idx];
         }
@@ -78,18 +80,25 @@ struct FlatNodes : Types
             expanded = true;
         }
 
-        inline void get_value(typename Types::Value &value)
+        inline void get_value(Types::Value &value)
         {
         }
 
-        ChanceNode *access(ActionIndex row_idx, int col_idx)
+        ChanceNode *access(int row_idx, int col_idx)
         {
-            ActionIndex child_idx = row_idx * col_actions.size() + col_idx;
-            ChanceNode *&child = edges[child_idx];
+            const int child_idx = row_idx * col_actions.size() + col_idx;
+            const ChanceNode *&child = edges[child_idx]; // ref to pointer
             if (child == nullptr)
             {
                 child = new ChanceNode();
             }
+            return child;
+        };
+
+        const ChanceNode *access(int row_idx, int col_idx) const
+        {
+            const int child_idx = row_idx * col_actions.size() + col_idx;
+            const ChanceNode *&child = edges[child_idx];
             return child;
         };
 
@@ -119,7 +128,7 @@ struct FlatNodes : Types
         ChanceNode() {}
         ~ChanceNode();
 
-        MatrixNode *access(typename Types::Obs &obs)
+        MatrixNode *access(Types::Obs &obs)
         {
             MatrixNode *&child = edges[obs];
             if (child == nullptr)
@@ -128,6 +137,11 @@ struct FlatNodes : Types
                 return child;
             }
             return child;
+        };
+
+        const MatrixNode *access(Types::Obs &obs) const
+        {
+            return edges[obs];
         };
 
         size_t count_matrix_nodes()

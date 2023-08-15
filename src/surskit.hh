@@ -27,6 +27,7 @@
 #include <model/model.hh>
 #include <model/monte-carlo-model.hh>
 #include <model/search-model.hh>
+#include <model/solved-model.hh>
 
 #ifdef TORCH
 #include <model/libtorch_model.hh>

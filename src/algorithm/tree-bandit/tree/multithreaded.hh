@@ -31,7 +31,9 @@ struct TreeBanditThreaded : Types
     public:
         using Types::BanditAlgorithm::BanditAlgorithm;
 
-        Search(Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
+        Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
+
+        Search(const Types::BanditAlgorithm &base, size_t threads) : Types::BanditAlgorithm{base}, threads{threads} {}
 
         size_t threads = 1;
 
@@ -42,14 +44,13 @@ struct TreeBanditThreaded : Types
             Types::Model &model,
             MatrixNode &matrix_node)
         {
-            typename Types::BanditAlgorithm bandit{};
-            
             std::thread thread_pool[threads];
             size_t iterations[threads];
             size_t total_iterations = 0;
             for (int i = 0; i < threads; ++i)
             {
-                thread_pool[i] = std::thread(&Search::run_thread, this, duration_ms, &device, &state, &model, &matrix_node, std::next(iterations, i));
+                thread_pool[i] = std::thread(
+                    &Search::run_thread, this, duration_ms, device.uniform_64(), &state, &model, &matrix_node, std::next(iterations, i));
             }
             for (int i = 0; i < threads; ++i)
             {
@@ -74,7 +75,8 @@ struct TreeBanditThreaded : Types
             auto start = std::chrono::high_resolution_clock::now();
             for (int i = 0; i < threads; ++i)
             {
-                thread_pool[i] = std::thread(&Search::run_thread_for_iterations, this, iterations_per_thread, &device, &state, &model, &matrix_node);
+                thread_pool[i] = std::thread(
+                    &Search::run_thread_for_iterations, this, iterations_per_thread, device.uniform_64(), &state, &model, &matrix_node);
             }
             for (int i = 0; i < threads; ++i)
             {
@@ -88,14 +90,14 @@ struct TreeBanditThreaded : Types
     private:
         void run_thread(
             const size_t duration_ms,
-            Types::PRNG *device,
+            const Types::Seed thread_device_seed,
             const Types::State *state,
             const Types::Model *model,
             MatrixNode *matrix_node,
             size_t *iterations)
         {
-            typename Types::PRNG device_thread(device->uniform_64()); // TODO deterministically provide new seed
-            typename Types::Model model_thread{*model};               // TODO go back to not making new ones? Perhaps only device needs new instance
+            typename Types::PRNG device_thread(thread_device_seed); // TODO deterministically provide new seed
+            typename Types::Model model_thread{*model};             // TODO go back to not making new ones? Perhaps only device needs new instance
             typename Types::ModelOutput inference;
 
             auto start = std::chrono::high_resolution_clock::now();
@@ -115,12 +117,12 @@ struct TreeBanditThreaded : Types
 
         void run_thread_for_iterations(
             const size_t iterations,
-            Types::PRNG *device,
+            const Types::Seed thread_device_seed,
             const Types::State *state,
             const Types::Model *model,
             MatrixNode *matrix_node)
         {
-            typename Types::PRNG device_thread(device->uniform_64());
+            typename Types::PRNG device_thread(thread_device_seed); // TODO deterministically provide new seed
             typename Types::Model model_thread{*model};
             typename Types::ModelOutput inference;
             for (size_t iteration = 0; iteration < iterations; ++iteration)
@@ -207,8 +209,8 @@ struct TreeBanditThreaded : Types
 template <
     CONCEPT(IsMultithreadedBanditTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
-    size_t pool_size = 128,
-    bool return_if_expand = true>
+    bool return_if_expand = true,
+    size_t pool_size = 128>
 struct TreeBanditThreadPool : Types
 {
     struct MatrixStats : Types::MatrixStats
@@ -227,6 +229,8 @@ struct TreeBanditThreadPool : Types
         using Types::BanditAlgorithm::BanditAlgorithm;
 
         Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
+
+        Search(const Types::BanditAlgorithm &base, size_t threads) : Types::BanditAlgorithm{base}, threads{threads} {}
 
         Search(const Search &other) : Types::BanditAlgorithm{other}, threads{threads} {}
         // we want this class to be copyable, but atomics are not copyable
@@ -248,7 +252,8 @@ struct TreeBanditThreadPool : Types
             size_t total_iterations = 0;
             for (int i = 0; i < threads; ++i)
             {
-                thread_pool[i] = std::thread(&Search::run_thread, this, duration_ms, &device, &state, &model, &matrix_node, std::next(iterations, i));
+                thread_pool[i] = std::thread(
+                    &Search::run_thread, this, duration_ms, device.uniform_64(), &state, &model, &matrix_node, std::next(iterations, i));
             }
             for (int i = 0; i < threads; ++i)
             {
@@ -273,7 +278,8 @@ struct TreeBanditThreadPool : Types
             auto start = std::chrono::high_resolution_clock::now();
             for (int i = 0; i < threads; ++i)
             {
-                thread_pool[i] = std::thread(&Search::run_thread_for_iterations, this, iterations_per_thread, &device, &state, &model, &matrix_node);
+                thread_pool[i] = std::thread(
+                    &Search::run_thread_for_iterations, this, iterations_per_thread, device.uniform_64(), &state, &model, &matrix_node);
             }
             for (int i = 0; i < threads; ++i)
             {
@@ -287,13 +293,13 @@ struct TreeBanditThreadPool : Types
     private:
         void run_thread(
             const size_t duration_ms,
-            Types::PRNG *device,
+            const Types::Seed thread_device_seed,
             const Types::State *state,
             const Types::Model *model,
             MatrixNode *matrix_node,
             size_t *iterations)
         {
-            typename Types::PRNG device_thread(device->uniform_64()); // TODO deterministically provide new seed
+            typename Types::PRNG device_thread{thread_device_seed}; // TODO deterministically provide new seed
             typename Types::Model model_thread{*model};               // TODO go back to not making new ones? Perhaps only device needs new instance
             typename Types::ModelOutput inference;
 
@@ -314,12 +320,12 @@ struct TreeBanditThreadPool : Types
 
         void run_thread_for_iterations(
             const size_t iterations,
-            Types::PRNG *device,
+            const Types::Seed thread_device_seed,
             const Types::State *state,
             const Types::Model *model,
             MatrixNode *matrix_node)
         {
-            typename Types::PRNG device_thread(device->uniform_64());
+            typename Types::PRNG device_thread{thread_device_seed};
             typename Types::Model model_thread{*model};
             typename Types::ModelOutput inference;
             for (size_t iteration = 0; iteration < iterations; ++iteration)

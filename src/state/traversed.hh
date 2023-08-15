@@ -1,19 +1,20 @@
 #pragma once
 
-#include <libsurskit/math.hh>
 #include <model/model.hh>
-#include <state/random-tree.hh>
 #include <algorithm/solver/full-traversal.hh>
 #include <tree/tree.hh>
 
 #include <memory>
-#include <numeric>
 
 /*
 
-This state is a wrapper for the tree produced by the FullTraversal algorithm
+Takes a model type list (for FullTraversal) and defines a State that is
+just a Types::State (literally, it is derived) but with the extra information of a
+shared search tree and node address in the tree.
 
-Its typelist is the typelist of the inner State, Model type
+All methods are inherited/stay the same, except for get_actions(...)
+since those need to update the matrix node pointer.
+We also add the get_stategies and get_matrix methods required by the IsSolvedStateTypes concept
 
 */
 
@@ -22,19 +23,101 @@ template <CONCEPT(IsValueModelTypes, Types)>
 struct TraversedState : Types::TypeList
 {
     template <CONCEPT(IsNodeTypes, NodePair)>
+    class StateWithNodes;
+
+    using State =
+        StateWithNodes<
+            DefaultNodes<
+                Types,
+                typename FullTraversal<Types>::MatrixStats,
+                typename FullTraversal<Types>::ChanceStats>>;
+
+    // This hidden template impl allows for type hints
+    template <CONCEPT(IsNodeTypes, NodePair)>
+    class StateWithNodes : public Types::State
+    {
+    public:
+        typename NodePair::MatrixNode const
+            *node;
+        std::shared_ptr<const typename NodePair::MatrixNode>
+            full_traversal_tree;
+
+        StateWithNodes(
+            const Types::State &state,
+            Types::Model &model,
+            int max_depth = -1)
+            : Types::State{state}
+        {
+            auto temp_tree = std::make_shared<typename NodePair::MatrixNode>();
+            node = temp_tree.get();
+            auto session = typename FullTraversal<Types>::Search{max_depth};
+            session.run(*this, model, temp_tree.get());
+            full_traversal_tree = temp_tree;
+        }
+
+        void apply_actions(
+            Types::Action row_action,
+            Types::Action col_action)
+        {
+            Types::State::apply_actions(row_action, col_action);
+            const int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
+            const int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
+            node->access(row_idx, col_idx)->access(this->obs);
+            // this method uses the const access function
+        }
+
+        void apply_actions(
+            Types::Action row_action,
+            Types::Action col_action,
+            Types::Obs chance_action)
+        {
+            Types::State::apply_actions(row_action, col_action, chance_action);
+            const int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
+            const int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
+            node->access(row_idx, col_idx)->access(this->obs);
+        }
+
+        void get_strategies(
+            Types::VectorReal &row_strategy,
+            Types::VectorReal &col_strategy) const
+        {
+            row_strategy = node->stats.row_solution;
+            col_strategy = node->stats.col_solution;
+        }
+
+        void get_matrix(
+            Types::MatrixValue &payoff_matrix) const
+        {
+            payoff_matrix = node->stats.nash_payoff_matrix;
+        }
+    };
+};
+
+/*
+A version of the TraversedSimState type list where the new State type
+is not inherited from and does not maintain a 'guide' value of the old State type
+Instead it simulates the state via the tree stats.
+
+It may be faster than using the TraversedState version
+*/
+
+template <CONCEPT(IsValueModelTypes, Types)>
+    requires IsChanceStateTypes<Types>
+struct TraversedSimState : Types::TypeList
+{
+    template <CONCEPT(IsNodeTypes, NodePair)>
     class State_;
 
     using State = State_<DefaultNodes<Types, typename FullTraversal<Types>::MatrixStats, typename FullTraversal<Types>::ChanceStats>>;
 
-    // This hidden template impl allows for type hints
     template <CONCEPT(IsNodeTypes, NodePair)>
-    class State_ : PerfectInfoState<typename Types::TypeList>
+    class State_ : public PerfectInfoState<typename Types::TypeList>
     {
     public:
-
-        typename Types::PRNG device{};
-        std::shared_ptr<typename NodePair::MatrixNode> tree;
-        typename NodePair::MatrixNode *current_node;
+        typename NodePair::MatrixNode const
+            *node;
+        std::shared_ptr<const typename NodePair::MatrixNode>
+            full_traversal_tree;
         double chance_p;
 
         State_(
@@ -42,32 +125,29 @@ struct TraversedState : Types::TypeList
             Types::Model &model,
             int max_depth = -1)
         {
-            this->tree = std::make_shared<typename NodePair::MatrixNode>();
-            this->current_node = &*tree;
-            typename FullTraversal<Types>::Search session{max_depth};
-            session.run(state, model, current_node);
-            update_perfect_info_state();
+            auto temp_tree = std::make_shared<typename NodePair::MatrixNode>();
+            node = temp_tree.get();
+            auto session = typename FullTraversal<Types>::Search{max_depth};
+            session.run(*this, model, temp_tree.get());
+            full_traversal_tree = temp_tree;
         }
 
         void get_actions()
         {
-            this->row_actions = current_node->row_actions;
-            this->col_actions = current_node->col_actions;
-            sort_actions(this->row_actions, this->col_actions, this->row_strategy, this->col_strategy);
-                    typename NodePair::MatrixNode *node;
+            this->row_actions = node->get_row_actions();
+            this->col_actions = node->get_col_actions();
         }
 
         void get_actions(
             Types::VectorAction &row_actions,
             Types::VectorAction &col_actions) const
         {
-            this->row_actions = current_node->row_actions;
-            this->col_actions = current_node->col_actions;
-            sort_actions(row_actions, col_actions, this->row_strategy, this->col_strategy);
+            this->row_actions = node->get_row_actions();
+            this->col_actions = node->get_col_actions();
         }
 
         void randomize_transition(
-            typename Types::PRNG &device)
+            Types::PRNG &device)
         {
             chance_p = device.uniform();
         }
@@ -78,7 +158,7 @@ struct TraversedState : Types::TypeList
         {
             int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
             int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
-            typename NodePair::ChanceNode *chance_node = current_node->access(row_idx, col_idx);
+            typename NodePair::ChanceNode *chance_node = node->access(row_idx, col_idx);
             auto &chance_strategy = chance_node->stats.chance_strategy;
 
             int chance_idx = 0;
@@ -89,7 +169,7 @@ struct TraversedState : Types::TypeList
             }
 
             const typename Types::Obs chance_action = chance_node->stats.chance_actions[chance_idx];
-            current_node = chance_node->access(chance_action);
+            node = chance_node->access(chance_action);
             update_perfect_info_state();
         }
 
@@ -100,7 +180,7 @@ struct TraversedState : Types::TypeList
         {
             int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
             int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
-            typename NodePair::ChanceNode *chance_node = current_node->access(row_idx, col_idx);
+            typename NodePair::ChanceNode *chance_node = node->access(row_idx, col_idx);
             chance_actions = chance_node->stats.chance_actions;
         }
 
@@ -111,7 +191,7 @@ struct TraversedState : Types::TypeList
         {
             int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
             int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
-            current_node = current_node->access(row_idx, col_idx)->access(chance_action);
+            node = node->access(row_idx, col_idx)->access(chance_action);
             update_perfect_info_state();
         }
 
@@ -119,41 +199,15 @@ struct TraversedState : Types::TypeList
             Types::VectorReal &row_strategy,
             Types::VectorReal &col_strategy) const
         {
-            row_strategy = current_node->stats.row_solution;
-            col_strategy = current_node->stats.col_solution;
+            row_strategy = node->stats.row_solution;
+            col_strategy = node->stats.col_solution;
         }
 
     private:
         void update_perfect_info_state()
         {
-            this->terminal = current_node->is_terminal();
-            this->payoff = current_node->stats.payoff;
-        }
-
-        void sort_actions(
-            Types::VectorAction &row_actions,
-            Types::VectorAction &col_actions,
-            Types::VectorReal &row_strategy,
-            Types::VectorReal &col_strategy) const
-        {
-            // sorts row_actions, col_actions by solution probability
-            // this way the first action is the 'best' for alphabeta
-            typename Types::VectorAction actions;
-            typename Types::VectorInt indices;
-
-            std::iota(indices.begin(), indices.begin() + row_actions.size(), 1);
-            std::sort(indices.begin(), indices.end(), [&](size_t a, size_t b)
-                      { return row_strategy[a] > row_strategy[b]; });
-            std::transform(indices.begin(), indices.end(), actions.begin(), [&](size_t i)
-                           { return row_actions[i]; });
-            row_actions = actions;
-
-            std::iota(indices.begin(), indices.begin() + col_actions.size(), 1);
-            std::sort(indices.begin(), indices.end(), [&](size_t a, size_t b)
-                      { return col_strategy[a] > col_strategy[b]; });
-            std::transform(indices.begin(), indices.end(), actions.begin(), [&](size_t i)
-                           { return actions.col_actions[i]; });
-            col_actions = actions; // TODO could be optimized
+            this->terminal = node->is_terminal();
+            this->payoff = node->stats.payoff;
         }
     };
 };

@@ -1,13 +1,25 @@
 #include <libsurskit/math.hh>
+#include <types/matrix.hh>
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
 template <CONCEPT(IsValueModelTypes, Types)>
-struct Exp3 : Types
+struct Exp3Fat : Types
 {
 
     using Real = typename Types::Real;
     // alias decl kill intellisense currently but you only lose canonicalize()
+
+    struct Data
+    {
+        typename Types::Real cum_row_value;
+        double count;
+        friend std::ostream &operator<<(std::ostream &os, const Data &data)
+        {
+            os << '(' << (data.cum_row_value / typename Types::Real{data.count}).value << ')';
+            return os;
+        }
+    };
 
     struct MatrixStats
     {
@@ -18,6 +30,8 @@ struct Exp3 : Types
 
         int visits = 0;
         PairReal<Real> value_total{0, 0};
+
+        DataMatrix<Data> matrix;
     };
     struct ChanceStats
     {
@@ -39,9 +53,9 @@ struct Exp3 : Types
 
         constexpr BanditAlgorithm(Real gamma) : gamma(gamma), one_minus_gamma{gamma * -1 + 1} {}
 
-        friend std::ostream &operator<<(std::ostream &os, const Exp3 &session)
+        friend std::ostream &operator<<(std::ostream &os, const Exp3Fat &session)
         {
-            os << "Exp3; gamma: " << session.gamma;
+            os << "Exp3Fat; gamma: " << session.gamma;
             return os;
         }
 
@@ -108,6 +122,7 @@ struct Exp3 : Types
             stats.col_visits.resize(state.col_actions.size(), 0);
             stats.row_gains.resize(state.row_actions.size(), 0);
             stats.col_gains.resize(state.col_actions.size(), 0);
+            stats.matrix.fill(state.row_actions.size(), state.col_actions.size());
         }
 
         void select(
@@ -176,6 +191,20 @@ struct Exp3 : Types
                     v -= max;
                 }
             }
+            Data *data_ptr;
+            if (outcome.row_idx > outcome.col_idx)
+            {
+                data_ptr = &stats.matrix.get(outcome.col_idx, outcome.row_idx);
+            }
+            else
+            {
+                data_ptr = &stats.matrix.get(outcome.row_idx, outcome.col_idx);
+            }
+
+            auto row_value = outcome.value.get_row_value();
+            Data &data = *data_ptr;
+            data.cum_row_value += row_value;
+            data.count++;
         }
 
         void update_chance_stats(
@@ -258,6 +287,20 @@ struct Exp3 : Types
                     v -= max;
                 }
             }
+            Data *data_ptr;
+            if (outcome.row_idx > outcome.col_idx)
+            {
+                data_ptr = &stats.matrix.get(outcome.col_idx, outcome.row_idx);
+            }
+            else
+            {
+                data_ptr = &stats.matrix.get(outcome.row_idx, outcome.col_idx);
+            }
+
+            auto row_value = outcome.value.get_row_value();
+            Data &data = *data_ptr;
+            data.cum_row_value += row_value;
+            data.count++;
             mtx.unlock();
         }
 

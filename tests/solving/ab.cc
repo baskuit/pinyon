@@ -51,7 +51,7 @@ struct Solve
 
         StateFloat state_f = convert(state, threshold);
 
-        prng device{};
+        prng device{0};
 
         Model model{device.uniform_64()};
         ModelFloat model_f{device.uniform_64()};

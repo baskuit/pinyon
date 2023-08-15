@@ -6,22 +6,19 @@
 template <CONCEPT(IsPerfectInfoStateTypes, Types), bool HasPolicy = false>
 struct MonteCarloModel : Types
 {
-    struct Inference
+    using ModelInput = typename Types::State;
+    struct ModelOutput
     {
         typename Types::Value value;
         typename Types::VectorReal row_policy, col_policy;
     };
-    using ModelInput = typename Types::State;
-    using ModelOutput = Inference;
     using ModelBatchInput = std::vector<ModelInput>;
     using ModelBatchOutput = std::vector<ModelOutput>;
 
     class Model
     {
     public:
-        typename Types::PRNG device{};
-
-        Model() {}
+        typename Types::PRNG device;
 
         Model(const Types::PRNG &device) : device{device} {}
         
@@ -84,26 +81,17 @@ struct MonteCarloModel : Types
         }
 
     protected:
-        void rollout(typename Types::State &state)
+        void rollout(Types::State &state)
         {
             while (!state.is_terminal())
             {
-                const ActionIndex row_idx = device.random_int(state.row_actions.size());
-                const ActionIndex col_idx = device.random_int(state.col_actions.size());
-                const typename Types::Action row_action{state.row_actions[row_idx]};
-                const typename Types::Action col_action{state.col_actions[col_idx]};
+                const int row_idx = device.random_int(state.row_actions.size());
+                const int col_idx = device.random_int(state.col_actions.size());
+                const auto row_action = state.row_actions[row_idx];
+                const auto col_action = state.col_actions[col_idx];
                 state.apply_actions(row_action, col_action);
                 state.get_actions();
             }
         }
     };
-
-    // if constexpr (HasPolicy)
-    // {
-    //     static_assert(IsValuePolicyModelTypes < MonteCarloModel < Types >>>);
-    // }
-    // else
-    // {
-    //     static_assert(IsValueModelTypes < MonteCarloModel < Types >>>);
-    // }
 };

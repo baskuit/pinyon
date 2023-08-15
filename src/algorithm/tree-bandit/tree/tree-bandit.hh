@@ -21,7 +21,7 @@ struct TreeBandit : Types
     public:
         using Types::BanditAlgorithm::BanditAlgorithm;
 
-        Search(typename Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
+        Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
 
         size_t run(
             size_t duration_ms,

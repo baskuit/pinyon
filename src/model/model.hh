@@ -4,10 +4,6 @@
 
 #include <vector>
 
-template <template <typename> typename _Model, typename Types> 
-struct Types_Model : Types {
-    using ModelTypes = Types;
-};
 
 template <typename Types>
 concept IsValueModelTypes =
@@ -52,13 +48,12 @@ template <CONCEPT(IsStateTypes, Types)>
 struct EmptyModel : Types
 {
 
-    struct Inference
+    using ModelInput = typename Types::State;
+    struct ModelOutput
     {
         typename Types::Value value;
         typename Types::VectorReal row_policy, col_policy;
     };
-    using ModelInput = typename Types::State;
-    using ModelOutput = Inference;
     using ModelBatchInput = std::vector<ModelInput>;
     using ModelBatchOutput = std::vector<ModelOutput>;
 
@@ -83,7 +78,19 @@ struct EmptyModel : Types
             ModelInput &input,
             ModelOutput &output)
         {
-            output.value = typename Types::Value{typename Types::Q{1, 2}, typename Types::Q{1, 2}};
+            const typename Types::Real row_uniform{Rational{1, static_cast<int>(input.row_actions.size())}};
+            output.row_policy.resize(input.row_actions.size(), row_uniform);
+            const typename Types::Real col_uniform{Rational{1, static_cast<int>(input.col_actions.size())}};
+            output.col_policy.resize(input.col_actions.size(), col_uniform);
+
+            if constexpr (Types::Value::IS_CONSTANT_SUM == true)
+            {
+                output.value = typename Types::Value{typename Types::Q{1, 2}};
+            }
+            else
+            {
+                output.value = typename Types::Value{typename Types::Q{1, 2}, typename Types::Q{1, 2}};
+            }
         }
 
         void get_inference(
@@ -100,7 +107,14 @@ struct EmptyModel : Types
             ModelInput &input,
             Types::Value &value)
         {
-            value = typename Types::Value{typename Types::Q{1, 2}, typename Types::Q{1, 2}};
+            if constexpr (Types::Value::IS_CONSTANT_SUM == true)
+            {
+                value = typename Types::Value{typename Types::Q{1, 2}};
+            }
+            else
+            {
+                value = typename Types::Value{typename Types::Q{1, 2}, typename Types::Q{1, 2}};
+            }
         }
 
         void add_to_batch_input(

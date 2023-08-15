@@ -3,14 +3,6 @@
 #include <model/model.hh>
 
 template <typename Types>
-concept IsAlgorithmTypes =
-    requires {
-        typename Types::MatrixStats{};
-        typename Types::ChanceStats{};
-    } &&
-    IsStateTypes<Types>;
-
-template <typename Types>
 concept IsBanditAlgorithmTypes =
     requires(
         typename Types::BanditAlgorithm &bandit,
@@ -133,3 +125,18 @@ concept IsSearchTypes =
         } -> std::same_as<size_t>;
     } &&
     IsValueModelTypes<Types>;
+
+// Is solver types?
+// template <typename Types>
+// concept IsSearchTypes =
+//     requires(
+//         typename Types::Search &session,
+//         typename Types::PRNG &device,
+//         typename Types::State &state,
+//         typename Types::Model &model,
+//         typename Types::MatrixNode &matrix_node) {
+//         {
+//             session.run(0, device, state, model, matrix_node)
+//         } -> std::same_as<size_t>;
+//     } &&
+//     IsValueModelTypes<Types>;

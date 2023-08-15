@@ -35,8 +35,6 @@ struct RandomTree : Types
         std::vector<typename Types::Prob> chance_strategy;
         // just a helper for the sample_pdf function in apply_actions
 
-        State () {}
-
         State(
             const Types::PRNG &device,
             size_t depth_bound,
@@ -93,11 +91,11 @@ struct RandomTree : Types
         {
             row_actions.resize(rows);
             col_actions.resize(cols);
-            for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
+            for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
                 row_actions[row_idx] = typename Types::Action{row_idx};
             };
-            for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
+            for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
                 col_actions[col_idx] = typename Types::Action{col_idx};
             };
@@ -110,7 +108,7 @@ struct RandomTree : Types
         {
             chance_actions.clear();
             const size_t start_idx = get_transition_idx(row_action, col_action, typename Types::Obs{0});
-            for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
+            for (int chance_idx = 0; chance_idx < transitions; ++chance_idx)
             {
                 if (chance_strategies[start_idx + chance_idx] > typename Types::Prob{0})
                 {
@@ -125,7 +123,7 @@ struct RandomTree : Types
             Types::Obs chance_action)
         {
 
-            const ActionIndex transition_idx = get_transition_idx(row_action, col_action, chance_action);
+            const int transition_idx = get_transition_idx(row_action, col_action, chance_action);
             device.discard(transition_idx);
             // advance the Types::PRNG so that different player/chance actions have different outcomes
 
@@ -198,17 +196,17 @@ struct RandomTree : Types
             // I had trouble with that when fixing this function last time
             chance_strategies_.resize(rows * cols * transitions);
             this->chance_strategies.resize(rows * cols * transitions);
-            for (ActionIndex row_idx = 0; row_idx < rows; ++row_idx)
+            for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
 
-                for (ActionIndex col_idx = 0; col_idx < cols; ++col_idx)
+                for (int col_idx = 0; col_idx < cols; ++col_idx)
                 {
 
-                    ActionIndex start_idx = row_idx * cols * transitions + col_idx * transitions;
+                    int start_idx = row_idx * cols * transitions + col_idx * transitions;
 
                     // get unnormalized distro
                     typename Types::Q prob_sum{0};
-                    for (ActionIndex chance_idx = 0; chance_idx < transitions; ++chance_idx)
+                    for (int chance_idx = 0; chance_idx < transitions; ++chance_idx)
                     {
                         const int num = device.random_int(chance_denominator) + 1;
 
@@ -248,7 +246,8 @@ Helper class to generate random tree instances for testing
 template <typename TypeList = RandomTreeFloatTypes>
 struct RandomTreeGenerator : CartesianProductGenerator<W::Types::State, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>
 {
-    inline static prng device{};
+    inline static prng device{0}; // static because used in static member function, TODO
+    // This class is not used for arena, maybe remove?
 
     // static otherwise implcit this arg messes up signature
     static W::Types::State constr(std::tuple<size_t, size_t, size_t, Rational<>, size_t> tuple) 

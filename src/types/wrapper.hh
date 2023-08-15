@@ -262,4 +262,7 @@ struct ActionType : Wrapper<T>
         this->value = value;
         return *this;
     }
+    bool operator==(const ActionType &value) const {
+        return this->value == value.value;
+    }
 };

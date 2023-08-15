@@ -11,6 +11,9 @@ struct DebugNodes : Types
 
     class ChanceNode;
 
+    using MatrixStats = MStats;
+    using ChanceStats = CStats;
+
     class MatrixNode
     {
     public:
@@ -30,42 +33,41 @@ struct DebugNodes : Types
         typename Types::MatrixStats stats;
 
         MatrixNode(){};
-        MatrixNode(
-            typename Types::Obs obs) : obs(obs) {}
+        MatrixNode(Types::Obs obs) : obs(obs) {}
         MatrixNode(
             ChanceNode *parent,
             MatrixNode *prev,
-            typename Types::Obs obs) : parent(parent), prev(prev), obs(obs) {}
+            Types::Obs obs) : parent(parent), prev(prev), obs(obs) {}
         ~MatrixNode();
 
-        inline void expand(typename Types::State &state)
+        inline void expand(Types::State &state)
         {
             expanded = true;
             row_actions = state.row_actions;
             col_actions = state.col_actions;
         }
 
-        void apply_actions(typename Types::State &state, const ActionIndex row_idx, const ActionIndex col_idx) const
+        void apply_actions(Types::State &state, const int row_idx, const int col_idx) const
         {
             state.apply_actions(row_actions[row_idx], col_actions[col_idx]);
         }
 
-        typename Types::Action get_row_action(const ActionIndex row_idx) const
+        Types::Action get_row_action(const int row_idx) const
         {
             return row_actions[row_idx];
         }
 
-        typename Types::Action get_col_action(const ActionIndex col_idx) const
+        Types::Action get_col_action(const int col_idx) const
         {
             return col_actions[col_idx];
         }
 
-        typename Types::VectorAction get_row_actions () const
+        Types::VectorAction get_row_actions () const
         {
             return row_actions;
         }
 
-        typename Types::VectorAction get_col_actions () const
+        Types::VectorAction get_col_actions () const
         {
             return col_actions;
         }
@@ -95,11 +97,11 @@ struct DebugNodes : Types
             expanded = true;
         }
 
-        inline void get_value(typename Types::Value &value)
+        inline void get_value(Types::Value &value) const
         {
         }
 
-        ChanceNode *access(ActionIndex row_idx, int col_idx)
+        ChanceNode *access(int row_idx, int col_idx)
         {
             if (this->child == nullptr)
             {
@@ -120,6 +122,26 @@ struct DebugNodes : Types
             ChanceNode *child = new ChanceNode(row_idx, col_idx);
             previous->next = child;
             return child;
+        };
+
+        const ChanceNode *access(int row_idx, int col_idx) const
+        {
+            if (this->child == nullptr)
+            {
+                return this->child;
+            }
+            const ChanceNode *current = this->child;
+            const ChanceNode *previous = this->child;
+            while (current != nullptr)
+            {
+                previous = current;
+                if (current->row_idx == row_idx && current->col_idx == col_idx)
+                {
+                    return current;
+                }
+                current = current->next;
+            }
+            return current;
         };
 
         size_t count_siblings()
@@ -162,20 +184,20 @@ struct DebugNodes : Types
         ChanceNode *prev = nullptr;
         ChanceNode *next = nullptr;
 
-        ActionIndex row_idx;
-        ActionIndex col_idx;
+        int row_idx;
+        int col_idx;
 
         typename Types::ChanceStats stats;
 
         ChanceNode() {}
         ChanceNode(
-            ActionIndex row_idx,
-            ActionIndex col_idx) : row_idx(row_idx), col_idx(col_idx) {}
+            int row_idx,
+            int col_idx) : row_idx(row_idx), col_idx(col_idx) {}
         ChanceNode(
             MatrixNode *parent,
             ChanceNode *prev,
-            ActionIndex row_idx,
-            ActionIndex col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
+            int row_idx,
+            int col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
         ~ChanceNode();
 
         MatrixNode *access(typename Types::Obs &obs)

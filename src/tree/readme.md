@@ -29,13 +29,13 @@ It is expected that when a state is mutated as the search travels along a path i
 	// marks node as expanded and sets the row and column player actions
 	bool is_terminal() const;
 	bool is_expanded() const;
-	void apply_actions(typename Types::State&, const ActionIndex, const ActionIndex) const;
+	void apply_actions(typename Types::State&, const int, const int) const;
 	// retrieves the actions and applies them to the state
-	typename Types::Action get_row_action(const ActionIndex) const;
-	typename Types::Action get_col_action(const ActionIndex) const;
+	typename Types::Action get_row_action(const int) const;
+	typename Types::Action get_col_action(const int) const;
 	void set_terminal ();
 	void set_terminal (const bool);
-	ChanceNode<Algorithm> *access(const ActionIndex, const ActionIndex);
+	ChanceNode<Algorithm> *access(const int, const int);
 ```
 
 All but the last method are self explanatory. 
