@@ -192,18 +192,20 @@ struct Exp3Fat : Types
                 }
             }
             Data *data_ptr;
+            Real value;
             if (outcome.row_idx > outcome.col_idx)
             {
                 data_ptr = &stats.matrix.get(outcome.col_idx, outcome.row_idx);
+                value = outcome.value.get_col_value();
             }
             else
             {
                 data_ptr = &stats.matrix.get(outcome.row_idx, outcome.col_idx);
+                value = outcome.value.get_row_value();
             }
 
-            auto row_value = outcome.value.get_row_value();
             Data &data = *data_ptr;
-            data.cum_row_value += row_value;
+            data.cum_row_value += value;
             data.count++;
         }
 

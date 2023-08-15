@@ -421,7 +421,7 @@ namespace W
             const Types::ModelInput &input,
             Types::ModelOutput &output)
         {
-            Dynamic::State *state_ptr = &*input.ptr;
+            Dynamic::State *state_ptr = input.ptr.get();
             ptr->_get_inference(state_ptr, output);
         }
 
