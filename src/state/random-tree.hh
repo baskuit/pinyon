@@ -41,7 +41,7 @@ struct RandomTree : Types
             size_t rows,
             size_t cols,
             size_t transitions,
-            const Types::Q &chance_threshold)
+            const Types::Q &chance_threshold = typename Types::Q{0})
             : device{device},
               depth_bound{depth_bound},
               rows{rows},
