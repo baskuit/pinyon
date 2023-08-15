@@ -30,7 +30,7 @@ struct DebugNodes : Types
         typename Types::VectorAction row_actions;
         typename Types::VectorAction col_actions;
         typename Types::Obs obs;
-        typename Types::MatrixStats stats;
+        MatrixStats stats;
 
         MatrixNode(){};
         MatrixNode(Types::Obs obs) : obs(obs) {}
@@ -187,7 +187,7 @@ struct DebugNodes : Types
         int row_idx;
         int col_idx;
 
-        typename Types::ChanceStats stats;
+        ChanceStats stats;
 
         ChanceNode() {}
         ChanceNode(
@@ -200,7 +200,7 @@ struct DebugNodes : Types
             int col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
         ~ChanceNode();
 
-        MatrixNode *access(typename Types::Obs &obs)
+        MatrixNode *access(const Types::Obs &obs)
         {
             if (this->child == nullptr)
             {
@@ -222,6 +222,26 @@ struct DebugNodes : Types
             MatrixNode *child = new MatrixNode(this, previous, obs);
             previous->next = child;
             return child;
+        };
+
+        const MatrixNode *access(const Types::Obs &obs) const
+        {
+            if (this->child == nullptr)
+            {
+                return this->child;
+            }
+            const MatrixNode *current = this->child;
+            const MatrixNode *previous = this->child;
+            while (current != nullptr)
+            {
+                previous = current;
+                if (current->obs == obs)
+                {
+                    return current;
+                }
+                current = current->next;
+            }
+            return current;
         };
 
         size_t count_matrix_nodes()

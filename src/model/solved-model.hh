@@ -38,7 +38,6 @@ struct SolvedStateModel : Types
         {
             output.value = input.get_payoff();
             input.get_strategies(output.row_policy, output.col_policy);
-            // std::cout << "printing matrix" << std::endl;
         }
 
         void inference(

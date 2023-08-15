@@ -3,6 +3,7 @@
 #include <model/model.hh>
 #include <algorithm/solver/full-traversal.hh>
 #include <tree/tree.hh>
+#include <tree/tree-debug.hh>
 
 #include <memory>
 
@@ -18,7 +19,8 @@ We also add the get_stategies and get_matrix methods required by the IsSolvedSta
 
 */
 
-template <CONCEPT(IsValueModelTypes, Types)>
+template <
+    CONCEPT(IsValueModelTypes, Types)>
     requires IsChanceStateTypes<Types>
 struct TraversedState : Types::TypeList
 {
@@ -27,10 +29,10 @@ struct TraversedState : Types::TypeList
 
     using State =
         StateWithNodes<
-            DefaultNodes<
+            DebugNodes<
                 Types,
-                typename FullTraversal<Types>::MatrixStats,
-                typename FullTraversal<Types>::ChanceStats>>;
+                typename FullTraversal<Types, DebugNodes>::MatrixStats,
+                typename FullTraversal<Types, DebugNodes>::ChanceStats>>;
 
     // This hidden template impl allows for type hints
     template <CONCEPT(IsNodeTypes, NodePair)>
@@ -50,7 +52,7 @@ struct TraversedState : Types::TypeList
         {
             auto temp_tree = std::make_shared<typename NodePair::MatrixNode>();
             node = temp_tree.get();
-            auto session = typename FullTraversal<Types>::Search{max_depth};
+            auto session = typename FullTraversal<Types, DebugNodes>::Search{max_depth};
             session.run(*this, model, temp_tree.get());
             full_traversal_tree = temp_tree;
         }
@@ -62,7 +64,7 @@ struct TraversedState : Types::TypeList
             Types::State::apply_actions(row_action, col_action);
             const int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
             const int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
-            node->access(row_idx, col_idx)->access(this->obs);
+            node = node->access(row_idx, col_idx)->access(this->obs);
             // this method uses the const access function
         }
 
@@ -74,7 +76,7 @@ struct TraversedState : Types::TypeList
             Types::State::apply_actions(row_action, col_action, chance_action);
             const int row_idx = std::find(this->row_actions.begin(), this->row_actions.end(), row_action) - this->row_actions.begin();
             const int col_idx = std::find(this->col_actions.begin(), this->col_actions.end(), col_action) - this->col_actions.begin();
-            node->access(row_idx, col_idx)->access(this->obs);
+            node = node->access(row_idx, col_idx)->access(this->obs);
         }
 
         void get_strategies(

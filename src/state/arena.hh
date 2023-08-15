@@ -61,11 +61,6 @@ struct Arena : SimpleTypes
             W::Types::Value col_first_payoff_flipped{col_first_payoff.get_col_value(), col_first_payoff.get_row_value()};
             W::Types::Value avg_payoff = (row_first_payoff + col_first_payoff_flipped) * 0.5;
 
-            // std::cout << "match done, values:" << std::endl;
-            // std::cout << row_first_payoff.get_row_value() << " " << row_first_payoff.get_col_value() <<
-            // "   " <<  col_first_payoff.get_row_value() << " " << col_first_payoff.get_col_value() << 
-            // "   " << avg_payoff.get_row_value() << " " << avg_payoff.get_col_value() << std::endl;
-
             this->payoff = SimpleTypes::Value{avg_payoff.get_row_value(), avg_payoff.get_col_value()};
             this->terminal = true;
             this->obs = SimpleTypes::Obs{static_cast<int>(device.get_seed())};
@@ -89,19 +84,9 @@ struct Arena : SimpleTypes
                 const int row_idx = device.sample_pdf(row_output.row_policy);
                 const int col_idx = device.sample_pdf(col_output.col_policy);
 
-                std::cout << "row player inference" << std::endl;
-                math::print(row_output.row_policy);
-                math::print(col_output.row_policy);
-                std::cout << "col" << std::endl;
-                math::print(row_output.col_policy);
-                math::print(col_output.col_policy);
-                std::cout << "selected: " << row_idx << ' ' << col_idx << std::endl;
-                std::cout << std::endl;
-
                 state.apply_actions(row_idx, col_idx);
                 state.get_actions();
             }
-            // std::cout << "___________" << std::endl;
             return state.get_payoff();
         }
     };
