@@ -31,16 +31,8 @@ namespace LRSNash
             cpd[i] = reinterpret_cast<mpq_t *>(&payoff_matrix[i].col_value);
         }
 
-        mpz_t *row_solution_data = new mpz_t[rows + 2];
-        mpz_t *col_solution_data = new mpz_t[cols + 2];
-        for (int row_idx = 0; row_idx < rows + 2; ++row_idx)
-        {
-            mpz_init(row_solution_data[row_idx]);
-        }
-        for (int col_idx = 0; col_idx < cols + 2; ++col_idx)
-        {
-            mpz_init(col_solution_data[col_idx]);
-        }
+        mpz_t *row_solution_data = alloc(rows + 2);
+        mpz_t *col_solution_data = alloc(cols + 2);
 
         solve_gmp_pointer(rows, cols, rpd.data(), cpd.data(), row_solution_data, col_solution_data);
 
@@ -57,8 +49,8 @@ namespace LRSNash
         mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
         mpq_class col_payoff{mpz_class{row_solution_data[rows + 1]}, row_den};
 
-        delete[] row_solution_data;
-        delete[] col_solution_data;
+        dealloc(row_solution_data, rows + 2);
+        dealloc(col_solution_data, cols + 2);
 
         if constexpr (Value<Wrapper<mpq_class>>::IS_CONSTANT_SUM == true)
         {
@@ -88,16 +80,8 @@ namespace LRSNash
             rpd[i] = reinterpret_cast<mpq_t *>(&payoff_matrix[i].row_value);
         }
 
-        mpz_t *row_solution_data = new mpz_t[rows + 2];
-        mpz_t *col_solution_data = new mpz_t[cols + 2];
-        for (int row_idx = 0; row_idx < rows + 2; ++row_idx)
-        {
-            mpz_init(row_solution_data[row_idx]);
-        }
-        for (int col_idx = 0; col_idx < cols + 2; ++col_idx)
-        {
-            mpz_init(col_solution_data[col_idx]);
-        }
+        mpz_t *row_solution_data = alloc(rows + 2);
+        mpz_t *col_solution_data = alloc(cols + 2);
 
         solve_gmp_pointer_constant_sum(rows, cols, rpd.data(), row_solution_data, col_solution_data, 1, 1);
 
@@ -116,8 +100,8 @@ namespace LRSNash
         mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
         mpq_class col_payoff{mpz_class{row_solution_data[rows + 1]}, row_den};
 
-        delete[] row_solution_data;
-        delete[] col_solution_data;
+        dealloc(row_solution_data, rows + 2);
+        dealloc(col_solution_data, cols + 2);
 
         if constexpr (Value<Wrapper<mpq_class>>::IS_CONSTANT_SUM == true)
         {
@@ -146,55 +130,41 @@ namespace LRSNash
         const Real max = payoff_matrix.max();
         const Real range{max == min ? Real{1} : max - min};
 
-        std::vector<long> payoff_data;
-        payoff_data.resize(2 * entries);
-
-        // payoff data is just double length array of row_num and col_den in discretization
+        long *payoff_data = new long[2 * entries];
 
         for (size_t i = 0; i < entries; ++i)
         {
             Value<Real> &value = payoff_matrix[i];
-            double a{(value.get_row_value() - min) / range *Real{static_cast<double>(den)}};
-            double b{(value.get_col_value() - min) / range *Real{static_cast<double>(den)}};
+            double a{(value.get_row_value() - min) / range * Real{static_cast<double>(den)}};
+            double b{(value.get_col_value() - min) / range * Real{static_cast<double>(den)}};
             payoff_data[2 * i] = ceil(a);
             payoff_data[2 * i + 1] = ceil(b);
         }
 
-        mpz_t *row_solution_data = new mpz_t[rows + 2];
-        mpz_t *col_solution_data = new mpz_t[cols + 2];
-        for (int row_idx = 0; row_idx < rows + 2; ++row_idx)
-        {
-            mpz_init(row_solution_data[row_idx]);
-        }
-        for (int col_idx = 0; col_idx < cols + 2; ++col_idx)
-        {
-            mpz_init(col_solution_data[col_idx]);
-        }
+        mpz_t *row_solution_data = alloc(rows + 2);
+        mpz_t *col_solution_data = alloc(cols + 2);
 
-        solve_gmp_float(rows, cols, payoff_data.data(), den, row_solution_data, col_solution_data);
+        solve_gmp_float(rows, cols, payoff_data, den, row_solution_data, col_solution_data);
 
         mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
         row_strategy.resize(rows);
         col_strategy.resize(cols);
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            // row_strategy[row_idx] = Real{mpz_get_ui(row_solution_data[row_idx + 1]) / static_cast<typename Real::type>(row_den)};
             row_strategy[row_idx] = Real{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}.get_d()};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            // col_strategy[col_idx] = Real{mpz_get_ui(col_solution_data[col_idx + 1]) / static_cast<typename Real::type>(col_den)};
             col_strategy[col_idx] = Real{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}.get_d()};
         }
 
-        // const Real row_payoff{mpz_get_ui(col_solution_data[cols + 1]) / static_cast<typename Real::type>(col_den)};
-        // const Real col_payoff{mpz_get_ui(row_solution_data[rows + 1]) / static_cast<typename Real::type>(row_den)};
         Real row_payoff{mpq_class{mpz_class{col_solution_data[cols + 1]}, col_den}.get_d()};
         Real col_payoff{mpq_class{mpz_class{row_solution_data[rows + 1]}, row_den}.get_d()};
         row_payoff = row_payoff * range + min;
         col_payoff = col_payoff * range + min;
-        delete[] row_solution_data;
-        delete[] col_solution_data;
+        dealloc(row_solution_data, rows + 2);
+        dealloc(col_solution_data, cols + 2);
+        delete[] payoff_data;
 
         if constexpr (Value<Real>::IS_CONSTANT_SUM == true)
         {
