@@ -6,7 +6,7 @@
 
 #include <unordered_map>
 
-template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats>
 struct FlatNodes : Types
 {
     class MatrixNode;

@@ -4,7 +4,7 @@
 #include <state/state.hh>
 #include <tree/node.hh>
 
-template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats>
 struct LNodes : Types
 {
     /*
