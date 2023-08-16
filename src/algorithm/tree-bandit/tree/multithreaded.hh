@@ -31,11 +31,15 @@ struct TreeBanditThreaded : Types
     public:
         using Types::BanditAlgorithm::BanditAlgorithm;
 
-        Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
+        Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base}
+        {
+        }
 
-        Search(const Types::BanditAlgorithm &base, size_t threads) : Types::BanditAlgorithm{base}, threads{threads} {}
+        Search(const Types::BanditAlgorithm &base, size_t threads) : Types::BanditAlgorithm{base}, threads{threads}
+        {
+        }
 
-        size_t threads = 1;
+        const size_t threads = 1;
 
         size_t run(
             const size_t duration_ms,
@@ -138,7 +142,7 @@ struct TreeBanditThreaded : Types
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Types::ModelOutput &inference)
+            Types::ModelOutput &model_output)
         {
 
             typename Types::Mutex &mtx{matrix_node->stats.mtx};
@@ -150,16 +154,16 @@ struct TreeBanditThreaded : Types
                     if (state.is_terminal())
                     {
                         matrix_node->set_terminal();
-                        inference.value = state.payoff;
+                        model_output.value = state.payoff;
                     }
                     else
                     {
                         state.get_actions();
-                        model.inference(state, inference);
+                        model.inference(state, model_output);
 
                         mtx.lock();
                         matrix_node->expand(state);
-                        this->expand(state, matrix_node->stats, inference);
+                        this->expand(state, matrix_node->stats, model_output);
                         mtx.unlock();
                     }
 
@@ -181,9 +185,9 @@ struct TreeBanditThreaded : Types
                 // chance_node->stats.mtx.unlock();
                 // mtx.unlock();
 
-                MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
+                MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
-                outcome.value = inference.value;
+                outcome.value = model_output.value;
                 this->update_matrix_stats(matrix_node->stats, outcome, mtx);
                 this->update_chance_stats(chance_node->stats, outcome, mtx);
                 return matrix_node_leaf;
@@ -192,11 +196,11 @@ struct TreeBanditThreaded : Types
             {
                 if constexpr (MatrixNode::STORES_VALUE)
                 {
-                    matrix_node->get_value(inference.value);
+                    matrix_node->get_value(model_output.value);
                 }
                 else
                 {
-                    inference.value = state.payoff;
+                    model_output.value = state.payoff;
                 }
                 return matrix_node;
             }
@@ -228,15 +232,21 @@ struct TreeBanditThreadPool : Types
     public:
         using Types::BanditAlgorithm::BanditAlgorithm;
 
-        Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
+        Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base}
+        {
+        }
 
-        Search(const Types::BanditAlgorithm &base, size_t threads) : Types::BanditAlgorithm{base}, threads{threads} {}
+        Search(const Types::BanditAlgorithm &base, size_t threads) : Types::BanditAlgorithm{base}, threads{threads}
+        {
+        }
 
-        Search(const Search &other) : Types::BanditAlgorithm{other}, threads{threads} {}
+        Search(const Search &other) : Types::BanditAlgorithm{other}, threads{other.threads}
+        {
+        }
         // we want this class to be copyable, but atomics are not copyable
         // so we define a new copy constr that doesnt attempt to copy it.
 
-        size_t threads = 1;
+        const size_t threads = 1;
         std::array<typename Types::Mutex, pool_size> mutex_pool{};
         std::atomic<unsigned int> current_index{0};
 
@@ -300,7 +310,7 @@ struct TreeBanditThreadPool : Types
             size_t *iterations)
         {
             typename Types::PRNG device_thread{thread_device_seed}; // TODO deterministically provide new seed
-            typename Types::Model model_thread{*model};               // TODO go back to not making new ones? Perhaps only device needs new instance
+            typename Types::Model model_thread{*model};             // TODO go back to not making new ones? Perhaps only device needs new instance
             typename Types::ModelOutput inference;
 
             auto start = std::chrono::high_resolution_clock::now();
@@ -341,7 +351,7 @@ struct TreeBanditThreadPool : Types
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Types::ModelOutput &inference)
+            Types::ModelOutput &model_output)
         {
             typename Types::Mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
 
@@ -352,17 +362,17 @@ struct TreeBanditThreadPool : Types
                     if (state.is_terminal())
                     {
                         matrix_node->set_terminal();
-                        inference.value = state.payoff;
+                        model_output.value = state.payoff;
                     }
                     else
                     {
                         state.get_actions();
-                        model.inference(state, inference);
+                        model.inference(state, model_output);
                         get_mutex_index(matrix_node);
 
                         mtx.lock();
                         matrix_node->expand(state);
-                        this->expand(state, matrix_node->stats, inference);
+                        this->expand(state, matrix_node->stats, model_output);
                         mtx.unlock();
                     }
 
@@ -384,9 +394,9 @@ struct TreeBanditThreadPool : Types
                 // chance_node->stats.mtx.unlock();
                 // mtx.unlock();
 
-                MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
+                MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
-                outcome.value = inference.value;
+                outcome.value = model_output.value;
                 this->update_matrix_stats(matrix_node->stats, outcome, mtx);
                 this->update_chance_stats(chance_node->stats, outcome, mtx);
                 return matrix_node_leaf;
@@ -395,11 +405,11 @@ struct TreeBanditThreadPool : Types
             {
                 if constexpr (MatrixNode::STORES_VALUE)
                 {
-                    matrix_node->get_value(inference.value);
+                    matrix_node->get_value(model_output.value);
                 }
                 else
                 {
-                    inference.value = state.payoff;
+                    model_output.value = state.payoff;
                 }
                 return matrix_node;
             }

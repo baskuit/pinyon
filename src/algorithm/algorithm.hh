@@ -13,7 +13,7 @@ concept IsBanditAlgorithmTypes =
         typename Types::ChanceStats &chance_stats,
         typename Types::Outcome &outcome,
         typename Types::VectorReal &strategy,
-        typename Types::ModelOutput &inference,
+        typename Types::ModelOutput &model_output,
         typename Types::Value &value,
         typename Types::Real &real) {
         {
@@ -32,7 +32,7 @@ concept IsBanditAlgorithmTypes =
             bandit.initialize_stats(0, state, model, matrix_stats)
         } -> std::same_as<void>;
         {
-            bandit.expand(state, matrix_stats, inference)
+            bandit.expand(state, matrix_stats, model_output)
         } -> std::same_as<void>;
         {
             bandit.select(device, matrix_stats, outcome)

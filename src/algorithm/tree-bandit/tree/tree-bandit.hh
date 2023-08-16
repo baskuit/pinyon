@@ -72,7 +72,7 @@ struct TreeBandit : Types
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Types::ModelOutput &inference) const
+            Types::ModelOutput &model_output) const
         {
             if (!matrix_node->is_terminal())
             {
@@ -81,15 +81,15 @@ struct TreeBandit : Types
                     if (state.is_terminal())
                     {
                         matrix_node->set_terminal();
-                        inference.value = state.payoff;
+                        model_output.value = state.payoff;
                     }
                     else
                     {
                         state.get_actions();
-                        model.inference(state, inference);
+                        model.inference(state, model_output);
 
                         matrix_node->expand(state);
-                        this->expand(state, matrix_node->stats, inference);
+                        this->expand(state, matrix_node->stats, model_output);
                     }
                     if constexpr (return_if_expand)
                     {
@@ -105,9 +105,9 @@ struct TreeBandit : Types
                 ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode *matrix_node_next = chance_node->access(state.obs);
 
-                MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, inference);
+                MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
-                outcome.value = inference.value;
+                outcome.value = model_output.value;
                 this->update_matrix_stats(matrix_node->stats, outcome);
                 this->update_chance_stats(chance_node->stats, outcome);
                 return matrix_node_leaf;
@@ -116,11 +116,11 @@ struct TreeBandit : Types
             {
                 if constexpr (MatrixNode::STORES_VALUE)
                 {
-                    matrix_node->get_value(inference.value);
+                    matrix_node->get_value(model_output.value);
                 }
                 else
                 {
-                    inference.value = state.payoff;
+                    model_output.value = state.payoff;
                 }
                 return matrix_node;
             }
@@ -131,7 +131,7 @@ struct TreeBandit : Types
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Types::ModelOutput &inference) const
+            Types::ModelOutput &model_output) const
         {
             if (!matrix_node->is_terminal())
             {
@@ -139,8 +139,8 @@ struct TreeBandit : Types
                 {
                     state.get_actions();
                     matrix_node->expand(state);
-                    model.inference(state, inference);
-                    this->expand(state, matrix_node->stats, inference);
+                    model.inference(state, model_output);
+                    this->expand(state, matrix_node->stats, model_output);
 
                     if constexpr (return_if_expand)
                     {
@@ -156,7 +156,7 @@ struct TreeBandit : Types
                 ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode *matrix_node_next = chance_node->access(state.obs);
 
-                MatrixNode *matrix_node_leaf = run_iteration_average(device, state, model, matrix_node_next, inference);
+                MatrixNode *matrix_node_leaf = run_iteration_average(device, state, model, matrix_node_next, model_output);
 
                 this->get_empirical_value(matrix_node_next->stats, outcome.value);
                 // TODO use chance node? Breaks if matrix_node_next is terminal?
@@ -168,11 +168,11 @@ struct TreeBandit : Types
             {
                 if constexpr (MatrixNode::STORES_VALUE)
                 {
-                    matrix_node->get_value(inference.value);
+                    matrix_node->get_value(model_output.value);
                 }
                 else
                 {
-                    inference.value = state.payoff;
+                    model_output.value = state.payoff;
                 }
                 return matrix_node;
             }

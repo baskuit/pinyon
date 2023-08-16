@@ -116,7 +116,7 @@ struct Exp3Fat : Types
         void expand(
             Types::State &state,
             MatrixStats &stats,
-            Types::ModelOutput &inference) const
+            Types::ModelOutput &model_output) const
         {
             stats.row_visits.resize(state.row_actions.size(), 0);
             stats.col_visits.resize(state.col_actions.size(), 0);
@@ -143,9 +143,10 @@ struct Exp3Fat : Types
             {
                 const Real eta{gamma / static_cast<Real>(rows)};
                 softmax(row_forecast, stats.row_gains, rows, eta);
-                std::transform(row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
             if (cols == 1)
             {
@@ -155,9 +156,10 @@ struct Exp3Fat : Types
             {
                 const Real eta{gamma / static_cast<Real>(cols)};
                 softmax(col_forecast, stats.col_gains, cols, eta);
-                std::transform(col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
             const int row_idx = device.sample_pdf(row_forecast, rows);
             const int col_idx = device.sample_pdf(col_forecast, cols);
@@ -239,9 +241,10 @@ struct Exp3Fat : Types
             {
                 const Real eta{gamma / static_cast<Real>(rows)};
                 softmax(row_forecast, row_forecast, rows, eta);
-                std::transform(row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
             if (cols == 1)
             {
@@ -251,9 +254,10 @@ struct Exp3Fat : Types
             {
                 const Real eta{gamma / static_cast<Real>(cols)};
                 softmax(col_forecast, col_forecast, cols, eta);
-                std::transform(col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
             const int row_idx = device.sample_pdf(row_forecast, rows);
             const int col_idx = device.sample_pdf(col_forecast, cols);
@@ -353,9 +357,10 @@ struct Exp3Fat : Types
             {
                 const Real eta{gamma / static_cast<Real>(rows)};
                 softmax(row_policy, stats.row_gains, rows, eta);
-                std::transform(row_policy.begin(), row_policy.begin() + rows, row_policy.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    row_policy.begin(), row_policy.begin() + rows, row_policy.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
             if (cols == 1)
             {
@@ -365,9 +370,10 @@ struct Exp3Fat : Types
             {
                 const Real eta{gamma / static_cast<Real>(cols)};
                 softmax(col_policy, stats.col_gains, cols, eta);
-                std::transform(col_policy.begin(), col_policy.begin() + cols, col_policy.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    col_policy.begin(), col_policy.begin() + cols, col_policy.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
         }
 

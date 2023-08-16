@@ -34,10 +34,10 @@ int main()
 
     const size_t monte_carlo_iterations = 1 << 10;
 
-    EmptyModel<SolvedStateTypes>::Model
+    EmptyModel<FinalStateTypes>::Model
         model_random{};
-    SolvedStateModel<SolvedStateTypes>::Model
-        model_solved{};
+    // SolvedStateModel<SolvedStateTypes>::Model
+    //     model_solved{};
 
     // vector of search-model. initializer is iteration, device, model, search.
     std::vector<MCTypesModel::Model> modelo{
@@ -49,14 +49,14 @@ int main()
         {monte_carlo_iterations, MCTypes::PRNG{0}, MCTypes::Model{0}, MCTypes::Search{1}},
     };
     
-    std::vector<W::Types::Model> models;// = {W::make_model<EmptyModel<SolvedStateTypes>>(model_random)};
+    std::vector<W::Types::Model> models = {W::make_model<EmptyModel<FinalStateTypes>>(model_random)};
 
     std::transform(
         modelo.cbegin(), modelo.cend(), std::back_inserter(models),
         [](const MCTypesModel::Model &m)
         { return W::make_model<MCTypesModel>(m); });
 
-    const size_t threads = 4;
+    const size_t threads = 1;
     ArenaTypes::PRNG device{0};
     const size_t vs_rounds = 16;
     ArenaTypes::State arena{&generator_function, models, vs_rounds};
@@ -64,7 +64,7 @@ int main()
     ArenaTypes::Search search{ArenaTypes::BanditAlgorithm{.10}, threads};
     ArenaTypes::MatrixNode root;
 
-    const size_t arena_search_iterations = 1 << 16;
+    const size_t arena_search_iterations = 1 << 9;
     search.run_for_iterations(arena_search_iterations, device, arena, arena_model, root);
 
     root.stats.matrix.print();

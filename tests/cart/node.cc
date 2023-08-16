@@ -10,16 +10,25 @@ int main()
     using SessionTypes2 = TreeBanditThreadPool<Exp3<BaseTypes>>;
 
     std::tuple<
-    SessionTypes0,
-    SessionTypes1,
-    SessionTypes2>
+        SessionTypes0,
+        SessionTypes1,
+        SessionTypes2>
         search_type_tuple{{}, {}, {}};
 
-    std::vector<int> threads {1, 2, 2};
-    auto lambda = [](auto type_list)
+    std::tuple<
+        SessionTypes0::Search,
+        SessionTypes1::Search,
+        SessionTypes2::Search>
+        search_tuple{{}, {{}, 2}, {{}, 1}};
+
+    auto type_search_zipped = zip(search_type_tuple, search_tuple);
+
+    size_t lambda_idx = 0;
+
+    auto lambda = [&lambda_idx](auto type_search_pair)
     {
-        using Types = decltype(type_list);
-        using MatrixNode = typename Types::MatrixNode; // Access the nested A class
+        using Types = decltype(type_search_pair.first);
+        using MatrixNode = typename Types::MatrixNode;
         MatrixNode root{};
 
         BaseTypes::State state{50};
@@ -27,20 +36,25 @@ int main()
 
         const size_t iterations = 1 << 18;
         prng device{0};
-        typename Types::Search session{};
-        session.run_for_iterations(iterations, device, state, model, root);
+        auto &search = type_search_pair.second;
+
+        search.run_for_iterations(iterations, device, state, model, root);
 
         size_t count = root.count_matrix_nodes();
 
-        double ratio = count / (double) iterations;
+        double ratio = count / (double)iterations;
 
-        std::cout << ratio << ", diff =" << std::abs(double{count - iterations}) << std::endl;
+        std::cout << ratio << ", diff =" << std::abs(static_cast<double>(count) - static_cast<double>(iterations)) << std::endl;
+        ++lambda_idx;
     };
 
-    // Apply the lambda to all elements of the tuple using std::apply
-    std::apply([&lambda](auto &...elements)
-               { (lambda(elements), ...); },
-               search_type_tuple);
+    for (int i = 0; i < 100; ++i)
+    {
+        // Apply the lambda to all elements of the tuple using std::apply
+        std::apply([&lambda](auto &...elements)
+                   { (lambda(elements), ...); },
+                   type_search_zipped);
+    }
 
     return 0;
 }

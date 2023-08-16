@@ -102,12 +102,14 @@ struct Exp3 : Types
         void expand(
             Types::State &state,
             MatrixStats &stats,
-            Types::ModelOutput &inference) const
+            Types::ModelOutput &output) const
         {
-            stats.row_visits.resize(state.row_actions.size(), 0);
-            stats.col_visits.resize(state.col_actions.size(), 0);
-            stats.row_gains.resize(state.row_actions.size(), 0);
-            stats.col_gains.resize(state.col_actions.size(), 0);
+            const size_t rows = state.row_actions.size();
+            const size_t cols = state.col_actions.size();
+            stats.row_visits.resize(rows, 0);
+            stats.col_visits.resize(cols, 0);
+            stats.row_gains.resize(rows, 0);
+            stats.col_gains.resize(cols, 0);
         }
 
         void select(
@@ -128,9 +130,10 @@ struct Exp3 : Types
             {
                 const Real eta{gamma / static_cast<Real>(rows)};
                 softmax(row_forecast, stats.row_gains, rows, eta);
-                std::transform(row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
             if (cols == 1)
             {
@@ -140,9 +143,10 @@ struct Exp3 : Types
             {
                 const Real eta{gamma / static_cast<Real>(cols)};
                 softmax(col_forecast, stats.col_gains, cols, eta);
-                std::transform(col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
             const int row_idx = device.sample_pdf(row_forecast, rows);
             const int col_idx = device.sample_pdf(col_forecast, cols);
@@ -188,16 +192,19 @@ struct Exp3 : Types
 
         void select(
             Types::PRNG &device,
-            MatrixStats &stats,
+            const MatrixStats &stats, // TODO made const, does this fix bug?
             Outcome &outcome,
             Types::Mutex &mtx) const
         {
             mtx.lock();
-            typename Types::VectorReal row_forecast{stats.row_gains};
-            typename Types::VectorReal col_forecast{stats.col_gains};
+            typename Types::VectorReal row_forecast(stats.row_gains);
+            typename Types::VectorReal col_forecast(stats.col_gains);
             mtx.unlock();
             const int rows = row_forecast.size();
             const int cols = col_forecast.size();
+            if (rows == 0 || cols == 0) {
+                 std::cout << '!';
+            } // TODO remove
             const auto &one_minus_gamma = this->one_minus_gamma;
 
             if (rows == 1)
@@ -208,9 +215,10 @@ struct Exp3 : Types
             {
                 const Real eta{gamma / static_cast<Real>(rows)};
                 softmax(row_forecast, row_forecast, rows, eta);
-                std::transform(row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    row_forecast.begin(), row_forecast.begin() + rows, row_forecast.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
             if (cols == 1)
             {
@@ -220,9 +228,10 @@ struct Exp3 : Types
             {
                 const Real eta{gamma / static_cast<Real>(cols)};
                 softmax(col_forecast, col_forecast, cols, eta);
-                std::transform(col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    col_forecast.begin(), col_forecast.begin() + cols, col_forecast.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
             const int row_idx = device.sample_pdf(row_forecast, rows);
             const int col_idx = device.sample_pdf(col_forecast, cols);
@@ -306,9 +315,10 @@ struct Exp3 : Types
             {
                 const Real eta{gamma / static_cast<Real>(rows)};
                 softmax(row_policy, stats.row_gains, rows, eta);
-                std::transform(row_policy.begin(), row_policy.begin() + rows, row_policy.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    row_policy.begin(), row_policy.begin() + rows, row_policy.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
             if (cols == 1)
             {
@@ -318,9 +328,10 @@ struct Exp3 : Types
             {
                 const Real eta{gamma / static_cast<Real>(cols)};
                 softmax(col_policy, stats.col_gains, cols, eta);
-                std::transform(col_policy.begin(), col_policy.begin() + cols, col_policy.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return one_minus_gamma * value + eta; });
+                std::transform(
+                    col_policy.begin(), col_policy.begin() + cols, col_policy.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return one_minus_gamma * value + eta; });
             }
         }
 
@@ -354,16 +365,18 @@ struct Exp3 : Types
             if (rows > 1)
             {
                 const Real eta{gamma / static_cast<Real>(rows)};
-                std::transform(row_strategy.begin(), row_strategy.begin() + rows, row_strategy.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return (value - eta) / one_minus_gamma; });
+                std::transform(
+                    row_strategy.begin(), row_strategy.begin() + rows, row_strategy.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return (value - eta) / one_minus_gamma; });
             }
             if (cols > 1)
             {
                 const Real eta{gamma / static_cast<Real>(cols)};
-                std::transform(col_strategy.begin(), col_strategy.begin() + cols, col_strategy.begin(),
-                               [eta, one_minus_gamma](Real value)
-                               { return (value - eta) / one_minus_gamma; });
+                std::transform(
+                    col_strategy.begin(), col_strategy.begin() + cols, col_strategy.begin(),
+                    [eta, one_minus_gamma](Real value)
+                    { return (value - eta) / one_minus_gamma; });
             }
         } // TODO can produce negative values but this shouldnt cause problems.
     };

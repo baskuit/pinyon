@@ -59,7 +59,7 @@ void thread_loop_inference(Wrapper *wrapper, size_t num_batches_to_process, int 
         for (size_t b = 0; b < subbatch_size; ++b)
         {
             auto &matrix_node = matrix_node_vector[b];
-            auto &inference = matrix_node->inference;
+            auto &model_output = matrix_node->inference;
             inference.row_value = thread_output_tensor[b]. template item<double>();
             inference.col_value = 1 - matrix_node->inference.row_value;
             delete matrix_node;

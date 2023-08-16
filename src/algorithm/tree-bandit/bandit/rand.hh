@@ -68,7 +68,7 @@ struct Rand : Types
         void expand(
             Types::State &state,
             MatrixStats &stats,
-            Types::ModelOutput &inference)
+            Types::ModelOutput &model_output)
         {
             stats.rows = state.row_actions.size();
             stats.cols = state.col_actions.size();
