@@ -10,7 +10,7 @@ int main()
     // Types::Search search{{}, 2};
 
 
-    for (int i = 0; i < 100; ++i)
+    for (int i = 0; i < 50; ++i)
     {
 
         Types::MatrixNode root{};
@@ -18,7 +18,7 @@ int main()
         BaseTypes::State state{50};
         BaseTypes::Model model{0};
 
-        const size_t iterations = 1 << 18;
+        const size_t iterations = 1 << 13;
         prng device{0};
 
         search.run_for_iterations(iterations, device, state, model, root);

@@ -124,7 +124,7 @@ struct TreeBanditThreaded : Types
             const Types::Seed thread_device_seed,
             const Types::State *state,
             const Types::Model *model,
-            MatrixNode *matrix_node)
+            MatrixNode *const matrix_node)
         {
             typename Types::PRNG device_thread(thread_device_seed); // TODO deterministically provide new seed
             typename Types::Model model_thread{*model};
@@ -141,12 +141,11 @@ struct TreeBanditThreaded : Types
             Types::PRNG &device,
             Types::State &state,
             Types::Model &model,
-            MatrixNode *matrix_node,
+            MatrixNode *const matrix_node,
             Types::ModelOutput &model_output)
         {
 
             typename Types::Mutex &mtx{matrix_node->stats.mtx};
-
             if (!matrix_node->is_terminal())
             {
                 if (!matrix_node->is_expanded())
@@ -220,6 +219,7 @@ struct TreeBanditThreadPool : Types
     struct MatrixStats : Types::MatrixStats
     {
         int mutex_index = 0;
+        typename Types::Mutex mutex{};
     };
     struct ChanceStats : Types::ChanceStats
     {
@@ -306,7 +306,7 @@ struct TreeBanditThreadPool : Types
             const Types::Seed thread_device_seed,
             const Types::State *state,
             const Types::Model *model,
-            MatrixNode *matrix_node,
+            MatrixNode *const matrix_node,
             size_t *iterations)
         {
             typename Types::PRNG device_thread{thread_device_seed}; // TODO deterministically provide new seed
@@ -333,7 +333,7 @@ struct TreeBanditThreadPool : Types
             const Types::Seed thread_device_seed,
             const Types::State *state,
             const Types::Model *model,
-            MatrixNode *matrix_node)
+            MatrixNode *const matrix_node)
         {
             typename Types::PRNG device_thread{thread_device_seed};
             typename Types::Model model_thread{*model};
@@ -346,78 +346,154 @@ struct TreeBanditThreadPool : Types
             }
         }
 
+        // MatrixNode *run_iteration(
+        //     Types::PRNG &device,
+        //     Types::State &state,
+        //     Types::Model &model,
+        //     MatrixNode *const matrix_node,
+        //     Types::ModelOutput &model_output)
+        // {
+        //     // typename Types::Mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
+        //     typename Types::Mutex &safe = matrix_node->stats.mutex;
+
+        //     if (!matrix_node->is_terminal())
+        //     {
+        //         // safe.lock(); //workss
+
+        //         if (!matrix_node->is_expanded())
+        //         {
+        //             safe.lock(); // doesnt work
+
+        //             if (state.is_terminal())
+        //             {
+        //                 matrix_node->set_terminal();
+        //                 model_output.value = state.payoff;
+        //             }
+        //             else
+        //             {
+        //                 state.get_actions();
+
+        //                 // get_mutex_index(matrix_node);
+        //                 matrix_node->expand(state);
+        //                 this->expand(state, matrix_node->stats, model_output);
+        //                 model.inference(state, model_output);
+
+        //             }
+
+        //             if constexpr (return_if_expand)
+        //             {
+        //                 safe.unlock();
+        //                 return matrix_node;
+        //             }
+        //         }
+        //         // safe.unlock();
+
+        //         typename Types::Mutex &mtx = mutex_pool[0];
+
+        //         typename Types::Outcome outcome;
+        //         this->select(device, matrix_node->stats, outcome, mtx);
+
+        //         matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
+
+        //         mtx.lock();
+        //         ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+        //         // chance_node->stats.mtx.lock();
+        //         MatrixNode *matrix_node_next = chance_node->access(state.obs);
+        //         // chance_node->stats.mtx.unlock();
+        //         mtx.unlock();
+
+        //         MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
+
+        //         outcome.value = model_output.value;
+        //         this->update_matrix_stats(matrix_node->stats, outcome, mtx);
+        //         this->update_chance_stats(chance_node->stats, outcome, mtx);
+        //         return matrix_node_leaf;
+        //     }
+        //     else
+        //     {
+        //         // safe.unlock();
+        //         if constexpr (MatrixNode::STORES_VALUE)
+        //         {
+        //             matrix_node->get_value(model_output.value);
+        //         }
+        //         else
+        //         {
+        //             model_output.value = state.payoff;
+        //         }
+        //         return matrix_node;
+        //     }
+        // }
+
         MatrixNode *run_iteration(
             Types::PRNG &device,
             Types::State &state,
             Types::Model &model,
-            MatrixNode *matrix_node,
+            MatrixNode *const matrix_node,
             Types::ModelOutput &model_output)
         {
-            typename Types::Mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
+            std::mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
 
             if (!matrix_node->is_terminal())
             {
-                if (!matrix_node->is_expanded())
+                if (matrix_node->is_expanded())
                 {
+                    typename Types::Outcome outcome;
+
+                    // mtx.lock();
+                    this->select(device, matrix_node->stats, outcome, mtx);
+                    // mtx.unlock();
+
+                    typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
+                    typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
+                    state.apply_actions(row_action, col_action);
+
+                    auto *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                    auto *matrix_node_next = chance_node->access(state.obs);
+                    auto *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
+
+                    outcome.value = model_output.value;
+
+                    // mtx.lock();
+                    this->update_matrix_stats(matrix_node->stats, outcome, mtx);
+                    this->update_chance_stats(chance_node->stats, outcome, mtx);
+                    // mtx.unlock();
+
+                    return matrix_node_leaf;
+                }
+                else
+                {
+                    mtx.lock();
+                    state.get_actions();
+                    matrix_node->row_actions = state.row_actions;
+                    matrix_node->col_actions = state.col_actions;
+                    matrix_node->expanded = true;
+                    matrix_node->terminal = state.is_terminal();
+                    this->expand(state, matrix_node->stats, model_output);
+                    get_mutex_index(matrix_node);
+                    mtx.unlock();
+
                     if (state.is_terminal())
                     {
-                        matrix_node->set_terminal();
                         model_output.value = state.payoff;
                     }
                     else
                     {
-                        state.get_actions();
                         model.inference(state, model_output);
-                        get_mutex_index(matrix_node);
-
-                        mtx.lock();
-                        matrix_node->expand(state);
-                        this->expand(state, matrix_node->stats, model_output);
-                        mtx.unlock();
                     }
 
-                    if constexpr (return_if_expand)
-                    {
-                        return matrix_node;
-                    }
+                    return matrix_node;
                 }
-
-                typename Types::Outcome outcome;
-                this->select(device, matrix_node->stats, outcome, mtx);
-
-                matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
-
-                // mtx.lock();
-                ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                // chance_node->stats.mtx.lock();
-                MatrixNode *matrix_node_next = chance_node->access(state.obs);
-                // chance_node->stats.mtx.unlock();
-                // mtx.unlock();
-
-                MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
-
-                outcome.value = model_output.value;
-                this->update_matrix_stats(matrix_node->stats, outcome, mtx);
-                this->update_chance_stats(chance_node->stats, outcome, mtx);
-                return matrix_node_leaf;
             }
             else
             {
-                if constexpr (MatrixNode::STORES_VALUE)
-                {
-                    matrix_node->get_value(model_output.value);
-                }
-                else
-                {
-                    model_output.value = state.payoff;
-                }
+                model_output.value = state.payoff;
                 return matrix_node;
             }
         }
 
     private:
         void get_mutex_index(
-            MatrixNode *matrix_node)
+            MatrixNode *const matrix_node)
         {
             matrix_node->stats.mutex_index = (this->current_index.fetch_add(1)) % pool_size;
         }

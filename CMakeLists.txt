@@ -10,6 +10,9 @@ target_include_directories(surskit INTERFACE src)
 add_subdirectory(extern/lrslib)
 
 target_link_libraries(surskit INTERFACE lrsnashlib)
+# target_link_options(surskit INTERFACE "-fsanitize=address")
+# target_link_options(surskit INTERFACE "-fsanitize=thread")
+# target_link_options(surskit INTERFACE "-fsanitize=undefined")
 
 # Testing
 file(GLOB_RECURSE TEST_FILES tests/*.cc)
@@ -20,6 +23,10 @@ foreach(TEST_FILE ${TEST_FILES})
 
     add_executable(${TEST_TARGET_NAME} ${TEST_FILE})
     target_link_libraries(${TEST_TARGET_NAME} surskit)
+    # target_compile_options(${TEST_TARGET_NAME} PUBLIC "-fsanitize=address")
+    # target_compile_options(${TEST_TARGET_NAME} PUBLIC "-fsanitize=thread")
+    # target_compile_options(${TEST_TARGET_NAME} PUBLIC "-fsanitize=undefined")
+
 
     add_test(NAME ${TEST_TARGET_NAME} COMMAND ${TEST_TARGET_NAME})
     set_target_properties(${TEST_TARGET_NAME} PROPERTIES

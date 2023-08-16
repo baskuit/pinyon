@@ -34,7 +34,7 @@ struct DefaultNodes : Types
         MatrixNode(Types::Obs obs) : obs(obs) {}
         ~MatrixNode();
 
-        inline void expand(Types::State &state)
+        inline void expand(const Types::State &state)
         {
             expanded = true;
             row_actions = state.row_actions;

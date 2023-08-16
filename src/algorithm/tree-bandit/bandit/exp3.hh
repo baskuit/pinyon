@@ -100,9 +100,9 @@ struct Exp3 : Types
         }
 
         void expand(
-            Types::State &state,
+            const Types::State &state,
             MatrixStats &stats,
-            Types::ModelOutput &output) const
+            const Types::ModelOutput &output) const
         {
             const size_t rows = state.row_actions.size();
             const size_t cols = state.col_actions.size();
@@ -117,8 +117,8 @@ struct Exp3 : Types
             MatrixStats &stats,
             Outcome &outcome) const
         {
-            const int rows = stats.row_gains.size();
-            const int cols = stats.col_gains.size();
+            const size_t rows = stats.row_gains.size();
+            const size_t cols = stats.col_gains.size();
             const auto &one_minus_gamma = this->one_minus_gamma;
             typename Types::VectorReal row_forecast(rows);
             typename Types::VectorReal col_forecast(cols);
@@ -200,11 +200,8 @@ struct Exp3 : Types
             typename Types::VectorReal row_forecast(stats.row_gains);
             typename Types::VectorReal col_forecast(stats.col_gains);
             mtx.unlock();
-            const int rows = row_forecast.size();
-            const int cols = col_forecast.size();
-            if (rows == 0 || cols == 0) {
-                 std::cout << '!';
-            } // TODO remove
+            const size_t rows = row_forecast.size();
+            const size_t cols = col_forecast.size();
             const auto &one_minus_gamma = this->one_minus_gamma;
 
             if (rows == 1)
@@ -304,8 +301,8 @@ struct Exp3 : Types
             Types::VectorReal &row_policy,
             Types::VectorReal &col_policy) const
         {
-            const int rows = stats.row_gains.size();
-            const int cols = stats.col_gains.size();
+            const size_t rows = stats.row_gains.size();
+            const size_t cols = stats.col_gains.size();
             const auto &one_minus_gamma = this->one_minus_gamma;
             if (rows == 1)
             {
@@ -359,8 +356,8 @@ struct Exp3 : Types
             Types::VectorReal &row_strategy,
             Types::VectorReal &col_strategy) const
         {
-            const int rows = row_strategy.size();
-            const int cols = col_strategy.size();
+            const size_t rows = row_strategy.size();
+            const size_t cols = col_strategy.size();
             const auto &one_minus_gamma = this->one_minus_gamma;
             if (rows > 1)
             {
