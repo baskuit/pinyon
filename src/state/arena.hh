@@ -11,13 +11,14 @@ struct Arena : SimpleTypes
     public:
         W::Types::State (*state_generator)(SimpleTypes::Seed){nullptr};
         std::vector<W::Types::Model> models{};
-
+        const size_t vs_rounds = 0;
         SimpleTypes::Seed state_seed{};
 
         State(
             W::Types::State (*state_generator)(SimpleTypes::Seed),
-            const std::vector<W::Types::Model> &models)
-            : state_generator{state_generator}, models{models}
+            const std::vector<W::Types::Model> &models,
+            size_t vs_rounds = 1)
+            : state_generator{state_generator}, models{models}, vs_rounds{vs_rounds}
         {
             this->init_range_actions(models.size());
         }
@@ -55,13 +56,18 @@ struct Arena : SimpleTypes
             // copy constr will clone the unique_ptr member
 
             W::Types::State state = (*state_generator)(state_seed);
-            W::Types::Value row_first_payoff = play_vs(device, row_model, col_model, state);
-            W::Types::Value col_first_payoff = play_vs(device, col_model, row_model, state);
-
-            W::Types::Value col_first_payoff_flipped{col_first_payoff.get_col_value(), col_first_payoff.get_row_value()};
-            W::Types::Value avg_payoff = (row_first_payoff + col_first_payoff_flipped) * 0.5;
-
-            this->payoff = SimpleTypes::Value{avg_payoff.get_row_value(), avg_payoff.get_col_value()};
+            W::Types::Value total_payoff{};
+            for (int i = 0; i < vs_rounds; ++i)
+            {
+                W::Types::Value row_first_payoff = play_vs(device, row_model, col_model, state);
+                W::Types::Value col_first_payoff = play_vs(device, col_model, row_model, state);
+                W::Types::Value col_first_payoff_flipped{col_first_payoff.get_col_value(), col_first_payoff.get_row_value()};
+                total_payoff += row_first_payoff;
+                total_payoff += col_first_payoff_flipped;
+            }
+            this->payoff = SimpleTypes::Value{
+                SimpleTypes::Real{total_payoff.get_row_value() / double(2 * vs_rounds)},
+                SimpleTypes::Real{total_payoff.get_col_value() / double(2 * vs_rounds)}};
             this->terminal = true;
             this->obs = SimpleTypes::Obs{static_cast<int>(device.get_seed())};
         }

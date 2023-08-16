@@ -6,12 +6,6 @@
 
 namespace LRSNash
 {
-
-    // template <typename Real, template <typename> typename Vector, template <typename> typename Matrix>
-    // void solve(Matrix<Real> &payoff_matrix, Vector<Real> &row_strategy, Vector<Real> &col_strategy)
-    // {
-    // }
-
     // Solve matrix of mpq_class
     template <template <typename...> typename Vector, template <typename...> typename Matrix, template <typename> typename Value, template <typename> typename Wrapper>
     Value<Wrapper<mpq_class>>

@@ -39,7 +39,7 @@ struct TraversedState : Types::TypeList
     class StateWithNodes : public Types::State
     {
     public:
-        typename NodePair::MatrixNode const
+        const typename NodePair::MatrixNode
             *node;
         std::shared_ptr<const typename NodePair::MatrixNode>
             full_traversal_tree;
