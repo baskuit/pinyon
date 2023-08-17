@@ -101,7 +101,7 @@ struct Rand : Types
             Types::PRNG &device,
             MatrixStats &stats,
             Outcome &outcome,
-            Types::Mutex &mtx)
+            Types::Mutex &mutex)
         {
             const int row_idx = device.random_int(stats.rows);
             const int col_idx = device.random_int(stats.cols);
@@ -112,12 +112,12 @@ struct Rand : Types
         void update_matrix_stats(
             MatrixStats &stats,
             Outcome &outcome,
-            Types::Mutex &mtx) {}
+            Types::Mutex &mutex) {}
 
         void update_chance_stats(
             ChanceStats &stats,
             Outcome &outcome,
-            Types::Mutex &mtx) {}
+            Types::Mutex &mutex) {}
 
         void update_matrix_stats(
             MatrixStats &stats,

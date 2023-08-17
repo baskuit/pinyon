@@ -127,11 +127,11 @@ protected:
     void update_matrix_stats(
         MatrixStats &stats,
         typename Types::Outcome &outcome,
-        typename Types::Mutex &mtx) {}
+        typename Types::Mutex &mutex) {}
     void update_chance_stats(
         ChanceStats &stats,
         typename Types::Outcome &outcome,
-        typename Types::Mutex &mtx) {}
+        typename Types::Mutex &mutex) {}
         
     void update_matrix_stats(
         MatrixStats &stats,
@@ -208,11 +208,11 @@ But the multi-threaded and off-policy tree algorithm will not use the `MatrixSta
 ```cpp
 struct MatrixStats : BanditAlgorithm::MatrixStats
 {
-    typename Types::Mutex mtx{};
+    typename Types::Mutex mutex{};
 };
 struct ChanceStats : BanditAlgorithm::ChanceStats
 {
-    typename Types::Mutex mtx{};
+    typename Types::Mutex mutex{};
 };
 ```
 

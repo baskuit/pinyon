@@ -223,12 +223,12 @@ struct Exp3Fat : Types
             Types::PRNG &device,
             MatrixStats &stats,
             Outcome &outcome,
-            Types::Mutex &mtx) const
+            Types::Mutex &mutex) const
         {
-            mtx.lock();
+            mutex.lock();
             typename Types::VectorReal row_forecast{stats.row_gains};
             typename Types::VectorReal col_forecast{stats.col_gains};
-            mtx.unlock();
+            mutex.unlock();
             const int rows = row_forecast.size();
             const int cols = col_forecast.size();
             const auto &one_minus_gamma = this->one_minus_gamma;
@@ -270,9 +270,9 @@ struct Exp3Fat : Types
         void update_matrix_stats(
             MatrixStats &stats,
             Outcome &outcome,
-            Types::Mutex &mtx) const
+            Types::Mutex &mutex) const
         {
-            mtx.lock();
+            mutex.lock();
             stats.value_total += outcome.value;
             stats.visits += 1;
             stats.row_visits[outcome.row_idx] += 1;
@@ -309,13 +309,13 @@ struct Exp3Fat : Types
             Data &data = *data_ptr;
             data.cum_row_value += value;
             data.count++;
-            mtx.unlock();
+            mutex.unlock();
         }
 
         void update_chance_stats(
             ChanceStats &stats,
             Outcome &outcome,
-            Types::Mutex &mtx) const
+            Types::Mutex &mutex) const
         {
         }
 

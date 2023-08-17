@@ -54,15 +54,15 @@ concept IsMultithreadedBanditTypes =
         typename Types::MatrixStats &matrix_stats,
         typename Types::ChanceStats &chance_stats,
         typename Types::Outcome &outcome,
-        typename Types::Mutex &mtx) {
+        typename Types::Mutex &mutex) {
         {
-            bandit.select(device, matrix_stats, outcome, mtx)
+            bandit.select(device, matrix_stats, outcome, mutex)
         } -> std::same_as<void>;
         {
-            bandit.update_matrix_stats(matrix_stats, outcome, mtx)
+            bandit.update_matrix_stats(matrix_stats, outcome, mutex)
         } -> std::same_as<void>;
         {
-            bandit.update_chance_stats(chance_stats, outcome, mtx)
+            bandit.update_chance_stats(chance_stats, outcome, mutex)
         } -> std::same_as<void>;
     } &&
     IsBanditAlgorithmTypes<Types>;

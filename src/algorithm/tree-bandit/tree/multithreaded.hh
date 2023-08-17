@@ -17,11 +17,11 @@ struct TreeBanditThreaded : Types
 {
     struct MatrixStats : Types::MatrixStats
     {
-        typename Types::Mutex mtx{};
+        typename Types::Mutex mutex{};
     };
     struct ChanceStats : Types::ChanceStats
     {
-        typename Types::Mutex mtx{};
+        typename Types::Mutex mutex{};
     };
     using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
     using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
@@ -145,7 +145,7 @@ struct TreeBanditThreaded : Types
             Types::ModelOutput &model_output)
         {
 
-            typename Types::Mutex &mtx{matrix_node->stats.mtx};
+            typename Types::Mutex &mutex{matrix_node->stats.mutex};
             if (!matrix_node->is_terminal())
             {
                 if (!matrix_node->is_expanded())
@@ -160,10 +160,10 @@ struct TreeBanditThreaded : Types
                         state.get_actions();
                         model.inference(state, model_output);
 
-                        mtx.lock();
+                        mutex.lock();
                         matrix_node->expand(state);
                         this->expand(state, matrix_node->stats, model_output);
-                        mtx.unlock();
+                        mutex.unlock();
                     }
 
                     if constexpr (return_if_expand)
@@ -173,22 +173,22 @@ struct TreeBanditThreaded : Types
                 }
 
                 typename Types::Outcome outcome;
-                this->select(device, matrix_node->stats, outcome, mtx);
+                this->select(device, matrix_node->stats, outcome, mutex);
 
                 matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
-                // mtx.lock();
+                // mutex.lock();
                 ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                // chance_node->stats.mtx.lock();
+                // chance_node->stats.mutex.lock();
                 MatrixNode *matrix_node_next = chance_node->access(state.obs);
-                // chance_node->stats.mtx.unlock();
-                // mtx.unlock();
+                // chance_node->stats.mutex.unlock();
+                // mutex.unlock();
 
                 MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
                 outcome.value = model_output.value;
-                this->update_matrix_stats(matrix_node->stats, outcome, mtx);
-                this->update_chance_stats(chance_node->stats, outcome, mtx);
+                this->update_matrix_stats(matrix_node->stats, outcome, mutex);
+                this->update_chance_stats(chance_node->stats, outcome, mutex);
                 return matrix_node_leaf;
             }
             else
@@ -354,7 +354,7 @@ struct TreeBanditThreadPool : Types
             MatrixNode *const matrix_node,
             Types::ModelOutput &model_output)
         {
-            // typename Types::Mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
+            // typename Types::Mutex &mutex = mutex_pool[matrix_node->stats.mutex_index];
             typename Types::Mutex &safe = matrix_node->stats.mutex;
 
             if (!matrix_node->is_terminal())
@@ -393,25 +393,25 @@ struct TreeBanditThreadPool : Types
                 }
                 // safe.unlock();
 
-                typename Types::Mutex &mtx = mutex_pool[0];
+                typename Types::Mutex &mutex = mutex_pool[0];
 
                 typename Types::Outcome outcome;
-                this->select(device, matrix_node->stats, outcome, mtx);
+                this->select(device, matrix_node->stats, outcome, mutex);
 
                 matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
 
-                mtx.lock();
+                mutex.lock();
                 ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                // chance_node->stats.mtx.lock();
+                // chance_node->stats.mutex.lock();
                 MatrixNode *matrix_node_next = chance_node->access(state.obs);
-                // chance_node->stats.mtx.unlock();
-                mtx.unlock();
+                // chance_node->stats.mutex.unlock();
+                mutex.unlock();
 
                 MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
                 outcome.value = model_output.value;
-                this->update_matrix_stats(matrix_node->stats, outcome, mtx);
-                this->update_chance_stats(chance_node->stats, outcome, mtx);
+                this->update_matrix_stats(matrix_node->stats, outcome, mutex);
+                this->update_chance_stats(chance_node->stats, outcome, mutex);
                 return matrix_node_leaf;
             }
             else
@@ -436,7 +436,7 @@ struct TreeBanditThreadPool : Types
         //     MatrixNode *const matrix_node,
         //     Types::ModelOutput &model_output)
         // {
-        //     std::mutex &mtx = mutex_pool[matrix_node->stats.mutex_index];
+        //     std::mutex &mutex = mutex_pool[matrix_node->stats.mutex_index];
 
         //     if (!matrix_node->is_terminal())
         //     {
@@ -444,9 +444,9 @@ struct TreeBanditThreadPool : Types
         //         {
         //             typename Types::Outcome outcome;
 
-        //             // mtx.lock();
-        //             this->select(device, matrix_node->stats, outcome, mtx);
-        //             // mtx.unlock();
+        //             // mutex.lock();
+        //             this->select(device, matrix_node->stats, outcome, mutex);
+        //             // mutex.unlock();
 
         //             typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
         //             typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
@@ -458,24 +458,24 @@ struct TreeBanditThreadPool : Types
 
         //             outcome.value = model_output.value;
 
-        //             // mtx.lock();
-        //             this->update_matrix_stats(matrix_node->stats, outcome, mtx);
-        //             this->update_chance_stats(chance_node->stats, outcome, mtx);
-        //             // mtx.unlock();
+        //             // mutex.lock();
+        //             this->update_matrix_stats(matrix_node->stats, outcome, mutex);
+        //             this->update_chance_stats(chance_node->stats, outcome, mutex);
+        //             // mutex.unlock();
 
         //             return matrix_node_leaf;
         //         }
         //         else
         //         {
         //             state.get_actions();
-        //             mtx.lock();
+        //             mutex.lock();
         //             matrix_node->row_actions = state.row_actions;
         //             matrix_node->col_actions = state.col_actions;
         //             matrix_node->expanded = true;
         //             matrix_node->terminal = state.is_terminal();
         //             this->expand(state, matrix_node->stats, model_output);
         //             get_mutex_index(matrix_node);
-        //             mtx.unlock();
+        //             mutex.unlock();
 
         //             if (state.is_terminal())
         //             {

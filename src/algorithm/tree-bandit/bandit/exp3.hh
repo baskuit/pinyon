@@ -194,12 +194,12 @@ struct Exp3 : Types
             Types::PRNG &device,
             const MatrixStats &stats, // TODO made const, does this fix bug?
             Outcome &outcome,
-            Types::Mutex &mtx) const
+            Types::Mutex &mutex) const
         {
-            mtx.lock();
+            mutex.lock();
             typename Types::VectorReal row_forecast(stats.row_gains);
             typename Types::VectorReal col_forecast(stats.col_gains);
-            mtx.unlock();
+            mutex.unlock();
             const size_t rows = row_forecast.size();
             const size_t cols = col_forecast.size();
             const auto &one_minus_gamma = this->one_minus_gamma;
@@ -241,9 +241,9 @@ struct Exp3 : Types
         void update_matrix_stats(
             MatrixStats &stats,
             Outcome &outcome,
-            Types::Mutex &mtx) const
+            Types::Mutex &mutex) const
         {
-            mtx.lock();
+            mutex.lock();
             stats.value_total += outcome.value;
             stats.visits += 1;
             stats.row_visits[outcome.row_idx] += 1;
@@ -264,13 +264,13 @@ struct Exp3 : Types
                     v -= max;
                 }
             }
-            mtx.unlock();
+            mutex.unlock();
         }
 
         void update_chance_stats(
             ChanceStats &stats,
             Outcome &outcome,
-            Types::Mutex &mtx) const
+            Types::Mutex &mutex) const
         {
         }
 

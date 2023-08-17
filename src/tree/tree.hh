@@ -46,12 +46,12 @@ struct DefaultNodes : Types
             state.apply_actions(row_actions[row_idx], col_actions[col_idx]);
         }
 
-        typename Types::VectorAction get_row_actions () const
+        typename Types::VectorAction get_row_actions() const
         {
             return row_actions;
         }
 
-        typename Types::VectorAction get_col_actions () const
+        typename Types::VectorAction get_col_actions() const
         {
             return col_actions;
         }
@@ -138,6 +138,33 @@ struct DefaultNodes : Types
             return current;
         };
 
+        ChanceNode *access(int row_idx, int col_idx, Types::Mutex &mutex)
+        {
+            mutex.lock();
+            if (this->child == nullptr)
+            {
+                this->child = new ChanceNode(row_idx, col_idx);
+                mutex.unlock();
+                return this->child;
+            }
+            ChanceNode *current = this->child;
+            ChanceNode *previous = this->child;
+            while (current != nullptr)
+            {
+                previous = current;
+                if (current->row_idx == row_idx && current->col_idx == col_idx)
+                {
+                    mutex.unlock();
+                    return current;
+                }
+                current = current->next;
+            }
+            ChanceNode *child = new ChanceNode(row_idx, col_idx);
+            previous->next = child;
+            mutex.unlock();
+            return child;
+        };
+
         size_t count_matrix_nodes()
         {
             size_t c = 1;
@@ -150,7 +177,8 @@ struct DefaultNodes : Types
             return c;
         }
 
-        ChanceNode &access_ref (int row_idx, int col_idx) {
+        ChanceNode &access_ref(int row_idx, int col_idx)
+        {
             if (this->child == nullptr)
             {
                 this->child = new ChanceNode(row_idx, col_idx);
@@ -233,6 +261,34 @@ struct DefaultNodes : Types
                 current = current->next;
             }
             return current;
+        };
+
+        MatrixNode *access(const Types::Obs &obs, Types::Mutex &mutex)
+        {
+            mutex.lock();
+            if (this->child == nullptr)
+            {
+                MatrixNode *child = new MatrixNode(obs);
+                this->child = child;
+                mutex.unlock();
+                return child;
+            }
+            MatrixNode *current = this->child;
+            MatrixNode *previous = this->child;
+            while (current != nullptr)
+            {
+                previous = current;
+                if (current->obs == obs)
+                {
+                    mutex.unlock();
+                    return current;
+                }
+                current = current->next;
+            }
+            MatrixNode *child = new MatrixNode(obs);
+            previous->next = child;
+            mutex.unlock();
+            return child;
         };
 
         size_t count_matrix_nodes()

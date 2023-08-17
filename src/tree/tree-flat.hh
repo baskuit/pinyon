@@ -35,14 +35,14 @@ struct FlatNodes : Types
         MatrixNode(Types::Obs obs) : obs(obs) {}
         ~MatrixNode();
 
-        inline void expand(Types::State &state)
+        inline void expand(const Types::State &state)
         {
             expanded = true;
             row_actions = state.row_actions;
             col_actions = state.col_actions;
             const size_t n_children = row_actions.size() * col_actions.size();
-            edges = new ChanceNode *[n_children];
-            std::fill_n(edges, n_children, nullptr);
+            edges = new ChanceNode *[n_children]{};
+            // std::fill_n(edges, n_children, nullptr); // TODO does this work lol
         }
 
         void apply_actions(Types::State &state, const int row_idx, const int col_idx) const
@@ -84,7 +84,7 @@ struct FlatNodes : Types
         {
         }
 
-        ChanceNode *access(int row_idx, int col_idx)
+        ChanceNode *access(int row_idx, int     col_idx)
         {
             const int child_idx = row_idx * col_actions.size() + col_idx;
             const ChanceNode *&child = edges[child_idx]; // ref to pointer
@@ -102,7 +102,20 @@ struct FlatNodes : Types
             return child;
         };
 
-        size_t count_matrix_nodes()
+        ChanceNode *access(int row_idx, int col_idx, Types::Mutex &mutex)
+        {
+            const int child_idx = row_idx * col_actions.size() + col_idx;
+            const ChanceNode *&child = edges[child_idx]; // ref to pointer
+            mutex.lock();
+            if (child == nullptr)
+            {
+                child = new ChanceNode();
+            }
+            mutex.unlock();
+            return child;
+        };
+
+        size_t count_matrix_nodes() const
         {
             size_t c = 1;
             const size_t n_children = row_actions.size() * col_actions.size();
@@ -125,7 +138,6 @@ struct FlatNodes : Types
         std::unordered_map<typename Types::Obs, MatrixNode *, typename Types::ObsHash> edges{};
         typename Types::ChanceStats stats{};
 
-        ChanceNode() {}
         ~ChanceNode();
 
         MatrixNode *access(Types::Obs &obs)
@@ -134,7 +146,6 @@ struct FlatNodes : Types
             if (child == nullptr)
             {
                 child = new MatrixNode(obs);
-                return child;
             }
             return child;
         };
@@ -143,11 +154,20 @@ struct FlatNodes : Types
         {
             return edges[obs];
         };
+    
+        MatrixNode *access(Types::Obs &obs, Types::Mutex &mutex)
+        {
+            MatrixNode *&child = edges[obs];
+            if (child == nullptr)
+            {
+                child = new MatrixNode(obs);
+            }
+            return child;
+        };
 
-        size_t count_matrix_nodes()
+        size_t count_matrix_nodes() const
         {
             size_t c = 0;
-
             for (const auto &[obs, matrix_node] : edges)
             {
                 if (matrix_node != nullptr)
