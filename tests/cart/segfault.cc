@@ -2,28 +2,50 @@
 
 int main()
 {
-
-    using BaseTypes = MonteCarloModel<MoldState<2>>;
-    using Types = TreeBanditThreadPool<Exp3<BaseTypes>>;
-
-    Types::Search search{Types::BanditAlgorithm{}, 2};
-    // Types::Search search{{}, 2};
-
-
-    for (int i = 0; i < 50; ++i)
+    std::cout << "both double mutex" << std::endl;
     {
+        std::cout << "new search old mutex" << std::endl;
+        using BaseTypes = MonteCarloModel<MoldState<2>>;
+        using Types = TreeBanditThreaded2<Exp3<BaseTypes>>;
 
-        Types::MatrixNode root{};
+        for (size_t threads = 1; threads <= 8; ++threads)
+        {
+            Types::Search search{Types::BanditAlgorithm{}, threads};
+            Types::MatrixNode root{};
 
-        BaseTypes::State state{50};
-        BaseTypes::Model model{0};
+            BaseTypes::State state{size_t{50}};
+            BaseTypes::Model model{0};
 
-        const size_t iterations = 1 << 13;
-        prng device{0};
-
-        search.run_for_iterations(iterations, device, state, model, root);
-
+            const size_t iterations = 1 << 20;
+            prng device{0};
+            auto start = std::chrono::high_resolution_clock::now();
+            search.run_for_iterations(iterations, device, state, model, root);
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            std::cout << "threads: " << threads << " time(ms): " << duration.count() << " count: " << root.count_matrix_nodes() << std::endl;
+        }
     }
+    {
+        std::cout << "new search new mutex" << std::endl;
+        using BaseTypes = MonteCarloModel<MoldState<2, SimpleTypesSpinLock>>;
+        using Types = TreeBanditThreaded2<Exp3<BaseTypes>>;
 
+        for (size_t threads = 1; threads <= 8; ++threads)
+        {
+            Types::Search search{Types::BanditAlgorithm{}, threads};
+            Types::MatrixNode root{};
+
+            BaseTypes::State state{size_t{50}};
+            BaseTypes::Model model{0};
+
+            const size_t iterations = 1 << 20;
+            prng device{0};
+            auto start = std::chrono::high_resolution_clock::now();
+            search.run_for_iterations(iterations, device, state, model, root);
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            std::cout << "threads: " << threads << " time(ms): " << duration.count() << " count: " << root.count_matrix_nodes() << std::endl;
+        }
+    }
     return 0;
 }

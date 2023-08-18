@@ -6,11 +6,11 @@
  Large uniform tree for testing etc. So called because it grows until it can't.
 */
 
-template <size_t size>
-struct MoldState : SimpleTypes
+template <size_t size, typename Types = SimpleTypes>
+struct MoldState : Types
 {
 
-    class State : public PerfectInfoState<SimpleTypes>
+    class State : public PerfectInfoState<Types>
     {
     public:
         size_t max_depth = 1;
@@ -19,12 +19,12 @@ struct MoldState : SimpleTypes
         {
             this->terminal = (this->max_depth == 0);
             this->init_range_actions(size);
-            this->prob = SimpleTypes::Prob{1};
-            this->obs = SimpleTypes::Obs{};
+            this->prob = typename Types::Prob{1};
+            this->obs = typename Types::Obs{};
         }
 
         void randomize_transition(
-            SimpleTypes::PRNG &device)
+            Types::PRNG &device)
         {
         }
 
@@ -33,33 +33,33 @@ struct MoldState : SimpleTypes
         }
 
         void get_actions(
-            SimpleTypes::VectorAction &row_actions,
-            SimpleTypes::VectorAction &col_actions) const
+            Types::VectorAction &row_actions,
+            Types::VectorAction &col_actions) const
         {
             row_actions = this->row_actions;
             col_actions = this->col_actions;
         }
 
         void apply_actions(
-            SimpleTypes::Action,
-            SimpleTypes::Action)
+            Types::Action,
+            Types::Action)
         {
             --this->max_depth;
             this->terminal = (this->max_depth == 0);
         }
 
         void get_chance_actions(
-            SimpleTypes::Action,
-            SimpleTypes::Action,
-            std::vector<SimpleTypes::Obs> &chance_actions) const
+            Types::Action,
+            Types::Action,
+            std::vector<typename Types::Obs> &chance_actions) const
         {
             chance_actions.resize(1);
         }
 
         void apply_actions(
-            SimpleTypes::Action,
-            SimpleTypes::Action,
-            SimpleTypes::Obs)
+            Types::Action,
+            Types::Action,
+            Types::Obs)
         {
             --this->max_depth;
             this->terminal = (this->max_depth == 0);

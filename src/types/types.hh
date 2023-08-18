@@ -205,3 +205,13 @@ using RandomTreeRationalTypes = DefaultTypes<
     int,
     mpq_class,
     ConstantSum<1, 1>::Value>;
+
+using SimpleTypesSpinLock = DefaultTypes<
+    double,
+    int,
+    int,
+    double,
+    PairReal,
+    std::vector,
+    Matrix,
+    spinlock>;
