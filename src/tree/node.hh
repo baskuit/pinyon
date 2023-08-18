@@ -32,18 +32,6 @@ concept IsNodeTypes =
             matrix_node.set_terminal()
         } -> std::same_as<void>;
         {
-            const_matrix_node.get_row_actions()
-        } -> std::same_as<typename Types::VectorAction>;
-        {
-            const_matrix_node.get_col_actions()
-        } -> std::same_as<typename Types::VectorAction>;
-        {
-            const_matrix_node.get_row_action(0)
-        } -> std::same_as<typename Types::Action>;
-        {
-            const_matrix_node.get_col_action(0)
-        } -> std::same_as<typename Types::Action>;
-        {
             Types::MatrixNode::STORES_VALUE
         } -> std::same_as<const bool &>;
 

@@ -100,9 +100,9 @@ struct AlphaBeta : Types
             if (max_depth > 0 && stats.depth >= max_depth)
             {
                 matrix_node->set_terminal();
-                typename Types::ModelOutput inference;
-                model.inference(state, inference);
-                return {inference.value.get_row_value(), inference.value.get_row_value()};
+                typename Types::ModelOutput model_output;
+                model.inference(state, model_output);
+                return {model_output.value.get_row_value(), model_output.value.get_row_value()};
             }
 
             // here is the only place we can use prior solve info

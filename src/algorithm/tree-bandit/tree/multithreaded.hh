@@ -100,9 +100,9 @@ struct TreeBanditThreaded : Types
             MatrixNode *matrix_node,
             size_t *iterations)
         {
-            typename Types::PRNG device_thread(thread_device_seed); // TODO deterministically provide new seed
-            typename Types::Model model_thread{*model};             // TODO go back to not making new ones? Perhaps only device needs new instance
-            typename Types::ModelOutput inference;
+            typename Types::PRNG device_thread(thread_device_seed);
+            typename Types::Model model_thread{*model};
+            typename Types::ModelOutput model_output;
 
             auto start = std::chrono::high_resolution_clock::now();
             auto end = std::chrono::high_resolution_clock::now();
@@ -112,7 +112,7 @@ struct TreeBanditThreaded : Types
             {
                 typename Types::State state_copy = *state;
                 state_copy.randomize_transition(device_thread);
-                this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
+                this->run_iteration(device_thread, state_copy, model_thread, matrix_node, model_output);
                 end = std::chrono::high_resolution_clock::now();
                 duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
             }
@@ -126,14 +126,14 @@ struct TreeBanditThreaded : Types
             const Types::Model *model,
             MatrixNode *const matrix_node)
         {
-            typename Types::PRNG device_thread(thread_device_seed); // TODO deterministically provide new seed
+            typename Types::PRNG device_thread(thread_device_seed);
             typename Types::Model model_thread{*model};
-            typename Types::ModelOutput inference;
+            typename Types::ModelOutput model_output;
             for (size_t iteration = 0; iteration < iterations; ++iteration)
             {
                 typename Types::State state_copy = *state;
                 state_copy.randomize_transition(device_thread);
-                this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
+                this->run_iteration(device_thread, state_copy, model_thread, matrix_node, model_output);
             }
         }
 
@@ -141,11 +141,12 @@ struct TreeBanditThreaded : Types
             Types::PRNG &device,
             Types::State &state,
             Types::Model &model,
-            MatrixNode *const matrix_node,
+            MatrixNode *matrix_node,
             Types::ModelOutput &model_output)
         {
-
             typename Types::Mutex &mutex{matrix_node->stats.mutex};
+            typename Types::Mutex &mutex_{matrix_node->stats.mutex};
+
             if (!matrix_node->is_terminal())
             {
                 if (!matrix_node->is_expanded())
@@ -175,20 +176,19 @@ struct TreeBanditThreaded : Types
                 typename Types::Outcome outcome;
                 this->select(device, matrix_node->stats, outcome, mutex);
 
-                matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
+                state.apply_actions(
+                    state.row_actions[outcome.row_idx],
+                    state.col_actions[outcome.col_idx]);
+                state.get_actions();
 
-                // mutex.lock();
-                ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                // chance_node->stats.mutex.lock();
-                MatrixNode *matrix_node_next = chance_node->access(state.obs);
-                // chance_node->stats.mutex.unlock();
-                // mutex.unlock();
-
+                ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx, mutex);
+                MatrixNode *matrix_node_next = chance_node->access(state.obs, mutex);
                 MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
                 outcome.value = model_output.value;
                 this->update_matrix_stats(matrix_node->stats, outcome, mutex);
                 this->update_chance_stats(chance_node->stats, outcome, mutex);
+                // this->update_stats ();
                 return matrix_node_leaf;
             }
             else
@@ -312,7 +312,7 @@ struct TreeBanditThreadPool : Types
         {
             typename Types::PRNG device_thread{thread_device_seed}; // TODO deterministically provide new seed
             typename Types::Model model_thread{*model};             // TODO go back to not making new ones? Perhaps only device needs new instance
-            typename Types::ModelOutput inference;
+            typename Types::ModelOutput model_output;
 
             auto start = std::chrono::high_resolution_clock::now();
             auto end = std::chrono::high_resolution_clock::now();
@@ -322,7 +322,7 @@ struct TreeBanditThreadPool : Types
             {
                 typename Types::State state_copy = *state;
                 state_copy.randomize_transition(device_thread);
-                this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
+                this->run_iteration(device_thread, state_copy, model_thread, matrix_node, model_output);
                 end = std::chrono::high_resolution_clock::now();
                 duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
             }
@@ -338,12 +338,12 @@ struct TreeBanditThreadPool : Types
         {
             typename Types::PRNG device_thread{thread_device_seed};
             typename Types::Model model_thread{*model};
-            typename Types::ModelOutput inference;
+            typename Types::ModelOutput model_output;
             for (size_t iteration = 0; iteration < iterations; ++iteration)
             {
                 typename Types::State state_copy = *state;
                 state_copy.randomize_transition(device_thread);
-                this->run_iteration(device_thread, state_copy, model_thread, matrix_node, inference);
+                this->run_iteration(device_thread, state_copy, model_thread, matrix_node, model_output);
             }
         }
 
@@ -370,25 +370,25 @@ struct TreeBanditThreadPool : Types
 
                     // if (expected == -1)
                     // {
-                        if (state.is_terminal())
-                        {
-                            matrix_node->set_terminal();
-                            model_output.value = state.payoff;
-                        }
-                        else
-                        {
-                            state.get_actions();
-                            // get_mutex_index(matrix_node);
-                            matrix_node->expand(state);
-                            this->expand(state, matrix_node->stats, model_output);
-                            model.inference(state, model_output);
-                        }
+                    if (state.is_terminal())
+                    {
+                        matrix_node->set_terminal();
+                        model_output.value = state.payoff;
+                    }
+                    else
+                    {
+                        state.get_actions();
+                        // get_mutex_index(matrix_node);
+                        matrix_node->expand(state);
+                        this->expand(state, matrix_node->stats, model_output);
+                        model.inference(state, model_output);
+                    }
 
-                        if constexpr (return_if_expand)
-                        {
-                            safe.unlock();
-                            return matrix_node;
-                        }
+                    if constexpr (return_if_expand)
+                    {
+                        safe.unlock();
+                        return matrix_node;
+                    }
                     // }
                 }
                 // safe.unlock();
@@ -398,7 +398,10 @@ struct TreeBanditThreadPool : Types
                 typename Types::Outcome outcome;
                 this->select(device, matrix_node->stats, outcome, mutex);
 
-                matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
+                state.apply_actions(
+                    state.row_actions[outcome.row_idx],
+                    state.col_actions[outcome.col_idx]);
+                state.get_actions();
 
                 mutex.lock();
                 ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
@@ -504,3 +507,74 @@ struct TreeBanditThreadPool : Types
         }
     };
 };
+
+// MatrixNode *run_iteration(
+//     Types::PRNG &device,
+//     Types::State &state,
+//     Types::Model &model,
+//     MatrixNode &matrix_node,
+//     Types::ModelOutput &model_output)
+// {
+//     typename Types::Mutex &mutex{matrix_node->stats.mutex};
+//     typename Types::Mutex &mutex_{matrix_node->stats.mutex};
+
+//     // no longer allows for artifically terminal nodes
+//     if (state.is_terminal())
+//     {
+//         matrix_node->set_terminal();
+//         model_output.value = state.payoff;
+//         return matrix_node;
+//     }
+//     else
+//     {
+//         if (!matrix_node->is_expanded())
+//         {
+//             if (mutex.try_lock())
+//             {
+//                 if (matrix_node->is_expanded())
+//                 {
+//                     return;
+//                     // double exapands may throw
+//                 }
+//                 // gets to expand
+//                 state.get_actions(); // alread has em
+//                 matrix_node->expand(state);
+//                 model.inference(state, model_output);
+//                 this->expand(state, matrix_node->stats, model_output);
+//                 mutex.unlock();
+//             }
+//             else
+//             {
+//                 return matrix_node;
+//                 // this only happens a few times or w/e
+//             }
+//         }
+//         else
+//         {
+//             // is expanded
+
+//             // when is first mutex lock: possibly in select, certianly in matrix_node::access
+
+//             // not locking during selection assumes that data is piece wise atomic and 'flat' over the policies
+
+//             //
+//             typename Types::Outcome outcome;
+//             this->select(device, matrix_node->stats, outcome, mutex);
+
+// state.apply_actions(
+//     state.row_actions[outcome.row_idx],
+//     state.col_actions[outcome.col_idx]);
+// state.get_actions();
+
+//             mutex_.lock();
+//             ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+//             MatrixNode *matrix_node_next = chance_node->access(state.obs);
+//             mutex_.unlock();
+
+//             MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
+
+//             outcome.value = model_output.value;
+//             this->update_matrix_stats(matrix_node->stats, outcome, mutex);
+//             this->update_chance_stats(chance_node->stats, outcome); // no guard
+//         }
+//     }

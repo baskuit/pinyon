@@ -29,33 +29,14 @@ struct LNodes : Types
         bool terminal = false;
         bool expanded = false;
 
-        typename Types::VectorAction row_actions;
-        typename Types::VectorAction col_actions;
         typename Types::MatrixStats stats;
 
         MatrixNode(){};
         ~MatrixNode();
 
-        inline void expand(Types::State &state)
+        inline void expand(const Types::State &)
         {
             expanded = true;
-            row_actions = state.row_actions;
-            col_actions = state.col_actions;
-        }
-
-        void apply_actions(Types::State &state, const int row_idx, const int col_idx) const
-        {
-            state.apply_actions(row_actions[row_idx], col_actions[col_idx]);
-        }
-
-        Types::Action get_row_action(const int row_idx) const
-        {
-            return row_actions[row_idx];
-        }
-
-        Types::Action get_col_action(const int col_idx) const
-        {
-            return col_actions[col_idx];
         }
 
         inline bool is_terminal() const

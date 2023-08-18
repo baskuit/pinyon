@@ -85,9 +85,9 @@ struct AlphaBetaOld : Types
             if (max_depth > 0 && stats.depth >= max_depth)
             {
                 matrix_node->set_terminal();
-                typename Types::ModelOutput inference;
-                model.inference(state, inference);
-                stats.row_value = inference.value.get_row_value();
+                typename Types::ModelOutput model_output;
+                model.inference(state, model_output);
+                stats.row_value = model_output.value.get_row_value();
                 return stats.row_value;
             }
 

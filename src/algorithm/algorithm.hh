@@ -43,6 +43,15 @@ concept IsBanditAlgorithmTypes =
         {
             bandit.update_chance_stats(chance_stats, outcome)
         } -> std::same_as<void>;
+        {
+            outcome.row_idx
+        } -> std::same_as<int&>;
+        {
+            outcome.col_idx
+        } -> std::same_as<int&>;
+        {
+            outcome.value
+        } -> std::same_as<typename Types::Value &>;
     } &&
     IsValueModelTypes<Types>;
 

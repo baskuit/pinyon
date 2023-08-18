@@ -33,13 +33,13 @@ struct TreeBandit : Types
             auto start = std::chrono::high_resolution_clock::now();
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-            typename Types::ModelOutput inference;
+            typename Types::ModelOutput model_output;
             size_t iterations = 0;
             for (; duration.count() < duration_ms; ++iterations)
             {
                 typename Types::State state_copy = state;
                 state_copy.randomize_transition(device);
-                this->run_iteration(device, state_copy, model, &matrix_node, inference);
+                this->run_iteration(device, state_copy, model, &matrix_node, model_output);
                 end = std::chrono::high_resolution_clock::now();
                 duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
             }
@@ -54,12 +54,12 @@ struct TreeBandit : Types
             MatrixNode &matrix_node) const
         {
             auto start = std::chrono::high_resolution_clock::now();
-            typename Types::ModelOutput inference;
+            typename Types::ModelOutput model_output;
             for (size_t iteration = 0; iteration < iterations; ++iteration)
             {
                 typename Types::State state_copy = state;
                 state_copy.randomize_transition(device);
-                this->run_iteration(device, state_copy, model, &matrix_node, inference);
+                this->run_iteration(device, state_copy, model, &matrix_node, model_output);
             }
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -100,7 +100,7 @@ struct TreeBandit : Types
                 typename Types::Outcome outcome;
                 this->select(device, matrix_node->stats, outcome);
 
-                matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
+                // matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx); // TODO
 
                 ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode *matrix_node_next = chance_node->access(state.obs);

@@ -159,8 +159,8 @@ struct OffPolicy : Types
                     matrix_node->expand(state);
                     matrix_node->set_terminal(state.is_terminal());
 
-                    typename Types::ModelOutput inference;
-                    this->expand(state, matrix_node->stats, inference);
+                    typename Types::ModelOutput model_output;
+                    this->expand(state, matrix_node->stats, model_output);
                     return;
                 }
             }

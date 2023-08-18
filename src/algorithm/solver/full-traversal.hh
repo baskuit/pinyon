@@ -83,8 +83,8 @@ struct FullTraversal : Types
             {
                 for (int col_idx = 0; col_idx < cols; ++col_idx)
                 {
-                    const typename Types::Action row_action{matrix_node->get_row_action(row_idx)};
-                    const typename Types::Action col_action{matrix_node->get_col_action(col_idx)};
+                    const typename Types::Action &row_action{state.row_actions[row_idx]};
+                    const typename Types::Action &col_action{state.col_actions[col_idx]};
                     
                     ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
                     auto &chance_actions = chance_node->stats.chance_actions;
@@ -94,6 +94,10 @@ struct FullTraversal : Types
                     {
                         typename Types::State state_copy = state;
                         state_copy.apply_actions(row_action, col_action, chance_action);
+                        // state.apply_fast(row_idx, row_actions, col_idx, col_actions);
+                        // {
+                        //     state.apply_actions(row_idx, col_idx);
+                        // }
                         MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
                         matrix_node_next->stats.depth = stats.depth + 1;
                         matrix_node_next->stats.prob = state_copy.prob;
