@@ -17,11 +17,13 @@ struct TreeBanditThreaded : Types
 {
     struct MatrixStats : Types::MatrixStats
     {
-        typename Types::Mutex mutex{};
+        typename Types::Mutex stats_mutex{};
+        typename Types::Mutex tree_stats_mutex{};
     };
     struct ChanceStats : Types::ChanceStats
     {
-        typename Types::Mutex mutex{};
+        // typename Types::Mutex mutex{};
+        // tree mutex guards both, currently
     };
     using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
     using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
@@ -144,82 +146,74 @@ struct TreeBanditThreaded : Types
             MatrixNode *matrix_node,
             Types::ModelOutput &model_output)
         {
-            typename Types::Mutex &mutex{matrix_node->stats.mutex};
-            typename Types::Mutex &mutex_{matrix_node->stats.mutex};
+            typename Types::Mutex &stats_mutex{matrix_node->stats.stats_mutex};
+            typename Types::Mutex &tree_mutex{matrix_node->stats.tree_mutex};
 
-            if (!matrix_node->is_terminal())
+            // no longer allows for artifically terminal nodes
+            if (state.is_terminal())
             {
-                if (!matrix_node->is_expanded())
-                {
-                    if (state.is_terminal())
-                    {
-                        matrix_node->set_terminal();
-                        model_output.value = state.payoff;
-                    }
-                    else
-                    {
-                        state.get_actions();
-                        model.inference(state, model_output);
-
-                        mutex.lock();
-                        matrix_node->expand(state);
-                        this->expand(state, matrix_node->stats, model_output);
-                        mutex.unlock();
-                    }
-
-                    if constexpr (return_if_expand)
-                    {
-                        return matrix_node;
-                    }
-                }
-
-                typename Types::Outcome outcome;
-                this->select(device, matrix_node->stats, outcome, mutex);
-
-                state.apply_actions(
-                    state.row_actions[outcome.row_idx],
-                    state.col_actions[outcome.col_idx]);
-                state.get_actions();
-
-                ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx, mutex);
-                MatrixNode *matrix_node_next = chance_node->access(state.obs, mutex);
-                MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
-
-                outcome.value = model_output.value;
-                this->update_matrix_stats(matrix_node->stats, outcome, mutex);
-                this->update_chance_stats(chance_node->stats, outcome, mutex);
-                // this->update_stats ();
-                return matrix_node_leaf;
+                matrix_node->set_terminal();
+                model_output.value = state.payoff;
+                return matrix_node;
             }
             else
             {
-                if constexpr (MatrixNode::STORES_VALUE)
+                if (!matrix_node->is_expanded())
                 {
-                    matrix_node->get_value(model_output.value);
+                    if (stats_mutex.try_lock())
+                    {
+                        if (matrix_node->is_expanded())
+                        {
+                            stats_mutex.unlock();
+                            return matrix_node;
+                            // double exapands may throw
+                        }
+                        // gets to expand
+                        // state.get_actions(); // alread has em
+                        model.inference(state, model_output);
+                        this->expand(state, matrix_node->stats, model_output);
+                        stats_mutex.unlock();
+                        matrix_node->expand(state);
+                    }
+                    return matrix_node;
                 }
                 else
                 {
-                    model_output.value = state.payoff;
+                    typename Types::Outcome outcome;
+                    this->select(device, matrix_node->stats, outcome);
+
+                    state.apply_actions(
+                        state.row_actions[outcome.row_idx],
+                        state.col_actions[outcome.col_idx]);
+                    state.get_actions();
+
+                    tree_mutex.lock();
+                    ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                    MatrixNode *matrix_node_next = chance_node->access(state.obs);
+                    tree_mutex.unlock();
+
+                    MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
+
+                    outcome.value = model_output.value;
+                    this->update_matrix_stats(matrix_node->stats, outcome, stats_mutex);
+                    this->update_chance_stats(chance_node->stats, outcome); // no guard
+                    return matrix_node_leaf;
                 }
-                return matrix_node;
             }
-        }
+        };
     };
 };
-
-//  TreeBanditThreadPool
 
 template <
     CONCEPT(IsMultithreadedBanditTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
     bool return_if_expand = true,
-    size_t pool_size = 128>
+    size_t pool_size = 64>
 struct TreeBanditThreadPool : Types
 {
     struct MatrixStats : Types::MatrixStats
     {
         int mutex_index = 0;
-        typename Types::Mutex mutex{};
         std::atomic<int> atomic_mutex_index{-1};
     };
     struct ChanceStats : Types::ChanceStats
@@ -227,6 +221,11 @@ struct TreeBanditThreadPool : Types
     };
     using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
     using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
+
+    struct DoubleMutex {
+        typename Types::Mutex first_mutex;
+        typename Types::Mutex second_mutex;
+    };
 
     class Search : public Types::BanditAlgorithm
     {
@@ -248,7 +247,7 @@ struct TreeBanditThreadPool : Types
         // so we define a new copy constr that doesnt attempt to copy it.
 
         const size_t threads = 1;
-        std::array<typename Types::Mutex, pool_size> mutex_pool{};
+        std::array<DoubleMutex, pool_size> mutex_pool{};
         std::atomic<unsigned int> current_index{0};
 
         size_t run(
@@ -351,153 +350,73 @@ struct TreeBanditThreadPool : Types
             Types::PRNG &device,
             Types::State &state,
             Types::Model &model,
-            MatrixNode *const matrix_node,
+            MatrixNode *matrix_node,
             Types::ModelOutput &model_output)
         {
-            // typename Types::Mutex &mutex = mutex_pool[matrix_node->stats.mutex_index];
-            typename Types::Mutex &safe = matrix_node->stats.mutex;
-
-            if (!matrix_node->is_terminal())
+            if (state.is_terminal())
             {
-                // safe.lock(); //workss
-
-                if (!matrix_node->is_expanded())
-                {
-                    // safe.lock(); // doesnt work
-                    int expected = -1;
-                    int desired = (this->current_index.fetch_add(1)) % pool_size;
-                    matrix_node->stats.atomic_mutex_index.compare_exchange_weak(expected, desired);
-
-                    // if (expected == -1)
-                    // {
-                    if (state.is_terminal())
-                    {
-                        matrix_node->set_terminal();
-                        model_output.value = state.payoff;
-                    }
-                    else
-                    {
-                        state.get_actions();
-                        // get_mutex_index(matrix_node);
-                        matrix_node->expand(state);
-                        this->expand(state, matrix_node->stats, model_output);
-                        model.inference(state, model_output);
-                    }
-
-                    if constexpr (return_if_expand)
-                    {
-                        safe.unlock();
-                        return matrix_node;
-                    }
-                    // }
-                }
-                // safe.unlock();
-
-                typename Types::Mutex &mutex = mutex_pool[0];
-
-                typename Types::Outcome outcome;
-                this->select(device, matrix_node->stats, outcome, mutex);
-
-                state.apply_actions(
-                    state.row_actions[outcome.row_idx],
-                    state.col_actions[outcome.col_idx]);
-                state.get_actions();
-
-                mutex.lock();
-                ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                // chance_node->stats.mutex.lock();
-                MatrixNode *matrix_node_next = chance_node->access(state.obs);
-                // chance_node->stats.mutex.unlock();
-                mutex.unlock();
-
-                MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
-
-                outcome.value = model_output.value;
-                this->update_matrix_stats(matrix_node->stats, outcome, mutex);
-                this->update_chance_stats(chance_node->stats, outcome, mutex);
-                return matrix_node_leaf;
+                matrix_node->set_terminal();
+                model_output.value = state.payoff;
+                return matrix_node;
             }
             else
             {
-                // safe.unlock();
-                if constexpr (MatrixNode::STORES_VALUE)
+                if (!matrix_node->is_expanded())
                 {
-                    matrix_node->get_value(model_output.value);
+                    int expected = -1;
+                    int desired = (this->current_index.fetch_add(1)) % pool_size;
+                    matrix_node->stats.atomic_mutex_index.compare_exchange_weak(expected, desired);
+                    if (expected != -1)
+                    {
+                        desired = expected;
+                    }
+                    else
+                    {
+                        matrix_node->stats.mutex_index = desired;
+                    }
+                    auto &mutex{this->mutex_pool[desired].first_mutex};
+                    // now all nodes agree on correct mutex
+                    if (mutex.try_lock())
+                    {
+                        if (matrix_node->is_expanded())
+                        {
+                            mutex.unlock();
+                            return matrix_node;
+                        }
+                        model.inference(state, model_output);
+                        this->expand(state, matrix_node->stats, model_output);
+                        mutex.unlock();
+                        matrix_node->expand(state);
+                    }
+                    return matrix_node;
                 }
                 else
                 {
-                    model_output.value = state.payoff;
+                    auto &stats_mutex = mutex_pool[matrix_node->stats.mutex_index].first_mutex;
+                    auto &tree_mutex = mutex_pool[matrix_node->stats.mutex_index].second_mutex;
+
+                    typename Types::Outcome outcome;
+                    this->select(device, matrix_node->stats, outcome);
+
+                    state.apply_actions(
+                        state.row_actions[outcome.row_idx],
+                        state.col_actions[outcome.col_idx]);
+                    state.get_actions();
+
+                    tree_mutex.lock();
+                    ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                    MatrixNode *matrix_node_next = chance_node->access(state.obs);
+                    tree_mutex.unlock();
+
+                    MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
+
+                    outcome.value = model_output.value;
+                    this->update_matrix_stats(matrix_node->stats, outcome, stats_mutex);
+                    this->update_chance_stats(chance_node->stats, outcome); // no guard
+                    return matrix_node_leaf;
                 }
-                return matrix_node;
             }
-        }
-
-        // MatrixNode *run_iteration(
-        //     Types::PRNG &device,
-        //     Types::State &state,
-        //     Types::Model &model,
-        //     MatrixNode *const matrix_node,
-        //     Types::ModelOutput &model_output)
-        // {
-        //     std::mutex &mutex = mutex_pool[matrix_node->stats.mutex_index];
-
-        //     if (!matrix_node->is_terminal())
-        //     {
-        //         if (matrix_node->is_expanded())
-        //         {
-        //             typename Types::Outcome outcome;
-
-        //             // mutex.lock();
-        //             this->select(device, matrix_node->stats, outcome, mutex);
-        //             // mutex.unlock();
-
-        //             typename Types::Action row_action = matrix_node->row_actions[outcome.row_idx];
-        //             typename Types::Action col_action = matrix_node->col_actions[outcome.col_idx];
-        //             state.apply_actions(row_action, col_action);
-
-        //             auto *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-        //             auto *matrix_node_next = chance_node->access(state.obs);
-        //             auto *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
-
-        //             outcome.value = model_output.value;
-
-        //             // mutex.lock();
-        //             this->update_matrix_stats(matrix_node->stats, outcome, mutex);
-        //             this->update_chance_stats(chance_node->stats, outcome, mutex);
-        //             // mutex.unlock();
-
-        //             return matrix_node_leaf;
-        //         }
-        //         else
-        //         {
-        //             state.get_actions();
-        //             mutex.lock();
-        //             matrix_node->row_actions = state.row_actions;
-        //             matrix_node->col_actions = state.col_actions;
-        //             matrix_node->expanded = true;
-        //             matrix_node->terminal = state.is_terminal();
-        //             this->expand(state, matrix_node->stats, model_output);
-        //             get_mutex_index(matrix_node);
-        //             mutex.unlock();
-
-        //             if (state.is_terminal())
-        //             {
-        //                 model_output.value = state.payoff;
-        //             }
-        //             else
-        //             {
-        //                 model.inference(state, model_output);
-        //             }
-
-        //             return matrix_node;
-        //         }
-        //     }
-        //     else
-        //     {
-        //         model_output.value = state.payoff;
-        //         return matrix_node;
-        //     }
-        // }
+        };
 
     private:
         void get_mutex_index(
@@ -507,74 +426,3 @@ struct TreeBanditThreadPool : Types
         }
     };
 };
-
-// MatrixNode *run_iteration(
-//     Types::PRNG &device,
-//     Types::State &state,
-//     Types::Model &model,
-//     MatrixNode &matrix_node,
-//     Types::ModelOutput &model_output)
-// {
-//     typename Types::Mutex &mutex{matrix_node->stats.mutex};
-//     typename Types::Mutex &mutex_{matrix_node->stats.mutex};
-
-//     // no longer allows for artifically terminal nodes
-//     if (state.is_terminal())
-//     {
-//         matrix_node->set_terminal();
-//         model_output.value = state.payoff;
-//         return matrix_node;
-//     }
-//     else
-//     {
-//         if (!matrix_node->is_expanded())
-//         {
-//             if (mutex.try_lock())
-//             {
-//                 if (matrix_node->is_expanded())
-//                 {
-//                     return;
-//                     // double exapands may throw
-//                 }
-//                 // gets to expand
-//                 state.get_actions(); // alread has em
-//                 matrix_node->expand(state);
-//                 model.inference(state, model_output);
-//                 this->expand(state, matrix_node->stats, model_output);
-//                 mutex.unlock();
-//             }
-//             else
-//             {
-//                 return matrix_node;
-//                 // this only happens a few times or w/e
-//             }
-//         }
-//         else
-//         {
-//             // is expanded
-
-//             // when is first mutex lock: possibly in select, certianly in matrix_node::access
-
-//             // not locking during selection assumes that data is piece wise atomic and 'flat' over the policies
-
-//             //
-//             typename Types::Outcome outcome;
-//             this->select(device, matrix_node->stats, outcome, mutex);
-
-// state.apply_actions(
-//     state.row_actions[outcome.row_idx],
-//     state.col_actions[outcome.col_idx]);
-// state.get_actions();
-
-//             mutex_.lock();
-//             ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-//             MatrixNode *matrix_node_next = chance_node->access(state.obs);
-//             mutex_.unlock();
-
-//             MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
-
-//             outcome.value = model_output.value;
-//             this->update_matrix_stats(matrix_node->stats, outcome, mutex);
-//             this->update_chance_stats(chance_node->stats, outcome); // no guard
-//         }
-//     }
