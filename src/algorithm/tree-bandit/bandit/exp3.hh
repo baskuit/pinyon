@@ -308,7 +308,7 @@ struct Exp3 : Types
         {
         }
 
-        void pre_expand(
+        void expand_state_part(
             const Types::State &state,
             MatrixStats &stats) const
         {
@@ -320,7 +320,7 @@ struct Exp3 : Types
             stats.col_gains.resize(cols, 0);
         }
 
-        void post_expand(
+        void expand_inference_part(
             const Types::ModelOutput &output,
             MatrixStats &stats) const
         {

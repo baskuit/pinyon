@@ -10,6 +10,20 @@ TODO still no chance node updates (does any algo actually NEED this?)
 
 */
 
+/*
+
+we do not keep track of the rolled out states outside of the inner most get_trajectory (run_iteration) function
+therefore to expand we need to do some part of it when we have access to the state
+and the other part later when we have access to the inference
+
+but we cannot call the default select method on a state-expanded node, in general.
+and it should only be the uniform policy anyway, so we need a way to distinguish 
+selection nodes from passable nodes. is_expanded is taken to mean passable, and properly_expanded
+in the stats is used for selectable. 2 bools for 3 options
+
+
+*/
+
 template <
     CONCEPT(IsBanditAlgorithmTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
@@ -19,7 +33,7 @@ struct OffPolicy : Types
 {
     struct MatrixStats : Types::MatrixStats
     {
-        bool properly_expanded;
+        bool properly_expanded = false;
     };
     struct ChanceStats : Types::ChanceStats
     {
@@ -57,23 +71,23 @@ struct OffPolicy : Types
                 // this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
             } // currently don't call i_s anywhere even though its defined for bandits
 
-            typename Types::ModelBatchInput input{};   // vector of states - Tensor
-            typename Types::ModelBatchOutput output{}; // vector of inferences/single output - Tensor
+            typename Types::ModelBatchInput model_batch_input{};   // vector of states - Tensor
+            typename Types::ModelBatchOutput model_batch_output{}; // vector of inferences/single output - Tensor
             std::vector<Trajectory> trajectories{};
 
             for (int learner_iteration = 0; learner_iteration < learner_iterations; ++learner_iteration)
             {
                 trajectories.clear();
-                get_trajectories(trajectories, input,
+                get_trajectories(trajectories, model_batch_input,
                                  // set of paths to leaf nodes
                                  // all nodes on path must be updated for each leaf
                                  //
                                  actor_iterations_per, device, states, model, matrix_nodes);
                 // populate trajectories vector and batch input
 
-                model.inference(input, output);
+                model.inference(model_batch_input, model_batch_output);
 
-                update_using_trajectories(trajectories, output);
+                update_using_trajectories(trajectories, model_batch_output);
                 //
             }
         }
@@ -137,17 +151,25 @@ struct OffPolicy : Types
                     leaf_value = model_output.value;
                     if (!leaf_stats.properly_expanded)
                     {
-                        this->post_expand(model_output, leaf_stats);
+                        this->expand_inference_part(model_output, leaf_stats);
                         leaf_stats.properly_expanded = true;
                     }
                 }
 
+                int frame_index = 0;
                 for (Frame &frame : trajectory)
                 {
+                    if (frame_index == 0)
+                    {
+                        frame_index++;
+                        continue;
+                    }
+                    
                     frame.outcome.value = leaf_value;
                     this->update_matrix_stats_offpolicy(
                         frame.matrix_node->stats,
                         frame.outcome);
+                    // the difference is that the outcome row_mu entries reflect that of the 'actor'
                 }
             }
         }
@@ -173,8 +195,7 @@ struct OffPolicy : Types
                 if (!matrix_node->is_expanded())
                 {
                     matrix_node->expand(state);
-                    matrix_node->stats.properly_expanded = false;
-                    this->pre_expand(state, matrix_node->stats);
+                    this->expand_state_part(state, matrix_node->stats);
                 }
                 else
                 {
@@ -190,7 +211,7 @@ struct OffPolicy : Types
                         frame.outcome.row_idx = device.random_int(rows);
                         frame.outcome.col_idx = device.random_int(cols);
                         frame.outcome.row_mu = typename Types::Q{1, rows};
-                        frame.outcome.row_mu = typename Types::Q{1, cols};
+                        frame.outcome.col_mu = typename Types::Q{1, cols};
                     }
                     state.apply_actions(
                         state.row_actions[frame.outcome.row_idx],

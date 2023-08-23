@@ -59,9 +59,7 @@ struct MonteCarloModel : Types
             outputs.resize(inputs.size());
             for (int i = 0; i < inputs.size(); ++i)
             {
-                auto &input = inputs[i];
-                auto &output = outputs[i];
-                inference(input, output);
+                inference(inputs[i], outputs[i]);
             }
         }
 
