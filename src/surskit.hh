@@ -41,7 +41,6 @@
 
 #include <algorithm/tree-bandit/bandit/exp3.hh>
 #include <algorithm/tree-bandit/bandit/rand.hh>
-#include <algorithm/tree-bandit/bandit/exp3mp.hh>
 
 #include <algorithm/solver/full-traversal.hh>
 #include <algorithm/solver/alpha-beta.hh>

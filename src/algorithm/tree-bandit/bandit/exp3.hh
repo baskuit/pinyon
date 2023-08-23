@@ -329,7 +329,7 @@ struct Exp3 : Types
     private:
         inline void softmax(
             Types::VectorReal &forecast,
-            Types::VectorReal &gains,
+            const Types::VectorReal &gains,
             const size_t k,
             Real eta) const
         {
