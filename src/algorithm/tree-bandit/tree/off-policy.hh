@@ -54,6 +54,8 @@ struct OffPolicy : Types
     class Search : public Types::BanditAlgorithm
     {
     public:
+        using Types::BanditAlgorithm::BanditAlgorithm;
+
         void run(
             const size_t learner_iterations,
             const size_t actor_iterations_per,

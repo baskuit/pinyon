@@ -10,7 +10,7 @@ namespace math
 {
 
     template <template <typename...> typename VectorIn, typename InT, template <typename...> typename VectorOut, typename OutT>
-    void power_norm(VectorIn<InT> &input, int length, double power, VectorOut<OutT> &output)
+    void power_norm(const VectorIn<InT> &input, int length, double power, VectorOut<OutT> &output)
     {
         double sum = 0;
         for (int i = 0; i < length; ++i)

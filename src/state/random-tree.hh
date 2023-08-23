@@ -49,6 +49,7 @@ struct RandomTree : Types
               transitions{transitions},
               chance_threshold{chance_threshold}
         {
+            this->init_range_actions(rows, cols);
             get_chance_strategies();
         }
 
@@ -72,6 +73,7 @@ struct RandomTree : Types
               actions_func{actions_func},
               payoff_bias_func{payoff_bias_func}
         {
+            this->init_range_actions(rows, cols);
             get_chance_strategies();
         }
 
@@ -93,11 +95,11 @@ struct RandomTree : Types
             col_actions.resize(cols);
             for (int row_idx = 0; row_idx < rows; ++row_idx)
             {
-                row_actions[row_idx] = typename Types::Action{row_idx};
+                row_actions[row_idx] = row_idx;
             };
             for (int col_idx = 0; col_idx < cols; ++col_idx)
             {
-                col_actions[col_idx] = typename Types::Action{col_idx};
+                col_actions[col_idx] = col_idx;
             };
         }
 
