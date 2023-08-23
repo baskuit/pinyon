@@ -7,19 +7,22 @@ using UnsolvedStateTypes = RandomTree<>;
 using SolvedStateTypes = TraversedState<EmptyModel<UnsolvedStateTypes>>;
 using FinalStateTypes = UnsolvedStateTypes;
 
-prng a_device{};
-
 W::Types::State generator_function(const W::Types::Seed seed)
 {
-    const size_t depth_bound = 12;
+    prng a_device{seed};
+
+    const size_t depth_bound = 10;
     const size_t actions = 3;
     const size_t transitions = 1;
 
-    UnsolvedStateTypes::State random_tree{a_device.uniform_64(), depth_bound, actions, actions, transitions, Rational<>{0}};
-    // EmptyModel<UnsolvedStateTypes>::Model random_tree_model{};
-    // SolvedStateTypes::State solved_random_tree{random_tree, random_tree_model};
+    UnsolvedStateTypes::State state{a_device.uniform_64(), depth_bound, actions, actions, transitions, Rational<>{0}};
+    // UnsolvedStateTypes::State state{a_device.uniform_64(), actions, actions};
+    // state.payoff_matrix.print();
+    // UnsolvedStateTypes::State state{2, 2};
+    // EmptyModel<UnsolvedStateTypes>::Model model{};
+    // SolvedStateTypes::State solved_state{state, model};
 
-    return W::make_state<FinalStateTypes>(random_tree);
+    return W::make_state<FinalStateTypes>(state);
 }
 
 int main()
@@ -27,48 +30,35 @@ int main()
 
     using MCTypes = TreeBandit<Exp3<MonteCarloModel<FinalStateTypes>>>;
     // Exp3 search types on a solved random tree
-    using MCTypesModel = TreeBanditSearchModel<MCTypes>;
+    using MCMTypes = TreeBanditSearchModel<MCTypes>;
     // Model type that treats search output as its inference
     using ArenaTypes = TreeBanditThreaded<Exp3Fat<MonteCarloModel<Arena>>>;
     // Type list for multithreaded exp3 over Arena state
 
+    std::vector<W::Types::Model> models{};
+    models.emplace_back(W::make_model<EmptyModel<FinalStateTypes>>());
     const size_t monte_carlo_iterations = 1 << 10;
+    models.emplace_back(W::make_model<MCMTypes>(MCMTypes::Model{monte_carlo_iterations, {0}, {0}, {.7}}));
+    models.emplace_back(W::make_model<MCMTypes>(MCMTypes::Model{monte_carlo_iterations, {0}, {0}, {.1}}));
+    models.emplace_back(W::make_model<MCMTypes>(MCMTypes::Model{monte_carlo_iterations, {0}, {0}, {.15}}));
+    // models.emplace_back(W::make_model<SolvedStateModel<SolvedStateTypes>>());
 
-    EmptyModel<FinalStateTypes>::Model
-        model_random{};
-    // SolvedStateModel<SolvedStateTypes>::Model
-    //     model_solved{};
+    W::Types::ModelOutput output_;
+    models[1].inference(generator_function(0), output_);
+    math::print(output_.row_policy);
+    math::print(output_.col_policy);
 
-    // vector of search-model. initializer is iteration, device, model, search.
-    std::vector<MCTypesModel::Model> modelo{
-        {monte_carlo_iterations, MCTypes::PRNG{0}, MCTypes::Model{0}, MCTypes::Search{.01}},
-        {monte_carlo_iterations, MCTypes::PRNG{0}, MCTypes::Model{0}, MCTypes::Search{.05}},
-        {monte_carlo_iterations, MCTypes::PRNG{0}, MCTypes::Model{0}, MCTypes::Search{.10}},
-        {monte_carlo_iterations, MCTypes::PRNG{0}, MCTypes::Model{0}, MCTypes::Search{.20}},
-        {monte_carlo_iterations, MCTypes::PRNG{0}, MCTypes::Model{0}, MCTypes::Search{.5}},
-        {monte_carlo_iterations, MCTypes::PRNG{0}, MCTypes::Model{0}, MCTypes::Search{1}},
-    };
-    
-    std::vector<W::Types::Model> models = {W::make_model<EmptyModel<FinalStateTypes>>(model_random)};
-
-    std::transform(
-        modelo.cbegin(), modelo.cend(), std::back_inserter(models),
-        [](const MCTypesModel::Model &m)
-        { return W::make_model<MCTypesModel>(m); });
-
-    const size_t threads = 1;
+    const size_t threads = 4;
+    const size_t vs_rounds = 1;
     ArenaTypes::PRNG device{0};
-    const size_t vs_rounds = 16;
-    ArenaTypes::State arena{&generator_function, models, vs_rounds};
+    ArenaTypes::State arena_state{&generator_function, models, vs_rounds};
     ArenaTypes::Model arena_model{1337};
     ArenaTypes::Search search{ArenaTypes::BanditAlgorithm{.10}, threads};
-    ArenaTypes::MatrixNode root;
+    ArenaTypes::MatrixNode node;
 
-    const size_t arena_search_iterations = 1 << 9;
-    search.run_for_iterations(arena_search_iterations, device, arena, arena_model, root);
+    const size_t arena_search_iterations = 1 << 16;
+    search.run_for_iterations(arena_search_iterations, device, arena_state, arena_model, node);
 
-    root.stats.matrix.print();
-    std::cout << a_device.get_seed() << std::endl;
-
+    node.stats.matrix.print();
     return 0;
 }

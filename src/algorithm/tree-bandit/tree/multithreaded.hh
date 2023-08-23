@@ -18,7 +18,7 @@ struct TreeBanditThreaded : Types
     struct MatrixStats : Types::MatrixStats
     {
         typename Types::Mutex stats_mutex{};
-        typename Types::Mutex tree_stats_mutex{};
+        typename Types::Mutex tree_mutex{};
     };
     struct ChanceStats : Types::ChanceStats
     {
@@ -160,21 +160,19 @@ struct TreeBanditThreaded : Types
             {
                 if (!matrix_node->is_expanded())
                 {
-                    if (stats_mutex.try_lock())
+                    stats_mutex.lock();
+                    if (matrix_node->is_expanded())
                     {
-                        if (matrix_node->is_expanded())
-                        {
-                            stats_mutex.unlock();
-                            return matrix_node;
-                            // double exapands may throw
-                        }
-                        // gets to expand
-                        // state.get_actions(); // alread has em
+                        stats_mutex.unlock();
+                    }
+                    else
+                    {
                         model.inference(state, model_output);
                         this->expand(state, matrix_node->stats, model_output);
                         stats_mutex.unlock();
                         matrix_node->expand(state);
                     }
+
                     return matrix_node;
                 }
                 else
@@ -222,7 +220,8 @@ struct TreeBanditThreadPool : Types
     using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
     using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
 
-    struct DoubleMutex {
+    struct DoubleMutex
+    {
         typename Types::Mutex first_mutex;
         typename Types::Mutex second_mutex;
     };

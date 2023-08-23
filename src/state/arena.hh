@@ -83,12 +83,13 @@ struct Arena : SimpleTypes
             W::Types::ModelOutput row_output, col_output;
 
             state.get_actions();
+            int row_idx, col_idx;
             while (!state.is_terminal())
             {
                 row_model.inference(state, row_output);
                 col_model.inference(state, col_output);
-                const int row_idx = device.sample_pdf(row_output.row_policy);
-                const int col_idx = device.sample_pdf(col_output.col_policy);
+                row_idx = device.sample_pdf(row_output.row_policy);
+                col_idx = device.sample_pdf(col_output.col_policy);
 
                 state.apply_actions(row_idx, col_idx);
                 state.get_actions();

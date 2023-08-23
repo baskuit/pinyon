@@ -13,31 +13,31 @@ TODO still no chance node updates (does any algo actually NEED this?)
 template <
     CONCEPT(IsBanditAlgorithmTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
-    bool return_if_expand = true>
+    bool return_if_expand = true> // when would this be not true?
+
 struct OffPolicy : Types
 {
     using MatrixNode = NodePair<Types>::MatrixNode;
     using ChanceNode = NodePair<Types>::ChanceNode;
+
     struct Frame
     {
-        Types::Outcome outcome;
+        Frame(MatrixNode *matrix_node) : matrix_node{matrix_node} {}
+        Types::Outcome outcome; // row, col index; value; policy
+        // need policy here for importance weight, or at least mu
         MatrixNode *matrix_node;
-        Frame(
-            typename Types::Real outcome,
-            MatrixNode *matrix_node) : outcome{outcome}, matrix_node{matrix_node} {}
-        Frame() {}
     };
     using Trajectory = std::vector<Frame>;
-    
+
     class Search : public Types::BanditAlgorithm
     {
     public:
         void run(
             const size_t learner_iterations,
             const size_t actor_iterations_per,
-            typename Types::PRNG &device,
-            std::vector<typename Types::State> &states,
-            typename Types::Model &model,
+            Types::PRNG &device,
+            const std::vector<typename Types::State> &states,
+            Types::Model &model,
             std::vector<MatrixNode *> &matrix_nodes)
         {
             // Perform batched inference on all trees
@@ -47,7 +47,7 @@ struct OffPolicy : Types
             for (auto matrix_node : matrix_nodes)
             {
                 // this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
-            }
+            } // currently don't call i_s anywhere even though its defined for bandits
 
             typename Types::ModelBatchInput input{};   // vector of states - Tensor
             typename Types::ModelBatchOutput output{}; // vector of inferences/single output - Tensor
@@ -57,48 +57,60 @@ struct OffPolicy : Types
             {
                 trajectories.clear();
                 get_trajectories(trajectories, input,
+                                 // set of paths to leaf nodes
+                                 // all nodes on path must be updated for each leaf
+                                 //
                                  actor_iterations_per, device, states, model, matrix_nodes);
                 // populate trajectories vector and batch input
 
                 model.inference(input, output);
 
                 update_using_trajectories(trajectories, output);
+                //
             }
         }
 
         void get_trajectories(
+            // output parameters
             std::vector<Trajectory> &trajectories,
-            typename Types::ModelBatchInput &input,
+            Types::ModelBatchInput &input,
+            // normal tree bandit params
             size_t actor_iterations_per,
-            typename Types::PRNG &device,
-            std::vector<typename Types::State> &states,
-            typename Types::Model &model,
+            Types::PRNG &device,
+            const std::vector<typename Types::State> &states,
+            Types::Model &model,
             std::vector<MatrixNode *> &matrix_nodes)
         {
-
             // One inference step
-
-            int state_index = 0;
-            for (auto matrix_node : matrix_nodes)
+            for (int index = 0; index < matrix_nodes.size(); ++index)
             {
-                auto &state = states[state_index];
+                const MatrixNode *const matrix_node = matrix_nodes[index];
+                const typename Types::State &state = states[index];
+                // state, matrix node pair
 
                 for (size_t actor_iteration = 0; actor_iteration < actor_iterations_per; ++actor_iteration)
                 {
                     trajectories.emplace_back();
                     Trajectory &trajectory = trajectories.back();
+                    // trajectory is a flat vector over matrix nodes and input iterations per
 
                     auto state_copy = state;
-                    get_trajectory(trajectory, device, state_copy, model, matrix_node);
-                    model.add_to_batch_input(state_copy, input); // push_back TODO
+                    get_trajectory(trajectory,
+                                   device, state_copy, model, matrix_node);
+                    // populate vector of frames, rollout state to leaf node
+
+                    if (!state_copy.is_terminal())
+                    {
+                        model.add_to_batch_input(state_copy, input);
+                    }
+                    // then add leaf state to inference pile
                 }
-                ++state_index;
             }
         }
 
         void update_using_trajectories(
             std::vector<Trajectory> &trajectories,
-            typename Types::ModelBatchOutput &output)
+            Types::ModelBatchOutput &output)
         {
             int index = 0;
             for (Trajectory &trajectory : trajectories)
@@ -122,52 +134,60 @@ struct OffPolicy : Types
                         outcome,
                         learning_rate);
                 }
-                ++index;
+
+
+                if (!trajectory.front().matrix_node->is_terminal()) {
+                    ++index;
+                }
             }
         }
 
     protected:
         void get_trajectory(
+            // output
             Trajectory &trajectory,
-            typename Types::PRNG &device,
-            typename Types::State &state,
-            typename Types::Model &model,
+            // normal run_iteration args
+            Types::PRNG &device,
+            Types::State &state,
+            Types::Model &model,
             MatrixNode *matrix_node)
         {
-            if (!matrix_node->is_terminal())
+            // trajectory.emplace_back(matrix_node);
+            // Frame &frame = trajectory.back();
+            Frame frame{matrix_node};
+
+            if (state.is_terminal())
             {
-                if (matrix_node->is_expanded())
+                frame.outcome.value = state.payoff;
+                matrix_node->set_terminal();
+            }
+            else
+            {
+                if (!matrix_node->is_expanded())
                 {
-                    trajectory.emplace_back();
-                    auto &frame = trajectory.back();
-                    frame.matrix_node = matrix_node;
-
-                    typename Types::Outcome &outcome = frame.outcome;
-                    this->select(device, matrix_node->stats, outcome);
-
-                    matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
+                    matrix_node->expand(state);
+                    typename Types::ModelOutput model_output;
+                    this->expand(state, matrix_node->stats, model_output);
+                }
+                else
+                {
+                    this->select(device, matrix_node->stats, frame.outcome);
+                    state.get_actions();
+                    state.apply_actions(
+                        state.row_actions[frame.outcome.row_idx],
+                        state.col_actions[frame.outcome.col_idx]
+                    );
 
                     ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                     MatrixNode *matrix_node_next = chance_node->access(state.obs);
 
                     get_trajectory(trajectory, device, state, model, matrix_node_next);
-                    return;
                 }
-                else
-                {
-                    state.get_actions();
-                    matrix_node->expand(state);
-                    matrix_node->set_terminal(state.is_terminal());
+            }
 
-                    typename Types::ModelOutput model_output;
-                    this->expand(state, matrix_node->stats, model_output);
-                    return;
-                }
-            }
-            else
-            {
-                return;
-            }
+            trajectory.push_back(frame);
         }
+
+        // end algorithm
     };
 };
