@@ -153,12 +153,13 @@ struct OneOne : SimpleTypes
             payoff_matrix.fill(rows, cols);
             for (int i = 0; i < rows * cols; ++i)
             {
-                payoff_matrix[i] = SimpleTypes::Value{(i == 0), (i != 0)};
+                payoff_matrix[i] = SimpleTypes::Value{
+                    static_cast<double>(i == 0),
+                    static_cast<double>(i != 0)};
             }
         }
 
-        void
-        randomize_transition(
+        void randomize_transition(
             SimpleTypes::PRNG &device) const
         {
         }

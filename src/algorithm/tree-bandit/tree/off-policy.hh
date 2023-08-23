@@ -17,16 +17,24 @@ template <
 
 struct OffPolicy : Types
 {
-    using MatrixNode = NodePair<Types>::MatrixNode;
-    using ChanceNode = NodePair<Types>::ChanceNode;
+    struct MatrixStats : Types::MatrixStats
+    {
+        bool properly_expanded;
+    };
+    struct ChanceStats : Types::ChanceStats
+    {
+    };
+    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
+    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
 
     struct Frame
     {
         Frame(MatrixNode *matrix_node) : matrix_node{matrix_node} {}
-        Types::Outcome outcome; // row, col index; value; policy
-        // need policy here for importance weight, or at least mu
+
+        Types::Outcome outcome;
         MatrixNode *matrix_node;
     };
+
     using Trajectory = std::vector<Frame>;
 
     class Search : public Types::BanditAlgorithm
@@ -38,7 +46,7 @@ struct OffPolicy : Types
             Types::PRNG &device,
             const std::vector<typename Types::State> &states,
             Types::Model &model,
-            std::vector<MatrixNode *> &matrix_nodes)
+            std::vector<MatrixNode> &matrix_nodes)
         {
             // Perform batched inference on all trees
             // grab `actor` many samples, inference, update
@@ -79,12 +87,12 @@ struct OffPolicy : Types
             Types::PRNG &device,
             const std::vector<typename Types::State> &states,
             Types::Model &model,
-            std::vector<MatrixNode *> &matrix_nodes)
+            std::vector<MatrixNode> &matrix_nodes)
         {
             // One inference step
             for (int index = 0; index < matrix_nodes.size(); ++index)
             {
-                const MatrixNode *const matrix_node = matrix_nodes[index];
+                MatrixNode *matrix_node = &matrix_nodes[index];
                 const typename Types::State &state = states[index];
                 // state, matrix node pair
 
@@ -110,39 +118,40 @@ struct OffPolicy : Types
 
         void update_using_trajectories(
             std::vector<Trajectory> &trajectories,
-            Types::ModelBatchOutput &output)
+            Types::ModelBatchOutput &model_batch_output)
         {
             int index = 0;
             for (Trajectory &trajectory : trajectories)
             {
-                typename Types::ModelOutput &out = output[index];
-                for (Frame &frame : trajectory)
+                Frame &leaf_frame = trajectory.front();
+                MatrixStats &leaf_stats = leaf_frame.matrix_node->stats;
+
+                typename Types::Value leaf_value;
+                if (leaf_frame.matrix_node->is_terminal())
                 {
-                    auto matrix_node = frame.matrix_node;
-                    auto &outcome = frame.outcome;
-                    outcome.value = out.value;
-
-                    typename Types::VectorReal row_policy;
-                    typename Types::VectorReal col_policy;
-
-                    this->get_policy(matrix_node->stats, row_policy, col_policy);
-
-                    const auto learning_rate = row_policy[outcome.row_idx] * col_policy[outcome.col_idx] / (outcome.row_mu * outcome.col_mu);
-
-                    this->update_matrix_stats(
-                        matrix_node->stats,
-                        outcome,
-                        learning_rate);
+                    leaf_value = leaf_frame.outcome.value;
+                }
+                else
+                {
+                    typename Types::ModelOutput model_output = model_batch_output[index++];
+                    leaf_value = model_output.value;
+                    if (!leaf_stats.properly_expanded)
+                    {
+                        this->post_expand(model_output, leaf_stats);
+                        leaf_stats.properly_expanded = true;
+                    }
                 }
 
-
-                if (!trajectory.front().matrix_node->is_terminal()) {
-                    ++index;
+                for (Frame &frame : trajectory)
+                {
+                    frame.outcome.value = leaf_value;
+                    this->update_matrix_stats_offpolicy(
+                        frame.matrix_node->stats,
+                        frame.outcome);
                 }
             }
         }
 
-    protected:
         void get_trajectory(
             // output
             Trajectory &trajectory,
@@ -152,8 +161,6 @@ struct OffPolicy : Types
             Types::Model &model,
             MatrixNode *matrix_node)
         {
-            // trajectory.emplace_back(matrix_node);
-            // Frame &frame = trajectory.back();
             Frame frame{matrix_node};
 
             if (state.is_terminal())
@@ -166,19 +173,29 @@ struct OffPolicy : Types
                 if (!matrix_node->is_expanded())
                 {
                     matrix_node->expand(state);
-                    typename Types::ModelOutput model_output;
-                    this->expand(state, matrix_node->stats, model_output);
+                    matrix_node->stats.properly_expanded = false;
+                    this->pre_expand(state, matrix_node->stats);
                 }
                 else
                 {
-                    this->select(device, matrix_node->stats, frame.outcome);
                     state.get_actions();
+                    if (matrix_node->stats.properly_expanded)
+                    {
+                        this->select(device, matrix_node->stats, frame.outcome);
+                    }
+                    else
+                    {
+                        const int rows = state.row_actions.size();
+                        const int cols = state.col_actions.size();
+                        frame.outcome.row_idx = device.random_int(rows);
+                        frame.outcome.col_idx = device.random_int(cols);
+                        frame.outcome.row_mu = typename Types::Q{1, rows};
+                        frame.outcome.row_mu = typename Types::Q{1, cols};
+                    }
                     state.apply_actions(
                         state.row_actions[frame.outcome.row_idx],
-                        state.col_actions[frame.outcome.col_idx]
-                    );
-
-                    ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                        state.col_actions[frame.outcome.col_idx]);
+                    ChanceNode *chance_node = matrix_node->access(frame.outcome.row_idx, frame.outcome.col_idx);
                     MatrixNode *matrix_node_next = chance_node->access(state.obs);
 
                     get_trajectory(trajectory, device, state, model, matrix_node_next);

@@ -31,27 +31,27 @@ struct Rand : Types
         }
 
         void get_empirical_strategies(
-            MatrixStats &stats,
+            const MatrixStats &stats,
             Types::VectorReal &row_strategy,
             Types::VectorReal &col_strategy) const
         {
         }
 
         void get_empirical_value(
-            MatrixStats &stats,
+            const MatrixStats &stats,
             Types::Value &value)
         {
         }
 
         void get_refined_strategies(
-            MatrixStats &stats,
+            const MatrixStats &stats,
             Types::VectorReal &row_strategy,
             Types::VectorReal &col_strategy)
         {
         }
 
         void get_refined_value(
-            MatrixStats &stats,
+            const MatrixStats &stats,
             Types::Value &value)
         {
         }
@@ -66,9 +66,9 @@ struct Rand : Types
         }
 
         void expand(
-            Types::State &state,
+            const Types::State &state,
             MatrixStats &stats,
-            Types::ModelOutput &model_output)
+            const Types::ModelOutput &model_output)
         {
             stats.rows = state.row_actions.size();
             stats.cols = state.col_actions.size();
@@ -76,7 +76,7 @@ struct Rand : Types
 
         void select(
             Types::PRNG &device,
-            MatrixStats &stats,
+            const MatrixStats &stats,
             Outcome &outcome)
         {
             const int row_idx = device.random_int(stats.rows);
@@ -87,19 +87,19 @@ struct Rand : Types
 
         void update_matrix_stats(
             MatrixStats &stats,
-            Outcome &outcome)
+            const Outcome &outcome)
         {
         }
 
         void update_chance_stats(
             ChanceStats &stats,
-            Outcome &outcome)
+            const Outcome &outcome)
         {
         }
 
         void select(
             Types::PRNG &device,
-            MatrixStats &stats,
+            const MatrixStats &stats,
             Outcome &outcome,
             Types::Mutex &mutex)
         {
@@ -111,37 +111,12 @@ struct Rand : Types
 
         void update_matrix_stats(
             MatrixStats &stats,
-            Outcome &outcome,
+            const Outcome &outcome,
             Types::Mutex &mutex) {}
 
         void update_chance_stats(
             ChanceStats &stats,
-            Outcome &outcome,
+            const Outcome &outcome,
             Types::Mutex &mutex) {}
-
-        void update_matrix_stats(
-            MatrixStats &stats,
-            Outcome &outcome,
-            Types::Real learning_rate)
-        {
-        }
-
-        void update_chance_stats(
-            ChanceStats &stats,
-            Outcome &outcome,
-            Types::Real learning_rate)
-        {
-        }
-
-        void get_policy(
-            MatrixStats &stats,
-            Types::VectorReal &row_policy,
-            Types::VectorReal &col_policy)
-        {
-            const typename Types::Real row_uniform{Rational{1, stats.rows}};
-            row_policy.resize(stats.rows, row_uniform);
-            const typename Types::Real col_uniform{Rational{1, stats.cols}};
-            col_policy.resize(stats.cols, col_uniform);
-        }
     };
 };

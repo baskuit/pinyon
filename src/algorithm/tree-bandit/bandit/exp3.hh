@@ -46,7 +46,7 @@ struct Exp3 : Types
         }
 
         void get_empirical_strategies(
-            MatrixStats &stats,
+            const MatrixStats &stats,
             Types::VectorReal &row_strategy,
             Types::VectorReal &col_strategy) const
         {
@@ -57,7 +57,7 @@ struct Exp3 : Types
         }
 
         void get_empirical_value(
-            MatrixStats &stats,
+            const MatrixStats &stats,
             Types::Value &value) const
         {
             const Real den = 1 / (stats.visits + (stats.visits == 0));
@@ -72,7 +72,7 @@ struct Exp3 : Types
         }
 
         void get_refined_strategies(
-            MatrixStats &stats,
+            const MatrixStats &stats,
             Types::VectorReal &row_strategy,
             Types::VectorReal &col_strategy) const
         {
@@ -84,7 +84,7 @@ struct Exp3 : Types
         }
 
         void get_refined_value(
-            MatrixStats &stats,
+            const MatrixStats &stats,
             Types::Value &value) const
         {
             get_empirical_value(stats, value);
@@ -114,7 +114,7 @@ struct Exp3 : Types
 
         void select(
             Types::PRNG &device,
-            MatrixStats &stats,
+            const MatrixStats &stats,
             Outcome &outcome) const
         {
             const size_t rows = stats.row_gains.size();
@@ -158,7 +158,7 @@ struct Exp3 : Types
 
         void update_matrix_stats(
             MatrixStats &stats,
-            Outcome &outcome) const
+            const Outcome &outcome) const
         {
             stats.value_total += PairReal<Real>{outcome.value.get_row_value(), outcome.value.get_col_value()};
             stats.visits += 1;
@@ -184,7 +184,7 @@ struct Exp3 : Types
 
         void update_chance_stats(
             ChanceStats &stats,
-            Outcome &outcome) const
+            const Outcome &outcome) const
         {
         }
 
@@ -240,7 +240,7 @@ struct Exp3 : Types
 
         void update_matrix_stats(
             MatrixStats &stats,
-            Outcome &outcome,
+            const Outcome &outcome,
             Types::Mutex &mutex) const
         {
             mutex.lock();
@@ -269,67 +269,61 @@ struct Exp3 : Types
 
         void update_chance_stats(
             ChanceStats &stats,
-            Outcome &outcome,
+            const Outcome &outcome,
             Types::Mutex &mutex) const
         {
         }
 
         // off-policy
 
-        void update_matrix_stats(
+        void update_matrix_stats_offpolicy(
             MatrixStats &stats,
-            Outcome &outcome,
-            Real learning_rate) const
+            const Outcome &outcome) const
         {
-            stats.value_total += outcome.value * learning_rate;
+            stats.value_total += PairReal<Real>{outcome.value.get_row_value(), outcome.value.get_col_value()};
             stats.visits += 1;
             stats.row_visits[outcome.row_idx] += 1;
             stats.col_visits[outcome.col_idx] += 1;
-            stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu * learning_rate;
-            stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu * learning_rate;
+            if ((stats.row_gains[outcome.row_idx] += outcome.value.get_row_value() / outcome.row_mu) >= 0)
+            {
+                const auto max = stats.row_gains[outcome.row_idx];
+                for (auto &v : stats.row_gains)
+                {
+                    v -= max;
+                }
+            }
+            if ((stats.col_gains[outcome.col_idx] += outcome.value.get_col_value() / outcome.col_mu) >= 0)
+            {
+                const auto max = stats.col_gains[outcome.col_idx];
+                for (auto &v : stats.col_gains)
+                {
+                    v -= max;
+                }
+            }
         }
 
-        void update_chance_stats(
+        void update_chance_stats_offpolicy(
             ChanceStats &stats,
-            Outcome &outcome,
-            Real learning_rate) const
+            const Outcome &outcome) const
         {
         }
 
-        void get_policy(
-            MatrixStats &stats,
-            Types::VectorReal &row_policy,
-            Types::VectorReal &col_policy) const
+        void pre_expand(
+            const Types::State &state,
+            MatrixStats &stats) const
         {
-            const size_t rows = stats.row_gains.size();
-            const size_t cols = stats.col_gains.size();
-            const auto &one_minus_gamma = this->one_minus_gamma;
-            if (rows == 1)
-            {
-                row_policy[0] = 1;
-            }
-            else
-            {
-                const Real eta{gamma / static_cast<Real>(rows)};
-                softmax(row_policy, stats.row_gains, rows, eta);
-                std::transform(
-                    row_policy.begin(), row_policy.begin() + rows, row_policy.begin(),
-                    [eta, one_minus_gamma](Real value)
-                    { return one_minus_gamma * value + eta; });
-            }
-            if (cols == 1)
-            {
-                col_policy[0] = 1;
-            }
-            else
-            {
-                const Real eta{gamma / static_cast<Real>(cols)};
-                softmax(col_policy, stats.col_gains, cols, eta);
-                std::transform(
-                    col_policy.begin(), col_policy.begin() + cols, col_policy.begin(),
-                    [eta, one_minus_gamma](Real value)
-                    { return one_minus_gamma * value + eta; });
-            }
+            const size_t rows = state.row_actions.size();
+            const size_t cols = state.col_actions.size();
+            stats.row_visits.resize(rows, 0);
+            stats.col_visits.resize(cols, 0);
+            stats.row_gains.resize(rows, 0);
+            stats.col_gains.resize(cols, 0);
+        }
+
+        void post_expand(
+            const Types::ModelOutput &output,
+            MatrixStats &stats) const
+        {
         }
 
     private:
