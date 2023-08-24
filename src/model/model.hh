@@ -4,7 +4,6 @@
 
 #include <vector>
 
-
 template <typename Types>
 concept IsValueModelTypes =
     requires(
@@ -27,6 +26,28 @@ concept IsValueModelTypes =
         } -> std::same_as<void>;
     } &&
     IsPerfectInfoStateTypes<Types>; // this basically enforces that everything is perfect info (has Obs, Prob, data members)
+
+template <typename Types>
+concept IsBatchValueModelTypes =
+    requires(
+        typename Types::State &state,
+        typename Types::Model &model,
+        typename Types::ModelBatchInput &model_batch_input,
+        typename Types::ModelBatchOutput &model_batch_output) {
+        {
+            model.inference(model_batch_input, model_batch_output)
+        } -> std::same_as<void>;
+        {
+            model.add_to_batch_input(state, model_batch_input)
+        } -> std::same_as<void>;
+        {
+            model_batch_input[0]
+        } -> std::same_as<typename Types::ModelInput &>;
+        {
+            model_batch_output[0]
+        } -> std::same_as<typename Types::ModelOutput &>;
+    } &&
+    IsValueModelTypes<Types>;
 
 template <typename Types>
 concept IsDoubleOracleModelTypes =

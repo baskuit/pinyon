@@ -3,6 +3,12 @@ set (CMAKE_CXX_STANDARD 23)
 
 project(surskit VERSION 0.1.0)
 
+set(CMAKE_PREFIX_PATH "/home/user/Desktop/libtorch/")
+set(CMAKE_CUDA_ARCHITECTURES 61)
+set(CMAKE_CUDA_COMPILER /usr/local/cuda-12.1/bin/nvcc)
+find_package(Torch REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+
 add_library(surskit INTERFACE)
 target_include_directories(surskit INTERFACE src)
 # target_include_directories(surskit INTERFACE extern/eigen)
@@ -23,11 +29,10 @@ foreach(TEST_FILE ${TEST_FILES})
 
     add_executable(${TEST_TARGET_NAME} ${TEST_FILE})
     target_link_libraries(${TEST_TARGET_NAME} surskit)
+    target_link_libraries(${TEST_NAME} "${TORCH_LIBRARIES}")
     # target_compile_options(${TEST_TARGET_NAME} PUBLIC "-fsanitize=address")
     # target_compile_options(${TEST_TARGET_NAME} PUBLIC "-fsanitize=thread")
     # target_compile_options(${TEST_TARGET_NAME} PUBLIC "-fsanitize=undefined")
-
-
     add_test(NAME ${TEST_TARGET_NAME} COMMAND ${TEST_TARGET_NAME})
     set_target_properties(${TEST_TARGET_NAME} PROPERTIES
                           RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)

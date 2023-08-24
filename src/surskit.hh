@@ -29,7 +29,9 @@
 #include <model/search-model.hh>
 #include <model/solved-model.hh>
 
+#define TORCH
 #ifdef TORCH
+#include <libsurskit/mlp.hh>
 #include <model/libtorch_model.hh>
 #endif
 
