@@ -9,6 +9,7 @@ add_library(surskit INTERFACE)
 target_include_directories(surskit INTERFACE src)
 # target_include_directories(surskit INTERFACE extern/eigen)
 
+
 if(ENABLE_FEATURE)
     set(CMAKE_PREFIX_PATH "/home/user/Desktop/libtorch/")
     set(CMAKE_CUDA_ARCHITECTURES 61)
@@ -19,6 +20,8 @@ if(ENABLE_FEATURE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
     target_link_libraries(surskit INTERFACE "${TORCH_LIBRARIES}")
 endif()
+
+target_compile_definitions(surskit INTERFACE ENABLE_CONCEPTS)
 
 add_subdirectory(extern/lrslib)
 
