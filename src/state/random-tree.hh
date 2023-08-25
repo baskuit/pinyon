@@ -257,7 +257,7 @@ struct RandomTreeGenerator : CartesianProductGenerator<W::Types::State, std::vec
         return W::Types::State {
             RandomTree<TypeList>{},
             RandomTreeGenerator::device.uniform_64(),
-            static_cast<int>(std::get<0>(tuple)),
+            std::get<0>(tuple),
             std::get<1>(tuple),
             std::get<1>(tuple),
             std::get<2>(tuple),
@@ -265,12 +265,12 @@ struct RandomTreeGenerator : CartesianProductGenerator<W::Types::State, std::vec
     };
 
     RandomTreeGenerator(
-        prng device,
-        std::vector<size_t> depth_bound_vec,
-        std::vector<size_t> actions_vec,
-        std::vector<size_t> chance_action_vec,
-        std::vector<Rational<>> chance_threshold_vec,
-        std::vector<size_t> trial_vec)
+        const prng &device,
+        const std::vector<size_t> &depth_bound_vec,
+        const std::vector<size_t> &actions_vec,
+        const std::vector<size_t> &chance_action_vec,
+        const std::vector<Rational<>> &chance_threshold_vec,
+        const std::vector<size_t> &trial_vec)
         : CartesianProductGenerator<W::Types::State, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>{
               constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec}
     {

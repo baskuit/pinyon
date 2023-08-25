@@ -135,6 +135,8 @@ namespace W
 
     namespace Dynamic
     {
+        template <typename T>
+        struct StateT;
         struct State
         {
             virtual ~State() = default;
@@ -144,6 +146,10 @@ namespace W
             virtual bool _is_terminal() const = 0;
             virtual Types::Value _get_payoff() const = 0;
             virtual void _randomize_transition(Types::PRNG &) = 0;
+            template <typename T>
+            auto unwrap () {
+                return dynamic_cast<StateT<TypeListNormalizer::MStateTypes<T>> *>(this)->data;
+            } // return state data
         };
         template <typename T>
         struct StateT : State

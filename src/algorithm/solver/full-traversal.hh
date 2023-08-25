@@ -48,6 +48,15 @@ struct FullTraversal : Types
         Search(const int max_depth) : max_depth{max_depth} {}
 
         void run(
+            const Types::State &state,
+            Types::Model &model,
+            MatrixNode *matrix_node) const
+        {
+            auto state_ = state;
+            run_(state_, model, matrix_node);
+        }
+
+        void run_(
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node) const
@@ -103,7 +112,7 @@ struct FullTraversal : Types
                         matrix_node_next->stats.prob = state_copy.prob;
                         chance_node->stats.chance_strategy.push_back(state_copy.prob);
 
-                        run(state_copy, model, matrix_node_next);
+                        run_(state_copy, model, matrix_node_next);
 
                         stats.nash_payoff_matrix.get(row_idx, col_idx) += 
                             matrix_node_next->stats.payoff * 

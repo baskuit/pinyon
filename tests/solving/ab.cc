@@ -6,26 +6,25 @@ Computes the savings of serialized alpha beta
 
 */
 
-RandomTree<>::State convert(const RandomTree<RandomTreeRationalTypes>::State &state, Rational<> threshold)
+RandomTree<>::State convert(
+    const RandomTree<RandomTreeRationalTypes>::State &state, 
+    Rational<> threshold)
 {
-    RandomTree<>::State x{
+    RandomTree<>::State float_state{
         prng{state.device.get_seed()},
         state.depth_bound,
         state.rows,
         state.cols,
         state.transitions,
         threshold};
-    return x;
+    return float_state;
 }
-
-mpq_class x;
 
 struct Solve
 {
 
     using TypesRational = MonteCarloModel<RandomTree<RandomTreeRationalTypes>>;
     using TypesFloat = MonteCarloModel<RandomTree<RandomTreeFloatTypes>>;
-
 
     using State = TypesRational::State;
     using StateFloat = TypesFloat::State;
@@ -46,7 +45,7 @@ struct Solve
     size_t time_full, time_full_f, time_ab, time_ab_f;
     size_t count_full, count_full_f, count_ab, count_ab_f;
 
-    Solve(State &state, Rational<> threshold)
+    Solve(const State &state, Rational<> threshold)
     {
 
         StateFloat state_f = convert(state, threshold);
@@ -92,6 +91,8 @@ struct Solve
         // root_ab.stats.data_matrix.print();
 
         double eps = (1 / (double)(1 << 5));
+        // 2026619832316723 / 4503599627370496
+        // 800 / 1800
 
         assert(alpha <= value);
         assert(beta >= value);
@@ -117,7 +118,6 @@ struct Solve
 
 int main()
 {
-    x.canonicalize();
     Rational<> threshold{1, 2};
     RandomTreeGenerator<RandomTreeRationalTypes> generator{
         prng{0},
@@ -131,18 +131,18 @@ int main()
     int tries = 0;
 
     size_t counter = 0;
-    // for (auto wrapped_state : generator)
-    // {
-    //     auto state = *wrapped_state.ptr;
+    for (auto wrapped_state : generator)
+    {
+        auto state = wrapped_state.ptr->unwrap<RandomTree<RandomTreeRationalTypes>>();
 
-    //     Solve solve{state, threshold};
-    //     solve.count();
+        Solve solve{state, threshold};
+        solve.count();
 
-    //     std::cout << "full: " << solve.time_full << " full_f: " << solve.time_full_f << " ab: " << solve.time_ab << " ab_f: " << solve.time_ab_f << std::endl;
-    //     std::cout << "full: " << solve.count_full << " full_f: " << solve.count_full_f << " ab: " << solve.count_ab << " ab_f: " << solve.count_ab_f << std::endl;
+        std::cout << "full: " << solve.time_full << " full_f: " << solve.time_full_f << " ab: " << solve.time_ab << " ab_f: " << solve.time_ab_f << std::endl;
+        std::cout << "full: " << solve.count_full << " full_f: " << solve.count_full_f << " ab: " << solve.count_ab << " ab_f: " << solve.count_ab_f << std::endl;
 
-    //     ++counter;
-    // }
+        ++counter;
+    }
 
     return counter;
 }
