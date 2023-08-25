@@ -146,10 +146,6 @@ namespace W
             virtual bool _is_terminal() const = 0;
             virtual Types::Value _get_payoff() const = 0;
             virtual void _randomize_transition(Types::PRNG &) = 0;
-            template <typename T>
-            auto unwrap () {
-                return dynamic_cast<StateT<TypeListNormalizer::MStateTypes<T>> *>(this)->data;
-            } // return state data
         };
         template <typename T>
         struct StateT : State
@@ -356,6 +352,12 @@ namespace W
             return *this;
         }
 
+        template <typename T>
+        auto unwrap()
+        {
+            return dynamic_cast<Dynamic::StateT<TypeListNormalizer::MStateTypes<T>> *>(ptr.get())->data;
+        }
+
         bool is_terminal() const
         {
             return ptr->_is_terminal();
@@ -423,6 +425,12 @@ namespace W
             return *this;
         }
 
+        template <typename T>
+        auto unwrap()
+        {
+            return dynamic_cast<Dynamic::ModelT<TypeListNormalizer::MModelTypes<T>> *>(ptr.get())->data;
+        }
+
         void inference(
             const Types::ModelInput &input,
             Types::ModelOutput &output)
@@ -447,6 +455,12 @@ namespace W
 
         template <typename T>
         MatrixNode(T) : ptr{std::make_unique<Dynamic::MatrixNodeT<TypeListNormalizer::MSearchTypes<T>>>()} {}
+
+        template <typename T>
+        auto unwrap()
+        {
+            return dynamic_cast<Dynamic::MatrixNodeT<TypeListNormalizer::MSearchTypes<T>> *>(ptr.get())->data;
+        }
     };
 
     struct Search
@@ -465,6 +479,12 @@ namespace W
         {
             ptr = other.ptr->clone();
             return *this;
+        }
+
+        template <typename T>
+        auto unwrap()
+        {
+            return dynamic_cast<Dynamic::SearchT<TypeListNormalizer::MSearchTypes<T>> *>(ptr.get())->data;
         }
 
         MatrixNode get_matrix_node() const
@@ -530,4 +550,5 @@ namespace W
     {
         return Types::MatrixNode{TypeList{}};
     }
+
 }

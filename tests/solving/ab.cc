@@ -7,7 +7,7 @@ Computes the savings of serialized alpha beta
 */
 
 RandomTree<>::State convert(
-    const RandomTree<RandomTreeRationalTypes>::State &state, 
+    const RandomTree<RandomTreeRationalTypes>::State &state,
     Rational<> threshold)
 {
     RandomTree<>::State float_state{
@@ -133,7 +133,7 @@ int main()
     size_t counter = 0;
     for (auto wrapped_state : generator)
     {
-        auto state = wrapped_state.ptr->unwrap<RandomTree<RandomTreeRationalTypes>>();
+        auto state = wrapped_state.unwrap<RandomTree<RandomTreeRationalTypes>>();
 
         Solve solve{state, threshold};
         solve.count();
