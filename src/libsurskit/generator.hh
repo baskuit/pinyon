@@ -5,6 +5,30 @@
 #include <ranges>
 #include <functional>
 
+/*
+
+Provides an object with a range interface. There are 3 main parameters
+
+1. A Collection of containers
+2. A type Output that is the return type of the iterator
+3. A function from the cartesian product of the containers that returns type Output
+
+Example 
+
+int function (int a, int b) {
+    return 10 * a + b;
+}
+auto generator<Output>({1, 2}, {3, 4});
+auto results_vec = std::vector<int>{};
+
+for (auto x : generator) {
+    results_vec.push_back(x);
+}
+
+// results_vec = {13, 14, 23, 24}
+
+*/
+
 template <typename Output, typename... Containers>
 struct CartesianProductGenerator
 {

@@ -1,8 +1,8 @@
 #include <tree/tree.hh>
 #include <algorithm/algorithm.hh>
 
-// #include <algorithm
 #include <ranges>
+
 /*
 
 An implementation of Simultaneous Move Alpha Beta
