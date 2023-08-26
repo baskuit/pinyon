@@ -76,26 +76,26 @@ struct Solve
             *result = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
         };
 
-        // std::thread threads[4];
-        // {
-        //     threads[0] = std::thread{run_lambda, &time_full, &state, &model, &session_full, &root_full, &full_value};
-        //     threads[1] = std::thread{run_lambda, &time_full_f, &state_f, &model_f, &session_full_f, &root_full_f, &full_f_value};
-        //     threads[2] = std::thread{run_lambda, &time_ab, &state, &model, &session_ab, &root_ab, &ab_value};
-        //     threads[3] = std::thread{run_lambda, &time_ab_f, &state_f, &model_f, &session_ab_f, &root_ab_f, &ab_f_value};
-        // };
-        // size_t thread_count = 0;
-        // for (auto &thread : threads)
-        // {
-        //     thread.join();
-        //     ++thread_count;
-        // }
-
+        std::thread threads[4];
         {
-            run_lambda( &time_full, &state, &model, &session_full, &root_full, &full_value);
-            run_lambda( &time_full_f, &state_f, &model_f, &session_full_f, &root_full_f, &full_f_value);
-            run_lambda( &time_ab, &state, &model, &session_ab, &root_ab, &ab_value);
-            run_lambda( &time_ab_f, &state_f, &model_f, &session_ab_f, &root_ab_f, &ab_f_value);
+            threads[0] = std::thread{run_lambda, &time_full, &state, &model, &session_full, &root_full, &full_value};
+            threads[1] = std::thread{run_lambda, &time_full_f, &state_f, &model_f, &session_full_f, &root_full_f, &full_f_value};
+            threads[2] = std::thread{run_lambda, &time_ab, &state, &model, &session_ab, &root_ab, &ab_value};
+            threads[3] = std::thread{run_lambda, &time_ab_f, &state_f, &model_f, &session_ab_f, &root_ab_f, &ab_f_value};
         };
+        size_t thread_count = 0;
+        for (auto &thread : threads)
+        {
+            thread.join();
+            ++thread_count;
+        }
+
+        // {
+        //     run_lambda( &time_full, &state, &model, &session_full, &root_full, &full_value);
+        //     run_lambda( &time_full_f, &state_f, &model_f, &session_full_f, &root_full_f, &full_f_value);
+        //     run_lambda( &time_ab, &state, &model, &session_ab, &root_ab, &ab_value);
+        //     run_lambda( &time_ab_f, &state_f, &model_f, &session_ab_f, &root_ab_f, &ab_f_value);
+        // };
 
         double alpha{ab_value.first};
         double beta{ab_value.second};

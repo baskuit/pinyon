@@ -52,16 +52,6 @@ namespace math
         std::cout << std::endl;
     }
 
-    template <template <typename...> typename Vector, template <typename> typename Wrapper>
-    void print(Vector<Wrapper<mpq_class>> &input)
-    {
-        for (int i = 0; i < input.size(); ++i)
-        {
-            std::cout << static_cast<mpq_class>(input[i]).get_str() << ", ";
-        }
-        std::cout << std::endl;
-    }
-
     template <typename Real, typename Value, template <typename...> typename Vector, template <typename> typename Matrix>
     Real exploitability(
         Matrix<Value> &value_matrix,

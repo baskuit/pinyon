@@ -246,7 +246,7 @@ struct ObsHashType<std::array<uint8_t, 64>>
 {
     size_t operator()(const ObsType<std::array<uint8_t, 64>> &t) const
     {
-        const uint64_t *a = reinterpret_cast<const uint64_t *>(static_cast<std::array<uint8_t, 64>>(t).data());
+        const uint64_t *a = reinterpret_cast<const uint64_t *>(t.value.data());
         size_t hash = 0;
         for (int i = 0; i < 8; ++i)
         {

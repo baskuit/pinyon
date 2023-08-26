@@ -137,23 +137,25 @@ namespace LRSNash
 
         mpz_t *row_solution_data = alloc(rows + 2);
         mpz_t *col_solution_data = alloc(cols + 2);
+        const mpz_t *const_row_solution_data = row_solution_data;
+        const mpz_t *const_col_solution_data = col_solution_data;
 
         solve_gmp_float(rows, cols, payoff_data, den, row_solution_data, col_solution_data);
 
-        mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
+        mpz_class row_den{const_row_solution_data[0]}, col_den{const_col_solution_data[0]};
         row_strategy.resize(rows);
         col_strategy.resize(cols);
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            row_strategy[row_idx] = Real{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}.get_d()};
+            row_strategy[row_idx] = Real{mpq_class{mpz_class{const_row_solution_data[row_idx + 1]}, row_den}.get_d()};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            col_strategy[col_idx] = Real{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}.get_d()};
+            col_strategy[col_idx] = Real{mpq_class{mpz_class{const_col_solution_data[col_idx + 1]}, col_den}.get_d()};
         }
 
-        Real row_payoff{mpq_class{mpz_class{col_solution_data[cols + 1]}, col_den}.get_d()};
-        Real col_payoff{mpq_class{mpz_class{row_solution_data[rows + 1]}, row_den}.get_d()};
+        Real row_payoff{mpq_class{mpz_class{const_col_solution_data[cols + 1]}, col_den}.get_d()};
+        Real col_payoff{mpq_class{mpz_class{const_row_solution_data[rows + 1]}, row_den}.get_d()};
         row_payoff = row_payoff * range + min;
         col_payoff = col_payoff * range + min;
         dealloc(row_solution_data, rows + 2);

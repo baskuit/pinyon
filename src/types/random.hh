@@ -96,7 +96,7 @@ public:
     // Uniform random in (0, 1)
     double uniform()
     {
-        return static_cast<double>(xorshift()) / UINT64_MAX;
+        return static_cast<double>(xorshift()) / static_cast<double>(UINT64_MAX);
     }
 
     // Random integer in [0, n)

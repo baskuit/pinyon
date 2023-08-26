@@ -1,3 +1,5 @@
+#pragma once
+
 #include <tree/tree.hh>
 #include <algorithm/algorithm.hh>
 

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <libsurskit/lrslib.hh>
 #include <types/matrix.hh>
 #include <algorithm/algorithm.hh>
