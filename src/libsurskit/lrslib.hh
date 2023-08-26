@@ -50,14 +50,7 @@ namespace LRSNash
         dealloc(row_solution_data, rows + 2);
         dealloc(col_solution_data, cols + 2);
 
-        if constexpr (Value<Wrapper<mpq_class>>::IS_CONSTANT_SUM == true)
-        {
-            return {Wrapper<mpq_class>{row_payoff}};
-        }
-        else
-        {
-            return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
-        }
+        return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
     }
 
     // Solve constant-sum (ConstantSum<1, 1>) matrix of mpq_class
@@ -106,21 +99,14 @@ namespace LRSNash
         dealloc(row_solution_data, rows + 2);
         dealloc(col_solution_data, cols + 2);
 
-        if constexpr (Value<Wrapper<mpq_class>>::IS_CONSTANT_SUM == true)
-        {
-            return {Wrapper<mpq_class>{row_payoff}};
-        }
-        else
-        {
-            return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
-        }
+        return {Wrapper<mpq_class>{row_payoff}};
     }
 
     // Solve for everything else, mostly for doubles
     template <
-        template <typename...> typename Vector, 
-        template <typename...> typename Matrix, 
-        template <typename> typename Value, 
+        template <typename...> typename Vector,
+        template <typename...> typename Matrix,
+        template <typename> typename Value,
         typename Real>
         requires(std::is_same_v<typename Real::type, mpq_class> == false)
     Value<Real>

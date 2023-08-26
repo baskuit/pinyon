@@ -47,16 +47,29 @@ struct FullTraversal : Types
         Search() {}
         Search(const int max_depth) : max_depth{max_depth} {}
 
+        std::pair<typename Types::Real, typename Types::Real>
+        run(
+            Types::PRNG &,
+            const Types::State &state,
+            Types::Model &model,
+            MatrixNode &matrix_node) const
+        {
+            auto state_ = state;
+            auto pair = run_(state_, model, &matrix_node);
+            return pair;
+        }
+
         void run(
             const Types::State &state,
             Types::Model &model,
-            MatrixNode *matrix_node) const
+            MatrixNode &matrix_node) const
         {
             auto state_ = state;
-            run_(state_, model, matrix_node);
+            run_(state_, model, &matrix_node);
         }
 
-        void run_(
+        std::pair<typename Types::Real, typename Types::Real>
+        run_(
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node) const
@@ -71,13 +84,13 @@ struct FullTraversal : Types
             {
                 stats.payoff = state.payoff;
                 matrix_node->set_terminal();
-                return;
+                return {stats.payoff.get_row_value(), stats.payoff.get_row_value()};
             }
             if (max_depth > 0 && stats.depth >= max_depth)
             {
                 model.get_value(state, stats.payoff);
                 matrix_node->set_terminal();
-                return;
+                return {stats.payoff.get_row_value(), stats.payoff.get_row_value()};
             }
 
             const int rows = state.row_actions.size();
@@ -112,7 +125,7 @@ struct FullTraversal : Types
                         matrix_node_next->stats.prob = state_copy.prob;
                         chance_node->stats.chance_strategy.push_back(state_copy.prob);
 
-                        run_(state_copy, model, matrix_node_next);
+                        auto value_ = run_(state_copy, model, matrix_node_next);
 
                         stats.nash_payoff_matrix.get(row_idx, col_idx) += 
                             matrix_node_next->stats.payoff * 
@@ -122,8 +135,8 @@ struct FullTraversal : Types
                 }
             }
 
-            auto value_pair = LRSNash::solve(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
-            stats.payoff = typename Types::Value{value_pair};
+            stats.payoff = LRSNash::solve(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
+            return {stats.payoff.get_row_value(), stats.payoff.get_row_value()};
         }
     };
 };

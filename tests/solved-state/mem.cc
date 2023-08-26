@@ -35,7 +35,7 @@ int main()
         UnsolvedStateTypes::State state{0, 3, 4, 4, 1};
         FT::Model model{};
         FT::MatrixNode root{};
-        solver.run(state, model, &root);
+        solver.run(state, model, root);
         
         // FT_::PRNG device{0};
         // solver.run_for_iterations(100, device, state, model, root);

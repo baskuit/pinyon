@@ -2,7 +2,7 @@
 
 /*
 
-Computes the savings of serialized alpha beta
+
 
 */
 
@@ -32,7 +32,10 @@ struct Solve
     using ModelFloat = TypesFloat::Model;
 
     FullTraversal<TypesRational>::MatrixNode root_full{};
+    std::pair<TypesRational::Real, TypesRational::Real> full_value;
+
     FullTraversal<TypesFloat>::MatrixNode root_full_f{};
+    std::pair<TypesFloat::Real, TypesFloat::Real> full_f_value;
 
     AlphaBeta<TypesRational>::MatrixNode root_ab{};
     std::pair<TypesRational::Real, TypesRational::Real> ab_value;
@@ -60,46 +63,62 @@ struct Solve
         AlphaBeta<TypesRational>::Search session_ab{Rational<>{0}, Rational<>{1}};
         AlphaBeta<TypesFloat>::Search session_ab_f{Rational<>{0}, Rational<>{1}};
 
-        start = std::chrono::high_resolution_clock::now();
-        session_full.run(state, model, &root_full);
-        end = std::chrono::high_resolution_clock::now();
-        time_full = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        auto run_lambda = [](size_t *result, const auto *state, auto *model, const auto *search, auto *root, auto *value)
+        {
+            time_t start, end;
+            auto seed = (*state).device.get_seed();
+            start = std::chrono::high_resolution_clock::now();
+            auto state_ = *state;
+            prng device{0};
+            auto data = search->run(device, state_, *model, *root);
+            *value = data;
+            end = std::chrono::high_resolution_clock::now();
+            *result = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        };
 
-        start = std::chrono::high_resolution_clock::now();
-        session_full_f.run(state_f, model_f, &root_full_f);
-        end = std::chrono::high_resolution_clock::now();
-        time_full_f = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        // std::thread threads[4];
+        // {
+        //     threads[0] = std::thread{run_lambda, &time_full, &state, &model, &session_full, &root_full, &full_value};
+        //     threads[1] = std::thread{run_lambda, &time_full_f, &state_f, &model_f, &session_full_f, &root_full_f, &full_f_value};
+        //     threads[2] = std::thread{run_lambda, &time_ab, &state, &model, &session_ab, &root_ab, &ab_value};
+        //     threads[3] = std::thread{run_lambda, &time_ab_f, &state_f, &model_f, &session_ab_f, &root_ab_f, &ab_f_value};
+        // };
+        // size_t thread_count = 0;
+        // for (auto &thread : threads)
+        // {
+        //     thread.join();
+        //     ++thread_count;
+        // }
 
-        start = std::chrono::high_resolution_clock::now();
-        ab_value = session_ab.run(device, state, model, root_ab);
-        end = std::chrono::high_resolution_clock::now();
-        time_ab = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        {
+            run_lambda( &time_full, &state, &model, &session_full, &root_full, &full_value);
+            run_lambda( &time_full_f, &state_f, &model_f, &session_full_f, &root_full_f, &full_f_value);
+            run_lambda( &time_ab, &state, &model, &session_ab, &root_ab, &ab_value);
+            run_lambda( &time_ab_f, &state_f, &model_f, &session_ab_f, &root_ab_f, &ab_f_value);
+        };
 
-        start = std::chrono::high_resolution_clock::now();
-        ab_f_value = session_ab_f.run(device, state_f, model_f, root_ab_f);
-        end = std::chrono::high_resolution_clock::now();
-        time_ab_f = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-
-        double alpha{ab_value.first.value.get_d()};
-        double beta{ab_value.second.value.get_d()};
-        double alpha_f{ab_f_value.first.value};
-        double beta_f{ab_f_value.second.value};
-        double value{root_full.stats.payoff.get_row_value().value.get_d()};
+        double alpha{ab_value.first};
+        double beta{ab_value.second};
+        double alpha_f{ab_f_value.first};
+        double beta_f{ab_f_value.second};
+        double value{root_full.stats.payoff.get_row_value()};
         double value_f{root_full_f.stats.payoff.get_row_value()};
 
-        // std::cout << "ab matrix:" << std::endl;
-        // root_ab.stats.data_matrix.print();
+        root_full.stats.nash_payoff_matrix.print();
+        root_full_f.stats.nash_payoff_matrix.print();
+        root_ab.stats.data_matrix.print();
+        root_ab_f.stats.data_matrix.print();
+        std::cout << alpha << " <= " << value << " <= " << beta << std::endl;
+        std::cout << alpha_f << " <= " << value_f << " <= " << beta_f << std::endl;
+        std::cout << std::endl;
 
         double eps = (1 / (double)(1 << 5));
-        // 2026619832316723 / 4503599627370496
-        // 800 / 1800
 
         assert(alpha <= value);
         assert(beta >= value);
-        assert(alpha <= beta);
 
-        assert(alpha_f - value_f <= eps);
-        assert(beta_f - value >= -eps);
+        assert(alpha_f - value_f <= eps); // if alpha > value_f, then only by a little
+        assert(value_f - beta_f <= eps);  // if value_f > beta, then only by a little
         assert(alpha_f - beta_f <= eps);
 
         assert(abs(alpha - alpha_f) < eps);
@@ -138,8 +157,8 @@ int main()
         Solve solve{state, threshold};
         solve.count();
 
-        std::cout << "full: " << solve.time_full << " full_f: " << solve.time_full_f << " ab: " << solve.time_ab << " ab_f: " << solve.time_ab_f << std::endl;
-        std::cout << "full: " << solve.count_full << " full_f: " << solve.count_full_f << " ab: " << solve.count_ab << " ab_f: " << solve.count_ab_f << std::endl;
+        std::cout << "TIME| full: " << solve.time_full << " full_f: " << solve.time_full_f << " ab: " << solve.time_ab << " ab_f: " << solve.time_ab_f << std::endl;
+        std::cout << "COUNT| full: " << solve.count_full << " full_f: " << solve.count_full_f << " ab: " << solve.count_ab << " ab_f: " << solve.count_ab_f << std::endl;
 
         ++counter;
     }

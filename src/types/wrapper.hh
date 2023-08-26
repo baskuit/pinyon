@@ -126,7 +126,11 @@ struct ArithmeticType : Wrapper<T>
 
     friend std::ostream &operator<<(std::ostream &os, const ArithmeticType &val)
     {
-        os << val.value;
+        if constexpr (std::is_same_v<T, mpq_class>) {
+            os << val.value.get_str();
+        } else {
+            os << val.value;
+        }
         return os;
     }
 
