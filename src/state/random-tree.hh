@@ -208,18 +208,27 @@ struct RandomTree : Types
 
                     // get unnormalized distro
                     typename Types::Q prob_sum{0};
+                    // typename Types::Q decay{chance_denominator - 1, chance_denominator};
+
                     for (int chance_idx = 0; chance_idx < transitions; ++chance_idx)
                     {
                         const int num = device.random_int(chance_denominator) + 1;
 
                         typename Types::Q x{num, chance_denominator};
+                        // x = x * decay;
+                        // x.canonicalize();
                         if (x < chance_threshold)
                         {
                             x = 0;
                         }
                         chance_strategies_[start_idx + chance_idx] = x;
                         prob_sum += x;
+
+                        // decay = decay * decay;
+                        // decay.canonicalize();
                     }
+
+                    prob_sum.canonicalize();
 
                     if (prob_sum == typename Types::Q{0})
                     {
@@ -231,6 +240,7 @@ struct RandomTree : Types
                     {
                         auto &x = chance_strategies_[start_idx + chance_idx];
                         x = x / prob_sum;
+                        x.canonicalize();
                         this->chance_strategies[start_idx + chance_idx] = x;
                     }
                 }
@@ -252,9 +262,9 @@ struct RandomTreeGenerator : CartesianProductGenerator<W::Types::State, std::vec
     // This class is not used for arena, maybe remove?
 
     // static otherwise implcit this arg messes up signature
-    static W::Types::State constr(std::tuple<size_t, size_t, size_t, Rational<>, size_t> tuple) 
+    static W::Types::State constr(std::tuple<size_t, size_t, size_t, Rational<>, size_t> tuple)
     {
-        return W::Types::State {
+        return W::Types::State{
             RandomTree<TypeList>{},
             RandomTreeGenerator::device.uniform_64(),
             std::get<0>(tuple),

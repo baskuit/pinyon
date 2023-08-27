@@ -126,18 +126,25 @@ struct ArithmeticType : Wrapper<T>
 
     friend std::ostream &operator<<(std::ostream &os, const ArithmeticType &val)
     {
-        if constexpr (std::is_same_v<T, mpq_class>) {
+        if constexpr (std::is_same_v<T, mpq_class>)
+        {
             os << val.value.get_str();
-        } else {
+        }
+        else
+        {
             os << val.value;
         }
         return os;
     }
 
-    explicit operator double() const {
-        if constexpr (std::is_same_v<T, mpq_class>) {
+    explicit operator double() const
+    {
+        if constexpr (std::is_same_v<T, mpq_class>)
+        {
             return this->value.get_d();
-        } else {
+        }
+        else
+        {
             return static_cast<double>(this->value);
         }
     } // double conversion doesnt work for mpq_class
@@ -266,7 +273,8 @@ struct ActionType : Wrapper<T>
         this->value = value;
         return *this;
     }
-    bool operator==(const ActionType &value) const {
+    bool operator==(const ActionType &value) const
+    {
         return this->value == value.value;
     }
 };
