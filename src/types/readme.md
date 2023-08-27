@@ -1,17 +1,31 @@
 
 # Types Struct
-As alluded earlier, a TypeList object is just a struct with some alias declarations.  All the `using` declarations found in the `DefaultTypes<...>` template basically specify a minimal 'standard' that any user-defined TypeList must satisfy.
 
-### Required
-* Each of the names must be defined at some point in the derivation of the `::Types` helper in order for all features of the library to compile.
-* Each of the type and template aliases must have a certain, usually minimal, interface. These are described in turn further below.
+As alluded earlier, a type list object is just a struct with some type declarations for a certain set of names (`Real`, `Mutex`, `VectorReal`) etc. The `DefaultTypes` struct in the next section essentially lists the minimal collection of declaration that are used in the library. There are also some additional constraints on the individual types that defines an expected interface.
+The use of concepts will mean this interface is auto-suggested when dealing with constrained template parameters.
 
-### Not Required
+### Strong Typing
 
-* In `DefaultTypes<...>`, some of the basic aliases like `Action` are not defined to be exactly what is provided by the user in the template parameter list. Instead they are wrapped e.g. `using Action = ActionType<_Action>;`
-* The benefits of using strong typing for certain primitives are not absolutely necessary to write working search code. More to the case against wrapping, I don't take it for granted that these abstracts are at no cost to run-time performance.
-For this reason the library functions will work just fine if raw types are used instead.
-* Also, strictly speaking the required types do not have to be defined all at once at this stage. But the user will have to include the declarations elsewhere if they choose to omit them in their TypeList.
+In the case of some aliases, the final type that is accessible via the type list (e.g. `Types::Real`) is **not** simply `float` or `mpq_class` as the user intended.
+Instead, some classes are actually wrapper classes around the underlying type that mainly provide strong typing and also normalize the Surskit interface.
+
+To the first point, let's consider a motivating example: If the underlying primitive type for an `Action` is `int`, then the following erroneous code would compile without warning
+```cpp
+	int row_idx = device.sample_pdf(row_strategy);
+	int col_idx = device.sample_pdf(col_strategy);
+	typename Types::Action row_action, col_action;
+	row_action = row_actions[row_idx];
+	col_action = col_actions[col_idx];
+	state.apply_actions(row_idx, col_idx); // error
+```
+
+To the second point, most of the interface trouble comes from `mpq_class`. For example, conversion from a `mpq_class` member to a double is done via its `get_d()` method, rather than a conversion operator `static_cast<double>()`.
+
+### Nearly Optional
+
+When strong typing was introduced I had planned to design the library so that they could be eschewed for the raw types if the user preferred. However, the support for `mpq_class` means that's not going to happen until I disentangle `GMP`from Surskit.
+
+This should not be an issue because of C++'s *zero cost abstractions*. If a program is compiled with `-O1` or higher (e.g. release mode in VSCode/Cmake) then these abstractions will be optimized away.
 
 # `DefaultTypes`
 
@@ -23,11 +37,11 @@ The template parameters with the `template <typename...>` prefix are not simply 
 template <
     typename _Real,
     typename _Action,
-    typename _Observation,
-    typename _Probability,
+    typename _Obs,
+    typename _Prob,
 
     template <typename...> typename _Value = PairReal,
-    template <typename...> typename _Vector = Vector,
+    template <typename...> typename _Vector = std::vector,
     template <typename...> typename _Matrix = Matrix,
 
     typename _Mutex = std::mutex,
@@ -36,11 +50,14 @@ template <
     typename _Rational = Rational<int>>
 struct DefaultTypes
 {
+    using TypeList = DefaultTypes;
+    using Q = _Rational;
     using Real = RealType<_Real>;
+
     using Action = ActionType<_Action>;
-    using Observation = ObservationType<_Observation>;
-    using Probability = ProbabilityType<_Probability>;
-    
+    using Obs = ObsType<_Obs>;
+    using Prob = ProbType<_Prob>;
+
     using Value = _Value<Real>;
     using VectorReal = _Vector<Real>;
     using VectorAction = _Vector<Action>;
@@ -48,22 +65,21 @@ struct DefaultTypes
     using MatrixReal = _Matrix<Real>;
     using MatrixInt = _Matrix<int>;
     using MatrixValue = _Matrix<Value>;
+
     template <typename... Args>
     using Vector = _Vector<Args...>;
     template <typename... Args>
     using Matrix = _Matrix<Args...>;
-    
-    using ObservationHash = ObservationHashType<_Observation>;
+
     using Mutex = std::mutex;
-    using Seed = _Seed;
     using PRNG = _PRNG;
-    using Rational = _Rational;
+    using Seed = _Seed;
 };
 ```
 
 ## Wrapped Primitives
 
-The `Real`, `Probability`, `Action`, and `Observation` type aliases that are defined in the `DefaultTypes` struct are not the same as the types which are provided in the template parameter list. Since these types are usually C++ primitives, they are instead wrapped with template classes which store the same data but also provide some extra functionality and make the search code more consistent when using library types like `mpq_class`. 
+The `Real`, `Prob`, `Action`, and `Obs` type aliases that are defined in the `DefaultTypes` struct are not the same as the types which are provided in the template parameter list. Since these types are usually C++ primitives, they are instead wrapped with template classes which store the same data but also provide some extra functionality and make the search code more consistent when using library types like `mpq_class`. 
 
 ### `Wrapper<T>`
 
@@ -87,19 +103,19 @@ typename Types::Real x = 0; // valid
 x += 1; // invalid, no match for operator += with...
 ```
 
-The use of strong type wrappers is the root of this. The `Types::Real` and `Types::Probability` wrappers need to have the same arithmetic functionality as their underlying types. However, these operations would only be available a priori if the wrappers were *derived* from their underlying types. The class which serves as the default implementation of `Types::Vector` has this luxury, but C++ does not allow for a class to be derived from *primitive* types like `double`.
+The use of strong type wrappers is the root of this. The `Types::Real` and `Types::Prob` wrappers need to have the same arithmetic functionality as their underlying types. However, these operations would only be available a priori if the wrappers were *derived* from their underlying types. The class which serves as the default implementation of `Types::Vector` has this luxury, but C++ does not allow for a class to be derived from *primitive* types like `double`.
 
-Thus we are forced to define each of these operations manually. We could define the common operations (`+`, `==`, etc) for `Real` and `Probability` separately, and we would then also have to define 'mixed' operations too (where we multiply a `Real` typed player payoff by a `Probability`).  However, the reduction of boiler-plate code (take a look at "types/arithmetic.hh" to see this) is a core design principle.
+Thus we are forced to define each of these operations manually. We could define the common operations (`+`, `==`, etc) for `Real` and `Prob` separately, and we would then also have to define 'mixed' operations too (where we multiply a `Real` typed player payoff by a `Prob`).  However, the reduction of boiler-plate code (take a look at "types/arithmetic.hh" to see this) is a core design principle.
 
-Thus we define the operations on a new class `ArithmeticType<T>` and make `RealType<T>`, `ProbabilityType<T>` derived from this class, so that they inherit these operations. This approach introduces its own kinks which have to be smoothed over.
+Thus we define the operations on a new class `ArithmeticType<T>` and make `RealType<T>`, `ProbType<T>` derived from this class, so that they inherit these operations. This approach introduces its own kinks which have to be smoothed over.
 
 ```cpp
 typename Types::Real x{1}, y{1};
 x + y; // ArithmeticType<T>;
 ```
-Both the operands are staticly cast to `ArithmeticType<T>`, which is also the return type of the operation. Thus the result has to be cast into either a `Real<T>` or a `Probability<T>`. We make this constructor explicit, again so that implicit conversions do not foil the strong typing.
+Both the operands are staticly cast to `ArithmeticType<T>`, which is also the return type of the operation. Thus the result has to be cast into either a `Real<T>` or a `Prob<T>`. We make this constructor explicit, again so that implicit conversions do not foil the strong typing.
 ```cpp
-typename Types::Probability w {x * y + 1};
+typename Types::Prob w {x * y + 1};
 typename Types::Real z = x + y;
 // note: the second line makes use of a specially defined assignment operator 
 // RealType<T>::RealType<T> operator=(ArithmeticType<T>)
@@ -112,13 +128,13 @@ typename Types::Real z = x + y;
 * Applying a non-elementary operation like `std::exp` is done by a static cast conversion, e.g. 
 `const  typename  Types::Real  y{std::exp(static_cast<double>(gains[i] *  eta))};` 
 
-### `RealType<T>` & `ProbabilityType<T>`
+### `RealType<T>` & `ProbType<T>`
 
 Since the essential mathematical operators are defined on their base class, there is currently only one task that these two are relied upon to perform.
 The default implementation for multiple precision arithmetic is provided by `mpq_class`, which is the C++ front-end for GMP, or the [GNU Multiple Precision Library](https://gmplib.org/).
 Unfortunately, there is one quirk of this class that makes writing polymorphic code (or more specifically code that works the same for float and `mpq_class` without template specialization or `if constexpr` everywhere) difficult.
 In order for the equality and comparison (`>=` etc) operators to work correctly, the `mpq_class` objects must be *canonicalized*, or reduced to a proper fraction. Unless the user naively initializes an `mpq_class` to be un-canonical (e.g. `typename Types::Q {2, 4}`), the only way rationals end up improper is after an arithmetic operation. The GMP library is designed for performance and thus does not perform this reduction automatically.
-Our method of handling this is to automatically canonicalize the underlying value when an `ArithmeticType<mpq_class>` is cast to a `RealType<mpq_class>` or `ProbabilityType<mpq_class>`, since that typically means we are finished operating on that value.
+Our method of handling this is to automatically canonicalize the underlying value when an `ArithmeticType<mpq_class>` is cast to a `RealType<mpq_class>` or `ProbType<mpq_class>`, since that typically means we are finished operating on that value.
 ```cpp
 RealType &operator=(const ArithmeticType<T> &val) {
     this->_value = val._value;
@@ -128,114 +144,21 @@ RealType &operator=(const ArithmeticType<T> &val) {
     return *this;
 }
 ```
-Regrettably, this means that some unnecessary reductions may be performed. However, I feel that `mpq_class` is restricted to theoretical or academic contexts, rather than in the performance critical context of a user created engine, where they will instead surely use `double` or `float` as the underlying `Real` and `Probability` types.
+Regrettably, this means that some unnecessary reductions may be performed. However, I feel that `mpq_class` is restricted to theoretical or academic contexts, rather than in the performance critical context of a user created engine, where they will instead surely use `double` or `float` as the underlying `Real` and `Prob` types.
 
 
-### `ObservationType<T>`
-A wrapper for the observation type. Only the equality operator `==` is used on this, to check whether a particular state transition has occurred before. This is how the search functions match the development of a state accurately in the corresponding tree structure.
+### `ObsType<T>`
+A wrapper for the Obs type. Only the equality operator `==` is used on this, to check whether a particular state transition has occurred before. This is how the search functions match the development of a state accurately in the corresponding tree structure.
 
 ### `ActionType<T>`
 A wrapper for the action type, and the argument type of the `apply_actions` method. No operators are required for this type, not even equality `==` (actions are identified by their *index* in the `row_actions`, `col_actions` containers.)
 
-## Template Aliases
-
-## Other Types
-
-
-# Why Use Types Struct
-
-All search functions and higher level families of classes will make use of a variety of primitive and object types. The State family needs a small type to represent the actions the players, and a type to act as the observation or signature of a transition, so that it can be identified. The search algorithms need mathematical types like vectors and matrices, and so on.
-
-Rather than fixing these types, we make the most basic family of classes to be the `Types` struct. This struct uses `using` declarations to determine the basic types, and all the higher classes borrow from this struct like so:
-
-```cpp
-typename Types::Real half {Rational(1, 2)};
-```
-which is equivalent to 
-```cpp
-double half = 0.5;
-```
-
-There are several reasons for this modularity.
-
-* Performance
-Using different data types for representation can make a significant impact on performance. For example using `float` instead of `double` significantly reduces the number of bytes needed to represent a matrix node of the tree. Smaller nodes means better cache usage, which is one of the most important considerations regarding performance of a search engine.
-
-* Generality
-    Work on Surskit began before there was a working simulator, and so the required primitive types were unknown. Additionally, different formats and generations of Pokemon may use a different simulator.
-
-* Strong Typing
-Organizing types in this manner makes it simpler to use strong typing. There are many reasons for doing this, but principal among them is the elimination of certain kinds of silents bugs.
-```cpp
-state.apply_actions (row_idx, col_idx); // wrong, but legal since Action = int
-```
-
-# Required Aliases
-
-A `Types` struct is expected to have the following aliases defined
-
-Arithmetic:
-* `Rational`
-* `Real`
-* `Float`
-
-State:
-
-* `Action`
-* `Observation`
-* `Probability`
-* `Seed`
-* `PRNG`
-* `Value`
-* `Strategy`
-
-Data:
-
-* `VectorReal`
-* `VectorAction`
-* `VectorInt`
-* `MatrixReal`
-* `MatrixInt`
-* `MatrixValue`
-
-
-The motivation and requirements of these type aliases are discussed below.
-
-## Wrapped Types
-
-The following types are given wrappers for type correctness, but otherwise gain little to no functionality.
-
-* Action
-* Observation
-
-This is to prevent `int row_idx, col_idx` being accidentally misused e.g. `apply_actions(row_idx, col_idx)` when the `Action` type is simply `int`.
-
-Implicit conversions from `T` to `Wrapped<T>` are allowed, but not the other way. The idea is that `row_actions[row_idx] = 0` is permissible (when `Action` is just `int`) is fine but accidental type mixing due to an implicit `Action` -> `int` -> `Observation` conversion is not possible.
-
-The `Action` type is merely the type of the inputs to the transition function `apply_actions(Action, Action)`. 
-
-* `Wrapped<T>`
-* `ArithmeticType`
-* ``
-
-### Arithmetic
-
-The following types are similarly wrapped but we want to keep their arithmetic operations
-
-* Real
-* Probability
-
-The `Real` type has the same purpose of `double` or `float`. It is the type that is used in the floating point arithmetic of the various bandit algorithms, e.g. soft-maxing, UCB scores, etc.
-
-The `Probability` type simply represents the probability of a transition occurring. This quantity is stored in each state as `PerfectInfoState::prob`.
-
-This quantity is not needed for the tree bandit algorithms, since they are sample based and hence the probabilities of transitions are 'baked into' the observations. On the other hand, this quantity is needed for solving methods, since otherwise we cannot calculate the expected payoff of chance nodes.
 
 ## Vectors
 
 In most cases, `std::vector` is an adequate container for storing floats, actions, etc.
 
-However, vectors are heavier than `std::array`, which does not reallocate or allocate unneeded storage, and its size is known at compile-time. This means standard arrays are preferable in certain cases. For example, if a game always has the same number of actions for both players, why not use an `std::array` to store that information?
+However, vectors are heavier than `std::array`, which does not reallocate or allocate unneeded storage and which size is known at compile-time. This means standard arrays are preferable in certain cases, for example if a game always has the same number of actions.
 
 Thus we use `VectorReal`, `VectorInt`, `VectorAction` to specify the most common uses for contiguous containers.
 
@@ -311,7 +234,7 @@ The provided pseudo-random number generator  is `prng`, which is just a simple w
 
 * `Rational`
 
-Simple rational type for exact prob, value calculation. Rationals are the preferred way of initializing `Real`, `Probability` and other arithmetic values since may also be a precise representation!
+Simple rational type for exact prob, value calculation. Rationals are the preferred way of initializing `Real`, `Prob` and other arithmetic values since may also be a precise representation!
 The library provides a global accessible type `Rational<T>`, where `T` is the underlying integral type for the numerator and denominator. 
 In the named Type structs, `Rational<int>` is the default `Rational` type.
 
@@ -325,7 +248,7 @@ In the named Type structs, `Rational<int>` is the default `Rational` type.
 TODO
 This type is currently unused. For bandit algorithms that use the model's policy inference (MatrixPUCB), the policy for both players is stored in the matrix node stats. Using even a vector of doubles here would explode the size of the matrix nodes, resulting in a significant performance drop. 
 
-Since probability distributions satisfy `0 < p_i < 1` for all entries `p_i` and precision is not terribly important, we can quantize the distribution using unsigned integers.
+Since Prob distributions satisfy `0 < p_i < 1` for all entries `p_i` and precision is not terribly important, we can quantize the distribution using unsigned integers.
 
 For example, `uint8_t` has 256 possible values. Thus  the distro `{0.3, 0.3, 0.4}` could be represented as
 ```cpp

@@ -64,8 +64,6 @@ struct DefaultTypes
     using Mutex = std::mutex;
     using PRNG = _PRNG;
     using Seed = _Seed;
-
-    using ObsHash = ObsHashType<_Obs>;
 };
 
 template <typename T>
@@ -89,6 +87,10 @@ concept IsObs = requires(Obs obs) {
     // Obs type is just a small and sure way to identify distinct transitions
     // of a State after commiting the same joint actions
 };
+template <typename ObsHash, typename Obs>
+concept IsObsHash = requires(Obs obs) {
+    true;
+}; // TODO
 
 template <typename Value, typename Real>
 concept IsValue = requires(Value &value) {
@@ -167,7 +169,7 @@ concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
 
 template <typename Types>
 concept IsTypeList =
-    // IsObs<typename Types::Obs> &&
+    IsObs<typename Types::Obs> &&
     IsArithmetic<typename Types::Real> &&
     IsArithmetic<typename Types::Prob> &&
     IsValue<typename Types::Value, typename Types::Real> &&
