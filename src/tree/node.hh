@@ -1,5 +1,8 @@
 #pragma once
 
+#include <concepts>
+#include <type_traits>
+
 template <typename Types>
 concept IsNodeTypes =
     requires(
@@ -19,6 +22,9 @@ concept IsNodeTypes =
         {
             const_matrix_node.access(0, 0)
         } -> std::same_as<const typename Types::ChanceNode *>;
+        {
+            const_matrix_node.is_expanded()
+        } -> std::same_as<bool>;
         {
             matrix_node.expand(state)
         } -> std::same_as<void>;
@@ -44,10 +50,4 @@ concept IsNodeTypes =
         {
             const_chance_node.access(obs)
         } -> std::same_as<const typename Types::MatrixNode *>;
-        {
-            chance_node.row_idx
-        } -> std::same_as<int &>;
-        {
-            chance_node.col_idx
-        } -> std::same_as<int &>;
     };

@@ -82,7 +82,7 @@ concept IsArithmetic = requires(T x) {
 template <typename Obs>
 concept IsObs = requires(Obs obs) {
     {
-        operator==(obs, obs)
+        obs == obs
     } -> std::same_as<bool>;
     // Obs type is just a small and sure way to identify distinct transitions
     // of a State after commiting the same joint actions
@@ -147,7 +147,7 @@ concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
     {
         device = const_device
         // copy constructable
-    };
+    } -> std::same_as<PRNG &>;
     {
         device.random_int(0)
     } -> std::convertible_to<int>;
