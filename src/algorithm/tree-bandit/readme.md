@@ -1,6 +1,8 @@
 
-
 # Tree Bandit
+
+### Inheritance Pattern
+
 
 The algorithms in the folder are generalizations of MCTS, which we call 'tree bandit'.
 
@@ -12,7 +14,7 @@ The algorithms in the folder are generalizations of MCTS, which we call 'tree ba
 
 * Secondly, there is the tree algorithm. This component wraps the bandit algorithm by accepting it as its first template parameter. It also accepts template parameters for the types/implementation of the matrix and chance nodes, as well as a boolean that determines whether the algorithms stops exploring the tree when it reaches an unexpanded node. This alternative stop-condition allows the tree search code to be used for replay generation.
 
-# `BanditAlgorithm`
+# BanditAlgorithm
 
 Bandit algorithms get their name from 'multi-armed bandits'. To quote Wikipedia:
 
@@ -48,107 +50,72 @@ In many schemes, the empirical move selection of the bandit algorithm is normali
 
 The Exp3 and MatrixUCB algorithms are already provided. Not all bandits algorithms (i.e. stochastic bandit algorithms) are sound choices. Refer to "Analysis of Hannan Consistent Selection for Monte Carlo Tree Search in Simultaneous Move Games".
 
-## Interface
-
-To work with all the default tree algorithms, there is a lightweight interface that is expected from bandit algorithms. This interface can be exampled by the implementation of `Rand`, which is basically a bench-marking algorithm that chooses randomly and maintains no search statistics.
-
-The entire class is defined below. It demonstrates the minimal requirements for bandit algorithms quite well.
-
+## Concepts/Interface
 ```cpp
-template <class Model>
-class Rand : public AbstractAlgorithm<Model>
 {
-public:
-    struct MatrixStats;
-    struct ChanceStats;
-    struct Types : AbstractAlgorithm<Model>::Types
-    {
-        using MatrixStats = Rand::MatrixStats;
-        using ChanceStats = Rand::ChanceStats;
-    };
-    struct MatrixStats
-    {
-        int rows, cols;
-    };
-    struct ChanceStats {};
-    struct Outcome {};
-    friend std::ostream &operator<<(std::ostream &os, const Rand &session)
-    {
-        os << "Rand";
-        return os;
-    }
-    void get_empirical_strategies(
-        MatrixStats &stats,
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy) {}
-    void get_empirical_value(
-        MatrixStats &stats,
-        typename Types::Value &value) {}
-    void get_refined_strategies(
-        MatrixStats &stats,
-        typename Types::VectorReal &row_strategy,
-        typename Types::VectorReal &col_strategy) {}
-    void get_refined_value(
-        MatrixStats &stats,
-        typename Types::Value &value) {}
-
-protected:
-    void initialize_stats(
-        int iterations,
-        typename Types::State &state,
-        typename Types::Model &model,
-        MatrixStats &stats) {}
-    void expand(
-        typename Types::State &state,
-        MatrixStats& stats,
-        typename Types::ModelOutput &model_output)
-    {
-        stats.rows = state.row_actions.size();
-        stats.cols = state.col_actions.size();
-    }
-    void select(
-        typename Types::PRNG &device,
-        MatrixStats &stats,
-        typename Types::Outcome &outcome)
-    {
-        const int row_idx = device.random_int(stats.rows);
-        const int col_idx = device.random_int(stats.cols);
-        outcome.row_idx = row_idx;
-        outcome.col_idx = col_idx;
-    }
-    
-    void update_matrix_stats(
-        MatrixStats &stats,
-        typename Types::Outcome &outcome) {}
-    void update_chance_stats(
-        ChanceStats &stats,
-        typename Types::Outcome &outcome) {}
-
-    void update_matrix_stats(
-        MatrixStats &stats,
-        typename Types::Outcome &outcome,
-        typename Types::Mutex &mutex) {}
-    void update_chance_stats(
-        ChanceStats &stats,
-        typename Types::Outcome &outcome,
-        typename Types::Mutex &mutex) {}
-        
-    void update_matrix_stats(
-        MatrixStats &stats,
-        typename Types::Outcome &outcome,
-        typename Types::Real learning_rate) {}
-    void update_chance_stats(
-        ChanceStats &stats,
-        typename Types::Outcome &outcome,
-        typename Types::Real learning_rate) {}
-        
-    void get_policy(
-        MatrixStats &stats,
-        typename Types::VectorReal &row_policy,
-        typename Types::VectorReal &col_policy) {}
-};
+    bandit.get_empirical_strategies(matrix_stats, strategy, strategy)
+} -> std::same_as<void>;
+{
+    bandit.get_empirical_value(matrix_stats, value)
+} -> std::same_as<void>;
+{
+    bandit.get_refined_strategies(matrix_stats, strategy, strategy)
+} -> std::same_as<void>;
+{
+    bandit.get_refined_value(matrix_stats, value)
+} -> std::same_as<void>;
+{
+    bandit.initialize_stats(0, state, model, matrix_stats)
+} -> std::same_as<void>;
+{
+    bandit.expand(state, matrix_stats, model_output)
+} -> std::same_as<void>;
+{
+    bandit.select(device, matrix_stats, outcome)
+} -> std::same_as<void>;
+{
+    bandit.update_matrix_stats(matrix_stats, outcome)
+} -> std::same_as<void>;
+{
+    bandit.update_chance_stats(chance_stats, outcome)
+} -> std::same_as<void>;
+{
+    outcome.row_idx
+} -> std::same_as<int&>;
+{
+    outcome.col_idx
+} -> std::same_as<int&>;
+{
+    outcome.value
+} -> std::same_as<typename Types::Value &>;
 
 ```
+
+```cpp
+{
+    bandit.select(device, matrix_stats, outcome, mutex)
+} -> std::same_as<void>;
+{
+    bandit.update_matrix_stats(matrix_stats, outcome, mutex)
+} -> std::same_as<void>;
+{
+    bandit.update_chance_stats(chance_stats, outcome, mutex)
+} -> std::same_as<void>;
+```
+
+```cpp
+{
+    bandit.update_matrix_stats(matrix_stats, outcome)
+} -> std::same_as<void>;
+{
+    bandit.update_chance_stats(chance_stats, outcome)
+} -> std::same_as<void>;
+{
+    bandit.get_policy(matrix_stats, strategy, strategy)
+} -> std::same_as<void>;
+
+```
+
 #### Explanation of the Above
 
 There are three structs that all bandit algorithms must define:
@@ -193,7 +160,23 @@ The off-policy variant performs updates that are weighted by 'importance'. This 
 Off-policy only. The calculates the policy of the bandit in the "learning" stage. 
 
 
-## TreeAlgorithm
+# TreeAlgorithm
+## Concepts/Interface
+
+```cpp
+{
+    session = session
+} -> std::same_as<typename Types::Search &>;
+{
+    session.run(0, device, state, model, matrix_node)
+} -> std::same_as<size_t>;
+{
+    session.run_for_iterations(0, device, state, model, matrix_node)
+} -> std::same_as<size_t>;
+{
+    session.run(0, device, state, model, matrix_node)
+} -> std::same_as<size_t>;
+```
 
 The bandit algorithm decides how the tree is expanded and explored, which is outside the scope of the bandit algorithm.
 

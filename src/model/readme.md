@@ -1,57 +1,54 @@
-# DoubleOracleModel
 
-Currently the only Models supported by Surskit are 'double oracle' models, those that return a value and policy estimate for both players.
+# Model
+Models are copy constructable. Neural network based models use shared pointers to the network, and any other model should have very relatively little data
+### ValueModel vs DoubleOracleModel
 
-A value estimate is required by the tree-bandit algorithms. When a leaf node is expanded at the end of the forward phase, the value of its accompanying state is back-propagated to update the matrix/chance nodes leading up to the leaf node.
+### State, Input, and Output
 
-On the other hand, a policy estimate is not required by tree-bandit search and is only used in some bandit algorithms. If a model does not typically supply a policy estimate (e.g. Monte Carlo), then the uniform policy is used as a stand-in.
+### Batched
 
-### Interface
+### Arena
 
-Any model derived from `DoubleOracleModel` is expected to define 4 new types to be added to the `Types` struct.
-
-* `ModelInput`
-* `ModelOutput`
-* `ModelBatchInput`
-* `ModelBatchOutput`
-
-Their definitions vary considerably depending on the derived class. In the Monte Carlo model, the input is a 
-
+# Concepts/Interface
 ```cpp
-    void get_input(
-        const typename Types::State &state,
-        typename Types::ModelInput &input);
-        
-    void get_batch_input(
-        const std::vector<typename Types::State> &states,
-        typename Types::ModelBatchInput &inputs);
-
-    void add_to_batch_input (
-        const typename Types::State &state,
-        typename Types::ModelBatchInput &input);
-
-    void inference(
-        typename Types::ModelInput &input,
-        typename Types::ModelOutput &output);
-
-    void inference(
-        typename Types::ModelBatchInput &inputs,
-        typename Types::ModelBatchOutput &outputs);
-
-    void inference(
-        const std::vector<typename Types::State> &states,
-        typename Types::ModelBatchOutput &outputs); // TODO add this!
+{
+    output.value
+} -> std::same_as<typename Types::Value &>;
+{
+    model.inference(
+        input,
+        output)
+} -> std::same_as<void>;
+{
+    model.get_input(
+        state,
+        input)
+} -> std::same_as<void>;
+```
+```cpp
+{
+    model.inference(model_batch_input, model_batch_output)
+} -> std::same_as<void>;
+{
+    model.add_to_batch_input(state, model_batch_input)
+} -> std::same_as<void>;
+{
+    model_batch_input[0]
+} -> std::same_as<typename Types::ModelInput &>;
+{
+    model_batch_output[0]
+} -> std::same_as<typename Types::ModelOutput &>;
+```
+```cpp
+{
+    output.row_policy
+} -> std::same_as<typename Types::VectorReal &>;
+{
+    output.col_policy
+} -> std::same_as<typename Types::VectorReal &>;
 ```
 
-* `get_input`
-The Pytorch models take a tensor as input, not the raw state itself.
-* `get_batch_input`
-Essentially the same method as above, but plural. The gist of what it does depends on the model. For example, the Monte Carlo model simply defines a vector of states as its input, and 
-
-Notice the `const` qualifier on the state parameters. Indeed, providing expert knowledge should not alter a state.
-
-The type `ModelOutput` is already defined in this abstract base class. It is simply a struct with the aforementioned value and policy pairs. It is defined here because the derived model classes below all agree on this definition.
-
+# Implementations
 
 ## MonteCarloModel
 
@@ -70,8 +67,6 @@ The fastest way to use a neural network depends on its size. Small neural networ
 This requires a change in the search paradigm as well, and that is implemented in the `OffPolicy` tree algorithm. Details are discussed here [TODO relative link]
 
 ## WrappedSearch
-
-This is not currently implemented by the library, but it is straightforward to do:
 
 The bandit algorithms are expected to have methods `get_empirical_strategies`, `get_emprical_values`, and these can be treated as the policy and value output of a model, after some number of search iterations or course.
 

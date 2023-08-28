@@ -1,3 +1,5 @@
+# Solver
+
 These algorithms perform the simultaneous-move analog of mini-max; They **solve** for Nash equilibrium payoffs and strategies on a sub-tree. The calculated Nash equilibrium payoffs and strategies are stored in the `MatrixStats`.
 
 The sub-tree is expanded up to `depth=-1`, meaning infinite depth by default.
@@ -12,15 +14,26 @@ while (true) {
 	solve_to_depth(n++);
 }
 ```
+
+# Concepts/Interface
+
+```cpp
+{
+    session.run(0, device, state, model, matrix_node)
+} -> std::same_as<size_t>;
+```
+
+# Implementations
+
 while also using information from the last `solve_to_depth` call, such as move orderings, to expedite the current call. This kind of 'iterative deepening' as it is often called has yet to be implemented although it should be straightforward (TODO).
 
-# FullTraversal
+## FullTraversal
 
 The simplest possible solver: expands the entire game tree with a single recursive function call and solves every matrix node.
 
 It assumes the game is 1-sum (TODO: ~~Consider adding MIN_PAYOFF, IS_CONSTANT_SUM, etc to States~~ Done, but this still needs to be changed)
 
-# AlphaBeta (aka SMAB)
+## AlphaBeta (aka SMAB)
 
 This algorithm is an implementation of Bošanský, et al. (2013), modified for stochastic games. The paper optionally uses a sub-algorithm called 'Serialized AlphaBeta', which further tightens the bounds on the value of a matrix node. Serialized AlphaBeta is currently not implemented (TODO), and the paper admits it does not always improve performance, due to the increased tree traversal.
 

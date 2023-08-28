@@ -101,22 +101,19 @@ concept IsOffPolicyBanditTypes =
 template <typename Types>
 concept IsTreeBanditTypes =
     requires(
-        typename Types::Search &session,
+        typename Types::Search &search,
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         typename Types::MatrixNode &matrix_node) {
         {
-            typename Types::Search{}
-        };
-        {
-            session = session
+            search = search
         } -> std::same_as<typename Types::Search &>;
         {
-            session.run(0, device, state, model, matrix_node)
+            search.run(0, device, state, model, matrix_node)
         } -> std::same_as<size_t>;
         {
-            session.run_for_iterations(0, device, state, model, matrix_node)
+            search.run_for_iterations(0, device, state, model, matrix_node)
         } -> std::same_as<size_t>;
     } &&
     IsBanditAlgorithmTypes<Types>;
@@ -134,18 +131,3 @@ concept IsSearchTypes =
         } -> std::same_as<size_t>;
     } &&
     IsValueModelTypes<Types>;
-
-// Is solver types?
-// template <typename Types>
-// concept IsSearchTypes =
-//     requires(
-//         typename Types::Search &session,
-//         typename Types::PRNG &device,
-//         typename Types::State &state,
-//         typename Types::Model &model,
-//         typename Types::MatrixNode &matrix_node) {
-//         {
-//             session.run(0, device, state, model, matrix_node)
-//         } -> std::same_as<size_t>;
-//     } &&
-//     IsValueModelTypes<Types>;
