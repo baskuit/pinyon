@@ -1,8 +1,10 @@
-# What is a State
 
-A state is a two-player game with simultaneous moves and Markovian transitions.
-
-That's it. The `AbstractState` class does not make any more assumptions.
+# State
+### Markov Decision Process
+Loosely speaking a state is a Markov Decision Process. There is some ambiguity that should be cleared up.
+The **type** of a state corresponds to a game or a MDP, while an **instance/object** corresponds to a MDP 'state'
+### Perfect Information and Inheritance
+The assumption of perfect information means that the actions for both players is public knowledge.
 
 
 # Perfect Info
@@ -12,29 +14,68 @@ In practice, search on general imperfect information games is hard and expensive
 The goal of Surskit is to aid development in an imperfect info game, so eventually we will expand our methods and classes as perfect info milestones are reached.
 
 
-# What you need to know
-
+# Concepts/Interface
+`IsStateTypes`:
 ```cpp
-    bool is_terminal{false};
-    typename Types::VectorAction row_actions;
-    typename Types::VectorAction col_actions;
-    typename Types::Value payoff;
-    typename Types::Observation obs;
-    typename Types::Probability prob;
-
-    void get_actions();
-
-    void apply_actions(
-        typename Types::Action row_action,
-        typename Types::Action col_action);
-
-    void reseed(typename Types::PRNG &device);
+{
+    const_state.is_terminal()
+} -> std::same_as<bool>;
 ```
-
-
-The simplest way to convey the conventions of a state is explain the inclusion of its members and methods.
-
-The data members are not overridden by derived classes. The methods are the usual decorative declarations to be shadowed in derived classes. 
+Self explanatory.
+```cpp
+{
+    const_state.get_payoff()
+} -> std::same_as<typename Types::Value>;
+```
+This function can always be called but the result is only valid when the state is terminal. Otherwise, it is likely to be uninitialized.
+```cpp
+{
+    state.apply_actions(action, action)
+} -> std::same_as<void>;
+```
+Without the assumption of perfect info, we cannot assume that an identifying observation is returned or that the probability of the transition is known.
+```cpp
+{
+    const_state.get_actions(actions, actions)
+} -> std::same_as<void>;
+```
+It is assumed that calculating actions 
+```cpp
+{
+    state.randomize_transition(device)
+} -> std::same_as<void>;
+```
+`IsPerfectInfoStateTypes`:
+```cpp
+{
+    state.obs
+} -> std::same_as<typename Types::Obs &>;
+{
+    state.prob
+} -> std::same_as<typename Types::Prob &>;
+```
+The assumption of perfect info requires 
+```cpp
+{
+    state.terminal
+} -> std::same_as<bool &>;
+```
+The terminality of the state is stored as a bool and the method `is_terminal` is implemented as a getter.
+```cpp
+{
+    state.payoff
+} -> std::same_as<typename Types::Value &>;
+{
+    state.get_actions()
+} -> std::same_as<void>;
+{
+    state.row_actions
+} -> std::same_as<typename Types::VectorAction &>;
+{
+    state.col_actions
+} -> std::same_as<typename Types::VectorAction &>;
+```
+These are essentially the same methods and attributes from the IsState concept, except now we assume that the information which passed as arguments to those methods is stored as a member. This is largely a convenience, to spare the use from instantiating action vectors and values all the time. There should be very little overhead to this attachment. 
 
 * `is_terminal`
 Simple boolean that is flipped in the `apply_actions` method as needed. Initialized to `false` since there is no reason not to assume a state isn't live upon its initialization.

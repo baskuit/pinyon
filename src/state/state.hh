@@ -15,10 +15,10 @@ concept IsStateTypes =
         typename Types::VectorAction &actions,
         typename Types::PRNG &device) {
         {
-            state.is_terminal()
+            const_state.is_terminal()
         } -> std::same_as<bool>;
         {
-            state.get_payoff()
+            const_state.get_payoff()
         } -> std::same_as<typename Types::Value>;
         {
             state.apply_actions(action, action)
