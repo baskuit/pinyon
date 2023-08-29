@@ -24,7 +24,7 @@ concept IsStateTypes =
             state.apply_actions(action, action)
         } -> std::same_as<void>;
         {
-            const_state.get_actions(actions, actions)
+            state.get_actions(actions, actions)
         } -> std::same_as<void>;
         {
             state.randomize_transition(device)

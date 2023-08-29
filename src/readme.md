@@ -38,7 +38,7 @@ CMake is the blessed build system for Surskit, lrslib, and Libtorch. The  vanill
 option(ENABLE_TORCH "Enable Libtorch"  OFF)
 ```
 
-It also comes with a rudimentary script that scans the tests and benchmark directories for any source files. These executables can be built, testing and debugged with a a simple button press using the CMake extension.
+The CMakeLists includes a rudimentary script that scans the tests and benchmark directories for any source files. These executables can be built, testing and debugged via hotkeys with the CMake extension for VSCode.
 
 ### Compiler
 Without excising any features or tests, this library requires a compiler that supports C++23. This is because of the use of `std::cartesian_product`, and use of concepts (detailed below) requires C++20, The core of the library is probably complicit with C++17, however.
@@ -47,14 +47,6 @@ You will need at least `gcc-13`. As of Ubuntu 23.04, this can be installed by us
 #### clang
 As of this writing, there is a [bug](https://gcc.gnu.org/bugzilla//show_bug.cgi?id=109647) with clang-16 regarding libstdc++ version of the ranges library.
 The library will compile with clang-18 and probably clang-17 (untested).
-
-* VSCode
-* Compiler
-* CMake
-* Additional libraries
-
-This project its dependencies LRSNashLib are built using 
-
 
 ### Concepts & Intellisense
 
@@ -85,34 +77,62 @@ template <typename Types,  bool  HasPolicy  = false>
 ```
 This library has little for use concepts outside of Intellisense. In fact, concepts generally produce worse compiler messages. Thus this macro was included to easily disable them across an entire project.
 
+#### As Documentation
+
+The atomic constraints that define the various concepts are a servicable tour of the interface. The rest of the readmes will reiterate and comment on the constraints.
+
 
 # The Types Idiom
 
-The most important implementation detail of Surskit, because it is used everywhere and thus provides a uniform API, is the *type list*.
+The type list is the most important pattern of Surskit. It is used in the implementation of general purpose utilities where it lends a consistent way. It is also used at the level of the executable, where encapsulates a particular.
+In C++ terminalogy, it is a struct with no data members, only type and template aliases. 
+The term "type list" specifically referes to the struct type definition, not any object/instance of the struct.
 
-A *type list* is a struct which only contains alias and struct/class declarations. This is usually a minimal collection, only containing enough types to define a new class and perhaps some ancillary types as well.
+## Using a Type List
+
+Suppose that we have a type list which is  enough to run a simple search on a test state type. Then this type list must define in its scope some types with the canonical aliases `State`, `Model`, `Search`, etc. For the sake of example, lets say the search is a exp3 search on a "mold state" parameterized with 2 for the players and a max depth of 10. We will use a monte carlo model in the search.
+
 ```cpp
-using Types = MoldState<2>;
-// The rhs is a type list which we create an 'Types' alias for.	
-MoldState<2>::State state{10};
-// In this case MoldState only contains a struct definition `State`
-// which is the name sake for the type list
-Types::VectorAction row_actions, col_actions;
-state.get_actions(row_actions, col_actions);
-// and also the basic 'surskit types' which all type lists are assumed to have
+using Types = //...
+
+int main () 
+{
+	size_t depth = 10;
+	Types::State state{depth};
+	Types::Model model{0};
+	Types::Q gamma{1, 10};
+	Types::Search search{gamma};
+
+	Types::PRNG device{0};
+	size_t milliseconds = 500;
+	Types::MatrixNode node{};
+	seearch.run(500, device, state, model, node);
+
+}
 ```
 
+### Multiple Type Lists
 
- Usually a given type list is actually a specialization of a template that acts like a type list "expander": 
+Now what about using slightly different type. Say we want to do this same test but we want to use 
+
+## Building a Type List
+
+The prior examples assumed that we had the type lists apriori. Now we will discuss how type lists are created
+
+### The TypeList
+
+Most type lists begin by specifying the struct definition of the "basic type list", which are the type lists that make up the TypeList category at the beginning of this document. 
+These type lists don't contain definitions for the State or other features. They only specifiy the primitive types like `Real`, `Action`, `Mutex` that are used everywhere else.
+
+### Templates
+
+### Relation to Concepts
+
+
+
 ```cpp
-template <IsValueModelTypes Types>
-struct NewTypes : Types {
-	using StateModelPair = std::pair<typename Types::State, typename Types::Model>
-	// ...
-};
+template <>
 ```
-This essentially acts like a function that takes a type list (which satisfies the `IsValueModelTypes` constraint) and defines a new one. In most cases (like the above) this new type lists will 'contain' the old one via class inheritance. It will then define new types, in the above with have the new `StateModelPair` type to work with.
-
 
 # Tour of Features
 
