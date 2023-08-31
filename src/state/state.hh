@@ -1,7 +1,7 @@
 #pragma once
 
 #include <types/types.hh>
-#include <types/concepts.hh>
+#include <libsurskit/enable-concepts.hh>
 
 #include <concepts>
 #include <vector>

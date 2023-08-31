@@ -1,6 +1,5 @@
 #pragma once
 
-#include <types/concepts.hh>
 #include <state/state.hh>
 
 template <template <typename...> typename... Template>

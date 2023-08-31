@@ -62,7 +62,7 @@ This provides a form of documentation that should help users become familiar wit
 
 
 #### Disabling Concepts
-Concepts can be disabled by uncommenting `#define ENABLE_CONCEPTS` in the file `types/concepts.hh`. All uses of concepts for Intellisense are invoked using a macro, e.g.
+Concepts can be disabled by uncommenting `#define ENABLE_CONCEPTS` in the file `libsurskit/enable-concepts.hh`. All uses of concepts for Intellisense are invoked using a macro, e.g.
 ```cpp
 template <CONCEPT(IsPerfectInfoStateTypes, Types),  bool HasPolicy = false>
 struct MonteCarloModel : Types { // ...

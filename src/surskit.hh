@@ -2,6 +2,7 @@
 
 // Util
 
+#include <libsurskit/enable-concepts.hh>
 #include <libsurskit/math.hh>
 #include <libsurskit/lrslib.hh>
 #include <libsurskit/generator.hh>
@@ -12,7 +13,6 @@
 // Types
 
 #include <types/types.hh>
-#include <types/concepts.hh>
 
 // State
 
