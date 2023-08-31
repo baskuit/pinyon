@@ -5,9 +5,8 @@ As alluded earlier, a type list object is just a struct with some type declarati
 The use of concepts will mean this interface is auto-suggested when dealing with constrained template parameters.
 
 ### Strong Typing
-
 In the case of some aliases, the final type that is accessible via the type list (e.g. `Types::Real`) is **not** simply `float` or `mpq_class` as the user intended.
-Instead, some classes are actually wrapper classes around the underlying type that mainly provide strong typing and also normalize the Surskit interface.
+Instead, some classes are actually wrapper classes around the underlying type that mainly provide strong typing and regularize the Surskit interface.
 
 To the first point, let's consider a motivating example: If the underlying primitive type for an `Action` is `int`, then the following erroneous code would compile without warning
 ```cpp
@@ -19,20 +18,18 @@ To the first point, let's consider a motivating example: If the underlying primi
 	state.apply_actions(row_idx, col_idx); // error
 ```
 
-To the second point, most of the interface trouble comes from `mpq_class`. For example, conversion from a `mpq_class` member to a double is done via its `get_d()` method, rather than a conversion operator `static_cast<double>()`.
+Regarding the second point, most of the interface trouble comes from `mpq_class`. For example, conversion from a `mpq_class` member to a double is done via its `get_d()` method, rather than a conversion operator `static_cast<double>()`. We cannot add conversion operators, constructors, etc to an external library class but we can add that functionality to the wrapper.
 
-### Nearly Optional
-
-When strong typing was introduced I had planned to design the library so that they could be eschewed for the raw types if the user preferred. However, the support for `mpq_class` means that's not going to happen until I disentangle `GMP`from Surskit.
+### ...Is Nearly Optional
+When strong typing was introduced I had planned to design the library so that they could be eschewed for the raw types if the user preferred. However, the support for `mpq_class` means that's not going to happen until I disentangle the GNU multiple precision library from Surskit.
 
 This should not be an issue because of C++'s *zero cost abstractions*. If a program is compiled with `-O1` or higher (e.g. release mode in VSCode/Cmake) then these abstractions will be optimized away.
 
 # `DefaultTypes`
 
-Below is the entire definition of the `DefaultTypes` TypeList.
+Below is the entire definition of the `DefaultTypes` type list.
 The template parameters are demarcated from the actual type aliases with an underscore prefix.
 The template parameters with the `template <typename...>` prefix are not simply types but are themselves templates.
-
 ```cpp
 template <
     typename _Real,
@@ -85,7 +82,8 @@ The `Real`, `Prob`, `Action`, and `Obs` type aliases that are defined in the `De
 
 All the types in this group are derived from `Wrapper<T>`. 
 * This purpose of this class is to simply hold a value of type `T`, and so any class which is derived from `Wrapper<T>` will automatically store this data by inheriting that member.
-*  This class also defines a conversion to type `T`, which is basically an 'unwrapping' operation. This operator is marked as explicit, otherwise an implicit unwrapping might occur without the user's knowledge, which would circumvent the strong-typing conventions. The conversion operator is best invoked via a static cast, e.g. `double raw_data = static_cast<double>(some_real);`
+* If we could derive `Wrapper<T>` from `T` then we would not need to create a `T value` member since the derived class would inherit the `T` data. However, we cannot derive from primitive types in C++ so using a member is necessary.
+*  This class defines a conversion to type `T`, which is basically an 'unwrapping' operation. This operator is marked as explicit, otherwise an implicit unwrapping might occur without the user's knowledge, which would circumvent the strong-typing conventions. The conversion operator is always invoked via a static cast, e.g. `double raw_data = static_cast<double>(some_real);`
 * The underlying type `T` is accessible via an alias declaration `using type = T;`. This allows the user to make assertions about the underlying type easily, e.g. 
 	```cpp
 	if constexpr (std::is_same_v<typename Types::Real::type, mpq_class>) {
@@ -102,10 +100,9 @@ typename Types::Real x = 0; // valid
 // ...
 x += 1; // invalid, no match for operator += with...
 ```
+The `Types::Real` and `Types::Prob` wrappers need to have the same arithmetic functionality as their underlying types. However, these operations would only be available a priori if the wrappers were *derived* from their underlying types. The class which serves as the default implementation of `Types::Vector` has this luxury, but C++ does not allow for a class to be derived from primitive types like `double`.
 
-The use of strong type wrappers is the root of this. The `Types::Real` and `Types::Prob` wrappers need to have the same arithmetic functionality as their underlying types. However, these operations would only be available a priori if the wrappers were *derived* from their underlying types. The class which serves as the default implementation of `Types::Vector` has this luxury, but C++ does not allow for a class to be derived from *primitive* types like `double`.
-
-Thus we are forced to define each of these operations manually. We could define the common operations (`+`, `==`, etc) for `Real` and `Prob` separately, and we would then also have to define 'mixed' operations too (where we multiply a `Real` typed player payoff by a `Prob`).  However, the reduction of boiler-plate code (take a look at "types/arithmetic.hh" to see this) is a core design principle.
+Thus we are forced to define each of these operations manually. We could define the common operations (`+`, `==`, etc) for `Real` and `Prob` separately, and we would then also have to define 'mixed' operations too (where we multiply a `Real` typed player payoff by a `Prob`).  However, the reduction of boiler-plate code is a core design principle.
 
 Thus we define the operations on a new class `ArithmeticType<T>` and make `RealType<T>`, `ProbType<T>` derived from this class, so that they inherit these operations. This approach introduces its own kinks which have to be smoothed over.
 
@@ -113,7 +110,7 @@ Thus we define the operations on a new class `ArithmeticType<T>` and make `RealT
 typename Types::Real x{1}, y{1};
 x + y; // ArithmeticType<T>;
 ```
-Both the operands are staticly cast to `ArithmeticType<T>`, which is also the return type of the operation. Thus the result has to be cast into either a `Real<T>` or a `Prob<T>`. We make this constructor explicit, again so that implicit conversions do not foil the strong typing.
+Both the operands are staticly cast to `ArithmeticType<T>`, which is also the return type of the operation. Thus the result has to be cast into either a `Real<T>` or a `Prob<T>`. We make this constructor explicit, again so that implicit conversions do not foil the strong typing convention.
 ```cpp
 typename Types::Prob w {x * y + 1};
 typename Types::Real z = x + y;
@@ -121,11 +118,11 @@ typename Types::Real z = x + y;
 // RealType<T>::RealType<T> operator=(ArithmeticType<T>)
 ```
 
-* Like `Wrapper<T>`, the user never needs to explicitly construct `ArithmeticType<T>`. It is always constructed explicity by invoking some arithmetic operator.
+* Like `Wrapper<T>`, the user never needs to explicitly construct `ArithmeticType<T>`.
 
-* Currently only right-handed operators are defined. That is, the expression `1 + x;` has no match but `x + 1` does. Thus we express `1 - x` (e.g. getting the column players payoff from the row players in a 1-sum game) as `x * -1 + 1` 
+* Currently only right-handed operators are defined. That is, the expression `1 + x;` has no match but `x + 1` does. Thus we express `1 - x` (e.g. getting the column players payoff from the row players in a 1-sum game) as `x * -1 + 1`. This is perhaps an unreasonable aversion to repetitive code.
 
-* Applying a non-elementary operation like `std::exp` is done by a static cast conversion, e.g. 
+* Applying a non-elementary operation like `std::exp` is done by a static cast conversion to primitive, e.g. 
 `const  typename  Types::Real  y{std::exp(static_cast<double>(gains[i] *  eta))};` 
 
 ### `RealType<T>` & `ProbType<T>`
@@ -151,7 +148,7 @@ Regrettably, this means that some unnecessary reductions may be performed. Howev
 A wrapper for the Obs type. Only the equality operator `==` is used on this, to check whether a particular state transition has occurred before. This is how the search functions match the development of a state accurately in the corresponding tree structure.
 
 ### `ActionType<T>`
-A wrapper for the action type, and the argument type of the `apply_actions` method. No operators are required for this type, not even equality `==` (actions are identified by their *index* in the `row_actions`, `col_actions` containers.)
+A wrapper for the action type, and the argument type of the `apply_actions` method. The methods at for this wrapper are for convenience. The assignment operator means that `row_action = 0` can be used instead of `row_action = typename Types::Action{0}`.
 
 
 ## Vectors
@@ -162,102 +159,106 @@ However, vectors are heavier than `std::array`, which does not reallocate or all
 
 Thus we use `VectorReal`, `VectorInt`, `VectorAction` to specify the most common uses for contiguous containers.
 
-> The following requirements apply to all three vector types
+We rely on the methods `resize` and `clear` for the most part. Resize is used to fully initialize a vector, which does pose some risk. There are no checks that the vector being passed is empty, and these pre-existing members won't be overwritten with the intended value (second argument to `resize`.)
 
-`Vector::fill(int n)`
+### Arrays
+We define an array-based container class with the same vector-like interface that Surskit relies on.
+```cpp
+template <size_t MaxSize>
+struct A
+{
+    template <typename T>
+    struct Array : std::array<T, MaxSize>
+    {
+        // ...
+```
 
-Ensures that the container can hold at least `n` elements. If the underlying type is a `std::vector`, this method calls `std::vector<T>::resize()`. On a `std::array` based Vector, this is a no-op. The program assumes the underlying size of the array is at least `n`, and there are no static or run-time checks to ensure this. 
-
-`Vector::fill(int n, T value)`
-
-Same as above, but also writes `value` into the first `n` elements of the container.
-Both the above methods are used mainly for initializing containers stored in the tree, during the expansion of a matrix node.
-
-`T& Vector::operator[]()`
-
-Besides the fill methods, a Vector need only have the standard bracket operator. TODO I'm pretty sure we also use std::transform and range based iteration.
-
+The `A` outer class is a trick to give the `A::Array` template a parameter signature that is compatible with `std::vector`. The `size` parameter is attached to the template  `A`, not `Array`.
+The de facto size of the container is stored as the member `Array<..>::_size` and connected the redefined `begin()`, `end()`, `resize()` methods in the obvious way. This allows us to use range-based iteration (e.g. `for (auto x : array)`) properly.  
 
 ## Matrices
 
-Obviously a library for matrix tree games should have a matrix type. In practice though its mostly a data class, used to store visit and reward information for the MatrixUCB algorithm and its variants. There is currently no need for matrix multiplication. The closest to that use-case is the calculation of exploitability, where the calculation of expected rewards can be done using matrix multiplication. However, in practice I've found it's faster to use another approach.
+Obviously a library for matrix tree games should have a matrix type. In practice though its mostly a data class, used to store visit and reward information for the MatrixUCB algorithm and its variants. There is currently no need for matrix multiplication. The most relevant use-case is the calculation of exploitability, since the expected rewards can be formulated using matrix multiplication. However, in practice I've found it's faster to use another approach.
 
 Much like Vectors, we have specially denominated types for common data types: `MatrixReal`, `MatrixInt`, `MatrixValue`
 
-> The following requirements apply to all Matrix types
-
 ```cpp
-	void fill(size_t rows, size_t cols);
+{
+    matrix.clear()
+} -> std::same_as<void>;
+{
+    matrix.operator[](0)
+} -> std::same_as<T &>;
 ```
-This also serves the purpose of initializing a matrix, ensuring it has at least `rows * cols` entries. This method also sets the `rows` and `cols` dimensions.
-
+The only implementation of `Matrix<T>` is derived from `std::vector<T>`. The values for the entries are stored in row-major order. Library functions frequently use `std::vector<T>::operator[]()` to iterate over entries.
 ```cpp
-	void fill(size_t rows, size_t cols, T value);
+{
+    Matrix{0, 0}
+} -> std::same_as<Matrix>;
+{
+    matrix.fill(0, 0)
+} -> std::same_as<void>;
 ```
-Same as above, but also sets all entries to `value`.
-
+Since matrices are usually reserved for search stats, they are initialized after construction. The `fill` method is the 2D equivalent to `resize` and is used in initialization much like `resize` is for vectors. In the case that we can properly initialize on construction, the constructor takes the number of rows and columns as arguments.
 ```cpp
-	T& get(size_t row_idx, size_t col_idx)
+{
+    matrix.get(0, 0)
+} -> std::same_as<T &>;
+{
+    const_matrix.get(0, 0)
+} -> std::same_as<const T &>;
 ```
-2-D accessor, similar to `operator[]`
+Standard matrix accessor.
 
-
-``` cpp
-    Matrix operator*(T t) const
-    Matrix operator+(T t) const
-    Matrix operator+(const Matrix &t) const
-```
-Only scalar multiplication/addition and matrix addition are needed.
-
+## PRNG and Seed
+Abbreviation of pseudo-random number generator. Instances are usually called "device".
+All (single-threaded) operations of Surskit are intended to be deterministic.
 ```cpp
-	T max() const
-	T min() const
+{
+    device = const_device
+} -> std::same_as<PRNG &>;
+{
+    const_device.get_seed()
+} -> std::same_as<Seed>;
+{
+    device.random_seed()
+} -> std::same_as<Seed>;
+{
+    PRNG{seed}
+};
+{
+    device.random_int(0)
+} -> std::convertible_to<int>;
+{
+    device.uniform()
+} -> std::same_as<double>;
+{
+    device.discard(0)
+} -> std::same_as<void>;
+{
+    device.sample_pdf(std::vector<std::any>{})
+} -> std::convertible_to<int>;
 ```
-The gambit solver normalizes the entries in the payoff matrix. These methods are used to assist that.
+Most of these constrains are self-explanatory. 
+`PRNG` is copy constructable. It also copies the state of the device. Copying a device from the beginning is done via `PRNG{old_device.get_seed()}`.
+The `discard(n)` operation advances the state of the device `n` times. It is used in the random tree class.
+A seed is the canonical way to construct a `PRNG`.
 
-## Remaining Types
-
-* `PRNG`
-* `Seed`
-
-The core search functions are designed to be deterministic.
-
-State transitions are determined by their `seed` member, which is randomized at the start of the forward phase of tree bandit search.
-
+## Mutex
 ```cpp
-	PRNG();
-	PRNG(Seed seed);
-	Seed new_seed ();
+{
+    mutex.lock()
+} -> std::same_as<void>;
+{
+    mutex.unlock()
+} -> std::same_as<void>;
+{
+    mutex.try_lock()
+} -> std::same_as<bool>;
 ```
+The standard library mutex is unnecessarily large on most systems and so the library includes a simple spin lock implementation. The required interface is minimal and self-explanatory.
 
-The provided pseudo-random number generator  is `prng`, which is just a simple wrapper around `std::mt19937`. Users may want to replace this with something faster.
-
-* `Rational`
-
-Simple rational type for exact prob, value calculation. Rationals are the preferred way of initializing `Real`, `Prob` and other arithmetic values since may also be a precise representation!
-The library provides a global accessible type `Rational<T>`, where `T` is the underlying integral type for the numerator and denominator. 
-In the named Type structs, `Rational<int>` is the default `Rational` type.
-
-```cpp
-	Rational(T p);
-	Rational(T p, T q);
-```
-
-* Strategy
-
-TODO
-This type is currently unused. For bandit algorithms that use the model's policy inference (MatrixPUCB), the policy for both players is stored in the matrix node stats. Using even a vector of doubles here would explode the size of the matrix nodes, resulting in a significant performance drop. 
-
-Since Prob distributions satisfy `0 < p_i < 1` for all entries `p_i` and precision is not terribly important, we can quantize the distribution using unsigned integers.
-
-For example, `uint8_t` has 256 possible values. Thus  the distro `{0.3, 0.3, 0.4}` could be represented as
-```cpp
-uint8_t strategy[3] = {76, 76, 104};
-```
-
-This is a 4x reduction in size from `float` already and we could even omit the last entry, since the probabilities must sum to 1.
-
-* `Value`
+## Value
 
 Surskit does not make the assumption that games are constant sum. Although all games of interest have this property, it is not always satisfied by every ancillary game.
 
@@ -273,3 +274,36 @@ static Real Value::PAYOFF_SUM;
 
 
 > Warning: Although the constant sum version of the struct is smaller, it usually result in slightly less performance than its more general counterpart. The reason for this lies in the backward phase of tree bandit, where we update the matrix and chance nodes using `get_col_value()`. In the non constant sum version, the column players value estimate at the leaf node is simply retrieved. In the constant sum version, it must be recalculated at each visited node via `PAYOFF_SUM - get_row_value()`.
+
+## Q
+
+```cpp
+{
+    Q{1, 1}
+};
+{
+    x.canonicalize()
+} -> std::same_as<void>;
+{
+    std::convertible_to<Q, float>
+};
+{
+    std::convertible_to<Q, mpq_class>
+};
+```
+Simple rational type that can initialize `Real`, `Prob` regardless of their underlying type.
+Not guaranteed to be arbitrary precision.
+
+## Strategy
+
+TODO
+This type is currently unused. For bandit algorithms that use the model's policy inference (MatrixPUCB), the policy for both players is stored in the matrix node stats. Using even a vector of doubles here would explode the size of the matrix nodes, resulting in a significant performance drop. 
+
+Since Prob distributions satisfy `0 < p_i < 1` for all entries `p_i` and precision is not terribly important, we can quantize the distribution using unsigned integers.
+
+For example, `uint8_t` has 256 possible values. Thus  the distro `{0.3, 0.3, 0.4}` could be represented as
+```cpp
+uint8_t strategy[3] = {76, 76, 104};
+```
+
+This is a 4x reduction in size from `float` already and we could even omit the last entry, since the probabilities must sum to 1.

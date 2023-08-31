@@ -114,6 +114,9 @@ concept IsMutex = requires(Mutex &mutex) {
     {
         mutex.unlock()
     } -> std::same_as<void>;
+    {
+        mutex.try_lock()
+    } -> std::same_as<bool>;
 };
 
 template <typename Vector, typename T>
@@ -133,21 +136,41 @@ concept IsVector = requires(Vector &vector, T &value) {
 } && std::ranges::sized_range<Vector>;
 
 template <typename Matrix, typename T>
-concept IsMatrix = requires(Matrix &matrix, T &value) {
+concept IsMatrix = requires(Matrix &matrix, const Matrix &const_matrix, T &value) {
+    {
+        matrix.clear()
+    } -> std::same_as<void>;
+    {
+        matrix.operator[](0)
+    } -> std::same_as<T &>;
     {
         Matrix{0, 0}
     } -> std::same_as<Matrix>;
     {
         matrix.fill(0, 0)
     } -> std::same_as<void>;
-}; // also require IsVector?
+    {
+        matrix.get(0, 0)
+    } -> std::same_as<T &>;
+    // {
+    //     const_matrix.get(0, 0)
+    // } -> std::same_as<const T &>; // TODO
+};
 
 template <typename PRNG, typename Seed>
 concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
     {
         device = const_device
-        // copy constructable
     } -> std::same_as<PRNG &>;
+    {
+        const_device.get_seed()
+    } -> std::same_as<Seed>;
+    {
+        device.random_seed()
+    } -> std::same_as<Seed>;
+    {
+        PRNG{seed}
+    };
     {
         device.random_int(0)
     } -> std::convertible_to<int>;
@@ -159,12 +182,23 @@ concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
     } -> std::same_as<void>;
     {
         device.sample_pdf(std::vector<std::any>{})
-        // asserts PRNG is default constructable and sample_pdf exists universally (surely) for all vector value types
     } -> std::convertible_to<int>;
+};
+
+template <typename Q>
+concept IsRational = requires(Q &x) {
     {
-        device.get_seed()
-    } -> std::same_as<Seed>;
-    PRNG{seed};
+        Q{1, 1}
+    };
+    {
+        x.canonicalize()
+    } -> std::same_as<void>;
+    {
+        std::convertible_to<Q, float>
+    };
+    {
+        std::convertible_to<Q, mpq_class>
+    };
 };
 
 template <typename Types>
@@ -217,3 +251,4 @@ using SimpleTypesSpinLock = DefaultTypes<
     std::vector,
     Matrix,
     spinlock>;
+ 

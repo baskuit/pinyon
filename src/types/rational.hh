@@ -28,7 +28,6 @@ struct Rational
         q /= a;
     }
 
-public:
     constexpr Rational() {}
 
     constexpr Rational(const T p) : p{p}, q{1} {}

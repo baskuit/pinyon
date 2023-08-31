@@ -4,12 +4,6 @@
 #include <random>
 #include <array>
 
-/*
-The only behaviour needing explanation is the copy mechanism.
-We don't override the default copy constructor. That preserves the progress of the generator as well as the seed.
-`copy()` returns one with the same seed but 'restarted'.
-*/
-
 class prng
 {
     std::mt19937::result_type seed;
@@ -24,6 +18,11 @@ public:
     std::mt19937::result_type get_seed() const
     {
         return seed;
+    }
+
+    std::mt19937::result_type random_seed()
+    {
+        return uniform_64_(engine);
     }
 
     // Uniform random in (0, 1)
@@ -149,7 +148,7 @@ public:
     }
 
 private:
-    uint64_t xorshift()
+    inline uint64_t xorshift()
     {
         state ^= (state << 21);
         state ^= (state >> 35);

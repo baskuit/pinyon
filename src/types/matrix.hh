@@ -47,6 +47,11 @@ public:
         return (*this)[i * cols + j];
     }
 
+    const T &get(size_t i, size_t j) const
+    {
+        return (*this)[i * cols + j];
+    }
+
     void print() const
     {
         for (size_t row_idx = 0; row_idx < rows; ++row_idx)
@@ -99,6 +104,11 @@ public:
     }
 
     T &get(size_t i, size_t j)
+    {
+        return (*this)[i * cols + j];
+    }
+
+    const T &get(size_t i, size_t j) const
     {
         return (*this)[i * cols + j];
     }
@@ -214,6 +224,11 @@ public:
     }
 
     Value<Real> &get(size_t i, size_t j)
+    {
+        return (*this)[i * cols + j];
+    }
+
+    Value<Real> &get(size_t i, size_t j) const
     {
         return (*this)[i * cols + j];
     }
