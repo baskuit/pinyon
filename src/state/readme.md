@@ -13,21 +13,20 @@ In practice, search on general imperfect information games is hard and expensive
 
 The goal of Surskit is to aid development in an imperfect info game, so eventually we will expand our methods and classes as perfect info milestones are reached.
 
-
 # Concepts/Interface
-`IsStateTypes`:
+### IsStateTypes
 ```cpp
 {
     const_state.is_terminal()
 } -> std::same_as<bool>;
 ```
-Self explanatory.
+Self-explanatory.
 ```cpp
 {
     const_state.get_payoff()
 } -> std::same_as<typename Types::Value>;
 ```
-This function can always be called but the result is only valid when the state is terminal. Otherwise, it is likely to be uninitialized.
+The result is only valid when the state is terminal. Otherwise, it is likely to be uninitialized.
 ```cpp
 {
     state.apply_actions(action, action)
@@ -45,7 +44,7 @@ It is assumed that calculating actions
     state.randomize_transition(device)
 } -> std::same_as<void>;
 ```
-`IsPerfectInfoStateTypes`:
+### IsPerfectInfoStateTypes
 ```cpp
 {
     state.obs
@@ -54,17 +53,18 @@ It is assumed that calculating actions
     state.prob
 } -> std::same_as<typename Types::Prob &>;
 ```
-The assumption of perfect info requires 
+These members are updated after calling `apply_actions`.
+The assumption of perfect info means that an observation is available to distinguish transitions. There is no academic consensus whether perfect info means that the probability of the transitions (a.k.a. the strategy of the chance player) is also known. The constraint means that it must be provided by the state classes, but this is not restrictive for two reasons. Firstly, the `prob` value is not used in the Tree Bandit algorithms since they are sample based. Secondly, user implemented classes can set this type to `bool` TODO
 ```cpp
 {
     state.terminal
 } -> std::same_as<bool &>;
-```
-The terminality of the state is stored as a bool and the method `is_terminal` is implemented as a getter.
-```cpp
 {
     state.payoff
 } -> std::same_as<typename Types::Value &>;
+```
+The terminality of the state is stored as a bool and the method `is_terminal()` is implemented as a getter; Same for `get_payoff()`.
+```cpp
 {
     state.get_actions()
 } -> std::same_as<void>;
@@ -75,39 +75,21 @@ The terminality of the state is stored as a bool and the method `is_terminal` is
     state.col_actions
 } -> std::same_as<typename Types::VectorAction &>;
 ```
-These are essentially the same methods and attributes from the IsState concept, except now we assume that the information which passed as arguments to those methods is stored as a member. This is largely a convenience, to spare the use from instantiating action vectors and values all the time. There should be very little overhead to this attachment. 
-
-* `is_terminal`
-Simple boolean that is flipped in the `apply_actions` method as needed. Initialized to `false` since there is no reason not to assume a state isn't live upon its initialization.
-
-* `row_actions`
-* `col_actions`
-
-> Not that much slower that using `get_actions(typename Types::VectorAction &, Types::VectorAction &)`. General case of expanding a node in tree-bandit justifies allocating the space for every  state.
-
-* `payoff`
-Following the convention of many other games, a reward is only received at a terminal state. This reward is of `Types::Value` type. Its value could be set inside the `apply_actions` method, for example. Its value is garbage until the state is terminal.
-
-* `obs`
-* `probs`
-The `Observation` after transitioning and its associated `Probability` are assumed to mutated after every `apply_actions` call.
-
-* `get_actions` 
-Updates the `row_actions`, `col_actions` members of the state. The number of actions for either player can be retrieved by `row_actions.size()` etc, as they are of the `VectorAction` type. Calculation of all actions for both players is assumed to be expensive (as is often the case), so the search does it only when necessary
-
-Thus the actions vectors are not assumed to be initialized on creation of a state. The `get_actions` method *must* be called directly to assure there is valid information there. The tree-bandit search is organized so that get_actions is always called prior to accessing that data.
-
-* `apply_actions`
-Transitions the state, and updates the `obs`, `prob` members. 
-
-* `reseed`
-**States are deterministic**. Copying a state does not alter the behavior either. In order to transition stochastically, the `reseed` method must be applied first. In tree bandit search, this is done just after copying the state object provided in the  arguments. With deterministic states, this function is just a no-op. In the case of battles, we use the PRNG device to update the battle's seed.
+These are essentially the same methods and attributes from the `IsState<>` concept, except now we assume that the information which was passed as arguments to those methods is now stored as a member. This is largely a convenience, to spare the user from instantiating action vectors and values all the time. There should be very little overhead to this attachment. 
+```cpp
+{
+    state.randomize_transition(device)
+} -> std::same_as<void>;
+```
+**State transitions are deterministic unless this function is called**. That is, calling `state.apply_actions(row_action, col_action)` on the same state will always mutate the state in the same manner as long as the actions are the same.
+This function is a no-op on deterministic states and is thus optimized away.
+It is invoked by default on `state_copy` at the start of the forward phase of Tree Bandit search.
 
 # Test States
 
 ### MoldState
 
-This is basically the simplest possible state in implementation. It's main purpose is testing and benchmarking, as a control. It's only member is the `depth` parameter, which determines how many transitions until the state is terminal. It always has the same number of actions for both players, and so the `row_actions`, `col_actions` members are initialized in the `MoldState` constructor and never changed. Thus `get_actions` is a no-op and `apply_actions` merely decrements `depth` and checks if `depth == 0`.
+This is basically the simplest possible state in implementation. It's main purpose is testing and benchmarking as a control. It's only member is the `depth` parameter, which determines how many transitions are made until the state is terminal. It always has the same number of actions for both players, and so the `row_actions`, `col_actions` members are initialized in the `MoldState` constructor and never changed. Thus `get_actions` is a no-op and `apply_actions` merely decrements `depth` and checks if `depth == 0`. The payoff member is not changed or even initialized.
 
 
 ### RandomTree

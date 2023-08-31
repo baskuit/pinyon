@@ -24,11 +24,11 @@ struct MoldState : Types
         }
 
         void randomize_transition(
-            Types::PRNG &device)
+            Types::PRNG &device) const
         {
         }
 
-        void get_actions()
+        void get_actions() const
         {
         }
 
@@ -48,14 +48,6 @@ struct MoldState : Types
             this->terminal = (this->max_depth == 0);
         }
 
-        void get_chance_actions(
-            Types::Action,
-            Types::Action,
-            std::vector<typename Types::Obs> &chance_actions) const
-        {
-            chance_actions.resize(1);
-        }
-
         void apply_actions(
             Types::Action,
             Types::Action,
@@ -63,6 +55,14 @@ struct MoldState : Types
         {
             --this->max_depth;
             this->terminal = (this->max_depth == 0);
+        }
+
+        void get_chance_actions(
+            Types::Action,
+            Types::Action,
+            std::vector<typename Types::Obs> &chance_actions) const
+        {
+            chance_actions.resize(1);
         }
     };
 
