@@ -21,10 +21,8 @@ enum SearchModes
 template <CONCEPT(IsSearchTypes, Types), bool HasPolicy = false>
 struct TreeBanditSearchModel : Types::TypeList
 {
-    // onle way to recover any types object is via Types::TypeList.
+    using State = typename Types::State; // DONT REMOVE
     // so State = is rebuilding the type list, in this case TreeBanditSearchModel isStateTypes.
-    using State = typename Types::State;
-    using ModelInput = typename Types::State;
     struct ModelOutput
     {
         typename Types::Value value;
@@ -51,22 +49,8 @@ struct TreeBanditSearchModel : Types::TypeList
         {
         }
 
-        void get_input(
-            const State &state,
-            ModelInput &input) const
-        {
-            input = state;
-        }
-
-        void get_batch_input(
-            const std::vector<typename Types::State> &states,
-            ModelBatchInput &inputs) const
-        {
-            inputs = states;
-        }
-
         void inference(
-            ModelInput &input,
+            Types::State &&input,
             ModelOutput &output)
         {
             typename Types::MatrixNode root;
@@ -83,21 +67,21 @@ struct TreeBanditSearchModel : Types::TypeList
         }
 
         void inference(
-            ModelBatchInput &inputs,
-            ModelBatchOutput &outputs) const
+            ModelBatchInput &batch_input,
+            ModelBatchOutput &batch_output)
         {
-            outputs.resize(inputs.size());
-            for (size_t i = 0; i < inputs.size(); ++i)
+            batch_output.resize(batch_input.size());
+            for (size_t i = 0; i < batch_input.size(); ++i)
             {
-                inference(inputs[i], outputs[i]);
+                inference(batch_input[i], batch_output[i]);
             }
         }
 
         void add_to_batch_input(
-            const Types::State &state,
-            ModelBatchInput &input) const
+            Types::State &&state,
+            ModelBatchInput &batch_input) const
         {
-            input.push_back(state);
+            batch_input.push_back(state);
         }
     };
 };

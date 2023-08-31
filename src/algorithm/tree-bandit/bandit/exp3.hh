@@ -100,12 +100,11 @@ struct Exp3 : Types
         }
 
         void expand(
-            const Types::State &state,
             MatrixStats &stats,
+            const size_t &rows,
+            const size_t &cols,
             const Types::ModelOutput &output) const
         {
-            const size_t rows = state.row_actions.size();
-            const size_t cols = state.col_actions.size();
             stats.row_visits.resize(rows, 0);
             stats.col_visits.resize(cols, 0);
             stats.row_gains.resize(rows, 0);
@@ -309,11 +308,10 @@ struct Exp3 : Types
         }
 
         void expand_state_part(
-            const Types::State &state,
-            MatrixStats &stats) const
+            MatrixStats &stats,
+            const size_t &rows,
+            const size_t &cols) const
         {
-            const size_t rows = state.row_actions.size();
-            const size_t cols = state.col_actions.size();
             stats.row_visits.resize(rows, 0);
             stats.col_visits.resize(cols, 0);
             stats.row_gains.resize(rows, 0);
@@ -321,8 +319,8 @@ struct Exp3 : Types
         }
 
         void expand_inference_part(
-            const Types::ModelOutput &output,
-            MatrixStats &stats) const
+            MatrixStats &stats,
+            const Types::ModelOutput &output) const
         {
         }
 

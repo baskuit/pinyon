@@ -18,20 +18,6 @@ struct SolvedStateModel : Types
     class Model
     {
     public:
-        void get_input(
-            const Types::State &state,
-            ModelInput &input) const
-        {
-            input = state;
-        }
-
-        void get_batch_input(
-            const std::vector<typename Types::State> &states,
-            ModelBatchInput &inputs) const
-        {
-            inputs = states;
-        }
-
         void inference(
             ModelInput &input,
             ModelOutput &output)
@@ -41,27 +27,20 @@ struct SolvedStateModel : Types
         }
 
         void inference(
-            ModelBatchInput &inputs,
-            ModelBatchOutput &outputs)
+            ModelBatchInput &batch_input,
+            ModelBatchOutput &batch_output)
         {
-            for (auto &output : outputs)
+            for (auto &output : batch_output)
             {
                 output.value = typename Types::Value{.5, .5};
             }
         }
 
-        void get_value(
-            ModelInput &input,
-            Types::Value &value)
-        {
-            value = input.get_payoff();
-        }
-
         void add_to_batch_input(
-            Types::State &state,
-            ModelBatchInput &input)
+            Types::State &&state,
+            ModelBatchInput &batch_input) const
         {
-            input.push_back(state);
+            batch_input.push_back(state);
         }
     };
 };

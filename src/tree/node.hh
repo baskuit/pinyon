@@ -26,7 +26,7 @@ concept IsNodeTypes =
             const_matrix_node.is_expanded()
         } -> std::same_as<bool>;
         {
-            matrix_node.expand(state)
+            matrix_node.expand(0, 0)
         } -> std::same_as<void>;
         {
             const_matrix_node.is_terminal()

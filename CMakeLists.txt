@@ -7,8 +7,6 @@ option(ENABLE_TORCH "Enable Libtorch" OFF)
 
 add_library(surskit INTERFACE)
 target_include_directories(surskit INTERFACE src)
-# target_include_directories(surskit INTERFACE extern/eigen)
-
 
 if(ENABLE_TORCH)
     set(CMAKE_PREFIX_PATH "/home/user/Desktop/libtorch/")

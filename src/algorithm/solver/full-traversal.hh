@@ -76,7 +76,9 @@ struct FullTraversal : Types
         {
             // expand node
             state.get_actions();
-            matrix_node->expand(state);
+            const size_t rows = state.row_actions.size();
+            const size_t cols = state.col_actions.size();
+            matrix_node->expand(rows, cols);
 
             MatrixStats &stats = matrix_node->stats;
 
@@ -88,14 +90,13 @@ struct FullTraversal : Types
             }
             if (max_depth > 0 && stats.depth >= max_depth)
             {
-                model.get_value(state, stats.payoff);
+                typename Types::ModelOutput output;
+                model.inference(std::move(state), output);
+                stats.payoff = output.value;
                 matrix_node->set_terminal();
                 return {stats.payoff.get_row_value(), stats.payoff.get_row_value()};
             }
-
-            const int rows = state.row_actions.size();
-            const int cols = state.col_actions.size();
-
+            
             stats.nash_payoff_matrix.fill(rows, cols);
             stats.row_solution.resize(rows);
             stats.col_solution.resize(cols);

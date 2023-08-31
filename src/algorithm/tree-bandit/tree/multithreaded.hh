@@ -167,14 +167,13 @@ struct TreeBanditThreaded : Types
                     }
                     else
                     {
-                        typename Types::ModelInput model_input;
-                        model.get_input(state, model_input);
-                        model.inference(model_input, model_output);
-                        this->expand(state, matrix_node->stats, model_output);
+                        const size_t rows = state.row_actions.size();
+                        const size_t cols = state.col_actions.size();
+                        model.inference(std::move(state), model_output);
+                        this->expand(matrix_node->stats, rows, cols, model_output);
                         stats_mutex.unlock();
-                        matrix_node->expand(state);
+                        matrix_node->expand(rows, cols);
                     }
-
                     return matrix_node;
                 }
                 else
@@ -384,12 +383,12 @@ struct TreeBanditThreadPool : Types
                             mutex.unlock();
                             return matrix_node;
                         }
-                        typename Types::ModelInput model_input;
-                        model.get_input(state, model_input);
-                        model.inference(model_input, model_output);
-                        this->expand(state, matrix_node->stats, model_output);
+                        const size_t rows = state.row_actions.size();
+                        const size_t cols = state.col_actions.size();
+                        model.inference(std::move(state), model_output);
+                        this->expand(matrix_node->stats, rows, cols, model_output);
                         mutex.unlock();
-                        matrix_node->expand(state);
+                        matrix_node->expand(rows, cols);
                     }
                     return matrix_node;
                 }

@@ -39,20 +39,20 @@ struct Rand : Types
 
         void get_empirical_value(
             const MatrixStats &stats,
-            Types::Value &value)
+            Types::Value &value) const
         {
         }
 
         void get_refined_strategies(
             const MatrixStats &stats,
             Types::VectorReal &row_strategy,
-            Types::VectorReal &col_strategy)
+            Types::VectorReal &col_strategy) const
         {
         }
 
         void get_refined_value(
             const MatrixStats &stats,
-            Types::Value &value)
+            Types::Value &value) const
         {
         }
 
@@ -61,23 +61,24 @@ struct Rand : Types
             int iterations,
             Types::State &state,
             Types::Model &model,
-            MatrixStats &stats)
+            MatrixStats &stats) const
         {
         }
 
         void expand(
-            const Types::State &state,
             MatrixStats &stats,
-            const Types::ModelOutput &model_output)
+            const size_t &rows,
+            const size_t &cols,
+            const Types::ModelOutput &output) const
         {
-            stats.rows = state.row_actions.size();
-            stats.cols = state.col_actions.size();
+            stats.rows = rows;
+            stats.cols = cols;
         }
 
         void select(
             Types::PRNG &device,
             const MatrixStats &stats,
-            Outcome &outcome)
+            Outcome &outcome) const
         {
             const int row_idx = device.random_int(stats.rows);
             const int col_idx = device.random_int(stats.cols);
@@ -87,13 +88,13 @@ struct Rand : Types
 
         void update_matrix_stats(
             MatrixStats &stats,
-            const Outcome &outcome)
+            const Outcome &outcome) const
         {
         }
 
         void update_chance_stats(
             ChanceStats &stats,
-            const Outcome &outcome)
+            const Outcome &outcome) const
         {
         }
 
@@ -101,7 +102,7 @@ struct Rand : Types
             Types::PRNG &device,
             const MatrixStats &stats,
             Outcome &outcome,
-            Types::Mutex &mutex)
+            Types::Mutex &mutex) const
         {
             const int row_idx = device.random_int(stats.rows);
             const int col_idx = device.random_int(stats.cols);
@@ -112,11 +113,11 @@ struct Rand : Types
         void update_matrix_stats(
             MatrixStats &stats,
             const Outcome &outcome,
-            Types::Mutex &mutex) {}
+            Types::Mutex &mutex) const {}
 
         void update_chance_stats(
             ChanceStats &stats,
             const Outcome &outcome,
-            Types::Mutex &mutex) {}
+            Types::Mutex &mutex) const {}
     };
 };

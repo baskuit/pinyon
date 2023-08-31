@@ -86,10 +86,11 @@ struct TreeBandit : Types
                     else
                     {
                         state.get_actions();
-                        model.inference(state, model_output);
-
-                        matrix_node->expand(state);
-                        this->expand(state, matrix_node->stats, model_output);
+                        const size_t rows = state.row_actions.size();
+                        const size_t cols = state.col_actions.size();
+                        model.inference(std::move(state), model_output);
+                        matrix_node->expand(rows, cols);
+                        this->expand(matrix_node->stats, rows, cols, model_output);
                     }
                     if constexpr (return_if_expand)
                     {

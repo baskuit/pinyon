@@ -89,7 +89,9 @@ struct AlphaBeta : Types
             typename Types::VectorReal &col_strategy = stats.col_solution;
 
             state.get_actions();
-            matrix_node->expand(state);
+            const size_t rows = state.row_actions.size();
+            const size_t cols = state.col_actions.size();
+            matrix_node->expand(rows, cols);
 
             if (state.is_terminal())
             {
@@ -100,7 +102,7 @@ struct AlphaBeta : Types
             {
                 matrix_node->set_terminal();
                 typename Types::ModelOutput model_output;
-                model.inference(state, model_output);
+                model.inference(std::move(state), model_output);
                 return {model_output.value.get_row_value(), model_output.value.get_row_value()};
             }
 
@@ -109,9 +111,6 @@ struct AlphaBeta : Types
             I.push_back(stats.row_pricipal_idx);
             J.push_back(stats.col_pricipal_idx);
             bool solved_exactly = true;
-
-            const size_t rows = state.row_actions.size();
-            const size_t cols = state.col_actions.size();
 
             // stats.data_matrix.fill(rows, cols);
             DataMatrix<Data> new_data_matrix{rows, cols}; // TODO

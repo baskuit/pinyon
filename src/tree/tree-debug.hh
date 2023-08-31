@@ -38,7 +38,7 @@ struct DebugNodes : Types
             Types::Obs obs) : parent(parent), prev(prev), obs(obs) {}
         ~MatrixNode();
 
-        inline void expand(const Types::State &)
+        inline void expand(const size_t &, const size_t &)
         {
             expanded = true;
         }

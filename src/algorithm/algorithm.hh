@@ -32,7 +32,7 @@ concept IsBanditAlgorithmTypes =
             bandit.initialize_stats(0, state, model, matrix_stats)
         } -> std::same_as<void>;
         {
-            bandit.expand(state, matrix_stats, model_output)
+            bandit.expand(matrix_stats, 0, 0, model_output)
         } -> std::same_as<void>;
         {
             bandit.select(device, matrix_stats, outcome)

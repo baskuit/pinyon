@@ -125,7 +125,7 @@ struct OffPolicy : Types
 
                     if (!state_copy.is_terminal())
                     {
-                        model.add_to_batch_input(state_copy, input);
+                        model.add_to_batch_input(std::move(state_copy), input);
                     }
                     // then add leaf state to inference pile
                 }
@@ -153,7 +153,7 @@ struct OffPolicy : Types
                     leaf_value = model_output.value;
                     if (!leaf_stats.properly_expanded)
                     {
-                        this->expand_inference_part(model_output, leaf_stats);
+                        this->expand_inference_part(leaf_stats, model_output);
                         leaf_stats.properly_expanded = true;
                     }
                 }
@@ -196,8 +196,10 @@ struct OffPolicy : Types
             {
                 if (!matrix_node->is_expanded())
                 {
-                    matrix_node->expand(state);
-                    this->expand_state_part(state, matrix_node->stats);
+                    const size_t rows = state.row_actions.size();
+                    const size_t cols = state.col_actions.size();
+                    matrix_node->expand(rows, cols);
+                    this->expand_state_part(matrix_node->stats, rows, cols);
                 }
                 else
                 {

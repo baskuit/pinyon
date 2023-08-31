@@ -35,11 +35,9 @@ struct FlatNodes : Types
         MatrixNode(Types::Obs obs) : obs(obs) {}
         ~MatrixNode();
 
-        inline void expand(const Types::State &state)
+        inline void expand(const size_t &rows, const size_t &cols)
         {
             expanded = true;
-            rows = state.row_actions.size();
-            cols = state.col_actions.size();
             const size_t n_children = rows * cols;
             edges = new ChanceNode *[n_children]{};
             // std::fill_n(edges, n_children, nullptr); // TODO does this work lol

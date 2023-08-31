@@ -114,15 +114,16 @@ struct Exp3Fat : Types
         }
 
         void expand(
-            Types::State &state,
             MatrixStats &stats,
-            Types::ModelOutput &model_output) const
+            const size_t &rows,
+            const size_t &cols,
+            const Types::ModelOutput &output) const
         {
-            stats.row_visits.resize(state.row_actions.size(), 0);
-            stats.col_visits.resize(state.col_actions.size(), 0);
-            stats.row_gains.resize(state.row_actions.size(), 0);
-            stats.col_gains.resize(state.col_actions.size(), 0);
-            stats.matrix.fill(state.row_actions.size(), state.col_actions.size());
+            stats.row_visits.resize(rows, 0);
+            stats.col_visits.resize(cols, 0);
+            stats.row_gains.resize(rows, 0);
+            stats.col_gains.resize(cols, 0);
+            stats.matrix.fill(rows, cols);
         }
 
         void select(

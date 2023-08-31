@@ -34,7 +34,7 @@ struct LNodes : Types
         MatrixNode(){};
         ~MatrixNode();
 
-        inline void expand(const Types::State &)
+        inline void expand(const size_t &, const size_t &)
         {
             expanded = true;
         }
