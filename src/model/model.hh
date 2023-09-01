@@ -11,9 +11,7 @@ concept IsValueModelTypes =
         typename Types::Model &model,
         typename Types::ModelOutput &output) {
         {
-            model.inference(
-                std::forward<typename Types::State>(moved_state),
-                output)
+            model.inference(std::forward<typename Types::State>(moved_state), output)
         } -> std::same_as<void>;
         {
             output.value
@@ -22,29 +20,29 @@ concept IsValueModelTypes =
     IsPerfectInfoStateTypes<Types>; // this basically enforces that everything is perfect info (has Obs, Prob, data members)
 
 template <typename Types>
-concept IsBatchValueModelTypes =
+concept IsBatchModelTypes =
     requires(
         typename Types::State &&moved_state,
         typename Types::Model &model,
         typename Types::ModelBatchInput &model_batch_input,
         typename Types::ModelBatchOutput &model_batch_output) {
-        {
-            model.inference(model_batch_input, model_batch_output)
-        } -> std::same_as<void>;
-        {
-            model.add_to_batch_input(std::forward<typename Types::State>(moved_state), model_batch_input)
-        } -> std::same_as<void>;
-        {
-            model_batch_input[0]
-        } -> std::same_as<typename Types::ModelInput &>;
-        {
-            model_batch_output[0]
-        } -> std::same_as<typename Types::ModelOutput &>;
+{
+    model.inference(model_batch_input, model_batch_output)
+} -> std::same_as<void>;
+{
+    model.add_to_batch_input(std::forward<typename Types::State>(moved_state), model_batch_input)
+} -> std::same_as<void>;
+{
+    model_batch_input[0]
+} -> std::same_as<typename Types::ModelInput &>;
+{
+    model_batch_output[0]
+} -> std::same_as<typename Types::ModelOutput &>;
     } &&
     IsValueModelTypes<Types>;
 
 template <typename Types>
-concept IsDoubleOracleModelTypes =
+concept IsPolicyModelTypes =
     requires(
         typename Types::ModelOutput &output) {
         {
@@ -55,6 +53,8 @@ concept IsDoubleOracleModelTypes =
         } -> std::same_as<typename Types::VectorReal &>;
     } &&
     IsValueModelTypes<Types>;
+
+// Empty Model
 
 template <CONCEPT(IsStateTypes, Types)>
 struct EmptyModel : Types
@@ -81,25 +81,17 @@ struct EmptyModel : Types
             output.row_policy.resize(rows, row_uniform);
             const typename Types::Real col_uniform{Rational{1, static_cast<int>(cols)}};
             output.col_policy.resize(cols, col_uniform);
-
-            if constexpr (Types::Value::IS_CONSTANT_SUM == true)
-            {
-                output.value = typename Types::Value{typename Types::Q{1, 2}};
-            }
-            else
-            {
-                output.value = typename Types::Value{typename Types::Q{1, 2}, typename Types::Q{1, 2}};
-            }
+            output.value = make_draw<Types>();
         }
 
         void inference(
             ModelBatchInput &inputs,
             ModelBatchOutput &outputs) const
         {
-            for (auto &output : outputs)
-            {
-                output.value = typename Types::Value{.5, .5};
+            for (size_t i = 0; i < inputs.size(); ++i) {
+                inference(typename Types::State{inputs[i]}, outputs[i]);
             }
+
         }
 
         void add_to_batch_input(
