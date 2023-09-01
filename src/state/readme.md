@@ -1,17 +1,16 @@
 
 # State
 ### Markov Decision Process
-Loosely speaking a state is a Markov Decision Process. There is some ambiguity that should be cleared up.
-The **type** of a state corresponds to a game or a MDP, while an **instance/object** corresponds to a MDP 'state'
+A state is a two player Markov game when we are referring to the type. An instance of that type is also called a state and it corresponds to a 'state' of the Markov game. Usually we mean an instance when using this term.
+The transition function `void apply_action(Action, Action)` takes two joint player actions and mutates the state into its successor. The 'Markov' descriptor implies that these transitions are stochastic. In the interface and docs we often formulate the stochasticity using a third 'chance player' who plays an action after the players. A transition after joint actions are committed can then be thought of as an 'action', and the fixed distribution of transitions mandated by the Markov definition is then the 'strategy' of the chance player.
+Payoffs for both players are only received once the state has reached terminality.
 ### Perfect Information and Inheritance
-The assumption of perfect information means that the actions for both players is public knowledge.
+The assumption of perfect information means that the legal actions for both players at any state is public knowledge. We also require that the chance action is observed by both players after the transition. The full set of possible transitions after a given pair of joint actions is not known. However, players can always distinguish transition observations from one another. 
+We drop the assumption of full knowledge of transitions because there may be many possibilities and calculating them non-trivial. This is certainly the case for Pokemon.
+The `IsState<>` concept formalizes the general former notion of a state, while `IsPerfectInfoState<>` is the one actually required by the majority of library code.
+There is template class called `PerfectInfoState<TypeList>` that has data members pertaining to the related concept. We assume that all state types derive from this class, since then they will automatically inherit members like `obs`, `prob`, and methods like `get_payoff()`, `is_terminal()`.
+### Row and Column
 
-
-# Perfect Info
-
-In practice, search on general imperfect information games is hard and expensive. Therefore we codify the perfect information requirement and several other niceties with the `PerfectInfoState` class, and we use this class as the basis of all current models, algorithms, and tree structures.
-
-The goal of Surskit is to aid development in an imperfect info game, so eventually we will expand our methods and classes as perfect info milestones are reached.
 
 # Concepts/Interface
 ### IsStateTypes
@@ -84,142 +83,101 @@ These are essentially the same methods and attributes from the `IsState<>` conce
 **State transitions are deterministic unless this function is called**. That is, calling `state.apply_actions(row_action, col_action)` on the same state will always mutate the state in the same manner as long as the actions are the same.
 This function is a no-op on deterministic states and is thus optimized away.
 It is invoked by default on `state_copy` at the start of the forward phase of Tree Bandit search.
+## IsChanceStateTypes
+```cpp
+{
+    state.get_chance_actions(action, action, chance_actions)
+} -> std::same_as<void>;
+{
+    state.apply_actions(action, action, obs)
+} -> std::same_as<void>;
+```
+This is a state where calculating the chance actions for a given pair of player actions is possible. It is not needed for tree bandit search since that is sample based, but it is required for solver algorithms. We also assume that the probability that is observed is accurate. This implies that the sum of associated probabilities of a set of chance actions is 1 if and only if the action set encompasses all possible transitions (there is some subtlety here when the type representing probability is floating point.)
+
+We also have an overloaded `apply_actions` method where we can specify the exact transition we want to occur by providing the same observation that the transition will produce as an argument.
+It is clear how this method is required for solving since we need to be able to traverse the abstract game tree at will.
+
+## IsSolvedStateTypes
+
+```cpp
+{
+    state.get_strategies(strategy, strategy)
+} -> std::same_as<void>;
+```
+A solved state is one where at least one pair of Nash equilibrium strategies is known and so is the associated payoff.
+The strategies are provided by method above, and the Nash payoff is just the normal `payoff` member. Thus the payoff is now updated after every transition to reflect its current value at the new state.
+
+This concept assumes that the game is constant sum. Otherwise we do not have equality of uniqueness of Nash payoffs. Even the criteria for choosing a particular Nash equilibrium is not clear in that case. 
+
+## Subsumption
+Each of these concepts assumes that the concepts before it are also satisfied. It is theoretically not necessary for a 'solved state' to also be a 'chance state' but it is natural in practice. 
+
 
 # Test States
 
 ### MoldState
-
 This is basically the simplest possible state in implementation. It's main purpose is testing and benchmarking as a control. It's only member is the `depth` parameter, which determines how many transitions are made until the state is terminal. It always has the same number of actions for both players, and so the `row_actions`, `col_actions` members are initialized in the `MoldState` constructor and never changed. Thus `get_actions` is a no-op and `apply_actions` merely decrements `depth` and checks if `depth == 0`. The payoff member is not changed or even initialized.
+
+### OneSumMatrixGame
+A basic one shot matrix game where the payoff sum is 1. It is non-stochastic, meaning there is only one possible transition for a pair of joint actions. It can be constructed by directly passing such a matrix, or passing a PRNG device and the number of rows and columns; the entries are then generated using (a copy of) the device.
 
 
 ### RandomTree
 
-TODO This class is a powerful and expressive way to create a random game.
+This class is a powerful and expressive way to create a random games for testing.
+The game is well-defined, in the sense that providing the same hyper-parameters, helper functions, and PRNG device to the constructor will produce the exact same state. One advantage of this property is that arbitrarily large games can be used to test models via the `Arena` utility. Previously, random trees had to be solved and the node tree was used as the state.
 
-The biggest advantage of them is probably the fact that they are determined by their `PRNG` member.
+```cpp
+State(
+    const Types::PRNG &device,
+    size_t depth_bound,
+    size_t rows,
+    size_t cols,
+    size_t transitions,
+    Types::Q chance_threshold,
+    int (*depth_bound_func)(State *, int),
+    int (*actions_func)(State *, int),
+    int (*payoff_bias_func)(State *, int))
+    : device{device},
+    depth_bound{depth_bound},
+    rows{rows},
+    cols{cols},
+    transitions{transitions},
+    chance_threshold{chance_threshold},
+    depth_bound_func{depth_bound_func},
+    actions_func{actions_func},
+    payoff_bias_func{payoff_bias_func}
+{
+    this->init_range_actions(rows, cols);
+    get_chance_strategies();
+}
+```
+Let's look at the full list of all constructor arguments:
+* device
+This device is copied and stored as a member. The member is used TODO
+* depth_bound
+This `int` member is an upper bound on the number of transitions before the state is terminal. The default behavior is to simply decrement this by one. This produces trees with uniform length.
+* rows/cols
+These member determine the number of actions each player has at a given state. It is updated during transition. The action type is simply `int` and the actions are always `0, 1, ..., rows - 1` for the row player etc.
+* transitions
+The maximum number of legal transitions at any given state. This number is const.
+* chance_threshold
+Upon initalization and each transition, a new strategy for the chance player is computed. If the probability of any transition is less than this threshold, it is zeroed and the resulting distribution is re-normalized.
 
-Arbitrarily large games!
+Function pointers:
+* depth_bound_func
+* actions_fun
+* payoff_bias_func
 
-Fast!
+### SolvedState
 
-Customizable with function pointers and mini-library (TODO) for simulating
+Any game which satisfies the `IsChanceStateTypes` concept can have it entire game tree solved using the `FullTraversal` algorithm. As the name implies, this will traverse the entire game tree and thus produces a sub-game perfect solution.
+The `FullTraversal` algorithm will represent the game tree on heap using nodes.
 
-The default behavior of a tree is that of a P-game.
+### Arena
 
-# ChanceState
-
-# SolvedState
-
-A state that is solved does not necessarily have to have the same interface as `ChanceState`. However being a chance state is required for the solvers to work, and it is common to 'upgrade' a `ChanceState` to a `SolvedState` using the `FullTraversal` class. In practice, by this process all solved states are also chance states, and so deriving `SolvedState : public ChanceState` is justified.
-
+This is a state that leverages the generality of Surskit to evaluate the performance of models and search algorithms using preexisting algorithms.
 
 
 # Wrapping a State
 
-As an example, below is a wrapper for the `battle` object of the @pkmn/engine library for use with Surskit
-
-
-```cpp
-template <size_t MaxLog>
-class Battle : public PerfectInfoState<BattleTypes<MaxLog>>
-{
-public:
-   struct Types : PerfectInfoState<BattleTypes<MaxLog>>::Types
-   {
-   };
-
-   // row_actions, obs, prob, etc are all inherited and accessed via this->
-
-   pkmn_gen1_battle battle_{}; 
-   // This is around 370 bytes, so only 6 cache lines on most cpu? Either way very fast to copy.
-   // typename Types::Seed seed = 0;
-   // because we use the interface this->reseed(PRNG), we don't have to store a seed member besides the defacto seed in the battle
-   pkmn_psrng random = {};
-   pkmn_result result = PKMN_RESULT_NONE;
-   std::array<pkmn_choice, 9> options{0};
-   // things I just copied from the C++ wrapper for engine.
-
-   Battle(const engine::RBY::Side<engine::Gen::RBY> &side1, const engine::RBY::Side<engine::Gen::RBY> &side2)
-   {
-      auto it_s1 = side1.cbegin();
-      auto it_e1 = side1.cend();
-      auto it_s2 = side2.cbegin();
-      auto it_b = std::begin(battle_.bytes);
-      for (; it_s1 != it_e1; ++it_s1, ++it_s2, ++it_b)
-      {
-         *it_b = *it_s1;
-         *(it_b + 184) = *it_s2;
-      }
-      battle_.bytes[368] = 0;
-      battle_.bytes[369] = 0;
-      battle_.bytes[370] = 0;
-      battle_.bytes[371] = 0;
-      battle_.bytes[372] = 0;
-      battle_.bytes[373] = 0;
-      battle_.bytes[374] = 0;
-      battle_.bytes[375] = 0;
-      for (int i = 0; i < 8; ++i)
-      {
-         battle_.bytes[376 + i] = seed >> 8 * i;
-      }
-      pkmn_psrng_init(&random, seed);
-      this->prob = true;
-      // we set prob to 1 in the constructor since we currently do not have probs from engine. pre is working hard on this
-   }
-
-   Battle(const Battle &t) : battle_(t.battle_), random(t.random), result(t.result) // TODO
-   {
-      this->row_actions = t.row_actions;
-      this->col_actions = t.col_actions;
-      // the base class `PerfectInfoState` is not called, so we don't automatically copy over terminal, etc
-      // however the only base data of any use is the actions, and we really only copy it because it cased a bug. Its not needed because in all searches you only copy a state to advance it, and then call apply_actions() and get_actions(), which overwrites everything else 
-   }
-
-   void reseed (typename Types::PRNG &device) {
-      engine::RBY::set_seed(battle_, device.uniform_64());
-      // we can check BattleTypes<> if we really want to confirm that the PRNG type is just prng
-   }
-
-   void get_actions()
-   {
-      const size_t rows = pkmn_gen1_battle_choices(&battle_, PKMN_PLAYER_P1, pkmn_result_p1(result), this->row_actions.template data<pkmn_choice, A<9>::Array>(), PKMN_CHOICES_SIZE);
-      const size_t cols = pkmn_gen1_battle_choices(&battle_, PKMN_PLAYER_P2, pkmn_result_p2(result), this->col_actions.template data<pkmn_choice, A<9>::Array>(), PKMN_CHOICES_SIZE);
-      this->row_actions.resize(rows);
-      this->col_actions.resize(cols);
-      // similarly to last function we know the `VectorActions` type is array based, so these last two methods just set the size parameter
-   }
-
-   void apply_actions(
-       typename Types::Action row_action,
-       typename Types::Action col_action)
-   {
-      result = pkmn_gen1_battle_update(
-         &battle_, 
-         static_cast<pkmn_choice>(row_action), 
-         static_cast<pkmn_choice>(col_action), 
-         this->obs.template data<uint8_t, MaxLog>(), 
-         MaxLog);
-         
-      const pkmn_result_kind r = pkmn_result_type(result);
-      if (r)
-      {
-         // set is_terminal and payoff, as indicated
-         this->terminal = true;
-         if (r == PKMN_RESULT_WIN)
-         {
-            this->payoff.row_value = typename::Types::Value{Rational(1)};
-            // Rational<> has implicit conversions to double, float, and mpq_class, so its a 'universal' initializing type for all Types::Real and Types::Probability values.
-            // Value struct in Types assumes constant sum, so we only provide the row payoff.
-         }
-         else if (r == PKMN_RESULT_LOSE)
-         {
-            this->payoff = typename::Types::Value{Rational(0)};
-         }
-         else
-         {
-            this->payoff.row_value = typename::Types::Value{Rational(1, 2)};
-         }
-      }
-   };
-}
-```
