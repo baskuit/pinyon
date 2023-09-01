@@ -152,7 +152,7 @@ typename Types::Value make_draw()
 {
     if constexpr (Types::Value::IS_CONSTANT_SUM == true)
     {
-        return {typename Types::Q{1, 2}};
+        return {typename Types::Q{Types::Value::PAYOFF_SUM.p, Types::Value::PAYOFF_SUM.q * 2}};
     }
     else
     {

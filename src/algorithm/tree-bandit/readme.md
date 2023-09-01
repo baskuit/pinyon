@@ -3,7 +3,6 @@
 
 ### Inheritance Pattern
 
-
 The algorithms in the folder are generalizations of MCTS, which we call 'tree bandit'.
 
 > In mathematics, "Monte Carlo" refers to estimation via random process. MCTS gets its name sake from the random rollout method of value estimation.
@@ -50,7 +49,15 @@ In many schemes, the empirical move selection of the bandit algorithm is normali
 
 The Exp3 and MatrixUCB algorithms are already provided. Not all bandits algorithms (i.e. stochastic bandit algorithms) are sound choices. Refer to "Analysis of Hannan Consistent Selection for Monte Carlo Tree Search in Simultaneous Move Games".
 
+## Structs
+* `MatrixStats`
+Contains the stats the algorithm needs to use for the selection and update process. This minimal example only needs to store the number of actions for the players, but something like `exp3` would need to store the exponential weights and probably also some other hyper-parameters.
+This struct should be as small as possible, as it has the most impact on cache-efficiency. The MatrixUCB algorithm is problematic in this regard, since it has to store $n^2$ statistics for the matrix instead of $2 n$  like most adversarial bandits, with respect to the number of actions $n$.
+* `ChanceStats`
+This storage is not needed by the provided algorithms, but it could be useful in the future. It's worth mentioning that if the struct is empty and its associated methods are no-ops, it should be entirely optimized away by the compiler.
+
 ## Concepts/Interface
+### IsBanditAlgorithmTypes
 ```cpp
 {
     bandit.get_empirical_strategies(matrix_stats, strategy, strategy)
@@ -64,21 +71,38 @@ The Exp3 and MatrixUCB algorithms are already provided. Not all bandits algorith
 {
     bandit.get_refined_value(matrix_stats, value)
 } -> std::same_as<void>;
+```
+Used as the 'final answer' interface. All bandits can offer empirical value and policies for this purpose, and in most reinforcement learning schemes this is taken to be the training target. There are many cases where you may want to use other estimates instead, hence the 'refined' version.
+e.g. AlphaZero stuff using `q` over `z`, or a weighted average of the two.
+```cpp
 {
     bandit.initialize_stats(0, state, model, matrix_stats)
 } -> std::same_as<void>;
+```
+This method is likely to be removed in the future. 
+The vanilla MatrixUCB algorithm assumes that we know the number of iterations in advance, which is only true for the root node. This method was used to set the total number of iterations in the `MatrixStats` of the root node. Any other node would use the expected iterations of its parent matrix node to estimate its own expected iterations. 
+```cpp
 {
     bandit.expand(state, matrix_stats, model_output)
 } -> std::same_as<void>;
+```
+This method properly initializes the statistics of the matrix stats. In exp3 for example, it zero-initializes the gains and visit count vectors for both players.
+```cpp
 {
     bandit.select(device, matrix_stats, outcome)
 } -> std::same_as<void>;
+```
+Chooses the joint actions for both players to commit and hence the associated chance node to visit.
+```cpp
 {
     bandit.update_matrix_stats(matrix_stats, outcome)
 } -> std::same_as<void>;
 {
     bandit.update_chance_stats(chance_stats, outcome)
 } -> std::same_as<void>;
+```
+Updates the stats in the matrix and selected chance node for the next episode. Uses the value observed at the end of the forward phase.
+```cpp
 {
     outcome.row_idx
 } -> std::same_as<int&>;
@@ -88,9 +112,9 @@ The Exp3 and MatrixUCB algorithms are already provided. Not all bandits algorith
 {
     outcome.value
 } -> std::same_as<typename Types::Value &>;
-
 ```
-
+A struct that is used for storage of any data or observations that need to be shared between the selection and update phases. For virtually all bandit algorithms, this will need to include the action (indices) that were selected. `Rand` does not store even these simply because its update is a no-op.
+### IsMultithreadedBanditTypes
 ```cpp
 {
     bandit.select(device, matrix_stats, outcome, mutex)
@@ -102,7 +126,8 @@ The Exp3 and MatrixUCB algorithms are already provided. Not all bandits algorith
     bandit.update_chance_stats(chance_stats, outcome, mutex)
 } -> std::same_as<void>;
 ```
-
+The multi-threaded search needs to lock the mutex guarding the search stats when one thread is performing an update. It may be that the mutex can be unlocked *before* the method is finished, so we pass a reference to the mutex to allow for this. Otherwise, the entire update would be sandwiched between `lock()` and `unlock()` calls. Reducing contention is the most effective way to increase performance of multi-threaded algorithms.
+### IsOffPolicyBanditTypes
 ```cpp
 {
     bandit.update_matrix_stats(matrix_stats, outcome)
@@ -110,55 +135,7 @@ The Exp3 and MatrixUCB algorithms are already provided. Not all bandits algorith
 {
     bandit.update_chance_stats(chance_stats, outcome)
 } -> std::same_as<void>;
-{
-    bandit.get_policy(matrix_stats, strategy, strategy)
-} -> std::same_as<void>;
-
 ```
-
-#### Explanation of the Above
-
-There are three structs that all bandit algorithms must define:
-
-* `MatrixStats`
-Contains the stats the algorithm needs to use for the selection and update process. This minimal example only needs to store the number of actions for the players, but something like `exp3` would need to store the exponential weights and probably also some other hyper-parameters.
-This struct should be as small as possible, as it has the most impact on cache-efficiency. The MatrixUCB algorithm is problematic in this regard, since it has to store $n^2$ statistics for the matrix instead of $2 n$  like most adversarial bandits, with respect to the number of actions $n$.
-* `ChanceStats`
-This storage is not needed by the provided algorithms, but it could be useful in the future. It's worth mentioning that if the struct is empty and its associated methods are no-ops, it should be entirely optimized away by the compiler.
-* `Outcome`
-A struct that is used for storage of any data or observations that need to be shared between the selection and update phases. For virtually all bandit algorithms, this will need to include the action (indices) that were selected. `Rand` does not store even these simply because its update is a no-op.
-
-An `ostream` operator `<<` is useful but not essential.
-
-The following methods are expected.
-
-* `get_empirical_strategies`
-* `get_empirical_value`
-* `get_refined_strategies`
-* `get_refined_value`
-
-Used as the 'final answer' interface. All bandits can offer empirical value and policies for this purpose, and in most reinforcement learning schemes this is taken to be the training target. There are many cases where you may want to use other estimates instead, hence the 'refined' version.
-e.g. AlphaZero stuff using `q` over `z`, or a weighted average of the two.
-
-* `initialize_stats`
-This method is likely to be removed in the future. The vanilla MatrixUCB algorithm assumes that we know the number of iterations in advance, which is only true for the root node. This method was used to set the total number of iterations in the `MatrixStats` of the root node. Any other node would use the expected iterations of its parent matrix node to estimate its own expected iterations. 
-
-* `expand`
-This method properly initializes the statistics of the matrix stats. In exp3 for example, it zero-initializes the gains and visit count vectors for both players.
-
-* `select`
-Chooses the joint actions for both players to commit and hence the associated chance node to visit.
-
-* `update_matrix_stats`
-* `update_chance_stats` 
-Updates the stats in the matrix and selected chance node for the next episode. Uses the value observed at the end of the forward phase.
-There are two overrides for these methods, for the multi-threaded and off-policy variants of the tree search. 
-The multi-threaded search needs to lock the mutex guarding the search stats when one thread is performing an update. It may be that the mutex can be unlocked *before* the method is finished, so we pass a reference to the mutex to allow for this. Otherwise, the entire update would be sandwiched between `lock()` and `unlock()` calls. Reducing contention is the most effective way to increase performance of multi-threaded algorithms.
-The off-policy variant performs updates that are weighted by 'importance'. This factor is called learning_rate as an allusion to the RL algorithm that inspired `OffPolicy`.
-
-* `get_policy`
-Off-policy only. The calculates the policy of the bandit in the "learning" stage. 
-
 
 # TreeAlgorithm
 ## Concepts/Interface
