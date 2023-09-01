@@ -1,3 +1,4 @@
+
 # What is This
 
 Surskit is a highly extensible and heavily abstracted library for applying search and solving algorithms for perfect-info, simultaneous move, stochastic games.
@@ -36,78 +37,22 @@ This also extends to other aspects that are explained in deeper docs :ghost: :sc
 
 # Installation
 
-## Compiler
-
 This project makes heavy use of the `Concepts` feature of C++20. Furthermore, it also uses `cartiesian_product` from C++23. Support for the latter is spotty, but GCC-13 will work
-
-## GMP
-
+The [GNU Multiple Precision Arithmetic Library](https://gmplib.org/) is required.
 ```
-    sudo apt install libgmp3-dev
+sudo apt install libgmp3-dev
+git clone --recurse-submodules https://github.com/baskuit/Surskit
+cd Surskit
+mkdir build
+cd build
+cmake ..
+make
 ```
-
-## Clone and Install
-
-```
-
-```
+Note: make sure that the correct version of gcc/clang is being used. I recommend using VSCode to build this library. See the /src level readme [here](src/readme.md#LanguageandDevelopmentEnvironment)
 
 # Example
 
 The following code snippet is the execution of monte-carlo style tree search using a C++ Pytorch model
-
-```cpp
-using Battle = PkmnRBY<SmallTypes>;
-using Model = Libtorch<Battle, Raw>;
-using Search = OffPolicy<Exp3<Model>>;
-
-typename Battle::Types::Seed seed = 42;
-prng device{seed};
-
-Battle battle{PkmnRBY::RandomTeams};
-
-Model model{};
-
-const double gamma = .1;
-Search session{gamma};
-MatrixNode<Search> root{};
-
-const size_t playouts = 1000;
-session.run(playouts, device, battle, model, root);
-
-typename Battle::Types::VectorReal row_strategy, col_strategy;
-session.get_empirical_strategies(root.stats, row_strategy, col_strategy);
-```
-
-
-and the following is the execution of simultaneous move AlphaBeta with depth=2.
-
-```
-using Battle = PkmnRBY<SmallTypes>;
-using Model = Libtorch<Battle, Raw>;
-using Search = OffPolicy<Exp3<Model>>;
-
-typename Battle::Types::Seed seed = 42;
-prng device{seed};
-
-Battle battle{PkmnRBY::RandomTeams};
-
-Model model{};
-
-const int depth = 2;
-Search session{depth};
-MatrixNode<Search> root{};
-
-session.run(battle, model, root);
-
-typename Battle::Types::VectorReal row_strategy, col_strategy;
-session.get_empirical_strategies(root.stats, row_strategy, col_strategy);
-```
-
-This level of abstraction makes it straightforward for a user to implement a process like below:
-```
-TODO PSEUDO CODE
-```
 
 ## For More Info
 

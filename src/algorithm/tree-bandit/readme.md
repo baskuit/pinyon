@@ -138,22 +138,6 @@ The multi-threaded search needs to lock the mutex guarding the search stats when
 ```
 
 # TreeAlgorithm
-## Concepts/Interface
-
-```cpp
-{
-    session = session
-} -> std::same_as<typename Types::Search &>;
-{
-    session.run(0, device, state, model, matrix_node)
-} -> std::same_as<size_t>;
-{
-    session.run_for_iterations(0, device, state, model, matrix_node)
-} -> std::same_as<size_t>;
-{
-    session.run(0, device, state, model, matrix_node)
-} -> std::same_as<size_t>;
-```
 
 The bandit algorithm decides how the tree is expanded and explored, which is outside the scope of the bandit algorithm.
 
@@ -178,26 +162,36 @@ struct ChanceStats : BanditAlgorithm::ChanceStats
 
 The matrix and chance nodes are templates that accept algorithms as parameters. It is the *tree* algorithms that is passed as arguments for this, so that the augmented `TreeAlgorithm::MatrixStats` and `TreeAlgorithm::ChanceStats` are used in the tree structure, not their respective base classes.
 
-### Tree Search and RL Analogy
+## Concepts/Interface
+```cpp
+{
+    session = session
+} -> std::same_as<typename Types::Search &>;
+{
+    session.run(0, device, state, model, matrix_node)
+} -> std::same_as<size_t>;
+{
+    session.run_for_iterations(0, device, state, model, matrix_node)
+} -> std::same_as<size_t>;
+{
+    session.run(0, device, state, model, matrix_node)
+} -> std::same_as<size_t>;
+```
 
-The default `return_if_expand` template parameter is a good moment to introduce this design principle of Surskit.
-
-### Defaults
+## Implementations
 
 Unlike the bandit algorithms, it is expected that the provided tree algorithms should accommodate most experiments.
 
-The base algorithms are:
-
-* `TreeBandit`
+### TreeBandit
 Essentially vanilla MCTS
 
-* `TreeBanditThreaded`
+### TreeBanditThreaded
 The CRTP is used here to add a mutex member to the matrix stats of the bandit algorithm. This mutex is locked before accessing chance stats for selection and updating.
 
-* `TreeBanditThreadPool`
+### TreeBanditThreadPool
 To save on memory compared to the above, the instances of the algorithms maintain a pool of mutexes, and the index of a matrix node is stored in its stats instead.
 
-* `OffPolicy`
+### OffPolicy
 The name might be misleading. Its basically intended for use with batched GPU inference.
 
 The reason for the name is the way it handles selecting and updating nodes. Many other implementations of parallel search use 'virtual loss' as a way of diversifying the threads' leaf node selection. Additionally with this method we update the matrix node stats like normal during the backward phase.
