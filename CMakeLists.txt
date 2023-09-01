@@ -4,6 +4,7 @@ set (CMAKE_CXX_STANDARD 23)
 project(surskit VERSION 0.1.0)
 
 option(ENABLE_TORCH "Enable Libtorch" OFF)
+option(ENABLE_CONCEPTS "Enable Concepts" ON)
 
 add_library(surskit INTERFACE)
 target_include_directories(surskit INTERFACE src)
@@ -19,14 +20,13 @@ if(ENABLE_TORCH)
     target_link_libraries(surskit INTERFACE "${TORCH_LIBRARIES}")
 endif()
 
-target_compile_definitions(surskit INTERFACE ENABLE_CONCEPTS)
+if (ENABLE_CONCEPTS)
+    target_compile_definitions(surskit INTERFACE ENABLE_CONCEPTS)
+endif()
 
 add_subdirectory(extern/lrslib)
 
 target_link_libraries(surskit INTERFACE lrsnashlib)
-# target_link_options(surskit INTERFACE "-fsanitize=address")
-# target_link_options(surskit INTERFACE "-fsanitize=thread")
-# target_link_options(surskit INTERFACE "-fsanitize=undefined")
 
 # Testing
 file(GLOB_RECURSE TEST_FILES tests/*.cc)
@@ -36,11 +36,12 @@ foreach(TEST_FILE ${TEST_FILES})
     string(REPLACE "/" "_" TEST_TARGET_NAME ${TEST_NAME})
 
     add_executable(${TEST_TARGET_NAME} ${TEST_FILE})
+
     target_link_libraries(${TEST_TARGET_NAME} surskit)
-    # target_link_libraries(${TEST_NAME} "${TORCH_LIBRARIES}")
-    # target_compile_options(${TEST_TARGET_NAME} PUBLIC "-fsanitize=address")
-    # target_compile_options(${TEST_TARGET_NAME} PUBLIC "-fsanitize=thread")
-    # target_compile_options(${TEST_TARGET_NAME} PUBLIC "-fsanitize=undefined")
+    if (ENABLE_TORCH)
+        target_link_libraries(${TEST_NAME} "${TORCH_LIBRARIES}")
+    endif()
+
     add_test(NAME ${TEST_TARGET_NAME} COMMAND ${TEST_TARGET_NAME})
     set_target_properties(${TEST_TARGET_NAME} PROPERTIES
                           RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
