@@ -90,10 +90,9 @@ struct OneSumMatrixGame : SimpleTypes
                 SimpleTypes::Q col_payoff{den - x, den};
                 payoff_matrix[i] = SimpleTypes::Value{row_payoff, col_payoff};
             }
-
-            // std::cout << "constr" << std::endl;
-            // payoff_matrix.print();
         }
+
+        State(const SimpleTypes::MatrixValue &payoff_matrix) : payoff_matrix{payoff_matrix} {}
 
         void randomize_transition(
             SimpleTypes::PRNG &device) const
