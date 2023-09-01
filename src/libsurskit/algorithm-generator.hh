@@ -33,7 +33,6 @@ namespace detail
         return std::tuple_cat((
             algorithm_generator_unpack_bandits<TreeBanditTemplate, NodeTypes>(bandit_type_pack, bandit_tuple))...);
     }
-
 };
 
 template <

@@ -11,9 +11,9 @@ struct PairReal
     Real col_value{Rational<>{0}};
 
     PairReal() {}
-    PairReal(Real row_value, Real col_value) : row_value{row_value}, col_value{col_value} {}
+    constexpr PairReal(Real row_value, Real col_value) : row_value{row_value}, col_value{col_value} {}
     template <typename ValueType>
-    PairReal(const ValueType &other) : row_value{other.get_row_value()}, col_value{other.get_col_value()} {}
+    constexpr PairReal(const ValueType &other) : row_value{other.get_row_value()}, col_value{other.get_col_value()} {}
 
     inline constexpr Real get_row_value() const
     {
@@ -108,8 +108,8 @@ struct ConstantSum
 
         Real row_value{Rational<>{0}};
 
-        Value() {}
-        Value(const Real row_value) : row_value{row_value} {}
+        constexpr Value() {}
+        constexpr Value(const Real row_value) : row_value{row_value} {}
 
         inline constexpr Real get_row_value() const
         {
@@ -146,3 +146,16 @@ struct ConstantSum
         }
     };
 };
+
+template <typename Types>
+typename Types::Value make_draw()
+{
+    if constexpr (Types::Value::IS_CONSTANT_SUM == true)
+    {
+        return {typename Types::Q{1, 2}};
+    }
+    else
+    {
+        return {typename Types::Q{1, 2}, typename Types::Q{1, 2}};
+    }
+}

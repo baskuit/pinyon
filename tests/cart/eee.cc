@@ -2,7 +2,6 @@
 
 int main()
 {
-
     auto types = type_list_cart_prod<RandomTree>(type_list<RandomTreeFloatTypes>{});
     auto bandit_types = std::make_tuple(Exp3<MonteCarloModel<MoldState<2>>>{});
     auto bandit_init = std::make_tuple(Exp3<MonteCarloModel<MoldState<2>>>::BanditAlgorithm{});
