@@ -47,3 +47,18 @@ Note: make sure that the correct version of gcc/clang is being used. I recommend
 # Contributing
 
 The best way to help is to use the library to test your own ideas. The interface is designed so that creating a custom search algorithm
+
+# Release Checklist
+
+The project is due for its first beta release. Only a few things need to be hammered out.
+
+* Finishing touches on documentation
+* Finish libtroch multithreaded wrapper
+* Write up some **tests**
+    * Tree structure - iterations = matrix node count; 
+    * Soundness or **all** bandit search for calcing expl
+    * Soundness of solver
+    * Find old comments about ctests passing and see what you had back then
+
+* Write up some **benchmarking utilities
+    * Possibly include a way to benchmark retroactively
