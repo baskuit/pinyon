@@ -1,13 +1,14 @@
 
-# What is This
+# Pinyon
 
-Pinyon is a highly extensible and heavily abstracted library for applying search and solving algorithms for perfect-info, simultaneous move, stochastic games.
+Pinyon is a high performance and general purpose library for research and development of search and solving algorithms for perfect-info, simultaneous move, stochastic games.
+The library unifies a collection of environments, models, and algorithms with a consistent interface that is designed to make working with library as simple as possible for new C++ developers. It is intended for game enthusiasts first and developers second. The documentation does not assume advanced knowledge of C++ or Libtorch.
 
 ## Intended Use
 
-This library is really attempt at reconciling two disparate realities
+This library is really attempt at reconciling two disparate realities:
 
-* Pokemon is the highest grossing intellectual property of all time with over 20 years of competitve play in officially sanctioned and community organized formats.
+* Pokemon is the highest grossing intellectual property of all time with over 20 years of competitive play in officially sanctioned and community organized formats.
 
 * There are no agents that have been shown to be as strong as the best human players. In fact, most of the milestone developments of machine learning in other domains: (situational) tactical superiority, sound analysis, and computationally feasible search, have yet to be replicated here.
 
@@ -24,49 +25,24 @@ However my survey of methods in imperfect info games suggests that domain is sig
 ## Perfect Info
 
 The hidden information of either player is only ever *revealed* during the course of a game, never renewed or augmented.
-
-This means that games are always approaching a condition of perfect information. In practice, it is somewhat fre
+This means that games are always approaching a condition of perfect information. In practice, it is somewhat common for game states to become perfect information in practice. There are many ways that perfect info search can be (unsoundly) applied to imperfect info contexts and these are left to the user.
 
 ## Simulator
-
-TODO we use engine because nothing else is fast enough. If a sim for any other format other than RBY were to come out, the library is designed to wrap it all the same. 
-
-This library is *format independent*
-
-This also extends to other aspects that are explained in deeper docs :ghost: :scream:
+Pinyon has already been successfully applied to [engine](https://github.com/pkmn/engine), which is a high performance simulator for RBY written in Zig with a C interface. Any game which has a C/C++ interface can be wrapped and connected to Pinyon's utilities. 
 
 # Installation
-
-This project makes heavy use of the `Concepts` feature of C++20. Furthermore, it also uses `cartiesian_product` from C++23. Support for the latter is spotty, but GCC-13 will work
-The [GNU Multiple Precision Arithmetic Library](https://gmplib.org/) is required.
+This project makes heavy use of the `Concepts` feature of C++20. Furthermore, it occasionally uses `std::cartiesian_product` from C++23. Support for the latter is spotty, but GCC-13 will work
+The [GNU Multiple Precision Arithmetic Library](https://gmplib.org/) is required for use in
 ```
 sudo apt install libgmp3-dev
-git clone --recurse-submodules https://github.com/baskuit/Pinyon
-cd Pinyon
+git clone --recurse-submodules https://github.com/baskuit/pinyon
+cd pinyon
 mkdir build
 cd build
 cmake ..
 make
 ```
 Note: make sure that the correct version of gcc/clang is being used. I recommend using VSCode to build this library. See the /src level readme [here](src/readme.md#LanguageandDevelopmentEnvironment)
-
-# Example
-
-The following code snippet is the execution of monte-carlo style tree search using a C++ Pytorch model
-
-## For More Info
-
-The interface relies on a view of the search process via the following families of types:
-* Types
-* State
-* Model
-* Algorithm
-* Node
-
-The directory /src has its own readme regarding how these families relate to each other.
-Also each family has its own directory in /src with its own readme.
-
-The former doc is an overview while the latter will go more into implementation details. 
 
 # Contributing
 
