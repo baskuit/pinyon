@@ -176,7 +176,7 @@ The `FullTraversal` algorithm will represent the game tree on heap using nodes.
 
 ### Arena
 
-This is a state that leverages the generality of Surskit to evaluate the performance of models and search algorithms using preexisting algorithms.
+This is a state that leverages the generality of Pinyon to evaluate the performance of models and search algorithms using preexisting algorithms.
 
 
 # Wrapping a State

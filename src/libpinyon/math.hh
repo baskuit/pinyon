@@ -63,7 +63,7 @@ namespace math
 
         Real row_payoff{Rational<>{0}}, col_payoff{Rational<>{0}};
         Vector<Real> row_response, col_response;
-        row_response.resize(rows); // TODO use surskit interface
+        row_response.resize(rows); // TODO use pinyon interface
         col_response.resize(cols);
 
         size_t data_idx = 0;

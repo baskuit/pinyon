@@ -1,4 +1,4 @@
-#include <libsurskit/math.hh>
+#include <libpinyon/math.hh>
 #include <types/matrix.hh>
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>

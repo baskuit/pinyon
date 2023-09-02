@@ -1,4 +1,4 @@
-#include <surskit.hh>
+#include <pinyon.hh>
 
 #include <algorithm/tree-bandit/bandit/exp3-fat.hh>
 

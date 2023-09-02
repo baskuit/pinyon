@@ -1,7 +1,7 @@
 
 # What is This
 
-Surskit is a highly extensible and heavily abstracted library for applying search and solving algorithms for perfect-info, simultaneous move, stochastic games.
+Pinyon is a highly extensible and heavily abstracted library for applying search and solving algorithms for perfect-info, simultaneous move, stochastic games.
 
 ## Intended Use
 
@@ -41,8 +41,8 @@ This project makes heavy use of the `Concepts` feature of C++20. Furthermore, it
 The [GNU Multiple Precision Arithmetic Library](https://gmplib.org/) is required.
 ```
 sudo apt install libgmp3-dev
-git clone --recurse-submodules https://github.com/baskuit/Surskit
-cd Surskit
+git clone --recurse-submodules https://github.com/baskuit/Pinyon
+cd Pinyon
 mkdir build
 cd build
 cmake ..

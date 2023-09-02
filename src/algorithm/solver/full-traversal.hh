@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include <libsurskit/lrslib.hh>
+#include <libpinyon/lrslib.hh>
 #include <model/model.hh>
 #include <tree/tree.hh>
 #include <algorithm/algorithm.hh>

@@ -6,7 +6,7 @@ The use of concepts will mean this interface is auto-suggested when dealing with
 
 ### Strong Typing
 In the case of some aliases, the final type that is accessible via the type list (e.g. `Types::Real`) is **not** simply `float` or `mpq_class` as the user intended.
-Instead, some classes are actually wrapper classes around the underlying type that mainly provide strong typing and regularize the Surskit interface.
+Instead, some classes are actually wrapper classes around the underlying type that mainly provide strong typing and regularize the Pinyon interface.
 
 To the first point, let's consider a motivating example: If the underlying primitive type for an `Action` is `int`, then the following erroneous code would compile without warning
 ```cpp
@@ -21,7 +21,7 @@ To the first point, let's consider a motivating example: If the underlying primi
 Regarding the second point, most of the interface trouble comes from `mpq_class`. For example, conversion from a `mpq_class` member to a double is done via its `get_d()` method, rather than a conversion operator `static_cast<double>()`. We cannot add conversion operators, constructors, etc to an external library class but we can add that functionality to the wrapper.
 
 ### ...Is Nearly Optional
-When strong typing was introduced I had planned to design the library so that they could be eschewed for the raw types if the user preferred. However, the support for `mpq_class` means that's not going to happen until I disentangle the GNU multiple precision library from Surskit.
+When strong typing was introduced I had planned to design the library so that they could be eschewed for the raw types if the user preferred. However, the support for `mpq_class` means that's not going to happen until I disentangle the GNU multiple precision library from Pinyon.
 
 This should not be an issue because of C++'s *zero cost abstractions*. If a program is compiled with `-O1` or higher (e.g. release mode in VSCode/Cmake) then these abstractions will be optimized away.
 
@@ -162,7 +162,7 @@ Thus we use `VectorReal`, `VectorInt`, `VectorAction` to specify the most common
 We rely on the methods `resize` and `clear` for the most part. Resize is used to fully initialize a vector, which does pose some risk. There are no checks that the vector being passed is empty, and these pre-existing members won't be overwritten with the intended value (second argument to `resize`.)
 
 ### Arrays
-We define an array-based container class with the same vector-like interface that Surskit relies on.
+We define an array-based container class with the same vector-like interface that Pinyon relies on.
 ```cpp
 template <size_t MaxSize>
 struct A
@@ -212,7 +212,7 @@ Standard matrix accessor.
 
 ## PRNG and Seed
 Abbreviation of pseudo-random number generator. Instances are usually called "device".
-All (single-threaded) operations of Surskit are intended to be deterministic.
+All (single-threaded) operations of Pinyon are intended to be deterministic.
 ```cpp
 {
     device = const_device
@@ -260,7 +260,7 @@ The standard library mutex is unnecessarily large on most systems and so the lib
 
 ## Value
 
-Surskit does not make the assumption that games are constant sum. Although all games of interest have this property, it is not always satisfied by every ancillary game.
+Pinyon does not make the assumption that games are constant sum. Although all games of interest have this property, it is not always satisfied by every ancillary game.
 
 In each matrix node, MatrixUCB must store a cumulative score for each of the `rows * cols` joint actions. Without the constant sum assumption, this requirement doubles.
 

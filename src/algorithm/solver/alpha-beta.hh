@@ -1,6 +1,6 @@
 #pragma once
 
-#include <libsurskit/lrslib.hh>
+#include <libpinyon/lrslib.hh>
 #include <types/matrix.hh>
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>

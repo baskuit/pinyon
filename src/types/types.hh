@@ -1,6 +1,6 @@
 #pragma once
 
-#include <libsurskit/math.hh>
+#include <libpinyon/math.hh>
 #include <types/wrapper.hh>
 #include <types/random.hh>
 #include <types/array.hh>

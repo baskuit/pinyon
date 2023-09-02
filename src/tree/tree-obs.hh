@@ -1,6 +1,6 @@
 #pragma once
 
-#include <libsurskit/math.hh>
+#include <libpinyon/math.hh>
 #include <state/state.hh>
 #include <tree/node.hh>
 

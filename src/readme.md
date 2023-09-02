@@ -6,7 +6,7 @@ These groups are listed below:
 * TypeList
 	This encompasses the union of all primitive types and types which are fundamental to the implementation of all other families. The short explanation is that these are the types you tweak to optimize performance. Support for `mpq_class` rationals as the `Real` or `Prob` type is the main exception to this rule, since arbitrary precision is generally limited to more theoretical contexts.
 * State
-Any simulator, game, or environment with a C/C++ interface can be wrapped as a state and subjected to Surskit's utilities.
+Any simulator, game, or environment with a C/C++ interface can be wrapped as a state and subjected to Pinyon's utilities.
 * Model
 Anything that provides a value and/or policy estimate for a state. It is generally expected that this information will be used in a tree search to produce a more refined result. The three most popular and generally successful approaches are listed below with their exemplars in Chess:
 	* Heuristic (Stockfish < 12)
@@ -32,7 +32,7 @@ It's not anticipated that users are experienced C++ programmers. This section pr
 
 VSCode is a free IDE that provides many useful features with minimal setup. It is highly recommended for users that are new to C++ development. A basic installation with the C/C++ and CMake extensions will make it easy to build, run and debug this library.
 ### CMake
-CMake is the blessed build system for Surskit, lrslib, and Libtorch. The  vanilla Surskit CMakeLists.txt is setup so that configuring and enabling the Libtorch library only needs changes to a few lines.
+CMake is the blessed build system for Pinyon, lrslib, and Libtorch. The  vanilla Pinyon CMakeLists.txt is setup so that configuring and enabling the Libtorch library only needs changes to a few lines.
 
 ```cmake
 option(ENABLE_TORCH "Enable Libtorch"  OFF)
@@ -58,11 +58,11 @@ void method_for_state_types(
 	state.
 ``` 
 the IDE would suggest the methods `is_terminal()`, `apply_actions()` etc.
-This provides a form of documentation that should help users become familiar with the Surskit interface.
+This provides a form of documentation that should help users become familiar with the Pinyon interface.
 
 
 #### Disabling Concepts
-Concepts can be disabled by uncommenting `#define ENABLE_CONCEPTS` in the file `libsurskit/enable-concepts.hh`. All uses of concepts for Intellisense are invoked using a macro, e.g.
+Concepts can be disabled by uncommenting `#define ENABLE_CONCEPTS` in the file `libpinyon/enable-concepts.hh`. All uses of concepts for Intellisense are invoked using a macro, e.g.
 ```cpp
 template <CONCEPT(IsPerfectInfoStateTypes, Types),  bool HasPolicy = false>
 struct MonteCarloModel : Types { // ...
@@ -84,7 +84,7 @@ The atomic constraints that define the various concepts are a servicable tour of
 
 # The Types Idiom
 
-The type list is the most important pattern of Surskit. It is used in the implementation of general purpose utilities where it lends a consistent way. It is also used at the level of the executable, where encapsulates a particular.
+The type list is the most important pattern of Pinyon. It is used in the implementation of general purpose utilities where it lends a consistent way. It is also used at the level of the executable, where encapsulates a particular.
 In C++ terminalogy, it is a struct with no data members, only type and template aliases. 
 The term "type list" specifically referes to the struct type definition, not any object/instance of the struct.
 

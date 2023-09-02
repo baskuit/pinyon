@@ -1,7 +1,7 @@
 #pragma once
 
-#include <libsurskit/dynamic-wrappers.hh>
-#include <libsurskit/generator.hh>
+#include <libpinyon/dynamic-wrappers.hh>
+#include <libpinyon/generator.hh>
 #include <types/types.hh>
 #include <types/random.hh>
 #include <state/state.hh>

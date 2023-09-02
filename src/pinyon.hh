@@ -2,13 +2,13 @@
 
 // Util
 
-#include <libsurskit/enable-concepts.hh>
-#include <libsurskit/math.hh>
-#include <libsurskit/lrslib.hh>
-#include <libsurskit/generator.hh>
-#include <libsurskit/template-prod.hh>
-#include <libsurskit/algorithm-generator.hh>
-#include <libsurskit/dynamic-wrappers.hh>
+#include <libpinyon/enable-concepts.hh>
+#include <libpinyon/math.hh>
+#include <libpinyon/lrslib.hh>
+#include <libpinyon/generator.hh>
+#include <libpinyon/template-prod.hh>
+#include <libpinyon/algorithm-generator.hh>
+#include <libpinyon/dynamic-wrappers.hh>
 
 // Types
 
@@ -30,7 +30,7 @@
 #include <model/solved-model.hh>
 
 #ifdef TORCH
-#include <libsurskit/mlp.hh>
+#include <libpinyon/mlp.hh>
 #include <model/libtorch-model.hh>
 #endif
 

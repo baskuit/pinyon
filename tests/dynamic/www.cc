@@ -1,4 +1,4 @@
-#include <surskit.hh>
+#include <pinyon.hh>
 
 using Types = TreeBandit<Exp3<MonteCarloModel<MoldState<2>>>>;
 

@@ -1,4 +1,4 @@
-#include <surskit.hh>
+#include <pinyon.hh>
 
 void random_matrix(prng device, const size_t rows, const size_t cols, const int discrete = 20)
 {
