@@ -29,7 +29,7 @@ struct LNodes : Types
         bool terminal = false;
         bool expanded = false;
 
-        typename Types::MatrixStats stats;
+        MatrixStats stats;
 
         MatrixNode(){};
         ~MatrixNode();
@@ -52,6 +52,11 @@ struct LNodes : Types
         inline void set_terminal()
         {
             terminal = true;
+        }
+
+        inline void set_terminal(const bool value)
+        {
+            terminal = value;
         }
 
         inline void set_expanded()
@@ -158,12 +163,12 @@ struct LNodes : Types
         };
 
         ChanceNode *next = nullptr;
-        Edge edge;
+        Edge* edge = nullptr;
 
         int row_idx;
         int col_idx;
 
-        typename Types::ChanceStats stats;
+        ChanceStats stats;
 
         ChanceNode() {}
         ChanceNode(
@@ -173,26 +178,22 @@ struct LNodes : Types
 
         MatrixNode *access(const Types::Obs &obs)
         {
-            if (this->child == nullptr)
-            {
-                MatrixNode *child = new MatrixNode(obs);
-                this->child = child;
-                return child;
+            if (this->edge == nullptr) {
+                this->edge = new Edge(new MatrixNode(), obs);
+                return this->edge->matrix_node;
             }
-            MatrixNode *current = this->child;
-            MatrixNode *previous = this->child;
-            while (current != nullptr)
-            {
+            Edge *current = this->edge;
+            Edge *previous = this->edge;
+            while (current != nullptr) {
                 previous = current;
-                if (current->obs == obs)
-                {
-                    return current;
+                if (current->obs == obs) {
+                    return current->matrix_node;
                 }
                 current = current->next;
             }
-            MatrixNode *child = new MatrixNode(obs);
-            previous->next = child;
-            return child;
+            Edge *new_edge = new Edge(new MatrixNode(), obs);
+            previous->next = new_edge;
+            return new_edge->matrix_node;
         };
 
         const MatrixNode *access(const Types::Obs &obs) const
@@ -242,10 +243,5 @@ LNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
 template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
 LNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
 {
-    while (this->child != nullptr)
-    {
-        LNodes<Types, MatrixStats, ChanceStats>::MatrixNode *victim = this->child;
-        this->child = this->child->next;
-        delete victim;
-    }
+    delete this->edge;
 };
