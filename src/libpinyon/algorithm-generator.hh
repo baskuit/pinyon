@@ -29,7 +29,8 @@ namespace detail
         return std::apply(
             [](auto... pair)
             { return std::tuple<typename TreeBanditTemplate<decltype(pair.first), NodeTemplate, true>::Search...>(
-                  typename TreeBanditTemplate<decltype(pair.first), NodeTemplate, true>::Search(pair.second)...); },
+                //   typename TreeBanditTemplate<decltype(pair.first), NodeTemplate, true>::Search(pair.second)...); },
+                  std::make_from_tuple<typename TreeBanditTemplate<decltype(pair.first), NodeTemplate, true>::Search>(pair.second)...); },
                   // i.e. TreeBandit<Types, NodeTemplate, true>::Search (&bandit)...
             zip(bandit_type_list, bandit_tuple));
     }
