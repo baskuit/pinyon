@@ -1,4 +1,5 @@
 
+
 # Search in the Abstract
 This library was developed as a platform for research and incremental progress in the development of a computer-play in Pokemon. This means code should be reusable for multiple gens and simulators, with tools to compare evaluation functions and search algorithms. The library has been applied to `pmkn/engine` but I was not aware of any extant simulators besides Pokemon Showdown when I started development.
 This context lead me to abstract the setting and machinery for search and reinforcement learning into distinct categories. These are orthogonal by design, so that different types within one category can be swapped with minimal restrictions.
@@ -23,27 +24,28 @@ These categories are:
 	The performance of tree operations and consequently search is highly sensitive to cache use. The various tree structure implementations vary considerably in this aspect. 
 
 # Language and Development Environment
-C++ was the natural choice for this project for several reasons. 
-The bitter truth of machine learning and computer search is that performance is King, and C++ is as fast as any other language. 
-The 'interchangeability' of the type list, state, model etc. categories promised earlier is known to computer science as *polymorphism*, and the template meta-programming feature of C++ is a powerful way to approach this. It even has the benefit of being *static* or compile-time, so there is is no performance cost to general code.
-It is among the most popular languages
-C++ has excellent support for CUDA and large neural networks via Libtorch, the back-end for Pytorch. The latter is the most popular library for machine learning and it shares an API with Libtorch.
+C++ was the natural choice for this library for several reasons. 
+The bitter truth of machine learning and computer search is that performance is king, and C++ is as fast as any other language. 
+The 'interchangeability' of the type list, state, model etc. categories promised earlier is an example of *polymorphism*, and the template meta-programming system of C++ is a powerful way to approach this. This is because the template system is compile-time, so there is is no run-time performance cost to general code.
+It is among the most popular languages which means there is a wealth of references and support for new developers.
+C++ has excellent support for CUDA and large neural networks via Libtorch, the back-end for Pytorch. The latter is the most popular library for machine learning and shares an API with Libtorch.
 
 ## Building
 
 This section is a walk-though of an installation using vscode on Linux.
 
 ### VSCode
-
 VSCode is a free IDE that provides many useful features with minimal setup and it is highly recommended. A basic installation with the C/C++ and CMake extensions will make it easy to build, run and debug this library.
+
 ### CMake
 CMake is the blessed build system for Pinyon, lrslib, and Libtorch. The  vanilla Pinyon CMakeLists.txt is setup so that configuring and enabling the Libtorch library only needs changes to a few lines.
 
 ```c
 option(ENABLE_TORCH "Enable Libtorch"  OFF)
+option(ENABLE_CONCEPTS "Enable Concepts"  ON)
 ```
 
-The CMakeLists includes a rudimentary script that scans the tests and benchmark directories for any source files. These executables can be built, testing and debugged via hotkeys with the CMake extension for VSCode.
+The CMakeLists.txt includes a rudimentary script that scans the tests and benchmark directories for any source files. These executables can be built, testing and debugged via hotkeys with the CMake extension for VSCode.
 
 ### Compiler
 Without excising any features or tests, this library requires a compiler that supports C++23. This is because of the use of `std::cartesian_product`, and use of concepts (detailed below) requires C++20, The core of the library is probably complicit with C++17, however.
@@ -51,11 +53,11 @@ Without excising any features or tests, this library requires a compiler that su
 You will need at least `gcc-13`. As of Ubuntu 23.04, this can be installed by using `apt`. Older versions of Ubuntu and other distributions will probably require building the compiler from source.
 * clang
 As of this writing, there is a [bug](https://gcc.gnu.org/bugzilla//show_bug.cgi?id=109647) with clang-16 regarding libstdc++ version of the ranges library.
-The library will compile with clang-17 (:warning: not true for all tests, there is a clang bug. TODO try clang-18)
+The library will compile with clang-17 (:warning: not true for all tests, there is a clang bug that appears with algorithm-generator.hh. TODO try clang-18)
 
 ### Concepts & Intellisense
 
-The C/C++ extension for VSCode has autocomplete via Intellisense, and this has support for constrained template parameters. This means that in the following incomplete code:
+The C++ extension for VSCode has autocomplete via Intellisense, and this has support for constrained template parameters. This means that in the following incomplete code:
 ```cpp
 template <IsPerfectInfoStateTypes State>
 void method_for_state_types(
@@ -177,3 +179,6 @@ The directory structure of the `/src` directory mirrors the classification of se
 * Solving
 
 ### `/tree`
+
+
+

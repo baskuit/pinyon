@@ -58,10 +58,10 @@ struct Solve
         Model model{device.uniform_64()};
         ModelFloat model_f{device.uniform_64()};
 
-        FullTraversal<TypesRational>::Search session_full{};
-        FullTraversal<TypesFloat>::Search session_full_f{};
-        AlphaBeta<TypesRational>::Search session_ab{Rational<>{0}, Rational<>{1}};
-        AlphaBeta<TypesFloat>::Search session_ab_f{Rational<>{0}, Rational<>{1}};
+        FullTraversal<TypesRational>::Search search_full{};
+        FullTraversal<TypesFloat>::Search search_full_f{};
+        AlphaBeta<TypesRational>::Search search_ab{Rational<>{0}, Rational<>{1}};
+        AlphaBeta<TypesFloat>::Search search_ab_f{Rational<>{0}, Rational<>{1}};
 
         auto run_lambda = [](size_t *result, const auto *state, auto *model, const auto *search, auto *root, auto *value)
         {
@@ -78,10 +78,10 @@ struct Solve
 
         std::thread threads[4]
         {
-            std::thread{run_lambda, &time_full, &state, &model, &session_full, &root_full, &full_value},
-            std::thread{run_lambda, &time_full_f, &state_f, &model_f, &session_full_f, &root_full_f, &full_f_value},
-            std::thread{run_lambda, &time_ab, &state, &model, &session_ab, &root_ab, &ab_value},
-            std::thread{run_lambda, &time_ab_f, &state_f, &model_f, &session_ab_f, &root_ab_f, &ab_f_value}
+            std::thread{run_lambda, &time_full, &state, &model, &search_full, &root_full, &full_value},
+            std::thread{run_lambda, &time_full_f, &state_f, &model_f, &search_full_f, &root_full_f, &full_f_value},
+            std::thread{run_lambda, &time_ab, &state, &model, &search_ab, &root_ab, &ab_value},
+            std::thread{run_lambda, &time_ab_f, &state_f, &model_f, &search_ab_f, &root_ab_f, &ab_f_value}
         };
         size_t thread_count = 0;
         for (auto &thread : threads)

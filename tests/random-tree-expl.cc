@@ -26,13 +26,13 @@ int main()
     // Types::Model model(device);
     // W::ModelWrapper<Types> model_wrapper(model);
 
-    // W::SearchWrapper<TreeBandit<Exp3<Types>>> session_0{};
-    // W::SearchWrapper<TreeBanditThreaded<Exp3<Types>>> session_1{};
-    // W::SearchWrapper<TreeBanditThreadPool<Exp3<Types>>> session_2{};
-    // session_1.ptr->threads = 4;
-    // session_2.ptr->threads = 4;
+    // W::SearchWrapper<TreeBandit<Exp3<Types>>> search_0{};
+    // W::SearchWrapper<TreeBanditThreaded<Exp3<Types>>> search_1{};
+    // W::SearchWrapper<TreeBanditThreadPool<Exp3<Types>>> search_2{};
+    // search_1.ptr->threads = 4;
+    // search_2.ptr->threads = 4;
 
-    // std::vector<W::Search *> sessions = {&session_0, &session_1, &session_2};
+    // std::vector<W::Search *> searchs = {&search_0, &search_1, &search_2};
 
     // const size_t search_iterations = 1000;
 
@@ -45,10 +45,10 @@ int main()
 
     //     W::StateWrapper<RandomTree<>> state_wrapper{state};
 
-    //     for (W::Search *session_ptr : sessions)
+    //     for (W::Search *search_ptr : searchs)
     //     {
     //         std::vector<double> r{}, c{};
-    //         session_ptr->run_and_get_strategies(r, c, search_iterations, state_wrapper, model_wrapper);
+    //         search_ptr->run_and_get_strategies(r, c, search_iterations, state_wrapper, model_wrapper);
     //         double expl = math::exploitability(payoff_matrix, r, c);
 
     //         std::cout << "expl: " << expl << std::endl;

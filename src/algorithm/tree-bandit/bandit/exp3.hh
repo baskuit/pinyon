@@ -39,9 +39,9 @@ struct Exp3 : Types
 
         constexpr BanditAlgorithm(Real gamma) : gamma(gamma), one_minus_gamma{gamma * -1 + 1} {}
 
-        friend std::ostream &operator<<(std::ostream &os, const Exp3 &session)
+        friend std::ostream &operator<<(std::ostream &os, const Exp3 &search)
         {
-            os << "Exp3; gamma: " << session.gamma;
+            os << "Exp3; gamma: " << search.gamma;
             return os;
         }
 

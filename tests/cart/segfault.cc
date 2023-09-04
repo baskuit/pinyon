@@ -5,7 +5,7 @@ int main()
     std::cout << "both double mutex" << std::endl;
     {
         std::cout << "new search old mutex" << std::endl;
-        using BaseTypes = MonteCarloModel<MoldState<2>>;
+        using BaseTypes = MonteCarloModel<MoldState<>>;
         using Types = TreeBanditThreadPool<Exp3<BaseTypes>>;
 
         for (size_t threads = 1; threads <= 8; ++threads)
@@ -13,7 +13,7 @@ int main()
             Types::Search search{Types::BanditAlgorithm{}, threads};
             Types::MatrixNode root{};
 
-            BaseTypes::State state{size_t{50}};
+            BaseTypes::State state{2, size_t{50}};
             BaseTypes::Model model{0};
 
             const size_t iterations = 1 << 20;

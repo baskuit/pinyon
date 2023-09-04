@@ -165,16 +165,16 @@ The matrix and chance nodes are templates that accept algorithms as parameters. 
 ## Concepts/Interface
 ```cpp
 {
-    session = session
+    search = search
 } -> std::same_as<typename Types::Search &>;
 {
-    session.run(0, device, state, model, matrix_node)
+    search.run(0, device, state, model, matrix_node)
 } -> std::same_as<size_t>;
 {
-    session.run_for_iterations(0, device, state, model, matrix_node)
+    search.run_for_iterations(0, device, state, model, matrix_node)
 } -> std::same_as<size_t>;
 {
-    session.run(0, device, state, model, matrix_node)
+    search.run(0, device, state, model, matrix_node)
 } -> std::same_as<size_t>;
 ```
 

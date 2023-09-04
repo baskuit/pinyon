@@ -9,7 +9,7 @@
 #include <atomic>
 
 template <size_t size>
-struct MoldStateLibtorchModel : MoldState<size> {
+struct MoldStateLibtorchModel : MoldState<> {
 
     using ModelInput = typename Types::State;
     struct ModelOutput {

@@ -37,15 +37,15 @@ struct TreeBanditSearchModel : Types::TypeList
         const size_t iterations;
         typename Types::PRNG device;
         typename Types::Model model;
-        typename Types::Search session;
+        typename Types::Search search;
         const bool use_ms = false;
 
         Model(
             const size_t iterations,
             const Types::PRNG &device,
             const Types::Model &model,
-            const Types::Search &session)
-            : iterations{iterations}, device{device}, model{model}, session{session}
+            const Types::Search &search)
+            : iterations{iterations}, device{device}, model{model}, search{search}
         {
         }
 
@@ -56,14 +56,14 @@ struct TreeBanditSearchModel : Types::TypeList
             typename Types::MatrixNode root;
             if (use_ms == true)
             {
-                session.run(iterations, device, input, model, root);
+                search.run(iterations, device, input, model, root);
             }
             else
             {
-                session.run_for_iterations(iterations, device, input, model, root);
+                search.run_for_iterations(iterations, device, input, model, root);
             }
-            session.get_empirical_strategies(root.stats, output.row_policy, output.col_policy);
-            session.get_empirical_value(root.stats, output.value);
+            search.get_empirical_strategies(root.stats, output.row_policy, output.col_policy);
+            search.get_empirical_value(root.stats, output.value);
         }
 
         void inference(

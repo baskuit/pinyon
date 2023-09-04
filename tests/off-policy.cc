@@ -8,7 +8,7 @@ int main () {
     Types::State state{device, 3, 3, 3, 1};
     Types::Model model{0};
     SolvedTypes::State solved_state{state, model};
-    Types::Search session{.1};
+    Types::Search search{.1};
 
     std::vector<Types::State> states{state};
     std::vector<Types::MatrixNode> matrix_nodes{{}};
@@ -17,7 +17,7 @@ int main () {
     const size_t actor_iterations = 1 << 3;
     const size_t learner_iterations = total_iterations / actor_iterations;
 
-    session.run(
+    search.run(
         learner_iterations,
         actor_iterations,
         device,
@@ -27,7 +27,7 @@ int main () {
 
     Types::VectorReal r, c;
 
-    session.get_empirical_strategies(
+    search.get_empirical_strategies(
         matrix_nodes[0].stats, r, c
     );
 

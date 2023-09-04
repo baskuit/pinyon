@@ -102,18 +102,19 @@ template <typename Types>
 concept IsTreeBanditTypes =
     requires(
         typename Types::Search &search,
+        const typename Types::Search &const_search,
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         typename Types::MatrixNode &matrix_node) {
         {
-            search = search
+            search = const_search
         } -> std::same_as<typename Types::Search &>;
         {
-            search.run(0, device, state, model, matrix_node)
+            const_search.run(0, device, state, model, matrix_node)
         } -> std::same_as<size_t>;
         {
-            search.run_for_iterations(0, device, state, model, matrix_node)
+            const_search.run_for_iterations(0, device, state, model, matrix_node)
         } -> std::same_as<size_t>;
     } &&
     IsBanditAlgorithmTypes<Types>;
@@ -121,13 +122,13 @@ concept IsTreeBanditTypes =
 template <typename Types>
 concept IsSearchTypes =
     requires(
-        typename Types::Search &session,
+        typename Types::Search &search,
         typename Types::PRNG &device,
         typename Types::State &state,
         typename Types::Model &model,
         typename Types::MatrixNode &matrix_node) {
         {
-            session.run(0, device, state, model, matrix_node)
+            search.run(0, device, state, model, matrix_node)
         } -> std::same_as<size_t>;
     } &&
     IsValueModelTypes<Types>;

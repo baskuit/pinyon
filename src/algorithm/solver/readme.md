@@ -13,7 +13,7 @@ These algorithms are run in a one-shot fashion, rather than online like tree-ban
 
 ```cpp
 {
-    session.run(0, device, state, model, matrix_node)
+    search.run(0, device, state, model, matrix_node)
 } -> std::same_as<size_t>;
 ```
 The argument list is the same as the tree bandit searches. Instead of the number of iterations, the integral quantity in the first parameter denotes the depth to solve. The `PRNG` device is not used by the full traversal solver, but it may be used in the alpha beta solver when determining whether to stop exploring a chance node.

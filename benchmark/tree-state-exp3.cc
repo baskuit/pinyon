@@ -15,10 +15,10 @@ int main () {
     // prng device(seed);
     // RandomTree state(device, 10, 3, 3, 1, 0);
     // MonteCarlo model(device);
-    // Exp3 session(.01);
+    // Exp3 search(.01);
     // Exp3::Types::MatrixNode root;
     // const size_t iterations = 1000000;
-    // session.run(iterations, device, state, model, root);
+    // search.run(iterations, device, state, model, root);
 
     return 0;
 }

@@ -52,8 +52,8 @@ struct TraversedState : Types::TypeList
         {
             auto temp_tree = std::make_shared<typename NodePair::MatrixNode>();
             node = temp_tree.get();
-            auto session = typename FullTraversal<Types, DebugNodes>::Search{max_depth};
-            session.run(*this, model, *temp_tree.get());
+            auto search = typename FullTraversal<Types, DebugNodes>::Search{max_depth};
+            search.run(*this, model, *temp_tree.get());
             full_traversal_tree = temp_tree;
         }
 
@@ -129,8 +129,8 @@ struct TraversedSimState : Types::TypeList
         {
             auto temp_tree = std::make_shared<typename NodePair::MatrixNode>();
             node = temp_tree.get();
-            auto session = typename FullTraversal<Types>::Search{max_depth};
-            session.run(*this, model, temp_tree.get());
+            auto search = typename FullTraversal<Types>::Search{max_depth};
+            search.run(*this, model, temp_tree.get());
             full_traversal_tree = temp_tree;
         }
 

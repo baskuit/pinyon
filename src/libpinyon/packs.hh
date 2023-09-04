@@ -13,7 +13,7 @@ template <
         typename M,
         typename C>
     typename... NodeTemplate>
-struct NodePack
+struct NodeTemplatePack
 {
 };
 
@@ -21,8 +21,6 @@ template <typename... Type>
 struct TypePack
 {
 };
-
-
 
 
 template <typename... Ts, typename... Us, size_t... Is>

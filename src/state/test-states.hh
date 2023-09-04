@@ -6,7 +6,7 @@
  Large uniform tree for testing etc. So called because it grows until it can't.
 */
 
-template <size_t size, typename Types = SimpleTypes>
+template <typename Types = SimpleTypes>
 struct MoldState : Types
 {
 
@@ -15,10 +15,10 @@ struct MoldState : Types
     public:
         size_t max_depth = 1;
 
-        State(size_t max_depth) : max_depth{max_depth}
+        State(const size_t n_actions, const size_t max_depth) : max_depth{max_depth}
         {
             this->terminal = (this->max_depth == 0);
-            this->init_range_actions(size);
+            this->init_range_actions(n_actions);
             this->prob = typename Types::Prob{1};
             this->obs = typename Types::Obs{};
         }
@@ -65,8 +65,6 @@ struct MoldState : Types
             chance_actions.resize(1);
         }
     };
-
-    // static_assert(IsStateTypes<MoldState>);
 };
 
 struct OneSumMatrixGame : SimpleTypes

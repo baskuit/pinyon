@@ -1,4 +1,5 @@
 
+
 # Pinyon
 
 Pinyon is a high performance and general purpose library for research and development of search and solving algorithms for perfect-info, simultaneous move, stochastic games.
@@ -16,19 +17,21 @@ This library is really attempt at reconciling two disparate realities:
 
 As there is scarce publicly available work, this library attempts to attack machine learning in pokemon incrementally. By far the most important consequence of this attitude is information.
 
-## Imperfect Info
+### Imperfect Info
 
 The species of pokemon on a team, and each pokemon's moves, item, ability, etc are not known at the start of a game in any popular format. The management of this info is essential to high level play.
 
 However my survey of methods in imperfect info games suggests that domain is significanltly more difficult and expensive to explore. Thus we make the following assumption that has natural justification
 
-## Perfect Info
+### Perfect Info
 
 The hidden information of either player is only ever *revealed* during the course of a game, never renewed or augmented.
 This means that games are always approaching a condition of perfect information. In practice, it is somewhat common for game states to become perfect information in practice. There are many ways that perfect info search can be (unsoundly) applied to imperfect info contexts and these are left to the user.
 
-## Simulator
+### Simulator
 Pinyon has already been successfully applied to [engine](https://github.com/pkmn/engine), which is a high performance simulator for RBY written in Zig with a C interface. Any game which has a C/C++ interface can be wrapped and connected to Pinyon's utilities. 
+
+### Performance
 
 # Installation
 This project makes heavy use of the `Concepts` feature of C++20. Furthermore, it occasionally uses `std::cartiesian_product` from C++23. Support for the latter is spotty, but GCC-13 will work
@@ -47,6 +50,10 @@ Note: make sure that the correct version of gcc/clang is being used. I recommend
 # Contributing
 
 The best way to help is to use the library to test your own ideas. The interface is designed so that creating a custom search algorithm
+
+That being said:
+* Basic CUDA Backend
+* 
 
 # Release Checklist
 

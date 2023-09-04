@@ -3,7 +3,7 @@
 int main()
 {
 
-    using BaseTypes = MonteCarloModel<MoldState<2>>;
+    using BaseTypes = MonteCarloModel<MoldState<>>;
 
     using SessionTypes0 = TreeBandit<Exp3<BaseTypes>>;
     using SessionTypes1 = TreeBanditThreaded<Exp3<BaseTypes>>;
@@ -31,7 +31,7 @@ int main()
         using MatrixNode = typename Types::MatrixNode;
         MatrixNode root{};
 
-        BaseTypes::State state{50};
+        BaseTypes::State state{2, 50};
         BaseTypes::Model model{0};
 
         const size_t iterations = 1 << 18;
