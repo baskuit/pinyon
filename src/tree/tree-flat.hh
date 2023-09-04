@@ -63,7 +63,7 @@ struct FlatNodes : Types
             expanded = true;
         }
 
-        inline void get_value(Types::Value &value)
+        inline void get_value(Types::Value &value) const
         {
         }
 
@@ -141,10 +141,12 @@ struct FlatNodes : Types
         MatrixNode *access(Types::Obs &obs, Types::Mutex &mutex)
         {
             MatrixNode *&child = edges[obs];
+            mutex.lock();
             if (child == nullptr)
             {
                 child = new MatrixNode(obs);
             }
+            mutex.unlock();
             return child;
         };
 

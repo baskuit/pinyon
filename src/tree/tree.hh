@@ -62,7 +62,7 @@ struct DefaultNodes : Types
             expanded = true;
         }
 
-        inline void get_value(typename Types::Value &value)
+        inline void get_value(Types::Value &value) const
         {
         }
 
@@ -148,7 +148,7 @@ struct DefaultNodes : Types
             return c;
         }
 
-        ChanceNode &access_ref(int row_idx, int col_idx)
+        ChanceNode &get_child(int row_idx, int col_idx)
         {
             if (this->child == nullptr)
             {
@@ -172,7 +172,6 @@ struct DefaultNodes : Types
         }
     };
 
-    // Chance Node
     class ChanceNode
     {
     public:
@@ -274,7 +273,7 @@ struct DefaultNodes : Types
             return c;
         }
 
-        MatrixNode &access_ref(const typename Types::Obs &obs)
+        MatrixNode &get_child(const Types::Obs &obs)
         {
             if (this->child == nullptr)
             {
