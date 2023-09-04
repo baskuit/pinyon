@@ -242,18 +242,18 @@ struct ObsType : Wrapper<T>
 template <typename T>
 struct ObsHashType
 {
-    size_t operator()(const ObsType<T> &t) const
+    size_t operator()(const ObsType<T> &obs) const
     {
-        return std::hash(static_cast<T>(t));
+        return static_cast<T>(obs); // TODO
     }
 };
 
 template <>
 struct ObsHashType<std::array<uint8_t, 64>>
 {
-    size_t operator()(const ObsType<std::array<uint8_t, 64>> &t) const
+    size_t operator()(const ObsType<std::array<uint8_t, 64>> &obs) const
     {
-        const uint64_t *a = reinterpret_cast<const uint64_t *>(t.value.data());
+        const uint64_t *a = reinterpret_cast<const uint64_t *>(obs.value.data());
         size_t hash = 0;
         for (int i = 0; i < 8; ++i)
         {

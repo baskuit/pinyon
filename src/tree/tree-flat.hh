@@ -27,7 +27,7 @@ struct FlatNodes : Types
         int rows = 0;
         int cols = 0;
 
-        typename Types::MatrixStats stats;
+        MatrixStats stats;
 
         ChanceNode **edges;
 
@@ -38,6 +38,8 @@ struct FlatNodes : Types
         inline void expand(const size_t &rows, const size_t &cols)
         {
             expanded = true;
+            this->rows = rows;
+            this->cols = cols;
             const size_t n_children = rows * cols;
             edges = new ChanceNode *[n_children]{};
             // std::fill_n(edges, n_children, nullptr); // TODO does this work lol
@@ -58,6 +60,11 @@ struct FlatNodes : Types
             terminal = true;
         }
 
+        inline void set_terminal(const bool value)
+        {
+            terminal = value;
+        }
+
         inline void set_expanded()
         {
             expanded = true;
@@ -70,7 +77,7 @@ struct FlatNodes : Types
         ChanceNode *access(int row_idx, int col_idx)
         {
             const int child_idx = row_idx * cols + col_idx;
-            const ChanceNode *&child = edges[child_idx]; // ref to pointer
+            ChanceNode *&child = edges[child_idx]; // ref to pointer
             if (child == nullptr)
             {
                 child = new ChanceNode();
@@ -119,7 +126,7 @@ struct FlatNodes : Types
     {
     public:
         std::unordered_map<typename Types::Obs, MatrixNode *, typename Types::ObsHash> edges{};
-        typename Types::ChanceStats stats{};
+        ChanceStats stats{};
 
         ~ChanceNode();
 

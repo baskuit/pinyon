@@ -198,28 +198,25 @@ struct LNodes : Types
 
         const MatrixNode *access(const Types::Obs &obs) const
         {
-            if (this->child == nullptr)
-            {
-                return this->child;
+            if (this->edge == nullptr) {
+                return nullptr;
             }
-            const MatrixNode *current = this->child;
-            const MatrixNode *previous = this->child;
-            while (current != nullptr)
-            {
+            const Edge *current = this->edge;
+            const Edge *previous = this->edge;
+            while (current != nullptr) {
                 previous = current;
-                if (current->obs == obs)
-                {
-                    return current;
+                if (current->obs == obs) {
+                    return current->matrix_node;
                 }
                 current = current->next;
             }
-            return current;
+            return nullptr;
         };
 
         size_t count_matrix_nodes()
         {
             size_t c = 0;
-            auto current = &(this->edge);
+            auto current = this->edge;
             while (current != nullptr)
             {
                 c += current->matrix_node->count_matrix_nodes();

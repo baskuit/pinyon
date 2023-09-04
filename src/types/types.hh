@@ -43,6 +43,7 @@ struct DefaultTypes
 
     using Action = ActionType<_Action>;
     using Obs = ObsType<_Obs>;
+    using ObsHash = ObsHashType<_Obs>;
     using Prob = ProbType<_Prob>;
     // These are the wrappers for strong typing
 
