@@ -42,7 +42,7 @@ struct FlatNodes : Types
             this->cols = cols;
             const size_t n_children = rows * cols;
             edges = new ChanceNode *[n_children]{};
-            // std::fill_n(edges, n_children, nullptr); // TODO does this work lol
+            std::fill_n(edges, n_children, nullptr); // TODO does this work lol
         }
 
         inline bool is_terminal() const

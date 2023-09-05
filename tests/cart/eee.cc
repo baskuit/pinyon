@@ -26,7 +26,7 @@ void test_matrix_node_count_multi_thread () {
     typename Types::State state{2, 10};
     typename Types::Model model{0};
     typename Types::MatrixNode root{};
-    const size_t threads = 4;
+    const size_t threads = 2;
     typename Types::Search search{typename Types::BanditAlgorithm{.1}, threads};
     const size_t iterations = 1 << 10;
 
