@@ -23,7 +23,7 @@ These categories are:
 	Pinyon was designed to facilitate the development of all of these kinds of models. 
 
 * `Search`
-	Stockfish and Leela Chess exemplify the most promising methods for search: AlphaBeta solving and MCTS. The former is a depth first approach that uses game theoretic reasoning to prune as much of the game tree to produce its answer. Pinyon has an *improved* implementation of Simultaneous Move AlphaBeta for stochastic games, which means it is likely the SOTA in this field. The latter approach is more commonly known but fatally misunderstood in the simultaneous move context. Pinyon provides theoretically sound variants in a way that makes writing and benchmarking new algorithms easy.
+	Stockfish and Leela Chess exemplify the most promising methods for search: AlphaBeta solving and MCTS. The former is a depth first approach that uses game theoretic reasoning to prune as much of the game tree to produce its answer. Pinyon has an *improved* implementation of Simultaneous Move AlphaBeta for stochastic games, which means it is likely the SOTA in this field. The latter approach is more commonly known but fatally misunderstood in the simultaneous move context. Pinyon provides theoretically sound variants in a way that makes writing and bench-marking new algorithms easy.
 
 * `Node`
 
@@ -44,14 +44,14 @@ This section is a walk-though of an installation using vscode on Linux.
 VSCode is a free IDE that provides many useful features with minimal setup and it is highly recommended. A basic installation with the C/C++ and CMake extensions will make it easy to build, run and debug this library.
 
 ### CMake
-CMake is the blessed build system for Pinyon, lrslib, and Libtorch. The  vanilla Pinyon CMakeLists.txt is setup so that configuring and enabling the Libtorch library only needs changes to a few lines.
+CMake is the blessed build system for Pinyon, lrslib, and Libtorch. The  vanilla Pinyon `CMakeLists.txt` is setup so that configuring and enabling the Libtorch library only needs changes to a few lines.
 
 ```c
 option(ENABLE_TORCH "Enable Libtorch"  OFF)
 option(ENABLE_CONCEPTS "Enable Concepts"  ON)
 ```
 
-The CMakeLists.txt includes a rudimentary script that scans the tests and benchmark directories for any source files. These executables can be built, testing and debugged via hotkeys with the CMake extension for VSCode.
+The `CMakeLists.txt` includes a rudimentary script that scans the tests and benchmark directories for any source files. These executables can be built, testing and debugged via hotkeys with the CMake extension for VSCode.
 
 ### Compiler
 Without excising any features or tests, this library requires a compiler that supports C++23. This is because of the use of `std::cartesian_product`, and use of concepts (detailed below) requires C++20, The core of the library is probably complicit with C++17, however.
@@ -59,7 +59,7 @@ Without excising any features or tests, this library requires a compiler that su
 You will need at least `gcc-13`. As of Ubuntu 23.04, this can be installed by using `apt`. Older versions of Ubuntu and other distributions will probably require building the compiler from source.
 * clang
 As of this writing, there is a [bug](https://gcc.gnu.org/bugzilla//show_bug.cgi?id=109647) with clang-16 regarding libstdc++ version of the ranges library.
-The library will compile with clang-17 (:warning: not true for all tests, there is a clang bug that appears with algorithm-generator.hh. TODO try clang-18)
+The library will compile with clang-17 (:warning: not true for all tests, there is a clang bug that appears with `algorithm-generator.hh`. TODO try clang-18)
 
 ### Concepts & Intellisense
 
@@ -77,16 +77,16 @@ This provides a form of documentation that should help users become familiar wit
 #### Disabling Concepts
 Concepts can be disabled by uncommenting `#define ENABLE_CONCEPTS` in the file `libpinyon/enable-concepts.hh`. All uses of concepts for Intellisense are invoked using a macro, e.g.
 ```cpp
-template <CONCEPT(IsPerfectInfoStateTypes, Types),  bool HasPolicy = false>
+template <CONCEPT(IsPerfectInfoStateTypes, Types), bool HasPolicy = false>
 struct MonteCarloModel : Types { // ...
 ```
 The template parameter definition will expand to
 ```cpp
-template <IsPerfectInfoStateTypes Types,  bool  HasPolicy  = false>
+template <IsPerfectInfoStateTypes Types, bool HasPolicy = false>
 ```
 if `ENABLE_CONCEPTS` is defined. Otherwise it will expand to a normal unconstrained template parameter:
 ```cpp
-template <typename Types,  bool  HasPolicy  = false>
+template <typename Types, bool HasPolicy = false>
 ```
 This library has little for use concepts outside of Intellisense. In fact, concepts generally produce worse compiler messages. Thus this macro was included to easily disable them across an entire project.
 
@@ -151,14 +151,14 @@ The collection of type lists created by the `search_type_generator` in the examp
 
 ## Building a Type List
 
-The prior examples assumed that we had the type lists a priori. Now we will discuss how type lists are created
+The previous examples assumed that we had the type lists a priori. Now we will discuss how type lists are created
 
 ### The TypeList
-Most type lists begin by specifying the struct definition of the "basic type list", which are the type lists that make up the TypeList category at the beginning of this document. 
+Most type lists begin by specifying the struct definition of the "basic type list", which is a type list that belongs to the "TypeList" category mentioned at the beginning of this document. 
 These type lists don't contain definitions for the State or other features. They only specify the primitive types like `Real`, `Action`, `Mutex` that are used everywhere else.
 
 ### Templates
-Now lets expand this type list to 
+Now lets expand the functionality of the basic type list. Let's look at the code below.
 
 ```cpp
 template <typename Types>
@@ -167,11 +167,32 @@ struct MoldState : Types {
 		// implementation. define get_actions, apply_actions, etc.
 	};
 };
-```
 
+// using
+int main () {
+	using Types = //... basic type list
+	using NewTypes = MoldState<Types>;
+	NewTypes::State mold_state{2, 10};
+	mold_state.get_actions();
+}
+```
+This is a overview of the `MoldState` type list, which defines a `State` type for us to use.
+There are a few key things to notice:
+* The new type list is created by a template. The template accepts the old type list as its first parameter.
+* The new type list is a struct that is **derived from** the old type list. This is how all the definitions in the old type list are imported into the new one. `struct` is used instead of `class` only because all members of a struct are public.
+* The actual state type is given the identifier "State". This is compliance with the Pinyon interface. It is the type list that is given a unique name, and this name relates to the new types that it is defining.
+
+These observation apply to virtually all type list definitions.
+
+After this process is repeated multiple times to define all the types necessary for search, we end up with a type list definition that typically that looks like this
+```cpp
+using Types = TreeBandit<Exp3<MonteCarloModel<MoldState<SimpleTypes>>>>
+```
 
 ### Relation to Concepts
 
+Intellisense is available for constrained template parameters. Since we use a type list as the primary template parameter, it is the type list that must be constrained.
+This leads to concepts like `IsPerfectInfoStateTypes`, `IsValueModelTypes`. We formulate the concepts like this instead of something like `IsPerfectInfoState`, `IsValueModel`.
 
 ```cpp
 template <>
@@ -179,7 +200,7 @@ template <>
 
 # Other Idioms
 
-## Row and Column
+### Row and Column
 
 The assumption of perfect information  means that neither players perspective is special. Any lookahead or search procedure either player can do is equivalent to one the other player can perform.
 Still we need to distinguish between the two players in the library code so we use a naming convention that ...
@@ -187,7 +208,7 @@ The code thus has the `row` and `col` prefixes everywhere e.g. `row_gains` vs `c
 
 When (If) support for imperfect information is added the row player will be the 'owner' of the search. Search will have access to the row player's private information but not necessarily the column player's.
 
-## 'Keyword' Types
+### 'Keyword' Types
 The following declarations should be avoided by the user. They are reserved by the API.
 
 * TypeList, Q, Real, Prob, Obs, ObsHash, Action, Mutex, PRNG, Seed, VectorReal, VectorAction, VectorInt, MatrixReal, MatrixInt, MatrixValue
@@ -197,29 +218,75 @@ The following declarations should be avoided by the user. They are reserved by t
 
 # Tour of Features
 
-The directory structure of the `/src` directory mirrors the classification of search functions into 
+The structure of the `/src` directory mirrors the classification of search utilities into the five categories. 
 
 ### `/types`
-* ``
+* `array.hh`
+optional container with fixed capacity
+* `matrix.hh`
+matrix implementation
+* `mutex.hh`
+lightweight spinlock alternative to `std::mutex`
+* `random.hh`
+two pseudo random number generators using Mersenne Twister and XOR shift
+* `rational.hh`
+basic rational number
+* `strategy.hh`
+cache friendly type for storing policy information
+* `value.hh`
+data structure for storing payoffs for constant-sum and general games
+* `wrapper.hh`
+strong type wrappers for primitive types
 
 ### `/state`
-* `RandomTree`
-* `TraversedState`
-* `MoldState`
-* `Arena`
+* `random-tree.hh`
+highly extensible and well-defined random games
+* `traversed.hh`
+creates a solved state from an unsolved state using the `FullTraversal` algorithm
+* `test-states.hh`
+toy states for testing
+* `arena.hh`
+creates a abstract state that is essentially a symmetric matrix game; the 'actions' for this game are models, and when `apply_actions(row_model, col_model)` is called the models will play games vs each other. Leverages search functions to evaluate the strength of different models and algorithms
 
 ### `/model`
-* `MonteCarloModel`
-* `EmptyModel`
-* `LibtorchModel`
-* `SearchModel`
-* `SolvedModel`
+* `monte-carlo-model.hh`
+monte carlo model using rollouts
+* `libtorch-model.hh`
+wrapper for Libtorch models that adds synchronization mechanism for multi-threaded batched inference
+* `search-model.hh`
+an entire search process wrapped (using its own internal model) as a new model
+* `solved-model.hh`
+a model that merely provides Nash equilibrium strategies and payoffs as its inference
 
 ### `/algorithm`
-* TreeBandit
-* Solving
+* `alpha-beta.hh`
+implementation for AlphaBeta (see `/docs` for paper), modified and optimized for stochastic games
+* `full-traversal.hh`
+simple solver that traverses the entire game tree (up to depth `n`)
+* `exp3.hh`
+grandfather of all adversarial bandit algorithms
+* `rand.hh`
+trivial bandit algorithm for bench-marking
+* `matrix-ucb.hh`
+	implementation of the Matrix-UCB algorithm (see `/docs` for paper), modified slightly for tree context
+* `tree-bandit.hh`
+	vanilla MCTS
+* `multithreaded.hh`
+	two multi-threaded MCTS implementations, balancing cache use vs lock contention
+* `off-policy.hh`
+	batched inference MCTS
 
 ### `/tree`
+* `tree.hh`
+default matrix and chance node implementations where retrieving a node is done with linked list traversal
+* `tree-debug.hh`
+same as default but with more information, particularly 'backwards' node links
+* `tree-flat.hh`
+links to children are stored in a heap array and hash map, rather than a linked list
+* `tree-obs`
+same as default, but `Obs` data is not stored in the matrix nodes directly
 
+There is also a directory for miscellaneous utilities.
 
+### `/libpinyon`
 

@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.1.0)
 set (CMAKE_CXX_STANDARD 23)
 
-project(surskit VERSION 0.1.0)
+project(pinyon VERSION 0.1.0)
 
 option(ENABLE_TORCH "Enable Libtorch" OFF)
 option(ENABLE_CONCEPTS "Enable Concepts" ON)
 
-add_library(surskit INTERFACE)
-target_include_directories(surskit INTERFACE src)
+add_library(pinyon INTERFACE)
+target_include_directories(pinyon INTERFACE src)
 
 if(ENABLE_TORCH)
     set(CMAKE_PREFIX_PATH "/home/user/Desktop/libtorch/")
@@ -17,16 +17,16 @@ if(ENABLE_TORCH)
     # change this depending on installation path
     find_package(Torch REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
-    target_link_libraries(surskit INTERFACE "${TORCH_LIBRARIES}")
+    target_link_libraries(pinyon INTERFACE "${TORCH_LIBRARIES}")
 endif()
 
 if (ENABLE_CONCEPTS)
-    target_compile_definitions(surskit INTERFACE ENABLE_CONCEPTS)
+    target_compile_definitions(pinyon INTERFACE ENABLE_CONCEPTS)
 endif()
 
 add_subdirectory(extern/lrslib)
 
-target_link_libraries(surskit INTERFACE lrsnashlib)
+target_link_libraries(pinyon INTERFACE lrsnashlib)
 
 # Testing
 file(GLOB_RECURSE TEST_FILES tests/*.cc)
@@ -37,7 +37,7 @@ foreach(TEST_FILE ${TEST_FILES})
 
     add_executable(${TEST_TARGET_NAME} ${TEST_FILE})
 
-    target_link_libraries(${TEST_TARGET_NAME} surskit)
+    target_link_libraries(${TEST_TARGET_NAME} pinyon)
     if (ENABLE_TORCH)
         target_link_libraries(${TEST_NAME} "${TORCH_LIBRARIES}")
     endif()
@@ -54,7 +54,7 @@ file(GLOB BENCHMARK_FILES benchmark/*.cc)
 foreach(FILE ${BENCHMARK_FILES})
     get_filename_component(B_NAME ${FILE} NAME_WE)
     add_executable(${B_NAME} ${FILE})
-    target_link_libraries(${B_NAME} surskit)
+    target_link_libraries(${B_NAME} pinyon)
     set_target_properties(${B_NAME} PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/benchmark)
 endforeach()
