@@ -24,7 +24,7 @@ struct Rand : Types
     class BanditAlgorithm
     {
     public:
-        friend std::ostream &operator<<(std::ostream &os, const Rand &search)
+        friend std::ostream &operator<<(std::ostream &os, const BanditAlgorithm &search)
         {
             os << "Rand";
             return os;

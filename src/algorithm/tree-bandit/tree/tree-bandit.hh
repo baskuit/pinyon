@@ -18,10 +18,17 @@ struct TreeBandit : Types
     using ChanceNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>::ChanceNode;
     class Search : public Types::BanditAlgorithm
     {
-    public:
+    public:    
         using Types::BanditAlgorithm::BanditAlgorithm;
 
         Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
+
+        friend std::ostream &operator<<(std::ostream &os, const Search &search)
+        {
+            os << "TreeBandit - ";
+            os << static_cast<typename Types::BanditAlgorithm>(search);
+            return os;
+        }
 
         size_t run(
             size_t duration_ms,

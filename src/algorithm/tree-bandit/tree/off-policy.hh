@@ -56,6 +56,13 @@ struct OffPolicy : Types
     public:
         using Types::BanditAlgorithm::BanditAlgorithm;
 
+        friend std::ostream &operator<<(std::ostream &os, const Search &search)
+        {
+            os << "OffPolicy - ";
+            os << static_cast<typename Types::BanditAlgorithm>(search);
+            return os;
+        }
+
         void run(
             const size_t learner_iterations,
             const size_t actor_iterations_per,

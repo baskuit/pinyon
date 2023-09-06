@@ -9,18 +9,33 @@ Test that tree bandit algorithms are producing low exploitability when searching
 int main()
 {
 
-    // prng device{0};
+    prng device{0};
 
-    // Rational<> threshold = Rational<>{1, 2};
-    // RandomTreeGenerator<> generator{
-    //     prng{0},
-    //     {1, 2},
-    //     {2, 3},
-    //     {1, 2},
-    //     {Rational<>{1, 4}},
-    //     std::vector<size_t>(100, 0)};
+    Rational<> threshold = Rational<>{1, 2};
+    RandomTreeGenerator<> generator{
+        prng{0},
+        {1, 2},
+        {2, 3},
+        {1, 2},
+        {Rational<>{1, 4}},
+        std::vector<size_t>(100, 0)};
 
-    // const double expl_threshold = .25;
+    const double expl_threshold = .25;
+
+    auto bandit_type_pack =
+        TypePack<
+            Exp3<MonteCarloModel<MoldState<>>>>{};
+    auto node_template_pack =
+        NodeTemplatePack<
+            DefaultNodes,
+            LNodes,
+            DebugNodes,
+            FlatNodes>{};
+    auto search_type_tuple = search_type_generator<TreeBandit>(bandit_type_pack, node_template_pack);
+    auto mt_search_type_tuple = search_type_generator<TreeBanditThreaded, TreeBanditThreadPool>(bandit_type_pack, node_template_pack);
+    using T = std::remove_reference<decltype(std::get<0>(search_type_tuple))>::type;
+    auto s = T::Search{};
+    std::cout << s << std::endl;
 
     // using Types = MonteCarloModel<RandomTree<>>;
     // Types::Model model(device);
@@ -59,8 +74,7 @@ int main()
     //         }
     //     }
     //     std::cout << std::endl;
-
     // }
 
-    // return 0;
+    return 0;
 }

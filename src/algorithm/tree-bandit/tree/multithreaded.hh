@@ -41,6 +41,13 @@ struct TreeBanditThreaded : Types
         {
         }
 
+        friend std::ostream &operator<<(std::ostream &os, const Search &search)
+        {
+            os << "TreeBanditThreaded; threads: " << search.threads << " - ";
+            os << static_cast<typename Types::BanditAlgorithm>(search);
+            return os;
+        }
+
         const size_t threads = 1;
 
         size_t run(
@@ -244,7 +251,14 @@ struct TreeBanditThreadPool : Types
         {
         }
         // we want this class to be copyable, but atomics are not copyable
-        // so we define a new copy constr that doesnt attempt to copy it.
+        // so we define a new copy constr that just constructs a new atomic.
+
+        friend std::ostream &operator<<(std::ostream &os, const Search &search)
+        {
+            os << "TreeBanditThreadPool; threads: " << search.threads << ", pool size: " << search.pool_size << " - ";
+            os << static_cast<typename Types::BanditAlgorithm>(search);
+            return os;
+        }
 
         const size_t threads = 1;
         std::array<DoubleMutex, pool_size> mutex_pool{};
