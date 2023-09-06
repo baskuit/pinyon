@@ -353,7 +353,7 @@ namespace W
         }
 
         template <typename T>
-        auto unwrap()
+        auto unwrap() const
         {
             return dynamic_cast<Dynamic::StateT<TypeListNormalizer::MStateTypes<T>> *>(ptr.get())->data;
         }
@@ -426,7 +426,7 @@ namespace W
         }
 
         template <typename T>
-        auto unwrap()
+        auto unwrap() const
         {
             return dynamic_cast<Dynamic::ModelT<TypeListNormalizer::MModelTypes<T>> *>(ptr.get())->data;
         }
@@ -457,7 +457,7 @@ namespace W
         MatrixNode(T) : ptr{std::make_unique<Dynamic::MatrixNodeT<TypeListNormalizer::MSearchTypes<T>>>()} {}
 
         template <typename T>
-        auto unwrap()
+        auto unwrap() const
         {
             return dynamic_cast<Dynamic::MatrixNodeT<TypeListNormalizer::MSearchTypes<T>> *>(ptr.get())->data;
         }
@@ -482,7 +482,7 @@ namespace W
         }
 
         template <typename T>
-        auto unwrap()
+        auto unwrap() const
         {
             return dynamic_cast<Dynamic::SearchT<TypeListNormalizer::MSearchTypes<T>> *>(ptr.get())->data;
         }
