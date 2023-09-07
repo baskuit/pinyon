@@ -17,9 +17,13 @@ void test_matrix_node_count_single_thread(
     typename Types::Model model{0};
     typename Types::MatrixNode root{};
     typename Types::Search search{};
-    const size_t iterations = 1 << 10;
+    const size_t iterations = 1 << 15;
 
-    search.run(iterations, device, state, model, root);
+    if (state.device.get_seed() == 11119021634053362427) {
+        std::cout << '!' << std::endl;
+    }
+
+    search.run_for_iterations(iterations, device, state, model, root);
     typename Types::VectorReal row_strategy, col_strategy;
     typename Types::MatrixValue payoff_matrix;
     solved_state.get_matrix(payoff_matrix);
@@ -38,9 +42,9 @@ void test_matrix_node_count_multi_thread(
     typename Types::MatrixNode root{};
     const size_t threads = 2;
     typename Types::Search search{typename Types::BanditAlgorithm{.1}, threads};
-    const size_t iterations = 1 << 10;
+    const size_t iterations = 1 << 15;
 
-    search.run(iterations, device, state, model, root);
+    search.run_for_iterations(iterations, device, state, model, root);
     typename Types::VectorReal row_strategy, col_strategy;
     typename Types::MatrixValue payoff_matrix;
     solved_state.get_matrix(payoff_matrix);
