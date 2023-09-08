@@ -33,6 +33,7 @@ struct FlatNodes : Types
 
         MatrixNode(){};
         MatrixNode(Types::Obs obs) : obs(obs) {}
+        MatrixNode(const MatrixNode &) = delete;
         ~MatrixNode();
 
         inline void expand(const size_t &rows, const size_t &cols)
@@ -43,6 +44,7 @@ struct FlatNodes : Types
             const size_t n_children = rows * cols;
             edges = new ChanceNode *[n_children]{};
             std::fill_n(edges, n_children, nullptr); // TODO does this work lol
+            1+1;
         }
 
         inline bool is_terminal() const
@@ -128,6 +130,8 @@ struct FlatNodes : Types
         std::unordered_map<typename Types::Obs, MatrixNode *, typename Types::ObsHash> edges{};
         ChanceStats stats{};
 
+        ChanceNode(){}
+        ChanceNode(const ChanceNode &) = delete;
         ~ChanceNode();
 
         MatrixNode *access(Types::Obs &obs)
@@ -175,6 +179,7 @@ struct FlatNodes : Types
 template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
 FlatNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
 {
+
     delete[] edges;
 }
 

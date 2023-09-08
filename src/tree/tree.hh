@@ -30,6 +30,7 @@ struct DefaultNodes : Types
 
         MatrixNode(){};
         MatrixNode(Types::Obs obs) : obs(obs) {}
+        MatrixNode(const MatrixNode &) = delete;
         ~MatrixNode();
 
         inline void expand(const size_t &, const size_t &)
@@ -184,9 +185,10 @@ struct DefaultNodes : Types
         ChanceStats stats;
 
         ChanceNode() {}
-        ChanceNode(
-            int row_idx,
-            int col_idx) : row_idx(row_idx), col_idx(col_idx) {}
+        ChanceNode(int row_idx, int col_idx)
+            : row_idx(row_idx), col_idx(col_idx) {}
+        ChanceNode(const ChanceNode &) = delete;
+
         ~ChanceNode();
 
         MatrixNode *access(const Types::Obs &obs)

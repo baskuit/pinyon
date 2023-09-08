@@ -18,7 +18,7 @@ struct TreeBandit : Types
     using ChanceNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>::ChanceNode;
     class Search : public Types::BanditAlgorithm
     {
-    public:    
+    public:
         using Types::BanditAlgorithm::BanditAlgorithm;
 
         Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
@@ -108,7 +108,10 @@ struct TreeBandit : Types
                 typename Types::Outcome outcome;
                 this->select(device, matrix_node->stats, outcome);
 
-                // matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx); // TODO
+                state.apply_actions(
+                    state.row_actions[outcome.row_idx],
+                    state.col_actions[outcome.col_idx]);
+                state.get_actions();
 
                 ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
                 MatrixNode *matrix_node_next = chance_node->access(state.obs);

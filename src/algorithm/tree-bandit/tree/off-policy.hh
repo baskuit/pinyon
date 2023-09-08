@@ -56,6 +56,8 @@ struct OffPolicy : Types
     public:
         using Types::BanditAlgorithm::BanditAlgorithm;
 
+        Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
+
         friend std::ostream &operator<<(std::ostream &os, const Search &search)
         {
             os << "OffPolicy - ";
@@ -63,8 +65,19 @@ struct OffPolicy : Types
             return os;
         }
 
-        void run(
-            const size_t learner_iterations,
+        // void run(
+        //     const size_t learner_iterations,
+        //     const size_t actor_iterations_per,
+        //     Types::PRNG &device,
+        //     const std::vector<typename Types::State> &states,
+        //     Types::Model &model,
+        //     std::vector<MatrixNode *> &matrix_nodes)
+        // {
+
+        // }
+
+        size_t run(
+            const size_t duration_ms,
             const size_t actor_iterations_per,
             Types::PRNG &device,
             const std::vector<typename Types::State> &states,
@@ -84,6 +97,55 @@ struct OffPolicy : Types
             typename Types::ModelBatchOutput model_batch_output{}; // vector of inferences/single output - Tensor
             std::vector<Trajectory> trajectories{};
 
+            
+            auto start = std::chrono::high_resolution_clock::now();
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+
+            size_t iterations = 0;
+            for (; duration.count() < duration_ms; ++iterations)
+            {
+                trajectories.clear();
+                get_trajectories(trajectories, model_batch_input,
+                                 // set of paths to leaf nodes
+                                 // all nodes on path must be updated for each leaf
+                                 //
+                                 actor_iterations_per, device, states, model, matrix_nodes);
+                // populate trajectories vector and batch input
+
+                model.inference(model_batch_input, model_batch_output);
+
+                update_using_trajectories(trajectories, model_batch_output);
+                duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+                //
+            }
+            return iterations;
+        }
+
+        size_t run_for_iterations(
+            const size_t learner_iterations,
+            const size_t actor_iterations_per,
+            Types::PRNG &device,
+            const std::vector<typename Types::State> &states,
+            Types::Model &model,
+            std::vector<MatrixNode> &matrix_nodes)
+        {
+            // Perform batched inference on all trees
+            // grab `actor` many samples, inference, update
+            // do this `leaner` many times
+
+            for (auto &matrix_node : matrix_nodes)
+            {
+                // this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
+            } // currently don't call i_s anywhere even though its defined for bandits
+
+            typename Types::ModelBatchInput model_batch_input{};   // vector of states - Tensor
+            typename Types::ModelBatchOutput model_batch_output{}; // vector of inferences/single output - Tensor
+            std::vector<Trajectory> trajectories{};
+
+            auto start = std::chrono::high_resolution_clock::now();
             for (int learner_iteration = 0; learner_iteration < learner_iterations; ++learner_iteration)
             {
                 trajectories.clear();
@@ -99,6 +161,9 @@ struct OffPolicy : Types
                 update_using_trajectories(trajectories, model_batch_output);
                 //
             }
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            return duration.count();
         }
 
         void get_trajectories(

@@ -36,6 +36,7 @@ struct DebugNodes : Types
             ChanceNode *parent,
             MatrixNode *prev,
             Types::Obs obs) : parent(parent), prev(prev), obs(obs) {}
+        MatrixNode(const MatrixNode &) = delete;
         ~MatrixNode();
 
         inline void expand(const size_t &, const size_t &)
@@ -169,6 +170,7 @@ struct DebugNodes : Types
             ChanceNode *prev,
             int row_idx,
             int col_idx) : parent(parent), prev(prev), row_idx(row_idx), col_idx(col_idx) {}
+        ChanceNode(const ChanceNode &) = delete;
         ~ChanceNode();
 
         MatrixNode *access(const Types::Obs &obs)

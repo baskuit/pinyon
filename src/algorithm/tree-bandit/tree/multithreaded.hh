@@ -264,6 +264,8 @@ struct TreeBanditThreadPool : Types
         std::array<DoubleMutex, pool_size> mutex_pool{};
         std::atomic<unsigned int> current_index{0};
 
+        std::unordered_map<size_t, int> mutex_hash;
+
         size_t run(
             const size_t duration_ms,
             Types::PRNG &device,
@@ -418,6 +420,10 @@ struct TreeBanditThreadPool : Types
                         state.row_actions[outcome.row_idx],
                         state.col_actions[outcome.col_idx]);
                     state.get_actions();
+
+                    // size_t h = std::hash(matrix_node);
+
+                    // mutex_hash[h] = matrix_node->stats.mutex_index;
 
                     tree_mutex.lock();
                     ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
