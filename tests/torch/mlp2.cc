@@ -52,21 +52,22 @@ void off_policy_thread(
     typename Types::Model *batch_model_ptr,
     std::vector<typename Types::MatrixNode> *trees_ptr,
     std::vector<typename Types::State> *states_ptr,
-    const size_t per_tree)
+    const size_t per_tree,
+    const size_t total_steps,
+    const size_t iterations)
 {
     typename Types::Model &batch_model = *batch_model_ptr;
     std::vector<typename Types::MatrixNode> &trees = *trees_ptr;
     std::vector<typename Types::State> &states = *states_ptr;
 
-    const size_t total_number_of_steps = 1 << 1;
 
     typename Types::Search off_policy_search;
 
     typename Types::PRNG device{};
 
-    for (size_t step = 0; step < total_number_of_steps; ++step)
+    for (size_t step = 0; step < total_steps; ++step)
     {
-        off_policy_search.run_for_iterations(1000, per_tree, device, states, batch_model, trees);
+        off_policy_search.run_for_iterations(iterations, per_tree, device, states, batch_model, trees);
 
         const size_t pairs = trees.size();
         for (size_t i = 0; i < pairs; ++i)
@@ -103,8 +104,6 @@ void off_policy_run(
 
     for (size_t i = 0; i < threads; ++i)
     {
-        // trees_for_thread[i].resize(n_trees);
-        // states_for_thread[i].resize(n_trees, gen(prng{}.get_seed()));
         for (size_t j = 0; j < n_trees; ++j)
         {
             states_for_thread[i].emplace_back(gen(prng{}.get_seed()));
@@ -115,6 +114,12 @@ void off_policy_run(
     std::thread thread_pool[threads];
     auto start = std::chrono::high_resolution_clock::now();
 
+    const size_t total_steps = 1 << 2;
+    const size_t iterations = 1 << 10;
+
+    double total_samples = threads * total_steps * per_tree * n_trees * iterations;
+    std::cout << total_samples << std::endl;
+
     for (size_t i = 0; i < threads; ++i)
     {
         thread_pool[i] = std::thread(
@@ -122,7 +127,8 @@ void off_policy_run(
             &batch_model,
             std::next(trees_for_thread, i),
             std::next(states_for_thread, i),
-            per_tree);
+            per_tree,
+            total_steps, iterations);
     }
     for (auto &t : thread_pool)
     {
@@ -130,7 +136,10 @@ void off_policy_run(
     }
 
     auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);\
+
+    std::cout << "inference speed: " << total_samples / duration.count() * 1000 << std::endl; 
+
 }
 
 int main()
@@ -138,13 +147,13 @@ int main()
 
     using Types = OffPolicy<Exp3<LibtorchBatchModel<RandomTreeLibtorchModel>>>;
 
-    const size_t batch_size = 16;
-    const size_t subbatches = 2;
+    const size_t batch_size = 512;
+    const size_t subbatches = 8;
     const size_t threads = subbatches;
-    const size_t n_trees = 4;
-    const size_t per_tree = 2;
+    const size_t n_trees = 16;
+    const size_t per_tree = 4;
 
-    Types::Model batch_model{RandomTreeLibtorchModel::Model{}, batch_size, subbatches};
+    Types::Model batch_model{batch_size, subbatches};
     batch_model.to(torch::kCUDA);
 
     off_policy_run<Types>(

@@ -17,7 +17,7 @@ therefore to expand we need to do some part of it when we have access to the sta
 and the other part later when we have access to the inference
 
 but we cannot call the default select method on a state-expanded node, in general.
-and it should only be the uniform policy anyway, so we need a way to distinguish 
+and it should only be the uniform policy anyway, so we need a way to distinguish
 selection nodes from passable nodes. is_expanded is taken to mean passable, and properly_expanded
 in the stats is used for selectable. 2 bools for 3 options
 
@@ -89,7 +89,7 @@ struct OffPolicy : Types
             // grab `actor` many samples, inference, update
             // do this `leaner` many times
 
-            for (auto matrix_node : matrix_nodes)
+            for (auto &matrix_node : matrix_nodes)
             {
                 // this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
             } // currently don't call i_s anywhere even though its defined for bandits
@@ -98,11 +98,9 @@ struct OffPolicy : Types
             typename Types::ModelBatchOutput model_batch_output{}; // vector of inferences/single output - Tensor
             std::vector<Trajectory> trajectories{};
 
-            
             auto start = std::chrono::high_resolution_clock::now();
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
 
             size_t iterations = 0;
             for (; duration.count() < duration_ms; ++iterations)
@@ -142,13 +140,15 @@ struct OffPolicy : Types
                 // this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
             } // currently don't call i_s anywhere even though its defined for bandits
 
-            typename Types::ModelBatchInput model_batch_input{};   // vector of states - Tensor
-            typename Types::ModelBatchOutput model_batch_output{}; // vector of inferences/single output - Tensor
             std::vector<Trajectory> trajectories{};
 
             auto start = std::chrono::high_resolution_clock::now();
             for (int learner_iteration = 0; learner_iteration < learner_iterations; ++learner_iteration)
             {
+                // TODO All scrwed up. Need a way to convert tensor to model_output
+                // probably needs helper class.... for logit masks n such
+                typename Types::ModelBatchInput model_batch_input = model.get_random_input(0); // vector of states - Tensor
+
                 trajectories.clear();
                 get_trajectories(trajectories, model_batch_input,
                                  // set of paths to leaf nodes
@@ -156,6 +156,7 @@ struct OffPolicy : Types
                                  //
                                  actor_iterations_per, device, states, model, matrix_nodes);
                 // populate trajectories vector and batch input
+                typename Types::ModelBatchOutput model_batch_output = model.get_random_output(matrix_nodes.size() * actor_iterations_per); // vector of inferences/single output - Tensor
 
                 model.inference(model_batch_input, model_batch_output);
 
@@ -222,7 +223,8 @@ struct OffPolicy : Types
                 }
                 else
                 {
-                    typename Types::ModelOutput model_output = model_batch_output[index++];
+                    typename Types::ModelOutput model_output{model_batch_output[index++]};
+                    // TODO uses custom constr for ModelOutput....
                     leaf_value = model_output.value;
                     if (!leaf_stats.properly_expanded)
                     {
@@ -239,7 +241,7 @@ struct OffPolicy : Types
                         frame_index++;
                         continue;
                     }
-                    
+
                     frame.outcome.value = leaf_value;
                     this->update_matrix_stats_offpolicy(
                         frame.matrix_node->stats,

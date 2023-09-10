@@ -71,9 +71,9 @@ int main()
     using Types = MoldStateTensorTypes;
 
     const size_t batch_size = 1 << 8;
-    const size_t subbatches = 2;
-    const size_t threads = 2;
-    const size_t num_batches = 1 << 10;
+    const size_t subbatches = 4;
+    const size_t threads = 4;
+    const size_t num_batches = 1 << 12;
 
     Types::Model model{};
 
