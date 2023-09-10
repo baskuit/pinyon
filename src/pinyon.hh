@@ -6,8 +6,8 @@
 #include <libpinyon/math.hh>
 #include <libpinyon/lrslib.hh>
 #include <libpinyon/generator.hh>
-#include <libpinyon/template-prod.hh>
-#include <libpinyon/algorithm-generator.hh>
+// #include <libpinyon/template-prod.hh>
+// #include <libpinyon/algorithm-generator.hh>
 #include <libpinyon/search-type.hh>
 #include <libpinyon/dynamic-wrappers.hh>
 
