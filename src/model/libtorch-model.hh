@@ -55,8 +55,8 @@ struct LibtorchBatchModel : Types
         std::condition_variable output_cv;
 
         void inference(
-            ModelBatchInput &thread_input_tensor,
-            ModelBatchOutput &thread_output_tensor)
+            ModelBatchInput &model_batch_input,
+            ModelBatchOutput &model_batch_output)
         {
             // Thread owns the Slice [minibatch_id * minibatch_size, (minibatch_id + 1) * minibatch_size]
             // Don't have to lock guard tensors this way
@@ -79,7 +79,7 @@ struct LibtorchBatchModel : Types
 
             // write input to secured minibatch slice
             const size_t minibatch_index = minibatch_size * minibatch_id;
-            batch_input_tensor.index_put_({torch::indexing::Slice(minibatch_index, minibatch_index + minibatch_size)}, thread_input_tensor);
+            batch_input_tensor.index_put_({torch::indexing::Slice(minibatch_index, minibatch_index + minibatch_size)}, model_batch_input);
 
             // prepare to wait for inference
             std::unique_lock<std::mutex> output_lock{output_mutex};
@@ -105,9 +105,11 @@ struct LibtorchBatchModel : Types
             input_mutex.unlock();
             input_cv.notify_one();
 
-            // gather minibatch output size_to thread_output_tensor
+            // gather minibatch output size_to model_batch_output
             // Do this after freeing input_tensor, so that new thread can 'enter' while the old thread 'leaves'
             // TODO lol
+            model_batch_output.index_put_({torch::indexing::Slice(minibatch_index, minibatch_index + minibatch_size)}, model_batch_output);
+
         }
     };
 

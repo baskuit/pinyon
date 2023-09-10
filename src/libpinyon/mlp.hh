@@ -7,11 +7,15 @@ class TwoLayerMLP : public torch::nn::Module
 private:
     torch::nn::Linear fc1 = nullptr;
     torch::nn::Linear fc2 = nullptr;
+    long int n_input;
+    long int batch_size;
 
 public:
-    TwoLayerMLP(const size_t n_input, const size_t n_hidden = 512)
+    TwoLayerMLP(const long int n_input, const long int n_hidden = 512)
         : fc1{register_module("fc1", torch::nn::Linear(n_input, n_hidden))},
-          fc2{register_module("fc2", torch::nn::Linear(n_hidden, 1))}
+          fc2{register_module("fc2", torch::nn::Linear(n_hidden, 1))},
+          n_input{n_input},
+          batch_size{batch_size}
     {
     }
 
@@ -21,6 +25,13 @@ public:
         x = fc2->forward(x);
         x = torch::sigmoid(x);
         return x;
+    }
+
+    torch::Tensor get_random_input (const long int batch_size) {
+        return torch::rand({batch_size, n_input});
+    }
+    torch::Tensor get_random_output (const long int batch_size) {
+        return torch::rand({batch_size, 1});
     }
 };
 
