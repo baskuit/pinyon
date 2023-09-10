@@ -30,10 +30,10 @@
 #include <model/search-model.hh>
 #include <model/solved-model.hh>
 
-#ifdef TORCH
+// #ifdef ENABLE_TORCH
 #include <libpinyon/mlp.hh>
 #include <model/libtorch-model.hh>
-#endif
+// #endif
 
 // Algorithm
 

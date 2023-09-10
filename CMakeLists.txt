@@ -3,13 +3,13 @@ set (CMAKE_CXX_STANDARD 23)
 
 project(pinyon VERSION 0.1.0)
 
-option(ENABLE_TORCH "Enable Libtorch" OFF)
+option(ENABLE_TORCH "Enable Libtorch" ON)
 option(ENABLE_CONCEPTS "Enable Concepts" ON)
 
 add_library(pinyon INTERFACE)
 target_include_directories(pinyon INTERFACE src)
 
-if(ENABLE_TORCH)
+# if(ENABLE_TORCH)
     set(CMAKE_PREFIX_PATH "/home/user/Desktop/libtorch/")
     set(CMAKE_CUDA_ARCHITECTURES 61)
     # change this depending on your CUDA version
@@ -18,7 +18,8 @@ if(ENABLE_TORCH)
     find_package(Torch REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
     target_link_libraries(pinyon INTERFACE "${TORCH_LIBRARIES}")
-endif()
+    target_compile_definitions(pinyon INTERFACE ENABLE_TORCH)
+# endif()
 
 if (ENABLE_CONCEPTS)
     target_compile_definitions(pinyon INTERFACE ENABLE_CONCEPTS)
