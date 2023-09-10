@@ -4,7 +4,7 @@ set (CMAKE_CXX_STANDARD 23)
 project(pinyon VERSION 0.1.0)
 
 option(ENABLE_TORCH "Enable Libtorch" ON)
-option(ENABLE_CONCEPTS "Enable Concepts" ON)
+option(ENABLE_CONCEPTS "Enable Concepts" OFF)
 
 add_library(pinyon INTERFACE)
 target_include_directories(pinyon INTERFACE src)
@@ -22,7 +22,7 @@ target_include_directories(pinyon INTERFACE src)
 # endif()
 
 if (ENABLE_CONCEPTS)
-    target_compile_definitions(pinyon INTERFACE ENABLE_CONCEPTS)
+    # target_compile_definitions(pinyon INTERFACE ENABLE_CONCEPTS)
 endif()
 
 add_subdirectory(extern/lrslib)
