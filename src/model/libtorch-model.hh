@@ -14,6 +14,14 @@ Thread-safe inference wrapper for Libtorch model.
 Needs `n_threads` Threads to call inference `n_calls_per_thread` times before model is invoked.
 */
 
+void printTensorSize(const torch::Tensor& tensor) {
+    auto size = tensor.sizes();
+    for (int64_t dim : size) {
+        std::cout << dim << " ";
+    }
+    std::cout << std::endl;
+}
+
 template <CONCEPT(IsPerfectInfoStateTypes, Types)>
 struct LibtorchBatchModel : Types
 {
@@ -42,8 +50,8 @@ struct LibtorchBatchModel : Types
         const long int minibatches;
         const long int minibatch_size;
 
-        torch::Tensor batch_input_tensor = torch::zeros({batch_size, 386});
-        torch::Tensor batch_output_tensor = torch::zeros({batch_size, 1});
+        torch::Tensor batch_input_tensor = this->get_random_input(batch_size);
+        torch::Tensor batch_output_tensor = this->get_random_output(batch_size);
 
         std::queue<size_t> seats{}; // init: {0, 1, 2, ..., minibatches - 1}
         size_t seated{0};           // number of threads that have finished copying minibatch input to batch input
@@ -108,8 +116,8 @@ struct LibtorchBatchModel : Types
             // gather minibatch output size_to model_batch_output
             // Do this after freeing input_tensor, so that new thread can 'enter' while the old thread 'leaves'
             // TODO lol
-            model_batch_output.index_put_({torch::indexing::Slice(minibatch_index, minibatch_index + minibatch_size)}, model_batch_output);
-
+            // model_batch_output.index_put_({torch::indexing::Slice(minibatch_index, minibatch_index + minibatch_size)}, batch_output_tensor.index({torch::indexing::Slice(0, 128)}));
+            model_batch_output.copy_(batch_output_tensor.index({torch::indexing::Slice(minibatch_index, minibatch_index + minibatch_size)}));
         }
     };
 

@@ -1,5 +1,7 @@
 #include <pinyon.hh>
 
+
+
 struct MoldStateTensorTypes : MoldState<>
 {
 
@@ -34,13 +36,14 @@ void thread_test(
 }
 
 template <typename Types>
-double stress_test(
+double wrap_model_speed_test(
     typename Types::Model &model,
     const long int batch_size,
     const long int subbatches,
     const size_t threads,
     const size_t num_batches)
 {
+    model.to(torch::kCUDA);
     using NewTypes = LibtorchBatchModel<Types>;
     typename NewTypes::Model batch_model{model, batch_size, subbatches};
     const size_t subbatch_size = batch_size / subbatches;
@@ -49,7 +52,7 @@ double stress_test(
 
     for (size_t i = 0; i < threads; ++i)
     {
-        thread_pool[i] = std::thread(thread_test<NewTypes>, &batch_model, subbatch_size, num_batches);
+        thread_pool[i] = std::thread(thread_test<NewTypes>, &batch_model, num_batches, subbatch_size);
     }
     for (auto &t : thread_pool)
     {
@@ -58,7 +61,8 @@ double stress_test(
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    return 0;
+
+    return (threads * subbatch_size * num_batches) / (double) duration.count() * 1000;
 }
 
 int main()
@@ -67,11 +71,13 @@ int main()
     using Types = MoldStateTensorTypes;
 
     const size_t batch_size = 1 << 8;
-    const size_t minibatches = 1 << 2;
+    const size_t subbatches = 2;
+    const size_t threads = 2;
+    const size_t num_batches = 1 << 10;
 
     Types::Model model{};
 
-    stress_test<Types>(model, 256, 8, 8, 1 << 3);
-
+    double inf_per_sec = wrap_model_speed_test<Types>(model, batch_size, subbatches, threads, num_batches);
+    std::cout << inf_per_sec << std::endl;
     return 0;
 }
