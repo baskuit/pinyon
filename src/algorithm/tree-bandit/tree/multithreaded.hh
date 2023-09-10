@@ -45,6 +45,7 @@ struct TreeBanditThreaded : Types
         {
             os << "TreeBanditThreaded; threads: " << search.threads << " - ";
             os << static_cast<typename Types::BanditAlgorithm>(search);
+            os << " - " << NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>{};
             return os;
         }
 
@@ -213,8 +214,7 @@ struct TreeBanditThreaded : Types
 template <
     CONCEPT(IsMultithreadedBanditTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
-    bool return_if_expand = true,
-    size_t pool_size = 64>
+    bool return_if_expand = true>
 struct TreeBanditThreadPool : Types
 {
     struct MatrixStats : Types::MatrixStats
@@ -230,6 +230,10 @@ struct TreeBanditThreadPool : Types
 
     struct DoubleMutex
     {
+        DoubleMutex() {}
+        DoubleMutex(const DoubleMutex &other)
+        {
+        }
         typename Types::Mutex first_mutex;
         typename Types::Mutex second_mutex;
     };
@@ -241,14 +245,18 @@ struct TreeBanditThreadPool : Types
 
         Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base}
         {
+            mutex_pool.resize(pool_size);
         }
 
-        Search(const Types::BanditAlgorithm &base, size_t threads) : Types::BanditAlgorithm{base}, threads{threads}
+        Search(const Types::BanditAlgorithm &base, const size_t threads, const size_t pool_size)
+            : Types::BanditAlgorithm{base}, threads{threads}, pool_size{pool_size}
         {
+            mutex_pool.resize(pool_size);
         }
 
-        Search(const Search &other) : Types::BanditAlgorithm{other}, threads{other.threads}
+        Search(const Search &other) : Types::BanditAlgorithm{other}, threads{other.threads}, pool_size{other.pool_size}
         {
+            mutex_pool.resize(pool_size);
         }
         // we want this class to be copyable, but atomics are not copyable
         // so we define a new copy constr that just constructs a new atomic.
@@ -257,14 +265,14 @@ struct TreeBanditThreadPool : Types
         {
             os << "TreeBanditThreadPool; threads: " << search.threads << ", pool size: " << search.pool_size << " - ";
             os << static_cast<typename Types::BanditAlgorithm>(search);
+            os << " - " << NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>{};
             return os;
         }
 
         const size_t threads = 1;
-        std::array<DoubleMutex, pool_size> mutex_pool{};
+        const size_t pool_size = 64;
+        std::vector<DoubleMutex> mutex_pool{};
         std::atomic<unsigned int> current_index{0};
-
-        std::unordered_map<size_t, int> mutex_hash;
 
         size_t run(
             const size_t duration_ms,

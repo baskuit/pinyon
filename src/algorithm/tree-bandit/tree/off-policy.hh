@@ -62,6 +62,7 @@ struct OffPolicy : Types
         {
             os << "OffPolicy - ";
             os << static_cast<typename Types::BanditAlgorithm>(search);
+            os << " - " << NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>{};
             return os;
         }
 

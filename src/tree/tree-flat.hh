@@ -9,6 +9,13 @@
 template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats>
 struct FlatNodes : Types
 {
+
+    friend std::ostream &operator<<(std::ostream &os, const FlatNodes &)
+    {
+        os << "FlatNodes";
+        return os;
+    }
+
     class MatrixNode;
 
     class ChanceNode;
@@ -38,13 +45,12 @@ struct FlatNodes : Types
 
         inline void expand(const size_t &rows, const size_t &cols)
         {
-            expanded = true;
             this->rows = rows;
             this->cols = cols;
             const size_t n_children = rows * cols;
-            edges = new ChanceNode *[n_children]{};
-            std::fill_n(edges, n_children, nullptr); // TODO does this work lol
-            1+1;
+            edges = new ChanceNode *[n_children] {};
+            std::fill_n(edges, n_children, nullptr);
+            expanded = true;
         }
 
         inline bool is_terminal() const
@@ -130,7 +136,7 @@ struct FlatNodes : Types
         std::unordered_map<typename Types::Obs, MatrixNode *, typename Types::ObsHash> edges{};
         ChanceStats stats{};
 
-        ChanceNode(){}
+        ChanceNode() {}
         ChanceNode(const ChanceNode &) = delete;
         ~ChanceNode();
 
@@ -148,7 +154,7 @@ struct FlatNodes : Types
         {
             return edges[obs];
         };
-    
+
         MatrixNode *access(Types::Obs &obs, Types::Mutex &mutex)
         {
             MatrixNode *&child = edges[obs];

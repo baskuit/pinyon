@@ -7,6 +7,13 @@
 template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats>
 struct DefaultNodes : Types
 {
+
+    friend std::ostream &operator<<(std::ostream &os, const DefaultNodes &)
+    {
+        os << "DefaultNodes";
+        return os;
+    }
+
     class MatrixNode;
 
     class ChanceNode;

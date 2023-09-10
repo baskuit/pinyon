@@ -25,6 +25,7 @@ void test_st(
     solved_state.get_matrix(payoff_matrix);
     search.get_empirical_strategies(root.stats, row_strategy, col_strategy);
     auto expl = math::exploitability(payoff_matrix, row_strategy, col_strategy);
+    std::cout << search << " : " << expl << std::endl;
     assert(expl < typename Types::Real{expl_threshold});
 }
 
@@ -36,7 +37,7 @@ void test_mt(
     typename Types::PRNG device{0};
     typename Types::Model model{0};
     typename Types::MatrixNode root{};
-    const size_t threads = 2;
+    const size_t threads = 8;
     typename Types::Search search{typename Types::BanditAlgorithm{.1}, threads};
     const size_t iterations = 1 << 15;
 
@@ -46,6 +47,7 @@ void test_mt(
     solved_state.get_matrix(payoff_matrix);
     search.get_empirical_strategies(root.stats, row_strategy, col_strategy);
     auto expl = math::exploitability(payoff_matrix, row_strategy, col_strategy);
+    std::cout << search << " : " << expl << std::endl;
     assert(expl < typename Types::Real{expl_threshold});
 }
 
@@ -68,6 +70,7 @@ void test_op(
     solved_state.get_matrix(payoff_matrix);
     search.get_empirical_strategies(roots[0].stats, row_strategy, col_strategy);
     auto expl = math::exploitability(payoff_matrix, row_strategy, col_strategy);
+    std::cout << search << " : " << expl << std::endl;
     assert(expl < typename Types::Real{expl_threshold});
 }
 
@@ -120,17 +123,19 @@ int main()
     BaseTypes::Model model(device);
 
     RandomTreeGenerator<> generator{
-        prng{0},
-        {1, 2},
+        prng{},
+        {1, 2, 3},
         {2, 3},
         {1, 2},
-        {Rational<>{1, 2}},
-        std::vector<size_t>(10, 0)};
+        {Rational<>{0, 1}, Rational<>{1, 2}},
+        std::vector<size_t>(3, 0)};
 
     for (const auto &wrapped_state : generator)
     {
         const BaseTypes::State state = (wrapped_state.unwrap<BaseTypes>());
+        std::cout << "state seed: " << state.device.get_seed() << std::endl;
         auto solved_state = TraversedState<BaseTypes>::State{state, model};
+        std::cout << "state size: " << solved_state.node->stats.matrix_node_count << std::endl;
         test_expl_st(st_search_type_tuple, state, solved_state);
         test_expl_mt(mt_search_type_tuple, state, solved_state);
         test_expl_op(op_search_type_tuple, state, solved_state);

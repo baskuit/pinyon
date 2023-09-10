@@ -12,6 +12,12 @@ struct LNodes : Types
     which is basically a linked list that the chance node parent owns
     */
 
+    friend std::ostream &operator<<(std::ostream &os, const LNodes &)
+    {
+        os << "LNodes";
+        return os;
+    }
+
     class MatrixNode;
 
     class ChanceNode;
