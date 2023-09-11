@@ -52,6 +52,29 @@ void test_mt(
 }
 
 template <typename Types, typename SolvedState>
+void test_mtp(
+    const typename Types::State &state,
+    const SolvedState &solved_state)
+{
+    typename Types::PRNG device{0};
+    typename Types::Model model{0};
+    typename Types::MatrixNode root{};
+    const size_t threads = 8;
+    const size_t pool_size = 64;
+    typename Types::Search search{typename Types::BanditAlgorithm{.1}, threads, pool_size};
+    const size_t iterations = 1 << 15;
+
+    search.run_for_iterations(iterations, device, state, model, root);
+    typename Types::VectorReal row_strategy, col_strategy;
+    typename Types::MatrixValue payoff_matrix;
+    solved_state.get_matrix(payoff_matrix);
+    search.get_empirical_strategies(root.stats, row_strategy, col_strategy);
+    auto expl = math::exploitability(payoff_matrix, row_strategy, col_strategy);
+    std::cout << search << " : " << expl << std::endl;
+    assert(expl < typename Types::Real{expl_threshold});
+}
+
+template <typename Types, typename SolvedState>
 void test_op(
     const typename Types::State &state,
     const SolvedState &solved_state)
@@ -93,6 +116,15 @@ void test_expl_mt(
 }
 
 template <typename... SearchTypes, typename State, typename SolvedState>
+void test_expl_mtp(
+    const std::tuple<SearchTypes...> search_type_tuple,
+    const State &state,
+    const SolvedState &solved_state)
+{
+    (test_mtp<SearchTypes>(state, solved_state), ...);
+}
+
+template <typename... SearchTypes, typename State, typename SolvedState>
 void test_expl_op(
     const std::tuple<SearchTypes...> search_type_tuple,
     const State &state,
@@ -115,9 +147,9 @@ int main()
             DebugNodes,
             FlatNodes>{};
     auto st_search_type_tuple = search_type_generator<TreeBandit>(bandit_type_pack, node_template_pack);
-    auto mt_search_type_tuple = search_type_generator<TreeBanditThreaded, TreeBanditThreadPool>(bandit_type_pack, node_template_pack);
+    auto mt_search_type_tuple = search_type_generator<TreeBanditThreaded>(bandit_type_pack, node_template_pack);
+    auto mtp_search_type_tuple = search_type_generator<TreeBanditThreadPool>(bandit_type_pack, node_template_pack);
     auto op_search_type_tuple = search_type_generator<OffPolicy>(bandit_type_pack, node_template_pack);
-
 
     prng device{0};
     BaseTypes::Model model(device);
@@ -138,6 +170,7 @@ int main()
         std::cout << "state size: " << solved_state.node->stats.matrix_node_count << std::endl;
         test_expl_st(st_search_type_tuple, state, solved_state);
         test_expl_mt(mt_search_type_tuple, state, solved_state);
+        test_expl_mtp(mtp_search_type_tuple, state, solved_state);
         test_expl_op(op_search_type_tuple, state, solved_state);
     }
 
