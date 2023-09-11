@@ -198,13 +198,14 @@ This leads to concepts like `IsPerfectInfoStateTypes`, `IsValueModelTypes`. We f
 template <>
 ```
 
-# Other Idioms
+# Other Conventions
+These conventions are 
 
 ### Row and Column
 
 The assumption of perfect information  means that neither players perspective is special. Any lookahead or search procedure either player can do is equivalent to one the other player can perform.
-Still we need to distinguish between the two players in the library code so we use a naming convention that ...
-The code thus has the `row` and `col` prefixes everywhere e.g. `row_gains` vs `col_gains`, `row_payoff` vs `col_payoff`, etc.
+Still we need to distinguish between the two players in the library code so we use a naming convention that reflects the traditional matrix game.
+The code thus has `row` and `col` prefixes everywhere e.g. `row_gains` vs `col_gains`, `row_payoff` vs `col_payoff`, etc.
 
 When (If) support for imperfect information is added the row player will be the 'owner' of the search. Search will have access to the row player's private information but not necessarily the column player's.
 
@@ -219,36 +220,35 @@ The following declarations should be avoided by the user. They are reserved by t
 
 ### Copying and Shared Resources
 
-Objects in Pinyon typically do not have any shared data. Typically they hardly have any data at all so they can be copied `T& T(const T&)` freely and efficiently.
+Objects in Pinyon typically do not have any shared data. Typically they hardly have any data so they can be copied `T& T(const T&)` efficiently and safely.
 
 The exceptions to the no-shared-data rule are `TraversedState<>`, Libtorch models, and the Libtorch batch inference wrapper.
 
 * `TraversedState<>::State`
 An object of this class is constructed by passing a base `State` type object. That state is taken as a root and all subsequent states are explored and the game is solved. All this information is stored as a `MatrixNode` rooted tree. A `std::shared_ptr` to the root is stored as a member.
-When this state is copied it is not resolved, the copy just refers to the others' tree
+When this state is copied it is not resolved, the copy will instead set its shared pointer to the same tree.
 
 * Libtorch models
 The type `torch::nn::Module` is essentially a shared pointer, and so are:
 
 * Wrapped models for batch inference
-A model that has been wrapped for state inference is derived from the unwrapped model, so it contains the usual shared-pointer information, PoD, and a new `std::shared_ptr` to a locking mechanism.
+A model that has been wrapped for state inference is derived from `torch::nn::Module`. It inherits the usual shared-pointer data, and a new `std::shared_ptr` to a locking mechanism.
 
-All three exceptions are common in the sense that shared pointers are used to restore trivial 'copy constructability' that all other Pinyon objects share.
-Some examples of this:
-All models can be passed by value which simplifies handling of the model with multithreading.  Separate threads that call on a wrapped libtorch model don't have to worry about dangling if the code uses reference/pointers. If the locking mechanisms were not shared, then copying the model would construct new locks too, which would obviously defeat the purpose of the wrapper.
+All three exceptions are related as shared pointers are used to restore the 'trivial copyability' property that most other Pinyon objects share.
 
-The code for all search functions uses the copy constructor to create a new state for lookahead. This means a `TravesedState<>::State` can be used in any search that a base `State` could be used for and it would have similar performance. The state is solved once before the `run`, `run_for_iterations` call and so there is only the minor overhead of some tree traversal and reference counting during the hot part of the search functions.
+> All models can be passed by value which simplifies handling of the model with multithreading.  Separate threads that call on a wrapped libtorch model don't have to worry about dangling if the code uses reference/pointers. 
+
+> If the locking mechanisms were not shared, then copying the model would construct new locks too, which would obviously defeat the purpose of the wrapper.
+
+> The code for all search functions uses the copy constructor to create a new state for lookahead. This means a `TravesedState<>::State` can be used in any search that a base `State` could be used for and it would have similar performance. The state is solved once before `run`, `run_for_iterations` and so there is only the minor overhead of some pointer operation and reference counting during the hot part of the search functions.
 
 ### `W::Types` vs `libpinyon` utilities
 
 Something as simple as comparing the output of two different kinds of models requires the definition of two type lists
-
-If you have a use for Pinyon then it is highly likely that your use-case requires the use of multiple type lists e.g. 
-`TypesA`, `TypesB`.
 Even comparing the output of two different bandit algorithms will require a separate type list for each algorithm, e.g. 
 `TreeBandit<BanditA<...>>`, `TreeBandit<BanditB<...>>`
 
-Sometimes it is convenient to just define all the required type lists at the top of our script and use them appropriately. More intensive programs require a more general way to handle a multitude of type lists.
+Sometimes it is possible to just define all the required type lists at the top of our script and name them appropriately. More intensive programs require a general way to handle a multitude of type lists.
 
 There are two utilities in Pinyon that exemplify both the approaches that the library uses to handle this problem
 
@@ -263,28 +263,6 @@ For the former we use `W::Types`, which is a dynamic solution
 For the latter we use template metaprogramming techniques and some helper functions
 
 #### `W::Types`
-
-
-As you may have inferred by now, the strength of Pinyon lies in its ability to create many different type lists and run generic code in the 'universe' that each type lists defines.
-
-```cpp
-template <typename Types>
-double solve_and_get_expl (
-	typename Types::State &state,
-	typename Types::Model &model,
-	typename Types::Search &search) {
-	
-	// perform 1000 iteration search and return the exploitability of the search's empirical strategies
-	typename Types::MatrixNode node; // block scope nodes will clean-up their tree
-	typename Types::PRNG device{};
-	search.run_for_iterations(1000, device, state, model, node);
-	// ...
-	return expl;
-}
-```
-
-The function we defined is a simple utility but it could just as well be an expensive model-comparison or RL training loop.
-Compiling this code for different 
 
 
 
