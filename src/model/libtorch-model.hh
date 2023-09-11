@@ -97,7 +97,7 @@ struct LibtorchBatchModel : Types
             model_batch_output.copy_(output_tensor.index({torch::indexing::Slice(minibatch_index, minibatch_index + minibatch_size)}));
         }
     };
-    
+
     class Model : public Types::Model
     {
     public:
@@ -108,8 +108,8 @@ struct LibtorchBatchModel : Types
         Types::Model{args...}
         {
             synch_mechanism = std::make_shared<ModelLock>(batch_size, subbatches);
-            synch_mechanism.get()->input_tensor = this->get_random_input(batch_size);
-            synch_mechanism.get()->output_tensor = this->get_random_output(batch_size);
+            synch_mechanism->input_tensor = this->get_random_input(batch_size);
+            synch_mechanism->output_tensor = this->get_random_output(batch_size);
         }
 
         void inference(
