@@ -4,10 +4,10 @@ struct RandomTreeLibtorchModel : RandomTree<>
 {
     struct ModelOutput
     {
-        typename RandomTree<>::Value value;
-        typename RandomTree<>::VectorReal row_policy, col_policy;
+        RandomTree<>::Value value;
+        RandomTree<>::VectorReal row_policy, col_policy;
         ModelOutput() {}
-        ModelOutput(const torch::Tensor &tensor)
+        ModelOutput(const torch::Tensor &, const int)
         {
             value = make_draw<RandomTree<>>();
             row_policy.resize(3);

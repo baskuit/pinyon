@@ -131,14 +131,10 @@ struct OffPolicy : Types
             Types::Model &model,
             std::vector<MatrixNode> &matrix_nodes)
         {
-            // Perform batched inference on all trees
-            // grab `actor` many samples, inference, update
-            // do this `leaner` many times
-
-            for (auto &matrix_node : matrix_nodes)
-            {
-                // this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
-            } // currently don't call i_s anywhere even though its defined for bandits
+            // for (auto &matrix_node : matrix_nodes)
+            // {
+            //     // this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
+            // } // currently don't call i_s anywhere even though its defined for bandits
 
             std::vector<Trajectory> trajectories{};
 
@@ -151,12 +147,9 @@ struct OffPolicy : Types
 
                 trajectories.clear();
                 get_trajectories(trajectories, model_batch_input,
-                                 // set of paths to leaf nodes
-                                 // all nodes on path must be updated for each leaf
-                                 //
                                  actor_iterations_per, device, states, model, matrix_nodes);
                 // populate trajectories vector and batch input
-                typename Types::ModelBatchOutput model_batch_output = model.get_random_output(matrix_nodes.size() * actor_iterations_per); // vector of inferences/single output - Tensor
+                typename Types::ModelBatchOutput model_batch_output = model.get_random_output(0); // vector of inferences/single output - Tensor
 
                 model.inference(model_batch_input, model_batch_output);
 
@@ -223,7 +216,7 @@ struct OffPolicy : Types
                 }
                 else
                 {
-                    typename Types::ModelOutput model_output{model_batch_output[index++]};
+                    typename Types::ModelOutput model_output{model_batch_output, index++};
                     // TODO uses custom constr for ModelOutput....
                     leaf_value = model_output.value;
                     if (!leaf_stats.properly_expanded)
@@ -240,7 +233,7 @@ struct OffPolicy : Types
                     {
                         frame_index++;
                         continue;
-                    }
+                    } // skip last frame in trajectory
 
                     frame.outcome.value = leaf_value;
                     this->update_matrix_stats_offpolicy(

@@ -43,7 +43,6 @@ double wrap_model_speed_test(
     const size_t threads,
     const size_t num_batches)
 {
-    model.to(torch::kCUDA);
     using NewTypes = LibtorchBatchModel<Types>;
     typename NewTypes::Model batch_model{model, batch_size, subbatches};
     const size_t subbatch_size = batch_size / subbatches;
@@ -76,6 +75,7 @@ int main()
     const size_t num_batches = 1 << 12;
 
     Types::Model model{};
+    model.to(torch::kCUDA);
 
     double inf_per_sec = wrap_model_speed_test<Types>(model, batch_size, subbatches, threads, num_batches);
     std::cout << inf_per_sec << std::endl;

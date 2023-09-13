@@ -19,7 +19,7 @@ int main()
         SessionTypes0::Search,
         SessionTypes1::Search,
         SessionTypes2::Search>
-        search_tuple{{}, {{}, 2}, {{}, 1}};
+        search_tuple{{}, {{}, 2}, {{}, 2, 64}};
 
     auto type_search_zipped = zip(search_type_tuple, search_tuple);
 

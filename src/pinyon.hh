@@ -6,11 +6,9 @@
 #include <libpinyon/math.hh>
 #include <libpinyon/lrslib.hh>
 #include <libpinyon/generator.hh>
-// #include <libpinyon/template-prod.hh>
-// #include <libpinyon/algorithm-generator.hh>
 #include <libpinyon/search-type.hh>
 #include <libpinyon/dynamic-wrappers.hh>
-// #include <libpinyon/libtorch-profiler.hh>
+
 // Types
 
 #include <types/types.hh>
@@ -30,10 +28,10 @@
 #include <model/search-model.hh>
 #include <model/solved-model.hh>
 
-// #ifdef ENABLE_TORCH
-#include <libpinyon/mlp.hh>
-#include <model/libtorch-model.hh>
-// #endif
+#ifdef ENABLE_TORCH
+    #include <libpinyon/mlp.hh>
+    #include <model/libtorch-model.hh>
+#endif
 
 // Algorithm
 

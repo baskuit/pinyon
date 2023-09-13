@@ -11,7 +11,13 @@ struct MonteCarloModel : Types
     {
         typename Types::Value value;
         typename Types::VectorReal row_policy, col_policy;
+        ModelOutput() {}
+        ModelOutput(const std::vector<ModelOutput> &v, const int index)
+        {
+            *this = v[index];
+        }
     };
+
     using ModelBatchInput = std::vector<typename Types::State>;
     using ModelBatchOutput = std::vector<ModelOutput>;
 
@@ -21,7 +27,7 @@ struct MonteCarloModel : Types
         typename Types::PRNG device;
 
         Model(const Types::PRNG &device) : device{device} {}
-        
+
         void inference(
             Types::State &&state,
             ModelOutput &output)
@@ -55,6 +61,16 @@ struct MonteCarloModel : Types
             ModelBatchInput &input) const
         {
             input.push_back(state);
+        }
+
+        ModelBatchInput get_random_input(const long int batch_size)
+        {
+            return {};
+        }
+
+        ModelBatchOutput get_random_output(const long int batch_size)
+        {
+            return {};
         }
 
     protected:

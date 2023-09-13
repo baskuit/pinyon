@@ -153,7 +153,7 @@ namespace W
             typename T::State data;
 
             template <typename... Args>
-            StateT(Args... args) : data{args...} {}
+            StateT(const Args &...args) : data{args...} {}
 
             std::unique_ptr<Dynamic::State> clone() const
             {
@@ -201,7 +201,7 @@ namespace W
             typename T::Model data;
 
             template <typename... Args>
-            ModelT(Args... args) : data{args...} {}
+            ModelT(const Args &...args) : data{args...} {}
 
             std::unique_ptr<Dynamic::Model> clone() const
             {
@@ -275,7 +275,7 @@ namespace W
             typename T::Search data;
 
             template <typename... Args>
-            SearchT(Args... args) : data{args...} {}
+            SearchT(const Args &...args) : data{args...} {}
 
             std::unique_ptr<Dynamic::Search> clone() const
             {

@@ -24,20 +24,20 @@ struct LibtorchBatchModel : Types
     {
         ModelLock(
             const long int batch_size,
-            const long int minibatches)
+            const long int subbatches)
             : batch_size{batch_size},
-              minibatches{minibatches},
-              minibatch_size{batch_size / minibatches}
+              subbatches{subbatches},
+              subbatch_size{batch_size / subbatches}
         {
-            for (size_t sb = 0; sb < minibatches; ++sb)
+            for (size_t sb = 0; sb < subbatches; ++sb)
             {
                 seats.push(sb);
             }
         };
 
         const long int batch_size;
-        const long int minibatches;
-        const long int minibatch_size;
+        const long int subbatches;
+        const long int subbatch_size;
 
         std::queue<size_t> seats{};
         size_t seated = 0;
@@ -56,27 +56,27 @@ struct LibtorchBatchModel : Types
             ModelBatchInput &model_batch_input,
             ModelBatchOutput &model_batch_output)
         {
-            size_t minibatch_id;
+            size_t subbatch_id;
             std::unique_lock input_lock{input_mutex};
 
             if (seats.size() == 0)
             {
                 input_cv.wait(input_lock);
-                minibatch_id = seats.front();
+                subbatch_id = seats.front();
                 seats.pop();
             }
             else
             {
-                minibatch_id = seats.front();
+                subbatch_id = seats.front();
                 seats.pop();
                 input_lock.unlock();
             }
 
-            const size_t minibatch_index = minibatch_size * minibatch_id;
-            input_tensor.index_put_({torch::indexing::Slice(minibatch_index, minibatch_index + minibatch_size)}, model_batch_input);
+            const size_t subbatch_index = subbatch_size * subbatch_id;
+            input_tensor.index_put_({torch::indexing::Slice(subbatch_index, subbatch_index + subbatch_size)}, model_batch_input);
 
             std::unique_lock<std::mutex> output_lock{output_mutex};
-            const bool is_last_thread_to_finish = (++seated == minibatches);
+            const bool is_last_thread_to_finish = (++seated == subbatches);
 
             if (is_last_thread_to_finish)
             {
@@ -90,11 +90,11 @@ struct LibtorchBatchModel : Types
             }
 
             input_mutex.lock();
-            seats.push(minibatch_id);
+            seats.push(subbatch_id);
             input_mutex.unlock();
             input_cv.notify_one();
 
-            model_batch_output.copy_(output_tensor.index({torch::indexing::Slice(minibatch_index, minibatch_index + minibatch_size)}));
+            model_batch_output.copy_(output_tensor.index({torch::indexing::Slice(subbatch_index, subbatch_index + subbatch_size)}));
         }
     };
 
@@ -104,8 +104,16 @@ struct LibtorchBatchModel : Types
         std::shared_ptr<ModelLock> synch_mechanism = nullptr;
 
         template <typename... Args>
-        Model(const Args &...args, const size_t batch_size, const size_t subbatches) :
+        Model(const Args &...args, const long int batch_size, const long int subbatches) :
         Types::Model{args...}
+        {
+            synch_mechanism = std::make_shared<ModelLock>(batch_size, subbatches);
+            synch_mechanism->input_tensor = this->get_random_input(batch_size);
+            synch_mechanism->output_tensor = this->get_random_output(batch_size);
+        }
+
+        Model(const Types::Model &model, const long int batch_size, const long int subbatches) :
+        Types::Model{model}
         {
             synch_mechanism = std::make_shared<ModelLock>(batch_size, subbatches);
             synch_mechanism->input_tensor = this->get_random_input(batch_size);
@@ -116,6 +124,7 @@ struct LibtorchBatchModel : Types
             ModelBatchInput &model_batch_input,
             ModelBatchOutput &model_batch_output)
         {
+            model_batch_output = this->get_random_output(synch_mechanism->subbatch_size); // TODO remove probaly
             synch_mechanism->inference(*this, model_batch_input, model_batch_output);
         }
     };

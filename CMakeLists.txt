@@ -7,7 +7,6 @@ option(ENABLE_TORCH_ "Enable Libtorch" ON)
 option(ENABLE_CONCEPTS_ "Enable Concepts" OFF)
 
 add_library(pinyon INTERFACE)
-target_include_directories(pinyon INTERFACE src)
 
 if(ENABLE_TORCH_)
     set(CMAKE_PREFIX_PATH "/home/user/Desktop/libtorch/")
@@ -20,6 +19,8 @@ if(ENABLE_TORCH_)
     target_link_libraries(pinyon INTERFACE "${TORCH_LIBRARIES}")
     target_compile_definitions(pinyon INTERFACE ENABLE_TORCH)
 endif()
+
+target_include_directories(pinyon INTERFACE src)
 
 if (ENABLE_CONCEPTS_)
     target_compile_definitions(pinyon INTERFACE ENABLE_CONCEPTS)
