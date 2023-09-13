@@ -82,7 +82,13 @@ struct TreeBandit : Types
             MatrixNode *matrix_node,
             Types::ModelOutput &model_output) const
         {
-            if (!matrix_node->is_terminal())
+            if (state.is_terminal())
+            {
+                matrix_node->set_terminal();
+                model_output.value = state.payoff;
+                return matrix_node;
+            }
+            else
             {
                 if (!matrix_node->is_expanded())
                 {
@@ -93,7 +99,6 @@ struct TreeBandit : Types
                     }
                     else
                     {
-                        state.get_actions();
                         const size_t rows = state.row_actions.size();
                         const size_t cols = state.col_actions.size();
                         model.inference(std::move(state), model_output);
@@ -105,36 +110,26 @@ struct TreeBandit : Types
                         return matrix_node;
                     }
                 }
-
-                typename Types::Outcome outcome;
-                this->select(device, matrix_node->stats, outcome);
-
-                state.apply_actions(
-                    state.row_actions[outcome.row_idx],
-                    state.col_actions[outcome.col_idx]);
-                state.get_actions();
-
-                ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode *matrix_node_next = chance_node->access(state.obs);
-
-                MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
-
-                outcome.value = model_output.value;
-                this->update_matrix_stats(matrix_node->stats, outcome);
-                this->update_chance_stats(chance_node->stats, outcome);
-                return matrix_node_leaf;
-            }
-            else
-            {
-                if constexpr (MatrixNode::STORES_VALUE)
-                {
-                    matrix_node->get_value(model_output.value);
-                }
                 else
                 {
-                    model_output.value = state.payoff;
+                    typename Types::Outcome outcome;
+                    this->select(device, matrix_node->stats, outcome);
+
+                    state.apply_actions(
+                        state.row_actions[outcome.row_idx],
+                        state.col_actions[outcome.col_idx]);
+                    state.get_actions();
+
+                    ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+                    MatrixNode *matrix_node_next = chance_node->access(state.obs);
+
+                    MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
+
+                    outcome.value = model_output.value;
+                    this->update_matrix_stats(matrix_node->stats, outcome);
+                    this->update_chance_stats(chance_node->stats, outcome);
+                    return matrix_node_leaf;
                 }
-                return matrix_node;
             }
         }
 

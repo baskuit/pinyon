@@ -207,7 +207,7 @@ struct TreeBanditThreaded : Types
                     return matrix_node_leaf;
                 }
             }
-        };
+        }
     };
 };
 
@@ -446,7 +446,7 @@ struct TreeBanditThreadPool : Types
                     return matrix_node_leaf;
                 }
             }
-        };
+        }
 
     private:
         void get_mutex_index(
