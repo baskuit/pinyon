@@ -53,25 +53,40 @@ make
 ```
 Note: make sure that the correct version of gcc/clang is being used. I recommend using VSCode to build this library. See the /src level readme [here](src/readme.md#LanguageandDevelopmentEnvironment)
 
-# Contributing
+# TODO ELI5
 
-The best way to help is to use the library to test your own ideas. The interface is designed so that creating a custom search algorithm
+The user writes a minimal interface wrapper for their game. This state, together with Monte-Carlo estimation will automatically have:
 
-That being said:
-* Basic CUDA Backend
-*  
+* Sound Monte-Carlo search
+MCTS is a very popular choice for search because it works well in many domains. However the usual MCTS that is taught in most tutorials **does not work** for simulataneous move games.
+* Multi-threading
+The alsdkfjasdf
+* Alpha-Beta solving
+This comes from paper. It has even been improved!
+* High performance
+There is no penalty to this generality. It is all compile time!
 
-# Release Checklist
+If the user has another model they've already written they can use that instead all the same. Pinyon helps you create a model:
 
-The project is due for its first beta release. Only a few things need to be hammered out.
+* Support for Libtorch Models
 
-* Finishing touches on documentation
-* Finish libtroch multithreaded wrapper
-* Write up some **tests**
-    * Tree structure - iterations = matrix node count; 
-    * Soundness or **all** bandit search for calcing expl
-    * ~~Soundness of solver~~
-    * ~~Find old comments about ctests passing and see what you had back then~~
+The user can tweak their code to maximize performance
 
-* Write up some **benchmarking utilities
-    * Possibly include a way to benchmark retroactively
+* Many different kinds of tree structure
+* Different kinds of primitives
+
+The user can write new algorithms
+
+* Creating a new bandit is dont by implementing a few functions
+* Totally interchangeable with old bandits
+* Automatically compatible with multithreaded search
+
+Default comes with stuff for testing
+* Powerful class of test games
+* GMP support for precise numbers
+* Fast NE solving
+
+Most importantly, the sum total of all these optinos are contained as a type list.
+This is the most important part of Pinyon. 
+
+
