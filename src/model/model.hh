@@ -22,9 +22,10 @@ concept IsValueModelTypes =
 template <typename Types>
 concept IsBatchModelTypes =
     requires(
-        const typename Types::State &const_state
+        const typename Types::State &const_state,
         typename Types::State &&moved_state,
         typename Types::Model &model,
+        typename Types::ModelOutput &model_output,
         typename Types::ModelBatchInput &model_batch_input,
         typename Types::ModelBatchOutput &model_batch_output,
         typename Types::Mask &mask) {
@@ -39,7 +40,7 @@ concept IsBatchModelTypes =
         } -> std::same_as<void>;
         {
             model.get_output(model_output, model_batch_output, 0, mask)
-        } -> std::same_as<void>
+        } -> std::same_as<void>;
     } &&
     IsValueModelTypes<Types>;
 

@@ -49,7 +49,10 @@ struct OffPolicy : Types
         MatrixNode *matrix_node;
     };
 
-    using Trajectory = std::vector<Frame>;
+    struct Trajectory {
+        typename Types::Mask mask;
+        std::vector<Frame> frames;
+    };
 
     class Search : public Types::BanditAlgorithm
     {
@@ -115,7 +118,7 @@ struct OffPolicy : Types
 
                 model.inference(model_batch_input, model_batch_output);
 
-                update_using_trajectories(trajectories, model_batch_output);
+                update_using_trajectories(model, trajectories, model_batch_output);
                 duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
                 //
@@ -153,7 +156,7 @@ struct OffPolicy : Types
 
                 model.inference(model_batch_input, model_batch_output);
 
-                update_using_trajectories(trajectories, model_batch_output);
+                update_using_trajectories(model, trajectories, model_batch_output);
                 //
             }
             auto end = std::chrono::high_resolution_clock::now();
@@ -200,13 +203,15 @@ struct OffPolicy : Types
         }
 
         void update_using_trajectories(
+            typename Types::Model &model,
             std::vector<Trajectory> &trajectories,
             Types::ModelBatchOutput &model_batch_output)
         {
             int index = 0;
             for (Trajectory &trajectory : trajectories)
             {
-                Frame &leaf_frame = trajectory.front();
+                Frame &leaf_frame = trajectory.front().frame;
+                typename Types::Mask &mask = trajectory.front().mask;
                 MatrixStats &leaf_stats = leaf_frame.matrix_node->stats;
 
                 typename Types::Value leaf_value;
@@ -217,7 +222,6 @@ struct OffPolicy : Types
                 else [[likely]]
                 {
                     typename Types::ModelOutput model_output{};
-                    typename Types::Mask mask{};
                     model.get_output(model_output, model_batch_output, index, mask);
                     leaf_value = model_output.value;
                     if (!leaf_stats.properly_expanded)
@@ -228,7 +232,7 @@ struct OffPolicy : Types
                 }
 
                 int frame_index = 0;
-                for (Frame &frame : trajectory)
+                for (Frame &frame : trajectory.frames)
                 {
                     if (frame_index == 0)
                     {
@@ -269,6 +273,7 @@ struct OffPolicy : Types
                     const size_t cols = state.col_actions.size();
                     matrix_node->expand(rows, cols);
                     this->expand_state_part(matrix_node->stats, rows, cols);
+                    model.get_mask(trajectory.mask, state);
                 }
                 else
                 {
@@ -296,7 +301,7 @@ struct OffPolicy : Types
                 }
             }
 
-            trajectory.push_back(frame);
+            trajectory.frames.push_back(frame);
         }
     };
 };
