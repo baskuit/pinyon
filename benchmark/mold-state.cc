@@ -2,6 +2,7 @@
 
 const size_t max_actions = 2;
 const size_t max_depth = 10;
+const size_t duration_ms = 5000;
 
 template <typename Types>
 void benchmark_st_()
@@ -11,7 +12,6 @@ void benchmark_st_()
     typename Types::Model model{0};
     typename Types::MatrixNode root{};
     typename Types::Search search{};
-    const size_t duration_ms = 1 << 10;
     search.run(duration_ms, device, state, model, root);
     std::cout << search << " : " << root.count_matrix_nodes() << std::endl;
 }
@@ -24,7 +24,6 @@ void benchmark_mt_(const size_t threads = 8)
     typename Types::Model model{0};
     typename Types::MatrixNode root{};
     typename Types::Search search{typename Types::BanditAlgorithm{.1}, threads};
-    const size_t duration_ms = 1 << 10;
     search.run(duration_ms, device, state, model, root);
     std::cout << search << " : " << root.count_matrix_nodes() << std::endl;
 }
@@ -37,7 +36,6 @@ void benchmark_mtp_(const size_t threads = 8, const size_t pool_size = 64)
     typename Types::Model model{0};
     typename Types::MatrixNode root{};
     typename Types::Search search{typename Types::BanditAlgorithm{.1}, threads, pool_size};
-    const size_t duration_ms = 1 << 10;
     search.run(duration_ms, device, state, model, root);
     std::cout << search << " : " << root.count_matrix_nodes() << std::endl;
 }
