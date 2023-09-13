@@ -3,13 +3,13 @@ set (CMAKE_CXX_STANDARD 23)
 
 project(pinyon VERSION 0.1.0)
 
-option(ENABLE_TORCH "Enable Libtorch" ON)
-option(ENABLE_CONCEPTS "Enable Concepts" OFF)
+option(ENABLE_TORCH_ "Enable Libtorch" ON)
+option(ENABLE_CONCEPTS_ "Enable Concepts" OFF)
 
 add_library(pinyon INTERFACE)
 target_include_directories(pinyon INTERFACE src)
 
-# if(ENABLE_TORCH)
+if(ENABLE_TORCH_)
     set(CMAKE_PREFIX_PATH "/home/user/Desktop/libtorch/")
     set(CMAKE_CUDA_ARCHITECTURES 61)
     # change this depending on your CUDA version
@@ -19,10 +19,10 @@ target_include_directories(pinyon INTERFACE src)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
     target_link_libraries(pinyon INTERFACE "${TORCH_LIBRARIES}")
     target_compile_definitions(pinyon INTERFACE ENABLE_TORCH)
-# endif()
+endif()
 
-if (ENABLE_CONCEPTS)
-    # target_compile_definitions(pinyon INTERFACE ENABLE_CONCEPTS)
+if (ENABLE_CONCEPTS_)
+    target_compile_definitions(pinyon INTERFACE ENABLE_CONCEPTS)
 endif()
 
 add_subdirectory(extern/lrslib)
@@ -39,7 +39,7 @@ foreach(TEST_FILE ${TEST_FILES})
     add_executable(${TEST_TARGET_NAME} ${TEST_FILE})
 
     target_link_libraries(${TEST_TARGET_NAME} pinyon)
-    if (ENABLE_TORCH)
+    if (ENABLE_TORCH_)
         target_link_libraries(${TEST_NAME} "${TORCH_LIBRARIES}")
     endif()
 
