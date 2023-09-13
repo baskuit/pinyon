@@ -17,27 +17,29 @@ concept IsValueModelTypes =
             output.value
         } -> std::same_as<typename Types::Value &>;
     } &&
-    IsPerfectInfoStateTypes<Types>; // this basically enforces that everything is perfect info (has Obs, Prob, data members)
+    IsPerfectInfoStateTypes<Types>;
 
 template <typename Types>
 concept IsBatchModelTypes =
     requires(
+        const typename Types::State &const_state
         typename Types::State &&moved_state,
         typename Types::Model &model,
         typename Types::ModelBatchInput &model_batch_input,
-        typename Types::ModelBatchOutput &model_batch_output) {
-{
-    model.inference(model_batch_input, model_batch_output)
-} -> std::same_as<void>;
-{
-    model.add_to_batch_input(std::forward<typename Types::State>(moved_state), model_batch_input)
-} -> std::same_as<void>;
-{
-    model_batch_input[0]
-} -> std::same_as<typename Types::ModelInput &>;
-{
-    model_batch_output[0]
-} -> std::same_as<typename Types::ModelOutput &>;
+        typename Types::ModelBatchOutput &model_batch_output,
+        typename Types::Mask &mask) {
+        {
+            model.inference(model_batch_input, model_batch_output)
+        } -> std::same_as<void>;
+        {
+            model.add_to_batch_input(std::forward<typename Types::State>(moved_state), model_batch_input)
+        } -> std::same_as<void>;
+        {
+            model.get_mask(mask, const_state)
+        } -> std::same_as<void>;
+        {
+            model.get_output(model_output, model_batch_output, 0, mask)
+        } -> std::same_as<void>
     } &&
     IsValueModelTypes<Types>;
 
@@ -88,10 +90,10 @@ struct EmptyModel : Types
             ModelBatchInput &inputs,
             ModelBatchOutput &outputs) const
         {
-            for (size_t i = 0; i < inputs.size(); ++i) {
+            for (size_t i = 0; i < inputs.size(); ++i)
+            {
                 inference(typename Types::State{inputs[i]}, outputs[i]);
             }
-
         }
 
         void add_to_batch_input(

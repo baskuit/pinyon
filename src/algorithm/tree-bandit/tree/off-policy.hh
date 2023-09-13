@@ -210,14 +210,15 @@ struct OffPolicy : Types
                 MatrixStats &leaf_stats = leaf_frame.matrix_node->stats;
 
                 typename Types::Value leaf_value;
-                if (leaf_frame.matrix_node->is_terminal())
+                if (leaf_frame.matrix_node->is_terminal()) [[unlikely]]
                 {
                     leaf_value = leaf_frame.outcome.value;
                 }
-                else
+                else [[likely]]
                 {
-                    typename Types::ModelOutput model_output{model_batch_output, index++};
-                    // TODO uses custom constr for ModelOutput....
+                    typename Types::ModelOutput model_output{};
+                    typename Types::Mask mask{};
+                    model.get_output(model_output, model_batch_output, index, mask);
                     leaf_value = model_output.value;
                     if (!leaf_stats.properly_expanded)
                     {
@@ -297,7 +298,5 @@ struct OffPolicy : Types
 
             trajectory.push_back(frame);
         }
-
-        // end algorithm
     };
 };

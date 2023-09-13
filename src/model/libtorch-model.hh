@@ -104,16 +104,14 @@ struct LibtorchBatchModel : Types
         std::shared_ptr<ModelLock> synch_mechanism = nullptr;
 
         template <typename... Args>
-        Model(const Args &...args, const long int batch_size, const long int subbatches) :
-        Types::Model{args...}
+        Model(const Args &...args, const long int batch_size, const long int subbatches) : Types::Model{args...}
         {
             synch_mechanism = std::make_shared<ModelLock>(batch_size, subbatches);
             synch_mechanism->input_tensor = this->get_random_input(batch_size);
             synch_mechanism->output_tensor = this->get_random_output(batch_size);
         }
 
-        Model(const Types::Model &model, const long int batch_size, const long int subbatches) :
-        Types::Model{model}
+        Model(const Types::Model &model, const long int batch_size, const long int subbatches) : Types::Model{model}
         {
             synch_mechanism = std::make_shared<ModelLock>(batch_size, subbatches);
             synch_mechanism->input_tensor = this->get_random_input(batch_size);

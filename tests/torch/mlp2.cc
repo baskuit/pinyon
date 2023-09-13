@@ -6,16 +6,12 @@ struct RandomTreeLibtorchModel : RandomTree<>
     {
         RandomTree<>::Value value;
         RandomTree<>::VectorReal row_policy, col_policy;
-        ModelOutput() {}
-        ModelOutput(const torch::Tensor &, const int)
-        {
-            value = make_draw<RandomTree<>>();
-            row_policy.resize(3);
-            col_policy.resize(3);
-            row_policy[0] = RandomTree<>::Real{1.0};
-            col_policy[0] = RandomTree<>::Real{1.0};
-        }
     };
+
+    struct Mask
+    {
+    };
+
     class Model : public TwoLayerMLP
     {
     public:
@@ -28,6 +24,25 @@ struct RandomTreeLibtorchModel : RandomTree<>
             torch::Tensor &model_batch_input) const
         {
             model_batch_input = torch::cat({model_batch_input, torch::rand({1, 386})});
+        }
+
+        void get_mask(
+            Mask &mask,
+            const Types::State &state) const
+        {
+        }
+
+        void get_output(
+            ModelOutput &model_output,
+            ModelBatchOutput &model_batch_output,
+            const long int index,
+            Mask &mask)
+        {
+            model_output.value = make_draw<RandomTree<>>();
+            model_output.row_policy.resize(3);
+            model_output.col_policy.resize(3);
+            model_output.row_policy[0] = RandomTree<>::Real{1.0};
+            model_output.col_policy[0] = RandomTree<>::Real{1.0};
         }
 
         void inference(
@@ -59,7 +74,6 @@ void off_policy_thread(
     typename Types::Model &batch_model = *batch_model_ptr;
     std::vector<typename Types::MatrixNode> &trees = *trees_ptr;
     std::vector<typename Types::State> &states = *states_ptr;
-
 
     typename Types::Search off_policy_search;
 
@@ -136,10 +150,9 @@ void off_policy_run(
     }
 
     auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);\
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-    std::cout << "inference speed: " << total_samples / duration.count() * 1000 << std::endl; 
-
+    std::cout << "inference speed: " << total_samples / duration.count() * 1000 << std::endl;
 }
 
 int main()

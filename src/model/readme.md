@@ -1,7 +1,8 @@
 
 # Model
-Borrowing from machine learning, the process of estimating information about a model is called 'inference'.
-A model must provide a value estimate in its inference because it is difficult to image a general search procedure that does not use this quantity.
+Any search or solving method requires a way to estimate the Nash equilibrium values of a given state. A model is anything that provides this value estimate along with any other information needed for search, like Policy estimation.
+Borrowing from machine learning, the process of estimating information using a model is called 'inference'.
+The value estimate should represent the expected score of a player starting from that state. Usually games assign a payoff of $0$ for a loss, $\frac{1}{2}$ for a draw, and $1$ for a win. In this value for a player should be in $[0, 1]$. Old-school evaluations like material advantage in Chess (e.g. "+3" is a winning advantage) are not appropriate and do not meet some of the basic assumption for convergence.
 
 ### Resource Management
 Models are assumed to be copy constructable. Neural network based models use shared pointers to the network, and heuristic and test models should have little to no data to copy.
@@ -10,20 +11,20 @@ Models are assumed to be copy constructable. Neural network based models use sha
 Models make the usual assumption that there is a fixed 'row' and 'column' player, but neither perspective is privileged. Since we also assume perfect information, there is no reason that a model should provide information for one player and not the other.
 Therefore the value estimate of a model applies to both players. More precisely, the estimate is of `Value` type, with methods `get_row_payoff()` and `get_col_payoff()` returning a `Real` type.
 ### Policy
-Not all search algorithms require a policy estimate for the players, and many model implementations do not provide one during inference
+Not all search algorithms require a policy estimate for the players, and many model implementations do not provide one during inference. The Monte-Carlo model has a template parameter that enables or disables the policy output.
 
 ### I/O
-The interface for models is catered to the most important models: Monte-Carlo and Libtorch. The Monte-Carlo inference will 'consume' a state that it inferences because of the rollout process. All search algorithms are fine with this behavior and don't require the state to be copied, so we assume that all models will consume the states they inference.
+The interface for models is designed with the most important examples in mind: Monte-Carlo and Libtorch. The Monte-Carlo inference will 'consume' a state that it inferences because of the rollout process. All search algorithms are fine with this behavior and don't require the state to be copied, so we assume that all models will consume the states they inference. This eliminates unneeded copying.
 
 ### Batched I/O
 The off-policy algorithm for batched inference requires a type that corresponds to the tensor input and tensor output of a GPU based model. There's no reason that this search algorithm should not work for non-GPU based models, so we define `ModelBatchInput` and `ModelBatchOutput`.
 For non-tensor based models, then these types are usually just `std::vector<typename Types::State>` and `std::vector<typename Types::ModelOutput>`. The batched `inference(&ModelBatchInput, &ModelBatchOutput)` method will just call the normal `inference(State&&, ModelOutput &)` on the pairs of vector elements. 
 
-### Arena and SearchModel
+### `Arena` and `SearchModel`
 There is a utility called Arena that evaluates the strength of a fixed pool of 'agents' by having two agents play out games from the beginning and returning the average payoff for each agent.
 These 'agents' are intended to be bandit algorithms that a run for some amount of iterations/time, as a way to evaluate the strength of different algorithms. attached models, and hyper parameters.
-However, we might also want to treat the unrefined (by search) policy output of a model as an agent too. Examples include the empty model, with uniform policy output, and the solved
-Thus the policy model is taken as the 
+However, we might also want to treat the unrefined policy output of a model as an agent too. Examples include the empty model, with uniform policy output, and the solved model.
+Thus the arena 
 
 # Concepts/Interface
 
