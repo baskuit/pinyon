@@ -3,8 +3,8 @@ set (CMAKE_CXX_STANDARD 23)
 
 project(pinyon VERSION 0.1.0)
 
-option(ENABLE_TORCH_ "Enable Libtorch" ON)
-option(ENABLE_CONCEPTS_ "Enable Concepts" ON)
+option(ENABLE_TORCH_ "Enable Libtorch" OFF)
+option(ENABLE_CONCEPTS_ "Enable Concepts" OFF)
 
 add_library(pinyon INTERFACE)
 
@@ -27,7 +27,6 @@ if (ENABLE_CONCEPTS_)
 endif()
 
 add_subdirectory(extern/lrslib)
-
 target_link_libraries(pinyon INTERFACE lrsnashlib)
 
 # Testing
@@ -36,19 +35,28 @@ file(GLOB_RECURSE TEST_FILES tests/*.cc)
 foreach(TEST_FILE ${TEST_FILES})
     get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
     string(REPLACE "/" "_" TEST_TARGET_NAME ${TEST_NAME})
-
     add_executable(${TEST_TARGET_NAME} ${TEST_FILE})
-
     target_link_libraries(${TEST_TARGET_NAME} pinyon)
-    if (ENABLE_TORCH_)
-        target_link_libraries(${TEST_NAME} "${TORCH_LIBRARIES}")
-    endif()
-
     add_test(NAME ${TEST_TARGET_NAME} COMMAND ${TEST_TARGET_NAME})
     set_target_properties(${TEST_TARGET_NAME} PROPERTIES
                           RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
 endforeach()
 enable_testing()
+
+# Libtorch
+if (ENABLE_TORCH_)
+    file(GLOB_RECURSE TORCH_FILES torch/*.cc)
+
+    foreach(TORCH_FILE ${TORCH_FILES})
+        get_filename_component(TORCH_NAME ${TORCH_FILE} NAME_WE)
+        string(REPLACE "/" "_" TORCH_TARGET_NAME ${TORCH_NAME})
+        add_executable(${TORCH_TARGET_NAME} ${TORCH_FILE})
+        target_link_libraries(${TORCH_TARGET_NAME} pinyon)
+        target_link_libraries(${TORCH_NAME} "${TORCH_LIBRARIES}")
+        set_target_properties(${TORCH_TARGET_NAME} PROPERTIES
+                            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
+    endforeach()
+endif()
 
 # Benchmarking
 file(GLOB BENCHMARK_FILES benchmark/*.cc)

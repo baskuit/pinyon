@@ -24,8 +24,6 @@ struct DefaultNodes : Types
     class MatrixNode
     {
     public:
-        static constexpr bool STORES_VALUE = false;
-
         ChanceNode *child = nullptr;
         MatrixNode *next = nullptr;
 
@@ -58,11 +56,6 @@ struct DefaultNodes : Types
         inline void set_terminal()
         {
             terminal = true;
-        }
-
-        inline void set_terminal(const bool value)
-        {
-            terminal = value;
         }
 
         inline void set_expanded()

@@ -24,8 +24,6 @@ struct DebugNodes : Types
     class MatrixNode
     {
     public:
-        static constexpr bool STORES_VALUE = false;
-
         ChanceNode *parent = nullptr;
         ChanceNode *child = nullptr;
         MatrixNode *prev = nullptr;
@@ -64,11 +62,6 @@ struct DebugNodes : Types
         inline void set_terminal()
         {
             terminal = true;
-        }
-
-        inline void set_terminal(const bool value)
-        {
-            terminal = value;
         }
 
         inline void set_expanded()

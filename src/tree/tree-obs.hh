@@ -28,8 +28,6 @@ struct LNodes : Types
     class MatrixNode
     {
     public:
-        static constexpr bool STORES_VALUE = false;
-
         ChanceNode *child = nullptr;
 
         bool terminal = false;
@@ -40,7 +38,6 @@ struct LNodes : Types
         MatrixNode(){};
         MatrixNode(const MatrixNode &) = delete;
         ~MatrixNode();
-
 
         inline void expand(const size_t &, const size_t &)
         {
@@ -60,11 +57,6 @@ struct LNodes : Types
         inline void set_terminal()
         {
             terminal = true;
-        }
-
-        inline void set_terminal(const bool value)
-        {
-            terminal = value;
         }
 
         inline void set_expanded()
@@ -171,7 +163,7 @@ struct LNodes : Types
         };
 
         ChanceNode *next = nullptr;
-        Edge* edge = nullptr;
+        Edge *edge = nullptr;
 
         int row_idx;
         int col_idx;
@@ -187,15 +179,18 @@ struct LNodes : Types
 
         MatrixNode *access(const Types::Obs &obs)
         {
-            if (this->edge == nullptr) {
+            if (this->edge == nullptr)
+            {
                 this->edge = new Edge(new MatrixNode(), obs);
                 return this->edge->matrix_node;
             }
             Edge *current = this->edge;
             Edge *previous = this->edge;
-            while (current != nullptr) {
+            while (current != nullptr)
+            {
                 previous = current;
-                if (current->obs == obs) {
+                if (current->obs == obs)
+                {
                     return current->matrix_node;
                 }
                 current = current->next;
@@ -207,14 +202,17 @@ struct LNodes : Types
 
         const MatrixNode *access(const Types::Obs &obs) const
         {
-            if (this->edge == nullptr) {
+            if (this->edge == nullptr)
+            {
                 return nullptr;
             }
             const Edge *current = this->edge;
             const Edge *previous = this->edge;
-            while (current != nullptr) {
+            while (current != nullptr)
+            {
                 previous = current;
-                if (current->obs == obs) {
+                if (current->obs == obs)
+                {
                     return current->matrix_node;
                 }
                 current = current->next;

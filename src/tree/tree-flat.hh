@@ -26,8 +26,6 @@ struct FlatNodes : Types
     class MatrixNode
     {
     public:
-        static constexpr bool STORES_VALUE = false;
-
         bool terminal = false;
         bool expanded = false;
         typename Types::Obs obs;
@@ -66,11 +64,6 @@ struct FlatNodes : Types
         inline void set_terminal()
         {
             terminal = true;
-        }
-
-        inline void set_terminal(const bool value)
-        {
-            terminal = value;
         }
 
         inline void set_expanded()

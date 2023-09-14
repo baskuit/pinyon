@@ -32,14 +32,8 @@ concept IsNodeTypes =
             const_matrix_node.is_terminal()
         } -> std::same_as<bool>;
         {
-            matrix_node.set_terminal(true)
-        } -> std::same_as<void>;
-        {
             matrix_node.set_terminal()
         } -> std::same_as<void>;
-        {
-            Types::MatrixNode::STORES_VALUE
-        } -> std::same_as<const bool &>;
 
         {
             chance_node.stats
