@@ -4,26 +4,6 @@
 #include <tree/tree.hh>
 #include <algorithm/algorithm.hh>
 
-/*
-
-TODO still no chance node updates (does any algo actually NEED this?)
-
-*/
-
-/*
-
-we do not keep track of the rolled out states outside of the inner most get_trajectory (run_iteration) function
-therefore to expand we need to do some part of it when we have access to the state
-and the other part later when we have access to the inference
-
-but we cannot call the default select method on a state-expanded node, in general.
-and it should only be the uniform policy anyway, so we need a way to distinguish
-selection nodes from passable nodes. is_expanded is taken to mean passable, and properly_expanded
-in the stats is used for selectable. 2 bools for 3 options
-
-
-*/
-
 template <
     CONCEPT(IsBanditAlgorithmTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
@@ -49,7 +29,8 @@ struct OffPolicy : Types
         MatrixNode *matrix_node;
     };
 
-    struct Trajectory {
+    struct Trajectory
+    {
         typename Types::Mask mask;
         std::vector<Frame> frames;
     };
@@ -69,17 +50,6 @@ struct OffPolicy : Types
             return os;
         }
 
-        // void run(
-        //     const size_t learner_iterations,
-        //     const size_t actor_iterations_per,
-        //     Types::PRNG &device,
-        //     const std::vector<typename Types::State> &states,
-        //     Types::Model &model,
-        //     std::vector<MatrixNode *> &matrix_nodes)
-        // {
-
-        // }
-
         size_t run(
             const size_t duration_ms,
             const size_t actor_iterations_per,
@@ -88,40 +58,25 @@ struct OffPolicy : Types
             Types::Model &model,
             std::vector<MatrixNode> &matrix_nodes)
         {
-            // Perform batched inference on all trees
-            // grab `actor` many samples, inference, update
-            // do this `leaner` many times
-
-            for (auto &matrix_node : matrix_nodes)
-            {
-                // this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
-            } // currently don't call i_s anywhere even though its defined for bandits
-
-            typename Types::ModelBatchInput model_batch_input{};   // vector of states - Tensor
-            typename Types::ModelBatchOutput model_batch_output{}; // vector of inferences/single output - Tensor
-            std::vector<Trajectory> trajectories{};
-
             auto start = std::chrono::high_resolution_clock::now();
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+            std::vector<Trajectory> trajectories{};
 
             size_t iterations = 0;
             for (; duration.count() < duration_ms; ++iterations)
             {
                 trajectories.clear();
+                typename Types::ModelBatchInput model_batch_input{};
                 get_trajectories(trajectories, model_batch_input,
-                                 // set of paths to leaf nodes
-                                 // all nodes on path must be updated for each leaf
-                                 //
                                  actor_iterations_per, device, states, model, matrix_nodes);
-                // populate trajectories vector and batch input
 
+                typename Types::ModelBatchOutput model_batch_output{};
                 model.inference(model_batch_input, model_batch_output);
 
                 update_using_trajectories(model, trajectories, model_batch_output);
                 duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-                //
             }
             return iterations;
         }
@@ -134,30 +89,20 @@ struct OffPolicy : Types
             Types::Model &model,
             std::vector<MatrixNode> &matrix_nodes)
         {
-            // for (auto &matrix_node : matrix_nodes)
-            // {
-            //     // this->initialize_stats(learner_iterations * actor_iterations_per, states[0], model, matrix_node);
-            // } // currently don't call i_s anywhere even though its defined for bandits
-
             std::vector<Trajectory> trajectories{};
 
             auto start = std::chrono::high_resolution_clock::now();
             for (int learner_iteration = 0; learner_iteration < learner_iterations; ++learner_iteration)
             {
-                // TODO All scrwed up. Need a way to convert tensor to model_output
-                // probably needs helper class.... for logit masks n such
-                typename Types::ModelBatchInput model_batch_input = model.get_random_input(0); // vector of states - Tensor
-
                 trajectories.clear();
+                typename Types::ModelBatchInput model_batch_input{};
                 get_trajectories(trajectories, model_batch_input,
                                  actor_iterations_per, device, states, model, matrix_nodes);
-                // populate trajectories vector and batch input
-                typename Types::ModelBatchOutput model_batch_output = model.get_random_output(0); // vector of inferences/single output - Tensor
 
+                typename Types::ModelBatchOutput model_batch_output{};
                 model.inference(model_batch_input, model_batch_output);
 
                 update_using_trajectories(model, trajectories, model_batch_output);
-                //
             }
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -210,8 +155,8 @@ struct OffPolicy : Types
             int index = 0;
             for (Trajectory &trajectory : trajectories)
             {
-                Frame &leaf_frame = trajectory.front().frame;
-                typename Types::Mask &mask = trajectory.front().mask;
+                Frame &leaf_frame = trajectory.frames.front();
+                typename Types::Mask &mask = trajectory.mask;
                 MatrixStats &leaf_stats = leaf_frame.matrix_node->stats;
 
                 typename Types::Value leaf_value;

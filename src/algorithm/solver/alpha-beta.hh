@@ -10,7 +10,7 @@
 #include <concepts>
 #include <assert.h>
 
-template <CONCEPT(IsValueModelTypes, Types), template <typename...> typename NodePair = DefaultNodes>
+template <CONCEPT(IsSingleModelTypes, Types), template <typename...> typename NodePair = DefaultNodes>
 struct AlphaBeta : Types
 {
     struct Data

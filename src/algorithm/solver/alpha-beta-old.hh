@@ -15,7 +15,7 @@ for Pruning in Simultaneous Move Games>
 */
 
 template <
-    CONCEPT(IsValueModelTypes, Types),
+    CONCEPT(IsSingleModelTypes, Types),
     template <typename...> typename NodePair = DefaultNodes>
 struct AlphaBetaOld : Types
 {

@@ -63,7 +63,7 @@ struct MonteCarloModel : Types
         }
 
         void get_mask(
-            Mask &mask,
+            const Mask &mask,
             const Types::State &state) const
         {
         }
@@ -72,7 +72,7 @@ struct MonteCarloModel : Types
             ModelOutput &model_output,
             ModelBatchOutput &model_batch_output,
             const long int index,
-            Mask &mask)
+            const Mask &mask) const
         {
             model_output = model_batch_output[index];
         }

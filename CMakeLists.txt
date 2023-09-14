@@ -4,7 +4,7 @@ set (CMAKE_CXX_STANDARD 23)
 project(pinyon VERSION 0.1.0)
 
 option(ENABLE_TORCH_ "Enable Libtorch" ON)
-option(ENABLE_CONCEPTS_ "Enable Concepts" OFF)
+option(ENABLE_CONCEPTS_ "Enable Concepts" ON)
 
 add_library(pinyon INTERFACE)
 

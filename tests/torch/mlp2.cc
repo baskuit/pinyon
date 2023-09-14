@@ -5,12 +5,14 @@ struct RandomTreeLibtorchModel : RandomTree<>
     struct ModelOutput
     {
         RandomTree<>::Value value;
-        RandomTree<>::VectorReal row_policy, col_policy;
     };
 
     struct Mask
     {
     };
+
+    using ModelBatchInput = torch::Tensor;
+    using ModelBatchOutput = torch::Tensor;
 
     class Model : public TwoLayerMLP
     {
@@ -21,14 +23,14 @@ struct RandomTreeLibtorchModel : RandomTree<>
 
         void add_to_batch_input(
             RandomTree<>::State &&state,
-            torch::Tensor &model_batch_input) const
+            ModelBatchInput &model_batch_input) const
         {
-            model_batch_input = torch::cat({model_batch_input, torch::rand({1, 386})});
+            model_batch_input = torch::cat({model_batch_input, torch::ones({1, 386}) * state.payoff_bias});
         }
 
         void get_mask(
-            Mask &mask,
-            const Types::State &state) const
+            const Mask &mask,
+            const RandomTree<>::State &state) const
         {
         }
 
@@ -36,13 +38,10 @@ struct RandomTreeLibtorchModel : RandomTree<>
             ModelOutput &model_output,
             ModelBatchOutput &model_batch_output,
             const long int index,
-            Mask &mask)
+            const Mask &mask) const
         {
-            model_output.value = make_draw<RandomTree<>>();
-            model_output.row_policy.resize(3);
-            model_output.col_policy.resize(3);
-            model_output.row_policy[0] = RandomTree<>::Real{1.0};
-            model_output.col_policy[0] = RandomTree<>::Real{1.0};
+            RandomTree<>::Real x = model_batch_output[index].item().toDouble();
+            model_output.value = x;
         }
 
         void inference(
@@ -62,7 +61,7 @@ RandomTree<>::State gen(uint64_t seed)
         1};
 }
 
-template <CONCEPT(IsSearchTypes, Types)>
+template <CONCEPT(IsBatchModelTypes, Types)>
 void off_policy_thread(
     typename Types::Model *batch_model_ptr,
     std::vector<typename Types::MatrixNode> *trees_ptr,
@@ -105,7 +104,7 @@ void off_policy_thread(
     }
 }
 
-template <CONCEPT(IsSearchTypes, Types)>
+template <CONCEPT(IsBatchModelTypes, Types)>
 void off_policy_run(
     typename Types::Model &batch_model,
     const size_t threads,
