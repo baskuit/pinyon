@@ -1,43 +1,57 @@
 
 # Pinyon
+Pinyon is a high performance library for research and development of search and solving algorithms for perfect-info, simultaneous move, stochastic games.
 
-Pinyon is a high performance and general purpose library for research and development of search and solving algorithms for perfect-info, simultaneous move, stochastic games.
-The library unifies a collection of environments, models, and algorithms with a consistent interface that is designed to make working with library as simple as possible for new C++ developers.
+# Overview
+Most users have a specific game that they want to create a strong agent for.
 
-## Intended Use
+The wrapper, together with universal Monte-Carlo estimation, will instantly have access to:
+* Sound Search
+Most tutorials on MCTS **will not work** in the simultaneous move regime. This is a huge barrier for entry into engine development. Pinyon provides algorithms that provably converge to Nash equilibrium.
+* Multi-threaded search
+Modern processors are multi-core and any search that does not exploit this will be substantially weaker. Multi-threading in C++ is daunting for most developers so there are two parallelized MCTS search variants that provide it for free. This will work for any game or algorithm.
+* Alpha-Beta solving
+Conventional depth-first search was revolutionized by Alpha-Beta, which cleverly prunes nodes it can prove don't affect the outcome of the search. This is the first public implementation of Alpha-Beta in the simultaneous regime based on research. The paper's algorithm is even improved to prune insignificant chance outcomes. 
+* High performance
+This library is much faster than peers because it's written entirely in a compiled language. It leverages template meta-progamming so that the generality and modularity produces **no run-time cost**.
 
-This library is really attempt at reconciling two disparate realities:
+These are features that provided by the library for free and without hassle.
+If the user would like to tweak these they will find that **virtually all aspects of search can be changed**. Again, 
 
-* Pokemon is the highest grossing intellectual property of all time with over 20 years of competitive play in community organized and later officially sanctioned formats.
+* Use your own models
+If the user wants to develop or improve a value estimate other than Monte-Carlo then they simply need to wrap their 'Model' just as they did their game. Once compatible with Pinyon the model can be used instead for all the previous features.
 
-* There are no agents that have been shown to be as strong as the best human players. In fact, most of the milestone developments of machine learning in other domains: (situational) tactical superiority, sound analysis, and computationally feasible search, have yet to be replicated.
 
-# Scope
 
-As there is scarce publicly available work, this library attempts to attack machine learning in Pokemon incrementally. By far the most important consequence of this attitude is the assumption about hidden information.
 
-### Imperfect Info
-The species of Pokemon on a team, and each Pokemon's moves, item, ability, etc are not known at the start of a game in any popular format. The management of this info is essential to high level play.
+* Tree structure
+This is one of the simplest ways to squeeze more performance out of Pinyon. Search tree operations are most of the run-time and so Pinyon offers several different implementations
 
-However my survey of methods in imperfect info games suggests that the imperfect info regime is expensive to explore. Thus we make the following assumption that has natural justification:
+If the user has another model they've already written they can use that instead all the same. 
 
-### Perfect Info
-The hidden information of either player is only ever *revealed* during the course of a game, never renewed or augmented.
-This means that games are always approaching a condition of perfect information. In practice, it is not uncommon for game states to become essentially perfect information. Additionally, there are many ways that perfect info search can be (unsoundly) applied to imperfect info contexts. These approaches are left to the user to implement and explore.
+The user can tweak their code to maximize performance
 
-### Simulator
-Pinyon has already been successfully applied to [engine](https://github.com/pkmn/engine), which is a high performance simulator written in Zig with a C interface. Any game which has a C/C++ interface can be wrapped and connected to Pinyon's utilities. 
+* Many different kinds of tree structure
+* Different kinds of primitives
 
-### Performance
-There are several existing libraries that aim to make planning and reinforcement learning accessible to non-technical users in a variety of games and environments:
-* Open AI - [Gym](https://github.com/openai/gym)
-* suragnair - [alpha-zero-general](https://github.com/suragnair/alpha-zero-general)
+The user can write new algorithms
 
-In order appeal to as many users as possible, these libraries expose their API via Python. With the mature projects like Gym, much of the functions are implemented in a performant language. 
-This is mostly moot, because search and RL are both bottle-necked by the environment and it `step` functions.
-**This is where Pinyon excels**
-Without the overhead of a Python   environment, users can write code that is truly high performance.
-Slow libraries do not present a realistic chance for users to write a strong search or train an agent on anything other than toy games. 
+* Creating a new bandit is done by implementing a few functions
+* Totally interchangeable with old bandits
+* Automatically compatible with multithreaded search
+
+
+### Reinforcement Learning
+
+### Library Utilities
+
+* Powerful class of test games
+* GMP support for precise numbers
+* Fast NE solving
+
+Most importantly, the sum total of all these optinos are contained as a type list.
+This is the most important part of Pinyon. 
+
 
 # Installation
 This project makes heavy use of the `Concepts` feature of C++20. Furthermore, it occasionally uses `std::cartiesian_product` from C++23. Support for the latter is spotty, but GCC-13 will work
@@ -53,40 +67,20 @@ make
 ```
 Note: make sure that the correct version of gcc/clang is being used. I recommend using VSCode to build this library. See the /src level readme [here](src/readme.md#LanguageandDevelopmentEnvironment)
 
-# TODO ELI5
+# Documentation
 
-The user writes a minimal interface wrapper for their game. This state, together with Monte-Carlo estimation will automatically have:
+The many facets of the library are well documented
 
-* Sound Monte-Carlo search
-MCTS is a very popular choice for search because it works well in many domains. However the usual MCTS that is taught in most tutorials **does not work** for simulataneous move games.
-* Multi-threading
-The alsdkfjasdf
-* Alpha-Beta solving
-This comes from paper. It has even been improved!
-* High performance
-There is no penalty to this generality. It is all compile time!
+Basic
+Types
+State
+Model
+Algorithm
 
-If the user has another model they've already written they can use that instead all the same. Pinyon helps you create a model:
-
-* Support for Libtorch Models
-
-The user can tweak their code to maximize performance
-
-* Many different kinds of tree structure
-* Different kinds of primitives
-
-The user can write new algorithms
-
-* Creating a new bandit is dont by implementing a few functions
-* Totally interchangeable with old bandits
-* Automatically compatible with multithreaded search
-
-Default comes with stuff for testing
-* Powerful class of test games
-* GMP support for precise numbers
-* Fast NE solving
-
-Most importantly, the sum total of all these optinos are contained as a type list.
-This is the most important part of Pinyon. 
+Additionally the library cites its sources. The research papers used are all in
+References
 
 
+# Status
+Done with perfect info stuff. Taking a break and looking for users. I made this library because I want to apply my expertise to model development in certain goalpost domains but I find training and tweaking to be very boring.
+Later this year I will start work on the imperfect info regime.
