@@ -9,7 +9,8 @@
 template <
     CONCEPT(IsBanditAlgorithmTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
-    bool return_if_expand = true>
+    bool return_if_expand = true,
+    bool use_leaf_value = true>
     requires IsNodeTypes<NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>>
 // will auto complete all all this + ::MatrixNode but not the alias decl :(
 struct TreeBandit : Types
@@ -125,63 +126,19 @@ struct TreeBandit : Types
 
                     MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
-                    outcome.value = model_output.value;
+                    if constexpr (use_leaf_value)
+                    {
+                        outcome.value = model_output.value;
+                    }
+                    else
+                    {
+                        this->get_empirical_value(matrix_node_next->stats, outcome.value);
+                    }
+
                     this->update_matrix_stats(matrix_node->stats, outcome);
                     this->update_chance_stats(chance_node->stats, outcome);
                     return matrix_node_leaf;
                 }
-            }
-        }
-
-        MatrixNode *run_iteration_average(
-            Types::PRNG &device,
-            Types::State &state,
-            Types::Model &model,
-            MatrixNode *matrix_node,
-            Types::ModelOutput &model_output) const
-        {
-            if (!matrix_node->is_terminal())
-            {
-                if (!matrix_node->is_expanded())
-                {
-                    state.get_actions();
-                    matrix_node->expand(state);
-                    model.inference(state, model_output);
-                    this->expand(state, matrix_node->stats, model_output);
-
-                    if constexpr (return_if_expand)
-                    {
-                        return matrix_node;
-                    }
-                }
-
-                typename Types::Outcome outcome;
-                this->select(device, matrix_node->stats, outcome);
-
-                matrix_node->apply_actions(state, outcome.row_idx, outcome.col_idx);
-
-                ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                MatrixNode *matrix_node_next = chance_node->access(state.obs);
-
-                MatrixNode *matrix_node_leaf = run_iteration_average(device, state, model, matrix_node_next, model_output);
-
-                this->get_empirical_value(matrix_node_next->stats, outcome.value);
-                // TODO use chance node? Breaks if matrix_node_next is terminal?
-                this->update_matrix_stats(matrix_node->stats, outcome);
-                this->update_chance_stats(chance_node->stats, outcome);
-                return matrix_node_leaf;
-            }
-            else
-            {
-                if constexpr (MatrixNode::STORES_VALUE)
-                {
-                    matrix_node->get_value(model_output.value);
-                }
-                else
-                {
-                    model_output.value = state.payoff;
-                }
-                return matrix_node;
             }
         }
     };

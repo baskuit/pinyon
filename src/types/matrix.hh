@@ -158,7 +158,7 @@ public:
         return *std::min_element(this->begin(), this->begin() + entries);
     }
 
-    void print() const __attribute__((noinline))
+    void print() const
     {
         for (size_t row_idx = 0; row_idx < rows; ++row_idx)
         {
@@ -228,7 +228,7 @@ public:
         return (*this)[i * cols + j];
     }
 
-    Value<Real> &get(size_t i, size_t j) const
+    const Value<Real> &get(size_t i, size_t j) const
     {
         return (*this)[i * cols + j];
     }
@@ -314,7 +314,7 @@ public:
         return std::min(min_row->get_row_value(), min_col->get_col_value());
     }
 
-    void print() const __attribute__((noinline))
+    void print() const
     {
         for (size_t row_idx = 0; row_idx < rows; ++row_idx)
         {

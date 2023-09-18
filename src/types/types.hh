@@ -35,7 +35,7 @@ struct DefaultTypes
     using TypeList = DefaultTypes;
     // I don't know how to deduce a 'minimal typelist' in a generic way
     // for things like Search and Model, so we need to provide some declarations
-    // There are not too many types so, we avoid boilerplate `using ModelTypes = ` etc
+    // There are not too many types so we avoid boilerplate `using ModelTypes = ` etc
     // by providing just `Types::TypeList`
 
     using Q = _Rational;
@@ -153,9 +153,9 @@ concept IsMatrix = requires(Matrix &matrix, const Matrix &const_matrix, T &value
     {
         matrix.get(0, 0)
     } -> std::same_as<T &>;
-    // {
-    //     const_matrix.get(0, 0)
-    // } -> std::same_as<const T &>; // TODO
+    {
+        const_matrix.get(0, 0)
+    } -> std::same_as<const T &>;
 };
 
 template <typename PRNG, typename Seed>
@@ -171,7 +171,7 @@ concept IsPRNG = requires(PRNG &device, const PRNG &const_device, Seed seed) {
     } -> std::same_as<Seed>;
     {
         PRNG{seed}
-    };
+    } -> std::same_as<PRNG>;
     {
         device.random_int(0)
     } -> std::convertible_to<int>;
@@ -199,7 +199,7 @@ concept IsRational = requires(Q &x) {
     };
     {
         std::convertible_to<Q, mpq_class>
-    };
+    }; // these last two are the whole point of the rational type.
 };
 
 template <typename Types>
@@ -252,4 +252,3 @@ using SimpleTypesSpinLock = DefaultTypes<
     std::vector,
     Matrix,
     spinlock>;
- 

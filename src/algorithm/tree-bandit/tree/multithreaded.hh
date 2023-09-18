@@ -12,7 +12,8 @@
 template <
     CONCEPT(IsMultithreadedBanditTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
-    bool return_if_expand = true>
+    bool return_if_expand = true,
+    bool use_leaf_value = true>
 struct TreeBanditThreaded : Types
 {
     struct MatrixStats : Types::MatrixStats
@@ -201,7 +202,14 @@ struct TreeBanditThreaded : Types
 
                     MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
-                    outcome.value = model_output.value;
+                    if constexpr (use_leaf_value)
+                    {
+                        outcome.value = model_output.value;
+                    }
+                    else
+                    {
+                        this->get_empirical_value(matrix_node_next->stats, outcome.value);
+                    }
                     this->update_matrix_stats(matrix_node->stats, outcome, stats_mutex);
                     this->update_chance_stats(chance_node->stats, outcome); // no guard
                     return matrix_node_leaf;
@@ -214,7 +222,8 @@ struct TreeBanditThreaded : Types
 template <
     CONCEPT(IsMultithreadedBanditTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
-    bool return_if_expand = true>
+    bool return_if_expand = true,
+    bool use_leaf_value = true>
 struct TreeBanditThreadPool : Types
 {
     struct MatrixStats : Types::MatrixStats
@@ -440,7 +449,14 @@ struct TreeBanditThreadPool : Types
 
                     MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
-                    outcome.value = model_output.value;
+                    if constexpr (use_leaf_value)
+                    {
+                        outcome.value = model_output.value;
+                    }
+                    else
+                    {
+                        this->get_empirical_value(matrix_node_next->stats, outcome.value);
+                    }
                     this->update_matrix_stats(matrix_node->stats, outcome, stats_mutex);
                     this->update_chance_stats(chance_node->stats, outcome); // no guard
                     return matrix_node_leaf;
