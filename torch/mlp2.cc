@@ -7,12 +7,32 @@ struct RandomTreeLibtorchModel : RandomTree<>
         RandomTree<>::Value value;
     };
 
-    struct Mask
+    struct ModelBatchInput : torch::Tensor
     {
-    };
+        ModelBatchInput(const long int size = 0)
+        {
+        }
 
-    using ModelBatchInput = torch::Tensor;
-    using ModelBatchOutput = torch::Tensor;
+        void copy_range(ModelBatchInput &x, const long int a, const long int b)
+        {
+        }
+
+        void cat(const torch::Tensor &tensor)
+        {
+            torch::Tensor *self = static_cast<torch::Tensor *>(this);
+            *self = torch::cat({*self, tensor});
+        }
+    };
+    struct ModelBatchOutput : torch::Tensor
+    {
+        ModelBatchOutput(const long int size = 0)
+        {
+        }
+
+        void copy_range(ModelBatchOutput &x, const long int a, const long int b)
+        {
+        }
+    };
 
     class Model : public TwoLayerMLP
     {
@@ -25,29 +45,23 @@ struct RandomTreeLibtorchModel : RandomTree<>
             RandomTree<>::State &&state,
             ModelBatchInput &model_batch_input) const
         {
-            model_batch_input = torch::cat({model_batch_input, torch::ones({1, 386}) * state.payoff_bias});
-        }
-
-        void get_mask(
-            const Mask &mask,
-            const RandomTree<>::State &state) const
-        {
+            model_batch_input.cat(torch::ones({1, 386}) * state.payoff_bias);
         }
 
         void get_output(
             ModelOutput &model_output,
             ModelBatchOutput &model_batch_output,
-            const long int index,
-            const Mask &mask) const
+            const long int index) const
         {
             RandomTree<>::Real x = model_batch_output[index].item().toDouble();
             model_output.value = x;
         }
 
         void inference(
-            RandomTree<>::State &&state,
-            ModelOutput &output) const
+            ModelBatchInput &batch_input,
+            ModelBatchOutput &batch_output)
         {
+            static_cast<torch::Tensor &>(batch_output) = this->forward(batch_input);
         }
     };
 };

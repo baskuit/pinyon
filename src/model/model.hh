@@ -44,16 +44,28 @@ concept IsSingleModelTypes =
 template <typename Types>
 concept IsBatchModelTypes =
     requires(
-        const typename Types::State &const_state,
         typename Types::State &&moved_state,
         typename Types::Model &model,
         typename Types::ModelOutput &output,
         typename Types::ModelBatchInput &batch_input,
         typename Types::ModelBatchOutput &batch_output,
-        typename Types::Mask &mask) {
+        const typename Types::ModelBatchInput &const_batch_input,
+        const typename Types::ModelBatchOutput &const_batch_output) {
         {
             output.value
         } -> std::same_as<typename Types::Value &>;
+        // {
+        //     batch_input.copy_range(const_batch_input, 0, 0)
+        // } -> std::same_as<void>;
+        // {
+        //     const_batch_output.copy_range(batch_output, 0, 0)
+        // } -> std::same_as<void>;
+        {
+            typename Types::ModelBatchInput{1}
+        };
+        {
+            typename Types::ModelBatchOutput{1}
+        };
         {
             model.inference(batch_input, batch_output)
         } -> std::same_as<void>;
@@ -61,10 +73,7 @@ concept IsBatchModelTypes =
             model.add_to_batch_input(std::forward<typename Types::State>(moved_state), batch_input)
         } -> std::same_as<void>;
         {
-            model.get_mask(mask, const_state)
-        } -> std::same_as<void>;
-        {
-            model.get_output(output, batch_output, 0, mask)
+            model.get_output(output, batch_output, 0)
         } -> std::same_as<void>;
     } &&
     IsPerfectInfoStateTypes<Types>;

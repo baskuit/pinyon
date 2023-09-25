@@ -31,7 +31,6 @@ struct OffPolicy : Types
 
     struct Trajectory
     {
-        typename Types::Mask mask;
         std::vector<Frame> frames;
     };
 
@@ -156,7 +155,6 @@ struct OffPolicy : Types
             for (Trajectory &trajectory : trajectories)
             {
                 Frame &leaf_frame = trajectory.frames.front();
-                typename Types::Mask &mask = trajectory.mask;
                 MatrixStats &leaf_stats = leaf_frame.matrix_node->stats;
 
                 typename Types::Value leaf_value;
@@ -167,7 +165,7 @@ struct OffPolicy : Types
                 else [[likely]]
                 {
                     typename Types::ModelOutput model_output{};
-                    model.get_output(model_output, model_batch_output, index, mask);
+                    model.get_output(model_output, model_batch_output, index);
                     leaf_value = model_output.value;
                     if (!leaf_stats.properly_expanded)
                     {
@@ -218,11 +216,11 @@ struct OffPolicy : Types
                     const size_t cols = state.col_actions.size();
                     matrix_node->expand(rows, cols);
                     this->expand_state_part(matrix_node->stats, rows, cols);
-                    model.get_mask(trajectory.mask, state);
                 }
                 else
                 {
-                    state.get_actions();
+                    state.get_actions(); // get_actions called here before add_to_batch_input();
+                    // we need this to have valid action data when it gets there, for policy masking
                     if (matrix_node->stats.properly_expanded)
                     {
                         this->select(device, matrix_node->stats, frame.outcome);

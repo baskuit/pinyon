@@ -12,10 +12,6 @@ struct MonteCarloModel : Types
         typename Types::Value value;
         typename Types::VectorReal row_policy, col_policy;
     };
-
-    struct Mask
-    {
-    };
     
     using ModelBatchInput = std::vector<typename Types::State>;
     using ModelBatchOutput = std::vector<ModelOutput>;
@@ -62,29 +58,12 @@ struct MonteCarloModel : Types
             input.push_back(state);
         }
 
-        void get_mask(
-            const Mask &mask,
-            const Types::State &state) const
-        {
-        }
-
         void get_output(
             ModelOutput &model_output,
             ModelBatchOutput &model_batch_output,
-            const long int index,
-            const Mask &mask) const
+            const long int index) const
         {
             model_output = model_batch_output[index];
-        }
-
-        ModelBatchInput get_random_input(const long int batch_size)
-        {
-            return {};
-        }
-
-        ModelBatchOutput get_random_output(const long int batch_size)
-        {
-            return {};
         }
 
     protected:

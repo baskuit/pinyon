@@ -1,9 +1,26 @@
 #include <pinyon.hh>
 
-
-
 struct MoldStateTensorTypes : MoldState<>
 {
+    struct ModelBatchInput : torch::Tensor
+    {
+        ModelBatchInput(const long int size)
+        {
+        }
+        void copy_range(ModelBatchInput &x, const long int a, const long int b)
+        {
+        }
+    };
+    struct ModelBatchOutput : torch::Tensor
+    {
+        ModelBatchOutput(const long int size)
+        {
+        }
+
+        void copy_range(ModelBatchOutput &x, const long int a, const long int b)
+        {
+        }
+    };
 
     class Model : public TwoLayerMLP
     {
@@ -12,11 +29,11 @@ struct MoldStateTensorTypes : MoldState<>
         {
         }
 
-        void add_to_batch_input(
-            MoldState<>::State &&state,
-            torch::Tensor &model_batch_input) const
+        void inference(
+            ModelBatchInput &batch_input,
+            ModelBatchOutput &batch_output)
         {
-            model_batch_input = torch::cat({model_batch_input, torch::rand({1, 386})});
+            static_cast<torch::Tensor &>(batch_output) = this->forward(batch_input);
         }
     };
 };
@@ -27,10 +44,10 @@ void thread_test(
     const size_t num_batches,
     const long int subbatch_size)
 {
-    auto output = batch_model->get_random_output(subbatch_size);
+    typename Types::ModelBatchOutput output{subbatch_size};
     for (size_t i = 0; i < num_batches; ++i)
     {
-        auto input = batch_model->get_random_input(subbatch_size);
+        typename Types::ModelBatchInput input{subbatch_size};
         batch_model->inference(input, output);
     }
 }
@@ -61,7 +78,7 @@ double wrap_model_speed_test(
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-    return (threads * subbatch_size * num_batches) / (double) duration.count() * 1000;
+    return (threads * subbatch_size * num_batches) / (double)duration.count() * 1000;
 }
 
 int main()
