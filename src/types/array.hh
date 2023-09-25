@@ -9,21 +9,32 @@ struct A
     template <typename T>
     struct Array : std::array<T, MaxSize>
     {
+        size_t _size = 0;
 
         Array() {}
 
         Array(const Array &other)
         {
             std::copy(other.begin(), other.end(), this->begin());
+            _size = other._size;
         }
 
         Array &operator=(const Array &other)
         {
             std::copy(other.begin(), other.end(), this->begin());
+            _size = other._size;
             return *this;
         }
 
-        size_t _size = 0;
+        bool operator==(const Array &other) const
+        {
+            for (int i = 0; i < _size; ++i) {
+                if ((*this)[i] != other[i]) {
+                    return false;
+                }
+            }
+            return _size == other._size;
+        }
 
         void resize(size_t n, T value)
         {
@@ -39,6 +50,10 @@ struct A
         size_t size() const
         {
             return _size;
+        }
+
+        void clear () {
+            _size = 0;
         }
 
         std::array<T, MaxSize>::iterator end()

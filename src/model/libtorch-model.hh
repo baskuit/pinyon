@@ -74,8 +74,10 @@ struct LibtorchBatchModel : Types
                 input_lock.unlock();
             }
 
-            const size_t subbatch_index = subbatch_size * subbatch_id;
-            combined_batch_input.copy_range(model_batch_input, subbatch_index, subbatch_index + subbatch_size);
+            const long int subbatch_index_start = subbatch_size * subbatch_id;
+            const long int subbatch_index_end = subbatch_index_start + subbatch_size;
+
+            combined_batch_input.copy_range(model_batch_input, subbatch_index_start, subbatch_index_end);
 
             std::unique_lock<std::mutex> output_lock{output_mutex};
             const bool is_last_thread_to_finish = (++seated == subbatches);
@@ -96,7 +98,7 @@ struct LibtorchBatchModel : Types
             input_mutex.unlock();
             input_cv.notify_one();
 
-            combined_batch_output.copy_range(model_batch_output, subbatch_index, subbatch_index + subbatch_size);
+            combined_batch_output.copy_range(model_batch_output, subbatch_index_start, subbatch_index_end);
         }
     };
 
