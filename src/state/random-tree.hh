@@ -249,6 +249,8 @@ struct RandomTree : Types
     };
 };
 
+#ifdef CPP23
+
 /*
 
 Helper class to generate random tree instances for testing
@@ -287,3 +289,5 @@ struct RandomTreeGenerator : CartesianProductGenerator<W::Types::State, std::vec
         RandomTreeGenerator::device = prng{device};
     }
 };
+
+#endif
