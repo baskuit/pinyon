@@ -15,14 +15,14 @@ struct A
 
         Array(const Array &other)
         {
-            std::copy(other.begin(), other.end(), this->begin());
             _size = other._size;
+            std::copy(other.begin(), other.end(), this->begin());
         }
 
         Array &operator=(const Array &other)
         {
-            std::copy(other.begin(), other.end(), this->begin());
             _size = other._size;
+            std::copy(other.begin(), other.end(), this->begin());
             return *this;
         }
 

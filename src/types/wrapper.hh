@@ -11,6 +11,7 @@ struct Wrapper
     constexpr Wrapper(const T value) : value{value} {}
     constexpr explicit operator T() const { return value; }
     T &get() { return value; }
+    const T &get() const { return value; }
 };
 
 template <typename T>
