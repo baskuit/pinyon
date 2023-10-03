@@ -13,6 +13,11 @@ struct A
 
         Array() {}
 
+        Array (const size_t n) {
+            _size = n;
+            std::fill(this->begin(), this->end(), T{});
+        }
+
         Array(const Array &other)
         {
             _size = other._size;
