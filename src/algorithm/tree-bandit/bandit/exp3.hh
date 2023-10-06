@@ -60,7 +60,7 @@ struct Exp3 : Types
             const MatrixStats &stats,
             Types::Value &value) const
         {
-            const Real den = 1 / (stats.visits + (stats.visits == 0));
+            const Real den = typename Types::Q{1, (stats.visits + (stats.visits == 0))};
             if constexpr (Types::Value::IS_CONSTANT_SUM)
             {
                 value = typename Types::Value{typename Types::Real{stats.value_total.get_row_value() * den}};
