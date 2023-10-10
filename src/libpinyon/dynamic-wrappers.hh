@@ -215,7 +215,9 @@ namespace W
                 typename T::State &state = dynamic_cast<Dynamic::StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr)->data;
                 typename T::ModelOutput output_;
                 data.inference(typename T::State{state}, output_); // rvalue is copied state
-                output.value = Types::Value{output_.value.get_row_value(), output_.value.get_col_value()};
+                output.value = Types::Value{
+                    static_cast<double>(output_.value.get_row_value()), 
+                    static_cast<double>(output_.value.get_col_value())};
                 // TODO
                 output.row_policy.resize(state.row_actions.size());
                 output.col_policy.resize(state.col_actions.size());
