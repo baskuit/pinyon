@@ -10,12 +10,12 @@ namespace math
 {
 
     template <template <typename...> typename VectorIn, typename InT, template <typename...> typename VectorOut, typename OutT>
-    void power_norm(const VectorIn<InT> &input, int length, double power, VectorOut<OutT> &output)
+    void power_norm(const VectorIn<InT> &input, int length, float power, VectorOut<OutT> &output)
     {
-        double sum = 0;
+        float sum = 0;
         for (int i = 0; i < length; ++i)
         {
-            double x = std::pow(input[i], power);
+            float x = std::pow(input[i], power);
             output[i] = OutT{x};
             sum += x;
         }
@@ -26,13 +26,13 @@ namespace math
     }
 
     template <typename VectorIn>
-    void power_norm(VectorIn &input, double power = 1.0)
+    void power_norm(VectorIn &input, float power = 1.0)
     {
-        double sum = 0;
+        float sum = 0;
         const size_t length = input.size();
         for (int i = 0; i < length; ++i)
         {
-            double x = std::pow(input[i], power);
+            float x = std::pow(input[i], power);
             input[i] = x;
             sum += x;
         }

@@ -16,6 +16,24 @@ TypeList
 
 */
 
+template <typename _Real>
+struct FloatingPointType
+{
+    using T = double;
+};
+
+template <>
+struct FloatingPointType<float>
+{
+    using T = float;
+};
+
+template <>
+struct FloatingPointType<RealType<float>>
+{
+    using T = float;
+};
+
 template <
     typename _Real,
     typename _Action,
@@ -40,6 +58,7 @@ struct DefaultTypes
 
     using Q = _Rational;
     using Real = RealType<_Real>;
+    using Float = FloatingPointType<_Real>::T;
 
     using Action = ActionType<_Action>;
     using Obs = ObsType<_Obs>;
