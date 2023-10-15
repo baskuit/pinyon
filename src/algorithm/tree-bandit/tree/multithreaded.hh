@@ -102,7 +102,7 @@ struct TreeBanditThreaded : Types
             return duration.count();
         }
 
-    private:
+    // private:
         void run_thread(
             const size_t duration_ms,
             const Types::Seed thread_device_seed,

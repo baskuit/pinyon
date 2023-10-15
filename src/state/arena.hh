@@ -1,17 +1,17 @@
 #include <libpinyon/dynamic-wrappers.hh>
 #include <types/types.hh>
+#include <algorithm/tree-bandit/tree/multithreaded.hh>
 
 #include <utility>
 
 struct Arena : SimpleTypes
 {
-
     class State : public PerfectInfoState<SimpleTypes>
     {
     public:
         W::Types::State (*state_generator)(SimpleTypes::Seed){nullptr};
         std::vector<W::Types::Model> models{};
-        const size_t vs_rounds = 0;
+        const size_t vs_rounds;
         SimpleTypes::Seed state_seed{};
 
         State(
@@ -70,6 +70,7 @@ struct Arena : SimpleTypes
                 SimpleTypes::Real{total_payoff.get_col_value() / double(2 * vs_rounds)}};
             this->terminal = true;
             this->obs = SimpleTypes::Obs{static_cast<int>(device.get_seed())};
+            // std::cout << '@' << std::endl;
         }
 
     private:
@@ -84,6 +85,7 @@ struct Arena : SimpleTypes
 
             state.get_actions();
             int row_idx, col_idx;
+            int turn = 0;
             while (!state.is_terminal())
             {
                 row_model.inference(state, row_output);
@@ -93,8 +95,34 @@ struct Arena : SimpleTypes
 
                 state.apply_actions(row_idx, col_idx);
                 state.get_actions();
+                ++turn;
+                // std::cout << '!' << std::endl;
             }
             return state.get_payoff();
+        }
+    };
+
+    class Util
+    {
+    public:
+        W::Types::State (*state_generator)(SimpleTypes::Seed){nullptr};
+
+        Util(
+            W::Types::State (*state_generator)(SimpleTypes::Seed)) : state_generator{state_generator} {}
+
+        void foo(
+            const std::vector<W::Types::Model> &models,
+            size_t vs_rounds = 1,
+            size_t threads = 4)
+        {
+            // using T = TreeBanditThreaded<Exp3<EmptyModel<Arena>>>;
+            // T::PRNG device{};
+            // State arena_state{state_generator, models, vs_rounds};
+            // T::Model arena_model{0};
+            // T::Search arena_search{{.01}, threads};
+            // T::MatrixNode arena_root{};
+
+            // arena_search.run_for_iterations(100, device, arena_state, arena_model, arena_root);
         }
     };
 };
