@@ -117,7 +117,7 @@ namespace W
     struct Search;
     struct MatrixNode;
 
-    struct Types : DefaultTypes<double, int, bool, double>
+    struct Types : SimpleTypes
     // as long as the order of output of get_actions is fixed we can equate actions with their indices
     // so here _ActionsType (template arg) is int
     {

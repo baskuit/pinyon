@@ -43,7 +43,7 @@ namespace math
     }
 
     template <template <typename...> typename Vector, typename T>
-    void print(Vector<T> &input)
+    void print(const Vector<T> &input)
     {
         for (int i = 0; i < input.size(); ++i)
         {
