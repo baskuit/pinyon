@@ -78,9 +78,9 @@ struct Exp3 : Types
         {
             row_strategy.resize(stats.row_visits.size());
             col_strategy.resize(stats.col_visits.size());
-            denoise(row_strategy, col_strategy);
             math::power_norm(stats.row_visits, row_strategy.size(), 1, row_strategy);
             math::power_norm(stats.col_visits, col_strategy.size(), 1, col_strategy);
+            denoise(row_strategy, col_strategy);
         }
 
         void get_refined_value(
