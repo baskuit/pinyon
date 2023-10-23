@@ -249,8 +249,6 @@ struct RandomTree : Types
     };
 };
 
-#ifdef CPP23
-
 /*
 
 Helper class to generate random tree instances for testing
@@ -258,7 +256,13 @@ Helper class to generate random tree instances for testing
 */
 
 template <typename TypeList = RandomTreeFloatTypes>
-struct RandomTreeGenerator : CartesianProductGenerator<W::Types::State, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>
+struct RandomTreeGenerator : CartesianProductGenerator<
+                                 W::Types::State,
+                                 std::vector<size_t>,
+                                 std::vector<size_t>,
+                                 std::vector<size_t>,
+                                 std::vector<Rational<>>,
+                                 std::vector<size_t>>
 {
     inline static prng device{0}; // static because used in static member function, TODO
     // This class is not used for arena, maybe remove?
@@ -283,11 +287,11 @@ struct RandomTreeGenerator : CartesianProductGenerator<W::Types::State, std::vec
         const std::vector<size_t> &chance_action_vec,
         const std::vector<Rational<>> &chance_threshold_vec,
         const std::vector<size_t> &trial_vec)
-        : CartesianProductGenerator<W::Types::State, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>{
-              constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec}
+        : CartesianProductGenerator<W::Types::State, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>
+    {
+        constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec
+    }
     {
         RandomTreeGenerator::device = prng{device};
     }
 };
-
-#endif

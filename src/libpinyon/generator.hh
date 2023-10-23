@@ -5,8 +5,6 @@
 #include <ranges>
 #include <functional>
 
-#ifdef CPP23
-
 /*
 
 Provides an object with a range interface. There are 3 main parameters
@@ -92,5 +90,3 @@ struct CartesianProductGenerator
         }
     };
 };
-
-#endif
