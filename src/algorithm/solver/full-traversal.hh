@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cassert>
 
 #include <libpinyon/lrslib.hh>
 #include <model/model.hh>
