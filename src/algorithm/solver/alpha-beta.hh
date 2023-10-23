@@ -317,7 +317,7 @@ struct AlphaBeta : Types
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, data.chance_actions[data.next_chance_idx++]);
                     ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
-                    MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
+                    MatrixNode *matrix_node_next = chance_node->access(state_copy.get_obs());
                     matrix_node_next->stats.depth = stats.depth + 1;
                     const typename Types::Prob prob = state_copy.prob;
 
@@ -424,7 +424,7 @@ struct AlphaBeta : Types
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, data.chance_actions[data.next_chance_idx++]);
                     ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
-                    MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
+                    MatrixNode *matrix_node_next = chance_node->access(state_copy.get_obs());
                     matrix_node_next->stats.depth = stats.depth + 1;
                     const typename Types::Prob prob = state_copy.prob;
 
@@ -538,7 +538,7 @@ struct AlphaBeta : Types
                     const typename Types::Obs chance_action = chance_actions[data.next_chance_idx];
                     typename Types::State state_copy = state;
                     state_copy.apply_actions(row_action, col_action, chance_action);
-                    MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
+                    MatrixNode *matrix_node_next = chance_node->access(state_copy.get_obs());
                     matrix_node_next->stats.depth = stats.depth + 1;
                     const typename Types::Prob prob = state_copy.prob;
 

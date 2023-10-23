@@ -122,7 +122,7 @@ struct TreeBandit : Types
                     state.get_actions();
 
                     ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                    MatrixNode *matrix_node_next = chance_node->access(state.obs);
+                    MatrixNode *matrix_node_next = chance_node->access(state.get_obs());
 
                     MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 

@@ -63,6 +63,13 @@ It is assumed that calculating actions is expensive so it must be done manually 
 } -> std::same_as<void>;
 ```
 This function must be called before `apply_actions` otherwise the transition will be deterministic.
+```cpp
+{
+    const_state.get_obs()
+} -> std::same_as<const typename Types::Obs &>;
+```
+Returns constant reference to the observation from the last transition. May be a run-time error to call this on a state that has never been transitioned. This comes from `pkmn/engine`, where 
+
 
 ### IsPerfectInfoStateTypes
 ```cpp

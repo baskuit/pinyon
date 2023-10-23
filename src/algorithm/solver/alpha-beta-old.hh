@@ -138,7 +138,7 @@ struct AlphaBetaOld : Types
 
                                 auto state_copy = state;
                                 state_copy.apply_actions(row_action, col_action, chance_action);
-                                MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
+                                MatrixNode *matrix_node_next = chance_node->access(state_copy.get_obs());
 
                                 u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.prob;
                                 // u_ij is the value of chance node, i.e. expected score over all child matrix nodes
@@ -287,7 +287,7 @@ struct AlphaBetaOld : Types
                             {
                                 auto state_copy = state;
                                 state_copy.apply_actions(row_action, col_action, chance_action);
-                                MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
+                                MatrixNode *matrix_node_next = chance_node->access(state_copy.get_obs());
                                 u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.prob;
                                 chance_node->stats.explored += state_copy.prob;
 
@@ -404,7 +404,7 @@ struct AlphaBetaOld : Types
                             {
                                 auto state_copy = state;
                                 state_copy.apply_actions(row_action, col_action, chance_action);
-                                MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
+                                MatrixNode *matrix_node_next = chance_node->access(state_copy.get_obs());
                                 u_ij += double_oracle(state_copy, model, matrix_node_next, p_ij, o_ij) * state_copy.prob;
                                 chance_node->stats.explored += state_copy.prob;
 

@@ -197,7 +197,7 @@ struct TreeBanditThreaded : Types
 
                     tree_mutex.lock();
                     ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                    MatrixNode *matrix_node_next = chance_node->access(state.obs);
+                    MatrixNode *matrix_node_next = chance_node->access(state.get_obs());
                     tree_mutex.unlock();
 
                     MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
@@ -444,7 +444,7 @@ struct TreeBanditThreadPool : Types
 
                     tree_mutex.lock();
                     ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
-                    MatrixNode *matrix_node_next = chance_node->access(state.obs);
+                    MatrixNode *matrix_node_next = chance_node->access(state.get_obs());
                     tree_mutex.unlock();
 
                     MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);

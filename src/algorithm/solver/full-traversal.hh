@@ -117,11 +117,8 @@ struct FullTraversal : Types
                     {
                         typename Types::State state_copy = state;
                         state_copy.apply_actions(row_action, col_action, chance_action);
-                        // state.apply_fast(row_idx, row_actions, col_idx, col_actions);
-                        // {
-                        //     state.apply_actions(row_idx, col_idx);
-                        // }
-                        MatrixNode *matrix_node_next = chance_node->access(state_copy.obs);
+                        MatrixNode *matrix_node_next = chance_node->access(state_copy.get_obs());
+                        assert(state_copy.get_obs() == chance_action);
                         matrix_node_next->stats.depth = stats.depth + 1;
                         matrix_node_next->stats.prob = state_copy.prob;
                         chance_node->stats.chance_strategy.push_back(state_copy.prob);

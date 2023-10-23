@@ -238,7 +238,7 @@ struct OffPolicy : Types
                         state.row_actions[frame.outcome.row_idx],
                         state.col_actions[frame.outcome.col_idx]);
                     ChanceNode *chance_node = matrix_node->access(frame.outcome.row_idx, frame.outcome.col_idx);
-                    MatrixNode *matrix_node_next = chance_node->access(state.obs);
+                    MatrixNode *matrix_node_next = chance_node->access(state.get_obs());
 
                     get_trajectory(trajectory, device, state, model, matrix_node_next);
                 }

@@ -29,13 +29,17 @@ concept IsStateTypes =
         {
             state.randomize_transition(device)
         } -> std::same_as<void>;
+        {
+            const_state.get_obs()
+        } -> std::same_as<const typename Types::Obs &>;
     } &&
     IsTypeList<Types>;
 
 template <typename Types>
 concept IsPerfectInfoStateTypes =
     requires(
-        typename Types::State &state) {
+        typename Types::State &state,
+        const typename Types::State &const_state) {
         {
             state.terminal
         } -> std::same_as<bool &>;
@@ -79,6 +83,10 @@ public:
     inline bool is_terminal() const
     {
         return terminal;
+    }
+
+    inline const Types::Obs & get_obs() const {
+        return obs;
     }
 
     inline void init_range_actions(size_t rows, size_t cols)
