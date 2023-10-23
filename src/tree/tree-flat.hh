@@ -6,7 +6,8 @@
 
 #include <unordered_map>
 
-template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats>
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename enable_actions = void, typename enable_value = void>
 struct FlatNodes : Types
 {
 
@@ -23,7 +24,7 @@ struct FlatNodes : Types
     using MatrixStats = MStats;
     using ChanceStats = CStats;
 
-    class MatrixNode
+    class MatrixNode : public MatrixNodeData<Types, enable_actions, enable_value>
     {
     public:
         bool terminal = false;
@@ -133,7 +134,7 @@ struct FlatNodes : Types
         ChanceNode(const ChanceNode &) = delete;
         ~ChanceNode();
 
-        MatrixNode *access(Types::Obs &obs)
+        MatrixNode *access(const Types::Obs &obs)
         {
             MatrixNode *&child = edges[obs];
             if (child == nullptr)
@@ -143,12 +144,12 @@ struct FlatNodes : Types
             return child;
         };
 
-        const MatrixNode *access(Types::Obs &obs) const
+        const MatrixNode *access(const Types::Obs &obs) const
         {
             return edges[obs];
         };
 
-        MatrixNode *access(Types::Obs &obs, Types::Mutex &mutex)
+        MatrixNode *access(const Types::Obs &obs, Types::Mutex &mutex)
         {
             MatrixNode *&child = edges[obs];
             mutex.lock();
@@ -175,15 +176,16 @@ struct FlatNodes : Types
     };
 };
 
-template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
-FlatNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename stores_actions, typename stores_value>
+FlatNodes<Types, MStats, CStats, stores_actions, stores_value>::MatrixNode::~MatrixNode()
 {
-
     delete[] edges;
 }
 
-template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
-FlatNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename stores_actions, typename stores_value>
+FlatNodes<Types, MStats, CStats, stores_actions, stores_value>::ChanceNode::~ChanceNode()
 {
     for (const auto &[obs, matrix_node] : edges)
     {

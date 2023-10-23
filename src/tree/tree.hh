@@ -4,7 +4,8 @@
 #include <state/state.hh>
 #include <tree/node.hh>
 
-template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats>
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename enable_actions = void, typename enable_value = void>
 struct DefaultNodes : Types
 {
 
@@ -21,7 +22,7 @@ struct DefaultNodes : Types
     using MatrixStats = MStats;
     using ChanceStats = CStats;
 
-    class MatrixNode
+    class MatrixNode : public MatrixNodeData<Types, enable_actions, enable_value>
     {
     public:
         ChanceNode *child = nullptr;
@@ -302,22 +303,26 @@ struct DefaultNodes : Types
 };
 
 // We have to hold off on destructor definitions until here
-template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
-DefaultNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename stores_actions, typename stores_value>
+DefaultNodes<Types, MStats, CStats, stores_actions, stores_value>::MatrixNode::~MatrixNode()
 {
     while (this->child != nullptr)
     {
-        DefaultNodes<Types, MatrixStats, ChanceStats>::ChanceNode *victim = this->child;
+        DefaultNodes<Types, MatrixStats, ChanceStats, stores_actions, stores_value>::
+            ChanceNode *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }
 }
-template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
-DefaultNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename stores_actions, typename stores_value>
+DefaultNodes<Types, MStats, CStats, stores_actions, stores_value>::ChanceNode::~ChanceNode()
 {
     while (this->child != nullptr)
     {
-        DefaultNodes<Types, MatrixStats, ChanceStats>::MatrixNode *victim = this->child;
+        DefaultNodes<Types, MatrixStats, ChanceStats, stores_actions, stores_value>::
+            MatrixNode *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }
