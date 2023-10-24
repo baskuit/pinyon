@@ -26,8 +26,8 @@ struct TreeBanditThreaded : Types
         // typename Types::Mutex mutex{};
         // tree mutex guards both, currently
     };
-    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
-    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
+    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats, typename Types::VectorAction>::MatrixNode;
+    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats, typename Types::VectorAction>::ChanceNode;
 
     class Search : public Types::BanditAlgorithm
     {
@@ -178,6 +178,12 @@ struct TreeBanditThreaded : Types
                     {
                         const size_t rows = state.row_actions.size();
                         const size_t cols = state.col_actions.size();
+                        if constexpr (MatrixNode::STORES_ACTIONS)
+                        {
+                            state.get_actions(
+                                matrix_node->row_actions,
+                                matrix_node->col_actions);
+                        }
                         model.inference(std::move(state), model_output);
                         this->expand(matrix_node->stats, rows, cols, model_output);
                         stats_mutex.unlock();
@@ -190,10 +196,19 @@ struct TreeBanditThreaded : Types
                     typename Types::Outcome outcome;
                     this->select(device, matrix_node->stats, outcome);
 
-                    state.apply_actions(
-                        state.row_actions[outcome.row_idx],
-                        state.col_actions[outcome.col_idx]);
-                    state.get_actions();
+                    if constexpr (MatrixNode::STORES_ACTIONS)
+                    {
+                        state.apply_actions(
+                            matrix_node->row_actions[outcome.row_idx],
+                            matrix_node->col_actions[outcome.col_idx]);
+                    }
+                    else
+                    {
+                        state.apply_actions(
+                            state.row_actions[outcome.row_idx],
+                            state.col_actions[outcome.col_idx]);
+                        state.get_actions();
+                    };
 
                     tree_mutex.lock();
                     ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
@@ -234,8 +249,8 @@ struct TreeBanditThreadPool : Types
     struct ChanceStats : Types::ChanceStats
     {
     };
-    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
-    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
+    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats, typename Types::VectorAction>::MatrixNode;
+    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats, typename Types::VectorAction>::ChanceNode;
 
     struct DoubleMutex
     {
@@ -418,6 +433,12 @@ struct TreeBanditThreadPool : Types
                         }
                         const size_t rows = state.row_actions.size();
                         const size_t cols = state.col_actions.size();
+                        if constexpr (MatrixNode::STORES_ACTIONS)
+                        {
+                            state.get_actions(
+                                matrix_node->row_actions,
+                                matrix_node->col_actions);
+                        }
                         model.inference(std::move(state), model_output);
                         this->expand(matrix_node->stats, rows, cols, model_output);
                         mutex.unlock();
@@ -433,14 +454,19 @@ struct TreeBanditThreadPool : Types
                     typename Types::Outcome outcome;
                     this->select(device, matrix_node->stats, outcome);
 
-                    state.apply_actions(
-                        state.row_actions[outcome.row_idx],
-                        state.col_actions[outcome.col_idx]);
-                    state.get_actions();
-
-                    // size_t h = std::hash(matrix_node);
-
-                    // mutex_hash[h] = matrix_node->stats.mutex_index;
+                    if constexpr (MatrixNode::STORES_ACTIONS)
+                    {
+                        state.apply_actions(
+                            matrix_node->row_actions[outcome.row_idx],
+                            matrix_node->col_actions[outcome.col_idx]);
+                    }
+                    else
+                    {
+                        state.apply_actions(
+                            state.row_actions[outcome.row_idx],
+                            state.col_actions[outcome.col_idx]);
+                        state.get_actions();
+                    }
 
                     tree_mutex.lock();
                     ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
