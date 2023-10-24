@@ -15,8 +15,8 @@ template <
 // will auto complete all all this + ::MatrixNode but not the alias decl :(
 struct TreeBandit : Types
 {
-    using MatrixNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>::MatrixNode;
-    using ChanceNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>::ChanceNode;
+    using MatrixNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats, typename Types::VectorAction>::MatrixNode;
+    using ChanceNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats, typename Types::VectorAction>::ChanceNode;
     class Search : public Types::BanditAlgorithm
     {
     public:
@@ -102,6 +102,12 @@ struct TreeBandit : Types
                     {
                         const size_t rows = state.row_actions.size();
                         const size_t cols = state.col_actions.size();
+                        if constexpr (MatrixNode::STORES_ACTIONS)
+                        {
+                            state.get_actions(
+                                matrix_node->row_actions,
+                                matrix_node->col_actions);
+                        }
                         model.inference(std::move(state), model_output);
                         matrix_node->expand(rows, cols);
                         this->expand(matrix_node->stats, rows, cols, model_output);
@@ -116,12 +122,22 @@ struct TreeBandit : Types
                     typename Types::Outcome outcome;
                     this->select(device, matrix_node->stats, outcome);
 
-                    state.apply_actions(
-                        state.row_actions[outcome.row_idx],
-                        state.col_actions[outcome.col_idx]);
-                    state.get_actions();
-
                     ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+
+                    if constexpr (MatrixNode::STORES_ACTIONS)
+                    {
+                        state.apply_actions(
+                            matrix_node->row_actions[outcome.row_idx],
+                            matrix_node->col_actions[outcome.col_idx]);
+                    }
+                    else
+                    {
+                        state.apply_actions(
+                            state.row_actions[outcome.row_idx],
+                            state.col_actions[outcome.col_idx]);
+                        state.get_actions();
+                    }
+
                     MatrixNode *matrix_node_next = chance_node->access(state.get_obs());
 
                     MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
