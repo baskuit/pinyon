@@ -1,8 +1,7 @@
 #include <pinyon.hh>
 
-// model types
 template <typename Types>
-bool check_flat_search_equivalence(
+void check_flat_search_equivalence(
     const size_t iterations,
     const typename Types::PRNG &device,
     const typename Types::State &state,
@@ -18,17 +17,69 @@ bool check_flat_search_equivalence(
         search.run_for_iterations(iterations, device_, state, model_, node);
         stats = node.stats;
     };
+    std::cout << std::endl;
     {
         auto device_ = device;
         auto model_ = model;
-        typename TreeBanditFlat<Types>::Search search{bandit};
-        search.run(iterations, device_, state, model);
+        typename TreeBanditFlat<Types, 1 << 10>::Search search{bandit};
+        search.run_for_iterations(iterations, device_, state, model_);
         flat_stats = search.matrix_stats[0];
     };
-    return stats == flat_stats;
+    assert(stats == flat_stats);
 }
 
-int main () {
+template <typename Types>
+void test_equiv_(
+    const typename Types::State &state)
+{
+    const size_t iterations = 1 << 10;
+    typename Types::PRNG device{0};
+    typename Types::Model model{0};
+    typename Types::BanditAlgorithm bandit{};
+
+    check_flat_search_equivalence<Types>(
+        iterations,
+        device,
+        state,
+        model,
+        bandit
+    );
+}
+
+template <typename... BanditTypes, typename State>
+void test_equiv(
+    const TypePack<BanditTypes...> bandit_type_pack,
+    const State &state)
+{
+    int i = 0;
+    (test_equiv_<BanditTypes>(state), ...);
+}
+
+int main()
+{
+    using Types = MonteCarloModel<RandomTree<>>;
+
+    auto bandit_type_pack =
+        TypePack<
+            Exp3<Types>>{};
+
+    prng device{0};
+    Types::Model model(device);
+
+    RandomTreeGenerator<> generator{
+        prng{0},
+        {1, 2, 3},
+        {2, 3},
+        {1, 2},
+        {Rational<>{0, 1}, Rational<>{1, 2}},
+        std::vector<size_t>(100, 0)};
+
+    for (const auto &wrapped_state : generator)
+    {
+        const Types::State state = (wrapped_state.unwrap<Types>());
+        std::cout << "state seed: " << state.device.get_seed() << std::endl;
+        test_equiv(bandit_type_pack, state);
+    }
 
     return 0;
 }

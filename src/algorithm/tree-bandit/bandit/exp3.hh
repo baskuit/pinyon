@@ -18,6 +18,18 @@ struct Exp3 : Types
 
         int visits = 0;
         PairReal<Real> value_total{0, 0};
+
+        // TODO somehow GMP is messing up the default/PairReal equality
+        bool operator==(const MatrixStats &other) const
+        {
+            return row_gains == other.row_gains &&
+                   col_gains == other.col_gains &&
+                   row_visits == other.row_visits &&
+                   col_visits == other.col_visits &&
+                   visits == other.visits &&
+                   value_total.row_value == other.value_total.row_value &&
+                   value_total.col_value == other.value_total.col_value;
+        }
     };
     struct ChanceStats
     {

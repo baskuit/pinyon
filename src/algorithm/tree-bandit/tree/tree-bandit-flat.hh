@@ -11,7 +11,8 @@ struct TreeBanditFlat : Types
     {
     public:
         using Types::BanditAlgorithm::BanditAlgorithm;
-        Search() {}
+
+        Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
 
         std::array<typename Types::MatrixStats, max_iterations> matrix_stats{};
 
@@ -26,7 +27,9 @@ struct TreeBanditFlat : Types
         int depth = 0;
         int index = 0;
         typename Types::ModelOutput leaf_output;
-        int rows, cols, row_idx, col_idx;
+        int rows, cols;
+
+        const std::hash<typename Types::Obs::type> hash_function{};
 
         std::array<typename Types::Outcome, max_depth> outcomes{}; // indices, mu
 
@@ -39,7 +42,7 @@ struct TreeBanditFlat : Types
             Types::Model &model)
         {
             transition = std::unordered_map<uint64_t, int>{};
-            memset(info, false, 2 * iteration * sizeof(bool));
+            memset(info, false, 2 * max_iterations * sizeof(bool));
             for (iteration = 0; iteration < iterations; ++iteration)
             {
                 typename Types::State state_copy = state;
@@ -81,7 +84,7 @@ struct TreeBanditFlat : Types
                 state.get_actions();
 
                 ++depth;
-                uint64_t hash_ = hash(index, row_idx, col_idx, std::hash(state.get_obs()));
+                uint64_t hash_ = hash(index, outcome.row_idx, outcome.col_idx, hash_function(state.get_obs().get()));
 
                 if (transition[hash_] == 0)
                 {
@@ -123,7 +126,7 @@ struct TreeBanditFlat : Types
             h = h * 31 + row_idx;
             h = h * 31 + col_idx;
             h = h * 31 + static_cast<uint64_t>(obs_hash);
-            h = h * 31 + tatic_cast<uint64_t>(obs_hash >> 32);
+            h = h * 31 + static_cast<uint64_t>(obs_hash >> 32);
             return h;
         }
     };
