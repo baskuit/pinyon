@@ -133,7 +133,7 @@ struct FlatNodes : Types
         ChanceNode(const ChanceNode &) = delete;
         ~ChanceNode();
 
-        MatrixNode *access(Types::Obs &obs)
+        MatrixNode *access(const Types::Obs &obs)
         {
             MatrixNode *&child = edges[obs];
             if (child == nullptr)
@@ -143,12 +143,12 @@ struct FlatNodes : Types
             return child;
         };
 
-        const MatrixNode *access(Types::Obs &obs) const
+        const MatrixNode *access(const Types::Obs &obs) const
         {
             return edges[obs];
         };
 
-        MatrixNode *access(Types::Obs &obs, Types::Mutex &mutex)
+        MatrixNode *access(const Types::Obs &obs, Types::Mutex &mutex)
         {
             MatrixNode *&child = edges[obs];
             mutex.lock();
