@@ -93,19 +93,12 @@ struct TreeBandit : Types
             {
                 if (!matrix_node->is_expanded())
                 {
-                    if (state.is_terminal())
-                    {
-                        matrix_node->set_terminal();
-                        model_output.value = state.payoff;
-                    }
-                    else
-                    {
-                        const size_t rows = state.row_actions.size();
-                        const size_t cols = state.col_actions.size();
-                        model.inference(std::move(state), model_output);
-                        matrix_node->expand(rows, cols);
-                        this->expand(matrix_node->stats, rows, cols, model_output);
-                    }
+                    const size_t rows = state.row_actions.size();
+                    const size_t cols = state.col_actions.size();
+                    model.inference(std::move(state), model_output);
+                    matrix_node->expand(rows, cols);
+                    this->expand(matrix_node->stats, rows, cols, model_output);
+
                     if constexpr (return_if_expand)
                     {
                         return matrix_node;
