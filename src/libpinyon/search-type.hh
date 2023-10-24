@@ -17,8 +17,8 @@ will return a tuple of `IsSearchTypes` type lists
 namespace detail
 {
     template <
-        template <typename, template <typename, typename, typename> typename, bool> typename TreeBanditTemplate,
-        template <typename, typename, typename> typename NodeTemplate,
+        template <typename, template <typename...> typename, bool> typename TreeBanditTemplate,
+        template <typename...> typename NodeTemplate,
         typename... BanditTypes>
     auto search_type_generator_unpack_bandits(TypePack<BanditTypes...>)
     {
@@ -28,7 +28,7 @@ namespace detail
     template <
         template <typename, template <typename...> typename, bool> typename TreeBanditTemplate,
         typename BanditTypePack,
-        template <typename, typename, typename> typename... NodeTemplates>
+        template <typename...> typename... NodeTemplates>
     auto search_type_generator_unpack_nodes(BanditTypePack bandit_type_pack, NodeTemplatePack<NodeTemplates...>)
     {
         return std::tuple_cat((
