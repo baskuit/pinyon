@@ -5,7 +5,7 @@
 #include <tree/node.hh>
 
 template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
-          typename enable_actions = void, typename enable_value = void>
+          typename NodeActions = void, typename NodeValue = void>
 struct DefaultNodes : Types
 {
 
@@ -22,7 +22,7 @@ struct DefaultNodes : Types
     using MatrixStats = MStats;
     using ChanceStats = CStats;
 
-    class MatrixNode : public MatrixNodeData<Types, enable_actions, enable_value>
+    class MatrixNode : public MatrixNodeData<Types, NodeActions, NodeValue>
     {
     public:
         ChanceNode *child = nullptr;

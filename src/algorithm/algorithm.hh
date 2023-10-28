@@ -119,6 +119,28 @@ concept IsTreeBanditTypes =
     } &&
     IsBanditAlgorithmTypes<Types>;
 
+template <
+    typename raf = void, 
+    typename uua = void, 
+    typename node_actions = void, 
+    typename node_value = void,
+    size_t max_iter = 1 << 15,
+    size_t max_d = 1 << 5>
+struct SearchOptions
+{
+    // if false, iterations always rollout until terminal
+    using return_after_expand = raf;
+    // refer to MCTS-A. false is the faster but unproven behaviour
+    using update_using_average = uua;
+    // trade-off between storing actions in node vs calling get_actions() frequently
+    using NodeActions = node_actions;
+    // useful for algorithm agnostic pruning, but otherwise not needed
+    using NodeValue = node_value;
+
+    static const size_t max_iterations = max_iter;
+    static const size_t max_depth = max_d;
+};
+
 template <typename Types>
 concept IsSearchTypes =
     requires(

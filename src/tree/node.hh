@@ -46,9 +46,6 @@ concept IsNodeTypes =
 template <typename Types, typename Actions, typename Value>
 struct MatrixNodeData
 {
-    static const bool STORES_ACTIONS = true;
-    static const bool STORES_VALUE = true;
-
     Actions row_actions, col_actions;
     Value value;
 };
@@ -56,24 +53,16 @@ struct MatrixNodeData
 template <typename Types, typename Actions>
 struct MatrixNodeData<Types, Actions, void>
 {
-    static const bool STORES_ACTIONS = true;
-    static const bool STORES_VALUE = false;
-
     Actions row_actions, col_actions;
 };
 
 template <typename Types, typename Value>
 struct MatrixNodeData<Types, void, Value>
 {
-    static const bool STORES_ACTIONS = false;
-    static const bool STORES_VALUE = true;
-
     Value value;
 };
 
 template <typename Types>
 struct MatrixNodeData<Types, void, void>
 {
-    static const bool STORES_ACTIONS = false;
-    static const bool STORES_VALUE = false;
 };

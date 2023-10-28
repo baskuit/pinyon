@@ -2,66 +2,37 @@
 
 template <
     typename Types,
-    typename Options = SearchOptions<>>
+    typename Options>
 struct TreeBanditFlat : Types
 {
-    template <typename MatrixStats, typename NodeActions, typename NodeValue>
-    struct MData
-    {
-        NodeActions row_actions, col_actions;
-        MatrixStats stats;
-        NodeValue value;
-    };
-
-    template <typename MatrixStats, typename NodeActions>
-    struct MData<MatrixStats, NodeActions, void>
-    {
-        NodeActions row_actions, col_actions;
-        MatrixStats stats;
-    };
-
-    template <typename MatrixStats, typename NodeValue>
-    struct MData<MatrixStats, void, NodeValue>
-    {
-        MatrixStats stats;
-        NodeValue value;
-    };
-
-    template <typename MatrixStats>
-    struct MData<MatrixStats, void, void>
-    {
-        MatrixStats stats;
-    };
-
-    using MatrixData = MData<typename Types::MatrixStats, typename Options::NodeActions, typename Options::NodeValue>;
 
     class Search : public Types::BanditAlgorithm
     {
-    public:
+    public:  
         using Types::BanditAlgorithm::BanditAlgorithm;
 
         Search(const Types::BanditAlgorithm &base) : Types::BanditAlgorithm{base} {}
 
-        std::array<MatrixData, Options::max_iterations> matrix_data{};
+        static std::array<typename Types::MatrixStats, Options::max_iterations> matrix_stats;
 
         // reset every run call
-        size_t iteration = 0;
+        static size_t iteration;
 
-        bool info[2 * Options::max_iterations];
+        static bool info[2 * Options::max_iterations];
 
         std::unordered_map<uint64_t, int> transition{};
 
         // reset every iteration
-        int depth = 0;
-        int index = 0;
-        typename Types::ModelOutput leaf_output;
-        int rows, cols;
+        static int depth;
+        static int index;
+        static typename Types::ModelOutput leaf_output;
+        static int rows, cols;
 
-        const std::hash<typename Types::Obs::type> hash_function{};
+        static constexpr std::hash<typename Types::Obs::type> hash_function{};
 
-        std::array<typename Types::Outcome, Options::max_depth> outcomes{};
+        static std::array<typename Types::Outcome, Options::max_depth> outcomes;
 
-        std::array<int, Options::max_depth> matrix_indices{};
+        static std::array<int, Options::max_depth> matrix_indices;
 
         size_t run_for_iterations(
             const size_t iterations,
@@ -97,42 +68,23 @@ struct TreeBanditFlat : Types
             while (*info_ptr && !state.is_terminal() && depth < Options::max_depth)
             {
                 typename Types::Outcome &outcome = outcomes[depth];
-                typename Types::MatrixStats &stats = matrix_data[index].stats;
-                MatrixData &current_data = matrix_data[index];
+                typename Types::MatrixStats &stats = matrix_stats[index];
 
                 // not really expanded
                 if (!*(info_ptr + 1))
                 {
-                    if constexpr (!std::is_same_v<typename Options::NodeActions, void>)
-                    {
-                        state.get_actions(matrix_data[index].row_actions, current_data.col_actions);
-                        rows = current_data.row_actions.size();
-                        cols = current_data.col_actions.size();
-                    }
-                    else
-                    {
-                        rows = state.row_actions.size();
-                        cols = state.col_actions.size();
-                    }
+                    rows = state.row_actions.size();
+                    cols = state.col_actions.size();
                     this->expand_state_part(stats, rows, cols);
                     *(info_ptr + 1) = true;
                 }
 
                 this->select(device, stats, outcome);
 
-                if constexpr (!std::is_same_v<typename Options::NodeActions, void>)
-                {
-                    state.apply_actions(
-                        current_data.row_actions[outcome.row_idx],
-                        current_data.col_actions[outcome.col_idx]);
-                }
-                else
-                {
-                    state.apply_actions(
-                        state.row_actions[outcome.row_idx],
-                        state.col_actions[outcome.col_idx]);
-                    state.get_actions();
-                }
+                state.apply_actions(
+                    state.row_actions[outcome.row_idx],
+                    state.col_actions[outcome.col_idx]);
+                state.get_actions();
 
                 ++depth;
                 uint64_t hash_ = hash(index, outcome.row_idx, outcome.col_idx, hash_function(state.get_obs().get()));
@@ -165,11 +117,7 @@ struct TreeBanditFlat : Types
                 model.inference(std::move(state), leaf_output);
             }
 
-            this->expand_inference_part(matrix_data[index].stats, leaf_output);
-            if constexpr (!std::is_same_v<typename Options::NodeValue, void>)
-            {
-                matrix_data[index].value = leaf_output.value;
-            }
+            this->expand_inference_part(matrix_stats[index], leaf_output);
 
             for (int d = 0; d < depth; ++d)
             {
@@ -179,19 +127,15 @@ struct TreeBanditFlat : Types
                 }
                 else
                 {
-                    // TODO fix!! check d + 1
-                    this->get_empirical_value(matrix_data[matrix_indices[d + 1]].stats, outcomes[d].value);
+                    // TODO fix!! [0]
+                    this->get_empirical_value(matrix_stats[0], outcomes[d].value);
                 }
 
-                this->update_matrix_stats(matrix_data[matrix_indices[d]].stats, outcomes[d]);
+                this->update_matrix_stats(matrix_stats[matrix_indices[d]], outcomes[d]);
             }
         }
 
-        inline uint64_t hash(
-            const int index,
-            const int row_idx,
-            const int col_idx,
-            const uint64_t obs_hash) const
+        inline uint64_t hash(int index, int row_idx, int col_idx, uint64_t obs_hash) const
         {
             size_t h = 17;
             h = h * 31 + index;
@@ -203,3 +147,53 @@ struct TreeBanditFlat : Types
         }
     };
 };
+
+template <
+    typename Types,
+    typename Options>
+std::array<typename Types::MatrixStats, Options::max_iterations> TreeBanditFlat<Types, Options>::Search::matrix_stats = {};
+
+template <
+    typename Types,
+    typename Options>
+size_t TreeBanditFlat<Types, Options>::Search::iteration = 0;
+
+template <
+    typename Types,
+    typename Options>
+int TreeBanditFlat<Types, Options>::Search::depth = {};
+
+template <
+    typename Types,
+    typename Options>
+int TreeBanditFlat<Types, Options>::Search::index = {};
+
+template <
+    typename Types,
+    typename Options>
+typename Types::ModelOutput TreeBanditFlat<Types, Options>::Search::leaf_output = {};
+
+template <
+    typename Types,
+    typename Options>
+std::array<typename Types::Outcome, Options::max_depth> TreeBanditFlat<Types, Options>::Search::outcomes = {};
+
+template <
+    typename Types,
+    typename Options>
+std::array<int, Options::max_depth> TreeBanditFlat<Types, Options>::Search::matrix_indices = {};
+
+template <
+    typename Types,
+    typename Options>
+int TreeBanditFlat<Types, Options>::Search::rows = 0;
+
+template <
+    typename Types,
+    typename Options>
+int TreeBanditFlat<Types, Options>::Search::cols = 0;
+
+template <
+    typename Types,
+    typename Options>
+ bool TreeBanditFlat<Types, Options>::Search::info[2 * Options::max_iterations]{};

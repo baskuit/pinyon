@@ -14,16 +14,16 @@ void check_flat_search_equivalence(
         auto model_ = model;
         typename TreeBandit<Types>::MatrixNode node{};
         typename TreeBandit<Types>::Search search{bandit};
-        search.run_for_iterations(iterations, device_, state, model_, node);
+        const size_t count = search.run_for_iterations(iterations, device_, state, model_, node);
         stats = node.stats;
     };
     std::cout << std::endl;
     {
         auto device_ = device;
         auto model_ = model;
-        typename TreeBanditFlat<Types, 1 << 10>::Search search{bandit};
-        search.run_for_iterations(iterations, device_, state, model_);
-        flat_stats = search.matrix_stats[0];
+        typename TreeBanditFlat<Types>::Search search{bandit};
+        const size_t count = search.run_for_iterations(iterations, device_, state, model_);
+        flat_stats = search.matrix_data[0].stats;
     };
     assert(stats == flat_stats);
 }
@@ -32,7 +32,7 @@ template <typename Types>
 void test_equiv_(
     const typename Types::State &state)
 {
-    const size_t iterations = 1 << 10;
+    const size_t iterations = 1 << 15;
     typename Types::PRNG device{0};
     typename Types::Model model{0};
     typename Types::BanditAlgorithm bandit{};
@@ -51,7 +51,6 @@ void test_equiv(
     const TypePack<BanditTypes...> bandit_type_pack,
     const State &state)
 {
-    int i = 0;
     (test_equiv_<BanditTypes>(state), ...);
 }
 
@@ -68,8 +67,8 @@ int main()
 
     RandomTreeGenerator<> generator{
         prng{0},
-        {1, 2, 3},
-        {2, 3},
+        {20},
+        {3},
         {1, 2},
         {Rational<>{0, 1}, Rational<>{1, 2}},
         std::vector<size_t>(100, 0)};

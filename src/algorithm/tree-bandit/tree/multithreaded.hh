@@ -12,8 +12,7 @@
 template <
     CONCEPT(IsMultithreadedBanditTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
-    bool return_if_expand = true,
-    bool use_leaf_value = true>
+    typename Options = SearchOptions<>>
 struct TreeBanditThreaded : Types
 {
     struct MatrixStats : Types::MatrixStats
@@ -26,8 +25,8 @@ struct TreeBanditThreaded : Types
         // typename Types::Mutex mutex{};
         // tree mutex guards both, currently
     };
-    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats, typename Types::VectorAction>::MatrixNode;
-    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats, typename Types::VectorAction>::ChanceNode;
+    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats, typename Options::NodeActions>::MatrixNode;
+    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats, typename Options::NodeActions>::ChanceNode;
 
     class Search : public Types::BanditAlgorithm
     {
@@ -57,7 +56,7 @@ struct TreeBanditThreaded : Types
             Types::PRNG &device,
             const Types::State &state,
             Types::Model &model,
-            MatrixNode &matrix_node)
+            MatrixNode &matrix_node) const
         {
             std::thread thread_pool[threads];
             size_t iterations[threads];
@@ -83,11 +82,11 @@ struct TreeBanditThreaded : Types
             Types::PRNG &device,
             const Types::State &state,
             Types::Model &model,
-            MatrixNode &matrix_node)
+            MatrixNode &matrix_node) const
         {
             std::thread thread_pool[threads];
-            size_t iterations_per_thread = iterations / threads;
-            auto start = std::chrono::high_resolution_clock::now();
+            const size_t iterations_per_thread = iterations / threads;
+            const auto start = std::chrono::high_resolution_clock::now();
             for (int i = 0; i < threads; ++i)
             {
                 thread_pool[i] = std::thread(
@@ -97,31 +96,30 @@ struct TreeBanditThreaded : Types
             {
                 thread_pool[i].join();
             }
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            const auto end = std::chrono::high_resolution_clock::now();
+            const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
             return duration.count();
         }
 
-    // private:
         void run_thread(
             const size_t duration_ms,
             const Types::Seed thread_device_seed,
             const Types::State *state,
             const Types::Model *model,
-            MatrixNode *matrix_node,
-            size_t *iterations)
+            MatrixNode *const matrix_node,
+            size_t *iterations) const
         {
             typename Types::PRNG device_thread(thread_device_seed);
             typename Types::Model model_thread{*model};
             typename Types::ModelOutput model_output;
 
-            auto start = std::chrono::high_resolution_clock::now();
+            const auto start = std::chrono::high_resolution_clock::now();
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
             size_t thread_iterations = 0;
             for (; duration.count() < duration_ms; ++thread_iterations)
             {
-                typename Types::State state_copy = *state;
+                typename Types::State state_copy{*state};
                 state_copy.randomize_transition(device_thread);
                 this->run_iteration(device_thread, state_copy, model_thread, matrix_node, model_output);
                 end = std::chrono::high_resolution_clock::now();
@@ -135,14 +133,14 @@ struct TreeBanditThreaded : Types
             const Types::Seed thread_device_seed,
             const Types::State *state,
             const Types::Model *model,
-            MatrixNode *const matrix_node)
+            MatrixNode *const matrix_node) const
         {
             typename Types::PRNG device_thread(thread_device_seed);
             typename Types::Model model_thread{*model};
             typename Types::ModelOutput model_output;
             for (size_t iteration = 0; iteration < iterations; ++iteration)
             {
-                typename Types::State state_copy = *state;
+                typename Types::State state_copy{*state};
                 state_copy.randomize_transition(device_thread);
                 this->run_iteration(device_thread, state_copy, model_thread, matrix_node, model_output);
             }
@@ -152,8 +150,8 @@ struct TreeBanditThreaded : Types
             Types::PRNG &device,
             Types::State &state,
             Types::Model &model,
-            MatrixNode *matrix_node,
-            Types::ModelOutput &model_output)
+            MatrixNode *const matrix_node,
+            Types::ModelOutput &model_output) const
         {
             typename Types::Mutex &stats_mutex{matrix_node->stats.stats_mutex};
             typename Types::Mutex &tree_mutex{matrix_node->stats.tree_mutex};
@@ -176,27 +174,43 @@ struct TreeBanditThreaded : Types
                     }
                     else
                     {
-                        const size_t rows = state.row_actions.size();
-                        const size_t cols = state.col_actions.size();
-                        if constexpr (MatrixNode::STORES_ACTIONS)
+                        if constexpr (!std::is_same_v<typename Options::NodeActions, void>)
                         {
                             state.get_actions(
                                 matrix_node->row_actions,
                                 matrix_node->col_actions);
+                            const size_t rows = matrix_node->row_actions.size();
+                            const size_t cols = matrix_node->col_actions.size();
+                            model.inference(std::move(state), model_output);
+                            this->expand(matrix_node->stats, rows, cols, model_output);
+                            stats_mutex.unlock();
+                            matrix_node->expand(rows, cols);
                         }
-                        model.inference(std::move(state), model_output);
-                        this->expand(matrix_node->stats, rows, cols, model_output);
-                        stats_mutex.unlock();
-                        matrix_node->expand(rows, cols);
+                        else
+                        {
+                            const size_t rows = state.row_actions.size();
+                            const size_t cols = state.col_actions.size();
+                            model.inference(std::move(state), model_output);
+                            this->expand(matrix_node->stats, rows, cols, model_output);
+                            stats_mutex.unlock();
+                            matrix_node->expand(rows, cols);
+                        }
                     }
-                    return matrix_node;
+                    if constexpr (!std::is_same_v<typename Options::NodeValue, void>)
+                    {
+                        matrix_node->value = model_output.value;
+                    }
+                    if constexpr (std::is_same_v<typename Options::return_after_expand, void>)
+                    {
+                        return matrix_node;
+                    }
                 }
                 else
                 {
                     typename Types::Outcome outcome;
                     this->select(device, matrix_node->stats, outcome);
 
-                    if constexpr (MatrixNode::STORES_ACTIONS)
+                    if constexpr (!std::is_same_v<typename Options::NodeActions, void>)
                     {
                         state.apply_actions(
                             matrix_node->row_actions[outcome.row_idx],
@@ -208,7 +222,7 @@ struct TreeBanditThreaded : Types
                             state.row_actions[outcome.row_idx],
                             state.col_actions[outcome.col_idx]);
                         state.get_actions();
-                    };
+                    }
 
                     tree_mutex.lock();
                     ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
@@ -217,7 +231,7 @@ struct TreeBanditThreaded : Types
 
                     MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
-                    if constexpr (use_leaf_value)
+                    if constexpr (std::is_same_v<typename Options::update_using_average, void>)
                     {
                         outcome.value = model_output.value;
                     }
@@ -237,8 +251,7 @@ struct TreeBanditThreaded : Types
 template <
     CONCEPT(IsMultithreadedBanditTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
-    bool return_if_expand = true,
-    bool use_leaf_value = true>
+    typename Options = SearchOptions<>>
 struct TreeBanditThreadPool : Types
 {
     struct MatrixStats : Types::MatrixStats
@@ -249,8 +262,8 @@ struct TreeBanditThreadPool : Types
     struct ChanceStats : Types::ChanceStats
     {
     };
-    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats, typename Types::VectorAction>::MatrixNode;
-    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats, typename Types::VectorAction>::ChanceNode;
+    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats, typename Options::NodeActions>::MatrixNode;
+    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats, typename Options::NodeActions>::ChanceNode;
 
     struct DoubleMutex
     {
@@ -333,7 +346,7 @@ struct TreeBanditThreadPool : Types
         {
             std::thread thread_pool[threads];
             size_t iterations_per_thread = iterations / threads;
-            auto start = std::chrono::high_resolution_clock::now();
+            const auto start = std::chrono::high_resolution_clock::now();
             for (int i = 0; i < threads; ++i)
             {
                 thread_pool[i] = std::thread(
@@ -343,12 +356,11 @@ struct TreeBanditThreadPool : Types
             {
                 thread_pool[i].join();
             }
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            const auto end = std::chrono::high_resolution_clock::now();
+            const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
             return duration.count();
         }
 
-    private:
         void run_thread(
             const size_t duration_ms,
             const Types::Seed thread_device_seed,
@@ -361,13 +373,13 @@ struct TreeBanditThreadPool : Types
             typename Types::Model model_thread{*model};             // TODO go back to not making new ones? Perhaps only device needs new instance
             typename Types::ModelOutput model_output;
 
-            auto start = std::chrono::high_resolution_clock::now();
+            const auto start = std::chrono::high_resolution_clock::now();
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
             size_t thread_iterations = 0;
             for (; duration.count() < duration_ms; ++thread_iterations)
             {
-                typename Types::State state_copy = *state;
+                typename Types::State state_copy{*state};
                 state_copy.randomize_transition(device_thread);
                 this->run_iteration(device_thread, state_copy, model_thread, matrix_node, model_output);
                 end = std::chrono::high_resolution_clock::now();
@@ -388,7 +400,7 @@ struct TreeBanditThreadPool : Types
             typename Types::ModelOutput model_output;
             for (size_t iteration = 0; iteration < iterations; ++iteration)
             {
-                typename Types::State state_copy = *state;
+                typename Types::State state_copy{*state};
                 state_copy.randomize_transition(device_thread);
                 this->run_iteration(device_thread, state_copy, model_thread, matrix_node, model_output);
             }
@@ -398,7 +410,7 @@ struct TreeBanditThreadPool : Types
             Types::PRNG &device,
             Types::State &state,
             Types::Model &model,
-            MatrixNode *matrix_node,
+            MatrixNode *const matrix_node,
             Types::ModelOutput &model_output)
         {
             if (state.is_terminal())
@@ -431,20 +443,36 @@ struct TreeBanditThreadPool : Types
                             mutex.unlock();
                             return matrix_node;
                         }
-                        const size_t rows = state.row_actions.size();
-                        const size_t cols = state.col_actions.size();
-                        if constexpr (MatrixNode::STORES_ACTIONS)
+                        if constexpr (!std::is_same_v<typename Options::NodeActions, void>)
                         {
                             state.get_actions(
                                 matrix_node->row_actions,
                                 matrix_node->col_actions);
+                            const size_t rows = matrix_node->row_actions.size();
+                            const size_t cols = matrix_node->col_actions.size();
+                            model.inference(std::move(state), model_output);
+                            this->expand(matrix_node->stats, rows, cols, model_output);
+                            mutex.unlock();
+                            matrix_node->expand(rows, cols);
                         }
-                        model.inference(std::move(state), model_output);
-                        this->expand(matrix_node->stats, rows, cols, model_output);
-                        mutex.unlock();
-                        matrix_node->expand(rows, cols);
+                        else
+                        {
+                            const size_t rows = state.row_actions.size();
+                            const size_t cols = state.col_actions.size();
+                            model.inference(std::move(state), model_output);
+                            this->expand(matrix_node->stats, rows, cols, model_output);
+                            mutex.unlock();
+                            matrix_node->expand(rows, cols);
+                        }
                     }
-                    return matrix_node;
+                    if constexpr (!std::is_same_v<typename Options::NodeValue, void>)
+                    {
+                        matrix_node->value = model_output.value;
+                    }
+                    if constexpr (std::is_same_v<typename Options::return_after_expand, void>)
+                    {
+                        return matrix_node;
+                    }
                 }
                 else
                 {
@@ -454,7 +482,7 @@ struct TreeBanditThreadPool : Types
                     typename Types::Outcome outcome;
                     this->select(device, matrix_node->stats, outcome);
 
-                    if constexpr (MatrixNode::STORES_ACTIONS)
+                    if constexpr (!std::is_same_v<typename Options::NodeActions, void>)
                     {
                         state.apply_actions(
                             matrix_node->row_actions[outcome.row_idx],
@@ -475,7 +503,7 @@ struct TreeBanditThreadPool : Types
 
                     MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
-                    if constexpr (use_leaf_value)
+                    if constexpr (std::is_same_v<typename Options::update_using_average, void>)
                     {
                         outcome.value = model_output.value;
                     }
@@ -483,18 +511,12 @@ struct TreeBanditThreadPool : Types
                     {
                         this->get_empirical_value(matrix_node_next->stats, outcome.value);
                     }
+
                     this->update_matrix_stats(matrix_node->stats, outcome, stats_mutex);
                     this->update_chance_stats(chance_node->stats, outcome); // no guard
                     return matrix_node_leaf;
                 }
             }
-        }
-
-    private:
-        void get_mutex_index(
-            MatrixNode *const matrix_node)
-        {
-            matrix_node->stats.mutex_index = (this->current_index.fetch_add(1)) % pool_size;
         }
     };
 };
