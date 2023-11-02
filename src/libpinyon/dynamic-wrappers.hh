@@ -7,27 +7,11 @@
 
 /*
 
-Even if two State types are equal, e.g. `Types1 = MonteCarloModel<MoldState<2>>::State` and `Types2 = MoldState<2>::State`,
-the StateT<>, ModelT<>, SearchT<> classes might not be convertible. That is,
+Type erasure using unique_ptr. For any tree-bandit-like type list, its State, Model, Search, and MatrixNode types
+can be wrapped as their W::Types counterparts.
 
-StateT<MoldState<2>>, StateT<MonteCarloModel<MoldState<2>>> might not be compatible.
-This would basically defeat the purpose of wrapping, so it has to be addressed.
-
-The solution is the 'normalize' the typelists so that the resulting StateT<> instantiations are equal as long as their primary
-and ancillary data types are equal.
-
-W::Types is a specific type list that is should allow every other type list to be 'converted' to it via wrapping
-this is assumed a few things about type lists
-e.g. Reals are assumed to have a conversion to double, get_actions() output has fixed ordering (see below), etc
-Also note: this is the reason for the conversion to double operator for RealType<>, ProbType<>
-mpq_class can't convert, it uses get_d(), so we handle this at the level of the wrapper by adding conversion operator
-this unfortunatley means the library won't immediately compile if the RealType etc. wrappers are removed
-although its very close
-
-The only StateT etc. constructor is templated and an instance of that *type list* is used as the first parameter.
-The make_state etc. factory functions are the final layer so that this type list can be provided via a template parameter list
-e.g. auto state = make_state<TreeBandit<...>>(// ...args)
-and without constructing the type list, which is verbotten
+These types have `get_actions`, `inference` etc as virtual methods. If there is an underlying type mismatch
+there are no checks to prevent the nullptr deference.
 
 */
 
@@ -36,10 +20,32 @@ namespace TypeListNormalizer
 
     /*
 
+    Even if two State types are equal, e.g. `Types1 = MonteCarloModel<MoldState<2>>::State` and `Types2 = MoldState<2>::State`,
+    the StateT<>, ModelT<>, SearchT<> classes might not be convertible. That is,
+
+    StateT<MoldState<2>>, StateT<MonteCarloModel<MoldState<2>>> might not be compatible.
+    This would basically defeat the purpose of wrapping, so it has to be addressed.
+
+    The solution is the 'normalize' the typelists so that the resulting StateT<> instantiations are equal as long as their primary
+    and ancillary data types are equal.
+
+    W::Types is a specific type list that is should allow every other type list to be 'converted' to it via wrapping
+    this is assumed a few things about type lists
+    e.g. Reals are assumed to have a conversion to double, get_actions() output has fixed ordering (see below), etc
+    Also note: this is the reason for the conversion to double operator for RealType<>, ProbType<>
+    mpq_class can't convert, it uses get_d(), so we handle this at the level of the wrapper by adding conversion operator
+    this unfortunatley means the library won't immediately compile if the RealType etc. wrappers are removed
+    although its very close
+
+    The only StateT etc. constructor is templated and an instance of that *type list* is used as the first parameter.
+    The make_state etc. factory functions are the final layer so that this type list can be provided via a template parameter list
+    e.g. auto state = make_state<TreeBandit<...>>(// ...args)
+    and without constructing the type list, which is verbotten
+
+
     _ in template types just to not shadow the using declaration
     _ prefix used for virtual methods in Dynamic namespace,
     because they mirror but are not related to their name-likes in the static realm
-
 
     */
 
@@ -119,7 +125,6 @@ namespace W
 
     struct Types : SimpleTypes
     // as long as the order of output of get_actions is fixed we can equate actions with their indices
-    // so here _ActionsType (template arg) is int
     {
         using ModelInput = W::State;
         struct ModelOutput
@@ -193,7 +198,7 @@ namespace W
         {
             virtual ~Model() = default;
             virtual std::unique_ptr<Dynamic::Model> clone() const = 0;
-            virtual void _inference(Dynamic::State *, Types::ModelOutput &) = 0;
+            virtual void _inference(const Dynamic::State *, Types::ModelOutput &) = 0;
         };
         template <typename T>
         struct ModelT : Model
@@ -209,14 +214,14 @@ namespace W
             }
 
             void _inference(
-                Dynamic::State *state_ptr,
+                const Dynamic::State *state_ptr,
                 Types::ModelOutput &output)
             {
-                typename T::State &state = dynamic_cast<Dynamic::StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr)->data;
+                const typename T::State &state = dynamic_cast<const Dynamic::StateT<TypeListNormalizer::MStateTypes<T>> *>(state_ptr)->data;
                 typename T::ModelOutput output_;
-                data.inference(typename T::State{state}, output_); // rvalue is copied state
+                data.inference(typename T::State{state}, output_); // rvalue is copied state TODO does this work???
                 output.value = Types::Value{
-                    static_cast<double>(output_.value.get_row_value()), 
+                    static_cast<double>(output_.value.get_row_value()),
                     static_cast<double>(output_.value.get_col_value())};
                 // TODO
                 output.row_policy.resize(state.row_actions.size());
@@ -259,14 +264,14 @@ namespace W
                 Types::PRNG &device,
                 Dynamic::State *state_ptr,
                 Dynamic::Model *model_ptr,
-                Dynamic::MatrixNode *matrix_node_ptr) const = 0;
+                Dynamic::MatrixNode *matrix_node_ptr) = 0;
             virtual size_t _run_for_iterations(
                 size_t duration_ms,
                 Types::PRNG &device,
                 Dynamic::State *state_ptr,
                 Dynamic::Model *model_ptr,
-                Dynamic::MatrixNode *matrix_node_ptr) const = 0;
-            virtual void _get_strategies(
+                Dynamic::MatrixNode *matrix_node_ptr) = 0;
+            virtual void _get_empirical_strategies(
                 Dynamic::MatrixNode *matrix_node_ptr,
                 Types::VectorReal &row_strategy,
                 Types::VectorReal &col_strategy) const = 0;
@@ -318,16 +323,16 @@ namespace W
                 const size_t ms = data.run_for_iterations(iterations, device_, state, model, matrix_node);
                 return ms;
             }
-            void _get_strategies(
+            void _get_empirical_strategies(
                 Dynamic::MatrixNode *matrix_node_ptr,
                 Types::VectorReal &row_strategy,
                 Types::VectorReal &col_strategy) const
             {
-                typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<T> *>(matrix_node_ptr)->data;
+                const typename T::MatrixNode &matrix_node = dynamic_cast<MatrixNodeT<T> *>(matrix_node_ptr)->data;
                 typename T::VectorReal r, c;
                 data.get_empirical_strategies(matrix_node.stats, r, c);
 
-                row_strategy.resize(r.size());
+                row_strategy.resize(r.size()); // TODO check this as well
                 col_strategy.resize(c.size());
                 std::copy(r.begin(), r.end(), row_strategy.begin());
                 std::copy(c.begin(), c.end(), col_strategy.begin());
@@ -499,7 +504,7 @@ namespace W
             Types::PRNG &device,
             Types::State &state,
             Types::Model &model,
-            Types::MatrixNode &matrix_node) const
+            Types::MatrixNode &matrix_node)
         {
             return ptr->_run(duration_ms, device, state.ptr.get(), model.ptr.get(), matrix_node.ptr.get());
         }
@@ -509,17 +514,17 @@ namespace W
             Types::PRNG &device,
             Types::State &state,
             Types::Model &model,
-            Types::MatrixNode &matrix_node) const
+            Types::MatrixNode &matrix_node)
         {
             return ptr->_run_for_iterations(iterations, device, state.ptr.get(), model.ptr.get(), matrix_node.ptr.get());
         }
 
-        void get_strategies(
+        void get_empirical_strategies(
             Types::MatrixNode &matrix_node,
             Types::VectorReal &row_strategy,
-            Types::VectorReal &col_strategy)
+            Types::VectorReal &col_strategy) const
         {
-            ptr->_get_strategies(matrix_node.ptr.get(), row_strategy, col_strategy);
+            ptr->_get_empirical_strategies(matrix_node.ptr.get(), row_strategy, col_strategy);
         }
     };
 

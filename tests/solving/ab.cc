@@ -76,13 +76,11 @@ struct Solve
             *result = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
         };
 
-        std::thread threads[4]
-        {
+        std::thread threads[4]{
             std::thread{run_lambda, &time_full, &state, &model, &search_full, &root_full, &full_value},
             std::thread{run_lambda, &time_full_f, &state_f, &model_f, &search_full_f, &root_full_f, &full_f_value},
             std::thread{run_lambda, &time_ab, &state, &model, &search_ab, &root_ab, &ab_value},
-            std::thread{run_lambda, &time_ab_f, &state_f, &model_f, &search_ab_f, &root_ab_f, &ab_f_value}
-        };
+            std::thread{run_lambda, &time_ab_f, &state_f, &model_f, &search_ab_f, &root_ab_f, &ab_f_value}};
         size_t thread_count = 0;
         for (auto &thread : threads)
         {
@@ -142,18 +140,16 @@ int main()
     double total_ratio = 0;
     int tries = 0;
 
-
     size_t counter = 0;
     for (auto wrapped_state : generator)
     {
         auto state = wrapped_state.unwrap<RandomTree<RandomTreeRationalTypes>>();
 
-    auto copy = state.chance_strategies;
-
         Solve solve{state, threshold};
         solve.count();
 
-        if (solve.count_ab / (double)solve.count_full < 1/4) {
+        if (solve.count_ab / (double)solve.count_full < 1 / 4)
+        {
             std::cout << std::endl;
         }
 
