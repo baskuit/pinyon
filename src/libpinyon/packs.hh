@@ -9,9 +9,7 @@ struct TemplatePack
 
 template <
     template <
-        typename Types,
-        typename M,
-        typename C>
+        typename...>
     typename... NodeTemplate>
 struct NodeTemplatePack
 {

@@ -4,7 +4,8 @@
 #include <state/state.hh>
 #include <tree/node.hh>
 
-template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats>
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename NodeActions = void, typename NodeValue = void>
 struct DebugNodes : Types
 {
 
@@ -21,7 +22,7 @@ struct DebugNodes : Types
     using MatrixStats = MStats;
     using ChanceStats = CStats;
 
-    class MatrixNode
+    class MatrixNode : public MatrixNodeData<Types, NodeActions, NodeValue>
     {
     public:
         ChanceNode *parent = nullptr;
@@ -231,23 +232,25 @@ struct DebugNodes : Types
     };
 };
 
-template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
-DebugNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename stores_actions, typename stores_value>
+DebugNodes<Types, MStats, CStats, stores_actions, stores_value>::MatrixNode::~MatrixNode()
 {
     while (this->child != nullptr)
     {
-        DebugNodes<Types, MatrixStats, ChanceStats>::ChanceNode *victim = this->child;
+        DebugNodes<Types, MStats, CStats, stores_actions, stores_value>::ChanceNode *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }
 }
 
-template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
-DebugNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename stores_actions, typename stores_value>
+DebugNodes<Types, MStats, CStats, stores_actions, stores_value>::ChanceNode::~ChanceNode()
 {
     while (this->child != nullptr)
     {
-        DebugNodes<Types, MatrixStats, ChanceStats>::MatrixNode *victim = this->child;
+        DebugNodes<Types, MStats, CStats, stores_actions, stores_value>::MatrixNode *victim = this->child;
         this->child = this->child->next;
         delete victim;
     }

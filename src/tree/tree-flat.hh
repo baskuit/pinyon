@@ -6,7 +6,8 @@
 
 #include <unordered_map>
 
-template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats>
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename NodeActions = void, typename NodeValue = void>
 struct FlatNodes : Types
 {
 
@@ -23,7 +24,7 @@ struct FlatNodes : Types
     using MatrixStats = MStats;
     using ChanceStats = CStats;
 
-    class MatrixNode
+    class MatrixNode : public MatrixNodeData<Types, NodeActions, NodeValue>
     {
     public:
         bool terminal = false;
@@ -175,15 +176,16 @@ struct FlatNodes : Types
     };
 };
 
-template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
-FlatNodes<Types, MatrixStats, ChanceStats>::MatrixNode::~MatrixNode()
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename stores_actions, typename stores_value>
+FlatNodes<Types, MStats, CStats, stores_actions, stores_value>::MatrixNode::~MatrixNode()
 {
-
     delete[] edges;
 }
 
-template <CONCEPT(IsStateTypes, Types), typename MatrixStats, typename ChanceStats>
-FlatNodes<Types, MatrixStats, ChanceStats>::ChanceNode::~ChanceNode()
+template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+          typename stores_actions, typename stores_value>
+FlatNodes<Types, MStats, CStats, stores_actions, stores_value>::ChanceNode::~ChanceNode()
 {
     for (const auto &[obs, matrix_node] : edges)
     {

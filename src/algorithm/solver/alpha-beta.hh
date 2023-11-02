@@ -106,15 +106,15 @@ struct AlphaBeta : Types
                 return {model_output.value.get_row_value(), model_output.value.get_row_value()};
             }
 
-            // here is the only place we can use prior solve info
-
+            // I,J are the only places we can use prior solve info
             I.push_back(stats.row_pricipal_idx);
             J.push_back(stats.col_pricipal_idx);
             bool solved_exactly = true;
 
-            // stats.data_matrix.fill(rows, cols);
-            DataMatrix<Data> new_data_matrix{rows, cols}; // TODO
-            stats.data_matrix = new_data_matrix;
+            stats.data_matrix.resize(0); // TODO potential fix
+            stats.data_matrix.fill(rows, cols);
+            // DataMatrix<Data> new_data_matrix{rows, cols}; // TODO
+            // stats.data_matrix = new_data_matrix;
 
             bool smaller_bounds = false;
             bool new_action = true;
@@ -336,6 +336,7 @@ struct AlphaBeta : Types
                     total_unexplored -= prob * col_strategy[best_i];
                     priority_scores[best_i] -= prob * col_strategy[best_i];
 
+                    // TODO fails but likely not serious.
                     // assert(data.unexplored >= Real{0});
                     // assert(total_unexplored >= Real{0});
 

@@ -2,6 +2,7 @@
 
 #include <types/types.hh>
 #include <algorithm/algorithm.hh>
+
 #include <tree/tree.hh>
 
 #include <chrono>
@@ -9,14 +10,13 @@
 template <
     CONCEPT(IsBanditAlgorithmTypes, Types),
     template <typename...> typename NodePair = DefaultNodes,
-    bool return_if_expand = true,
-    bool use_leaf_value = true>
+    typename Options = SearchOptions<>>
     requires IsNodeTypes<NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>>
 // will auto complete all all this + ::MatrixNode but not the alias decl :(
 struct TreeBandit : Types
 {
-    using MatrixNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>::MatrixNode;
-    using ChanceNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>::ChanceNode;
+    using MatrixNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats, typename Options::NodeActions>::MatrixNode;
+    using ChanceNode = NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats, typename Options::NodeActions>::ChanceNode;
     class Search : public Types::BanditAlgorithm
     {
     public:
@@ -62,7 +62,7 @@ struct TreeBandit : Types
             Types::Model &model,
             MatrixNode &matrix_node) const
         {
-            auto start = std::chrono::high_resolution_clock::now();
+            const auto start = std::chrono::high_resolution_clock::now();
             typename Types::ModelOutput model_output;
             for (size_t iteration = 0; iteration < iterations; ++iteration)
             {
@@ -70,8 +70,8 @@ struct TreeBandit : Types
                 state_copy.randomize_transition(device);
                 this->run_iteration(device, state_copy, model, &matrix_node, model_output);
             }
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            const auto end = std::chrono::high_resolution_clock::now();
+            const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
             return duration.count();
         }
 
@@ -93,13 +93,31 @@ struct TreeBandit : Types
             {
                 if (!matrix_node->is_expanded())
                 {
-                    const size_t rows = state.row_actions.size();
-                    const size_t cols = state.col_actions.size();
-                    model.inference(std::move(state), model_output);
-                    matrix_node->expand(rows, cols);
-                    this->expand(matrix_node->stats, rows, cols, model_output);
+                    if constexpr (!std::is_same_v<typename Options::NodeActions, void>)
+                    {
+                        state.get_actions(
+                            matrix_node->row_actions,
+                            matrix_node->col_actions);
+                        const size_t rows = matrix_node->row_actions.size();
+                        const size_t cols = matrix_node->col_actions.size();
+                        model.inference(std::move(state), model_output);
+                        matrix_node->expand(rows, cols);
+                        this->expand(matrix_node->stats, rows, cols, model_output);
+                    }
+                    else
+                    {
+                        const size_t rows = state.row_actions.size();
+                        const size_t cols = state.col_actions.size();
+                        model.inference(std::move(state), model_output);
+                        matrix_node->expand(rows, cols);
+                        this->expand(matrix_node->stats, rows, cols, model_output);
+                    }
 
-                    if constexpr (return_if_expand)
+                    if constexpr (!std::is_same_v<typename Options::NodeValue, void>)
+                    {
+                        matrix_node->value = model_output.value;
+                    }
+                    if constexpr (std::is_same_v<typename Options::return_after_expand, void>)
                     {
                         return matrix_node;
                     }
@@ -109,17 +127,27 @@ struct TreeBandit : Types
                     typename Types::Outcome outcome;
                     this->select(device, matrix_node->stats, outcome);
 
-                    state.apply_actions(
-                        state.row_actions[outcome.row_idx],
-                        state.col_actions[outcome.col_idx]);
-                    state.get_actions();
-
                     ChanceNode *chance_node = matrix_node->access(outcome.row_idx, outcome.col_idx);
+
+                    if constexpr (!std::is_same_v<typename Options::NodeActions, void>)
+                    {
+                        state.apply_actions(
+                            matrix_node->row_actions[outcome.row_idx],
+                            matrix_node->col_actions[outcome.col_idx]);
+                    }
+                    else
+                    {
+                        state.apply_actions(
+                            state.row_actions[outcome.row_idx],
+                            state.col_actions[outcome.col_idx]);
+                        state.get_actions();
+                    }
+
                     MatrixNode *matrix_node_next = chance_node->access(state.get_obs());
 
                     MatrixNode *matrix_node_leaf = run_iteration(device, state, model, matrix_node_next, model_output);
 
-                    if constexpr (use_leaf_value)
+                    if constexpr (std::is_same_v<typename Options::update_using_average, void>)
                     {
                         outcome.value = model_output.value;
                     }
