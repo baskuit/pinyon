@@ -249,49 +249,49 @@ struct RandomTree : Types
     };
 };
 
-/*
+// /*
 
-Helper class to generate random tree instances for testing
+// Helper class to generate random tree instances for testing
 
-*/
+// */
 
-template <typename TypeList = RandomTreeFloatTypes>
-struct RandomTreeGenerator : CartesianProductGenerator<
-                                 W::Types::State,
-                                 std::vector<size_t>,
-                                 std::vector<size_t>,
-                                 std::vector<size_t>,
-                                 std::vector<Rational<>>,
-                                 std::vector<size_t>>
-{
-    inline static prng device{0}; // static because used in static member function, TODO
-    // This class is not used for arena, maybe remove?
+// template <typename TypeList = RandomTreeFloatTypes>
+// struct RandomTreeGenerator : CartesianProductGenerator<
+//                                  W::Types::State,
+//                                  std::vector<size_t>,
+//                                  std::vector<size_t>,
+//                                  std::vector<size_t>,
+//                                  std::vector<Rational<>>,
+//                                  std::vector<size_t>>
+// {
+//     inline static prng device{0}; // static because used in static member function, TODO
+//     // This class is not used for arena, maybe remove?
 
-    // static otherwise implcit this arg messes up signature
-    static W::Types::State constr(std::tuple<size_t, size_t, size_t, Rational<>, size_t> tuple)
-    {
-        return W::Types::State{
-            RandomTree<TypeList>{},
-            RandomTreeGenerator::device.uniform_64(),
-            std::get<0>(tuple),
-            std::get<1>(tuple),
-            std::get<1>(tuple),
-            std::get<2>(tuple),
-            std::get<3>(tuple)};
-    };
+//     // static otherwise implcit this arg messes up signature
+//     static W::Types::State constr(std::tuple<size_t, size_t, size_t, Rational<>, size_t> tuple)
+//     {
+//         return W::Types::State{
+//             RandomTree<TypeList>{},
+//             RandomTreeGenerator::device.uniform_64(),
+//             std::get<0>(tuple),
+//             std::get<1>(tuple),
+//             std::get<1>(tuple),
+//             std::get<2>(tuple),
+//             std::get<3>(tuple)};
+//     };
 
-    RandomTreeGenerator(
-        const prng &device,
-        const std::vector<size_t> &depth_bound_vec,
-        const std::vector<size_t> &actions_vec,
-        const std::vector<size_t> &chance_action_vec,
-        const std::vector<Rational<>> &chance_threshold_vec,
-        const std::vector<size_t> &trial_vec)
-        : CartesianProductGenerator<W::Types::State, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>
-    {
-        constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec
-    }
-    {
-        RandomTreeGenerator::device = prng{device};
-    }
-};
+//     RandomTreeGenerator(
+//         const prng &device,
+//         const std::vector<size_t> &depth_bound_vec,
+//         const std::vector<size_t> &actions_vec,
+//         const std::vector<size_t> &chance_action_vec,
+//         const std::vector<Rational<>> &chance_threshold_vec,
+//         const std::vector<size_t> &trial_vec)
+//         : CartesianProductGenerator<W::Types::State, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>, std::vector<Rational<>>, std::vector<size_t>>
+//     {
+//         constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec
+//     }
+//     {
+//         RandomTreeGenerator::device = prng{device};
+//     }
+// };

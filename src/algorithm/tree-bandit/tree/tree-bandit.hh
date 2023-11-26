@@ -67,7 +67,12 @@ struct TreeBandit : Types
             for (size_t iteration = 0; iteration < iterations; ++iteration)
             {
                 typename Types::State state_copy = state;
+                if (iteration == 5061)
+                {
+                    state_copy.print_log = true;
+                }
                 state_copy.randomize_transition(device);
+                std::cout << iteration << std::endl;
                 this->run_iteration(device, state_copy, model, &matrix_node, model_output);
             }
             const auto end = std::chrono::high_resolution_clock::now();
