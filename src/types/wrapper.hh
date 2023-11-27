@@ -264,6 +264,37 @@ struct ObsHashType<std::array<uint8_t, 64>>
     }
 };
 
+template <>
+struct ObsHashType<std::array<uint8_t, 16>>
+{
+    size_t operator()(const ObsType<std::array<uint8_t, 16>> &obs) const
+    {
+        const uint64_t *a = reinterpret_cast<const uint64_t *>(obs.value.data());
+        size_t hash = 0;
+        for (int i = 0; i < 2; ++i)
+        {
+            hash ^= a[i];
+        }
+        return hash;
+    }
+};
+
+template <>
+struct ObsHashType<std::array<uint8_t, 376>>
+{
+    size_t operator()(const ObsType<std::array<uint8_t, 376>> &obs) const
+    {
+        const uint64_t *a = reinterpret_cast<const uint64_t *>(obs.value.data());
+        size_t hash = 0;
+        for (int i = 0; i < 47; ++i)
+        {
+            hash ^= a[i];
+        }
+        return hash;
+    }
+};
+
+
 template <typename T>
 struct ActionType : Wrapper<T>
 {

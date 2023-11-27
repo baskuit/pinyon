@@ -138,10 +138,10 @@ struct DefaultNodes : Types
             return child;
         };
 
-        size_t count_matrix_nodes()
+        size_t count_matrix_nodes() const
         {
             size_t c = 1;
-            ChanceNode *current = this->child;
+            const ChanceNode *current = this->child;
             while (current != nullptr)
             {
                 c += current->count_matrix_nodes();
@@ -264,10 +264,10 @@ struct DefaultNodes : Types
             return child;
         };
 
-        size_t count_matrix_nodes()
+        size_t count_matrix_nodes() const
         {
             size_t c = 0;
-            MatrixNode *current = this->child;
+            const MatrixNode *current = this->child;
             while (current != nullptr)
             {
                 c += current->count_matrix_nodes();
