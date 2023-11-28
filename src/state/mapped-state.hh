@@ -5,10 +5,22 @@
 #include <memory>
 #include <unordered_map>
 
+/*
+
+Expands a shared tree around the input state by brute-forcing chance nodes.
+This tree only stores the witnessed chance actions and their emprical probs.
+
+Much like `FullTraversal`, this is exactly a regular Types::State but with the shared data as well.
+When we  call `apply_actions` and transition to the of the shared tree, we mark as terminal.
+No search is done at that moment, but calling `get_payoff` will now perform a search with a disposable root node,
+and the model and search objects that were copied during initialization
+
+*/
+
 template <
     typename Types,
-    bool renormalize = false>
-struct MappedState
+    bool empirical = true>
+struct MappedState : Types::TypeList
 {
 
     struct MatrixStats
@@ -17,7 +29,7 @@ struct MappedState
 
     struct ChanceData
     {
-        size_t count{};
+        size_t count = 0;
         typename Types::Prob prob;
         typename Types::Seed seed;
     };
@@ -29,6 +41,7 @@ struct MappedState
             ChanceData,
             typename Types::ObsHash>
             map{};
+        size_t count = 0;
     };
 
     using NodeTypes = DefaultNodes<
@@ -92,22 +105,13 @@ struct MappedState
                             matrix_node_next);
                     }
                     ++chance_data.count;
+                    ++chance_node->stats.count;
                 }
+
+                // std::cout << row_idx << ' ' << col_idx << ' ' << total_prob.get() << std::endl;
             }
         }
     }
-
-    /*
-
-    Expands a shared tree around the input state by brute-forcing chance nodes.
-    This tree only stores the witnessed chance actions and their emprical probs.
-
-    Much like `FullTraversal`, this is exactly a regular Types::State but with the shared data as well.
-    When we  call `apply_actions` and transition to the of the shared tree, we mark as terminal.
-    No search is done at that moment, but calling `get_payoff` will now perform a search with a disposable root node,
-    and the model and search objects that were copied during initialization
-
-    */
 
     class State : public Types::State
     {
@@ -116,10 +120,10 @@ struct MappedState
             *node;
         std::shared_ptr<const MatrixNode>
             explored_tree;
-        std::shared_ptr<typename Types::Model>
-            shared_model;
-        std::shared_ptr<typename Types::Search>
-            shared_search;
+        typename Types::Model
+            model;
+        typename Types::Search
+            search;
         const size_t iterations;
 
         State(
@@ -132,25 +136,51 @@ struct MappedState
             const Types::Search &search)
             : Types::State{state},
               iterations{iterations},
-              shared_model{std::make_shared<typename Types::Model>(model)},
-              shared_search{std::make_shared<typename Types::Search>(search)}
+              model{model},
+              search{search}
         {
             auto temp_tree = std::make_shared<MatrixNode>();
             node = temp_tree.get();
             run(depth, tries, device, state, temp_tree.get());
             explored_tree = temp_tree;
+            this->row_actions = node->row_actions;
+            this->col_actions = node->col_actions;
+        }
+
+        void get_actions()
+        {
+            this->row_actions = node->row_actions;
+            this->col_actions = node->col_actions;
+        }
+
+        void get_actions(
+            Types::VectorAction row_actions,
+            Types::VectorAction col_actions
+        )
+        {
+            row_actions = node->row_actions;
+            col_actions = node->col_actions;
         }
 
         void get_chance_actions(
             Types::Action row_action,
             Types::Action col_action,
-            std::vector<typename Types::Obs> &chance_action)
+            std::vector<typename Types::Obs> &chance_actions) const
         {
             const int row_idx = std::find(node->row_actions.begin(), node->row_actions.end(), row_action) - node->row_actions.begin();
             const int col_idx = std::find(node->col_actions.begin(), node->col_actions.end(), col_action) - node->col_actions.begin();
-            ChanceNode *chance_node = node->access(row_idx, col_idx);
-            chance_node->map.keys();
-            // TODO add keys to vector
+            const ChanceNode *chance_node = node->access(row_idx, col_idx);
+            for (auto kv : chance_node->stats.map)
+            {
+                chance_actions.push_back(kv.first);
+            }
+        }
+
+        void apply_actions(
+            Types::Action row_action,
+            Types::Action col_action)
+        {
+            std::exception("Mapped State must specify chance action");
         }
 
         void apply_actions(
@@ -160,13 +190,17 @@ struct MappedState
         {
             const int row_idx = std::find(node->row_actions.begin(), node->row_actions.end(), row_action) - node->row_actions.begin();
             const int col_idx = std::find(node->col_actions.begin(), node->col_actions.end(), col_action) - node->col_actions.begin();
-            ChanceNode *chance_node = node->access(row_idx, col_idx);
-            ChanceData &chance_data = chance_node->map[chance_action];
-            typename Types::PRNG device = chance_data.fixed_device;
+            const ChanceNode *chance_node = node->access(row_idx, col_idx);
+            const ChanceData &chance_data = chance_node->stats.map.at(chance_action);
+            typename Types::PRNG device{chance_data.seed};
             Types::State::randomize_transition(device);
             Types::State::apply_actions(row_action, col_action);
             node = chance_node->access(Types::State::get_obs());
             assert(chance_action == Types::State::get_obs());
+            this->prob = typename Types::Prob{
+                typename Types::Q{static_cast<int>(chance_data.count), static_cast<int>(chance_node->stats.count)}};
+            this->row_actions = node->row_actions;
+            this->col_actions = node->col_actions;
         }
 
         bool is_terminal() const
@@ -174,13 +208,18 @@ struct MappedState
             return node->is_terminal();
         }
 
-        Types::Value get_payoff()
+        Types::Value get_payoff() const
         {
+            typename Types::State state_{*this};
+            typename Types::Model model_{model};
+            typename Types::Search search_{search};
             typename Types::MatrixNode root{};
             typename Types::PRNG device{};
-            shared_search->run_for_iterations(iterations, device, *this, *shared_model, root);
+            state_.get_actions();
+            search_.run_for_iterations(iterations, device, state_, model_, root);
             typename Types::Value value{};
-            shared_search->get_empirical_value(value);
+            search_.get_empirical_value(root.stats, value);
+            // std::cout << value << std::endl;
             return value;
         }
     };

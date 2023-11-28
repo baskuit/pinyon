@@ -96,7 +96,8 @@ struct AlphaBeta : Types
             if (state.is_terminal())
             {
                 matrix_node->set_terminal();
-                return {state.payoff.get_row_value(), state.payoff.get_row_value()};
+                const typename Types::Value payoff = state.get_payoff();
+                return {payoff.get_row_value(), payoff.get_row_value()};
             }
             if (max_depth > 0 && stats.depth >= max_depth)
             {
