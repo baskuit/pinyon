@@ -4,7 +4,9 @@
 
 #include <memory>
 #include <unordered_map>
-
+#include <format>
+#include <sstream>
+#include <filesystem>
 /*
 
 Expands a shared tree around the input state by brute-forcing chance nodes.
@@ -16,6 +18,27 @@ No search is done at that moment, but calling `get_payoff` will now perform a se
 and the model and search objects that were copied during initialization
 
 */
+
+std::string arrayToString(const std::array<uint8_t, 16>& arr) {
+    std::ostringstream oss;
+    for (size_t i = 0; i < arr.size(); ++i) {
+        oss << static_cast<int>(arr[i]);
+        if (i < arr.size() - 1) {
+            oss << ",";
+        }
+    }
+    return oss.str();
+}
+
+void createNestedDirectories(const std::string& basePath, const std::vector<std::string>& directoryNames) {
+    std::filesystem::path currentPath = basePath;
+
+    for (const auto& dirName : directoryNames) {
+        currentPath /= dirName;  // Append the next directory to the path
+        std::filesystem::create_directory(currentPath);  // Create the directory
+    }
+}
+
 
 template <
     typename Types,
@@ -58,11 +81,13 @@ struct MappedState : Types::TypeList
         const size_t tries,
         Types::PRNG &device,
         NodeTypes::State &state,
-        MatrixNode *matrix_node)
+        MatrixNode *matrix_node,
+        std::filesystem::path path)
     {
 
         if (depth <= 0 || state.is_terminal())
         {
+            state.save(path/"out.txt");
             matrix_node->set_terminal();
             return;
         }
@@ -73,6 +98,11 @@ struct MappedState : Types::TypeList
         {
             for (int col_idx = 0; col_idx < matrix_node->col_actions.size(); ++col_idx)
             {
+
+                auto joint_action_path = path;
+                joint_action_path /=
+                    std::format("{}, {}", std::to_string(row_idx), std::to_string(col_idx));
+                std::filesystem::create_directory(joint_action_path);
 
                 ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
@@ -101,12 +131,16 @@ struct MappedState : Types::TypeList
                         chance_data.prob = state_copy.prob;
                         total_prob += state_copy.prob;
                         chance_data.seed = seed;
+                        auto chance_path = joint_action_path;
+                        chance_path /= arrayToString(state_copy.get_obs().get());
+                        std::filesystem::create_directory(chance_path);
                         run(
                             depth - 1,
                             tries,
                             device,
                             state_copy,
-                            matrix_node_next);
+                            matrix_node_next,
+                            chance_path);
                     }
                     ++chance_data.count;
                     ++chance_node->stats.count;
@@ -145,7 +179,7 @@ struct MappedState : Types::TypeList
         {
             auto temp_tree = std::make_shared<MatrixNode>();
             node = temp_tree.get();
-            run(depth, tries, device, state, temp_tree.get());
+            run(depth, tries, device, state, temp_tree.get(), {"/home/user/Desktop/pkmn-pinyon-test/tree/"});
             explored_tree = temp_tree;
             this->row_actions = node->row_actions;
             this->col_actions = node->col_actions;
