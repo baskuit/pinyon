@@ -94,6 +94,10 @@ struct MappedState : Types::TypeList
 
                     if (chance_data.count == 0)
                     {
+                        // for (int i = 0; i < 16; ++i) {
+                        //     std::cout << (int)state_copy.get_obs().get()[i] << ' ';
+                        // }
+                        // std::cout << std::endl;
                         chance_data.prob = state_copy.prob;
                         total_prob += state_copy.prob;
                         chance_data.seed = seed;
@@ -120,9 +124,9 @@ struct MappedState : Types::TypeList
             *node;
         std::shared_ptr<const MatrixNode>
             explored_tree;
-        typename Types::Model
+        const typename Types::Model
             model;
-        typename Types::Search
+        const typename Types::Search
             search;
         const size_t iterations;
 
@@ -170,6 +174,7 @@ struct MappedState : Types::TypeList
             const int row_idx = std::find(node->row_actions.begin(), node->row_actions.end(), row_action) - node->row_actions.begin();
             const int col_idx = std::find(node->col_actions.begin(), node->col_actions.end(), col_action) - node->col_actions.begin();
             const ChanceNode *chance_node = node->access(row_idx, col_idx);
+            // TODO sort by prob for faster AlphaBeta
             for (auto kv : chance_node->stats.map)
             {
                 chance_actions.push_back(kv.first);
