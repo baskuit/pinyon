@@ -19,26 +19,30 @@ and the model and search objects that were copied during initialization
 
 */
 
-std::string arrayToString(const std::array<uint8_t, 16>& arr) {
+std::string arrayToString(const std::array<uint8_t, 16> &arr)
+{
     std::ostringstream oss;
-    for (size_t i = 0; i < arr.size(); ++i) {
+    for (size_t i = 0; i < arr.size(); ++i)
+    {
         oss << static_cast<int>(arr[i]);
-        if (i < arr.size() - 1) {
+        if (i < arr.size() - 1)
+        {
             oss << ",";
         }
     }
     return oss.str();
 }
 
-void createNestedDirectories(const std::string& basePath, const std::vector<std::string>& directoryNames) {
+void createNestedDirectories(const std::string &basePath, const std::vector<std::string> &directoryNames)
+{
     std::filesystem::path currentPath = basePath;
 
-    for (const auto& dirName : directoryNames) {
-        currentPath /= dirName;  // Append the next directory to the path
-        std::filesystem::create_directory(currentPath);  // Create the directory
+    for (const auto &dirName : directoryNames)
+    {
+        currentPath /= dirName;                         // Append the next directory to the path
+        std::filesystem::create_directory(currentPath); // Create the directory
     }
 }
-
 
 template <
     typename Types,
@@ -76,18 +80,66 @@ struct MappedState : Types::TypeList
     using MatrixNode = NodeTypes::MatrixNode;
     using ChanceNode = NodeTypes::ChanceNode;
 
+    static void fill(
+        NodeTypes::State &state,
+        MatrixNode *matrix_node,
+        std::filesystem::path path)
+    {
+        if (matrix_node->is_terminal())
+        {
+            state.save(path / "out.txt");
+            return;
+        }
+
+        state.get_actions(matrix_node->row_actions, matrix_node->col_actions);
+
+        for (int row_idx = 0; row_idx < matrix_node->row_actions.size(); ++row_idx)
+        {
+            for (int col_idx = 0; col_idx < matrix_node->col_actions.size(); ++col_idx)
+            {
+                auto joint_action_path = path;
+                joint_action_path /=
+                    std::format("{}, {}", std::to_string(row_idx), std::to_string(col_idx));
+                std::filesystem::create_directory(joint_action_path);
+                ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
+                size_t q = chance_node->stats.count;
+                for (auto kv : chance_node->stats.map)
+                {
+                    typename Types::Obs obs = kv.first;
+                    size_t p = kv.second.count;
+                    typename Types::Seed seed = kv.second.seed;
+
+                    typename Types::State state_copy = state;
+                    state_copy.randomize_transition(seed);
+                    state_copy.apply_actions(
+                        matrix_node->row_actions[row_idx],
+                        matrix_node->col_actions[col_idx]);
+
+                    auto chance_path = joint_action_path;
+                    chance_path /= std::format(
+                        "{}-{}, {}",
+                        p, q,
+                        arrayToString(state_copy.get_obs().get()));
+                    std::filesystem::create_directory(chance_path);
+                    MatrixNode *matrix_node_next = chance_node->access(obs);
+
+                    fill(
+                        state_copy, matrix_node_next, chance_path);
+                }
+            }
+        }
+    }
+
     static void run(
         const size_t depth,
         const size_t tries,
         Types::PRNG &device,
         NodeTypes::State &state,
-        MatrixNode *matrix_node,
-        std::filesystem::path path)
+        MatrixNode *matrix_node)
     {
 
         if (depth <= 0 || state.is_terminal())
         {
-            state.save(path/"out.txt");
             matrix_node->set_terminal();
             return;
         }
@@ -98,12 +150,6 @@ struct MappedState : Types::TypeList
         {
             for (int col_idx = 0; col_idx < matrix_node->col_actions.size(); ++col_idx)
             {
-
-                auto joint_action_path = path;
-                joint_action_path /=
-                    std::format("{}, {}", std::to_string(row_idx), std::to_string(col_idx));
-                std::filesystem::create_directory(joint_action_path);
-
                 ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
                 typename Types::Prob total_prob{};
@@ -113,8 +159,7 @@ struct MappedState : Types::TypeList
 
                     typename Types::State state_copy = state;
                     typename Types::Seed seed{device.uniform_64()};
-                    typename Types::PRNG fixed_device{seed};
-                    state_copy.randomize_transition(fixed_device);
+                    state_copy.randomize_transition(seed);
                     state_copy.apply_actions(
                         matrix_node->row_actions[row_idx],
                         matrix_node->col_actions[col_idx]);
@@ -124,29 +169,19 @@ struct MappedState : Types::TypeList
 
                     if (chance_data.count == 0)
                     {
-                        // for (int i = 0; i < 16; ++i) {
-                        //     std::cout << (int)state_copy.get_obs().get()[i] << ' ';
-                        // }
-                        // std::cout << std::endl;
                         chance_data.prob = state_copy.prob;
-                        total_prob += state_copy.prob;
                         chance_data.seed = seed;
-                        auto chance_path = joint_action_path;
-                        chance_path /= arrayToString(state_copy.get_obs().get());
-                        std::filesystem::create_directory(chance_path);
                         run(
                             depth - 1,
                             tries,
                             device,
                             state_copy,
-                            matrix_node_next,
-                            chance_path);
+                            matrix_node_next);
+                        total_prob += state_copy.prob;
                     }
                     ++chance_data.count;
                     ++chance_node->stats.count;
                 }
-
-                // std::cout << row_idx << ' ' << col_idx << ' ' << total_prob.get() << std::endl;
             }
         }
     }
@@ -179,7 +214,8 @@ struct MappedState : Types::TypeList
         {
             auto temp_tree = std::make_shared<MatrixNode>();
             node = temp_tree.get();
-            run(depth, tries, device, state, temp_tree.get(), {"/home/user/Desktop/pkmn-pinyon-test/tree/"});
+            run(depth, tries, device, state, temp_tree.get());
+            fill(state, temp_tree.get(), {"/home/user/Desktop/pkmn-pinyon-test/tree"});
             explored_tree = temp_tree;
             this->row_actions = node->row_actions;
             this->col_actions = node->col_actions;
@@ -193,8 +229,7 @@ struct MappedState : Types::TypeList
 
         void get_actions(
             Types::VectorAction row_actions,
-            Types::VectorAction col_actions
-        )
+            Types::VectorAction col_actions)
         {
             row_actions = node->row_actions;
             col_actions = node->col_actions;
@@ -231,8 +266,8 @@ struct MappedState : Types::TypeList
             const int col_idx = std::find(node->col_actions.begin(), node->col_actions.end(), col_action) - node->col_actions.begin();
             const ChanceNode *chance_node = node->access(row_idx, col_idx);
             const ChanceData &chance_data = chance_node->stats.map.at(chance_action);
-            typename Types::PRNG device{chance_data.seed};
-            Types::State::randomize_transition(device);
+            // typename Types::PRNG device{chance_data.seed};
+            Types::State::randomize_transition(chance_data.seed);
             Types::State::apply_actions(row_action, col_action);
             node = chance_node->access(Types::State::get_obs());
             assert(chance_action == Types::State::get_obs());
