@@ -33,6 +33,8 @@ struct AlphaBeta : Types
 
         int row_pricipal_idx = 0, col_pricipal_idx = 0;
         std::vector<int> I{}, J{};
+
+        typename Types::Value solved_value;
     };
     struct ChanceStats
     {
@@ -97,6 +99,7 @@ struct AlphaBeta : Types
             {
                 matrix_node->set_terminal();
                 const typename Types::Value payoff = state.get_payoff();
+                matrix_node->stats.solved_value = payoff;
                 return {payoff.get_row_value(), payoff.get_row_value()};
             }
             if (max_depth > 0 && stats.depth >= max_depth)

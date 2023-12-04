@@ -80,56 +80,6 @@ struct MappedState : Types::TypeList
     using MatrixNode = NodeTypes::MatrixNode;
     using ChanceNode = NodeTypes::ChanceNode;
 
-    static void fill(
-        NodeTypes::State &state,
-        MatrixNode *matrix_node,
-        std::filesystem::path path)
-    {
-        if (matrix_node->is_terminal())
-        {
-            state.save(path / "out.txt");
-            return;
-        }
-
-        state.get_actions(matrix_node->row_actions, matrix_node->col_actions);
-
-        for (int row_idx = 0; row_idx < matrix_node->row_actions.size(); ++row_idx)
-        {
-            for (int col_idx = 0; col_idx < matrix_node->col_actions.size(); ++col_idx)
-            {
-                auto joint_action_path = path;
-                joint_action_path /=
-                    std::format("{}, {}", std::to_string(row_idx), std::to_string(col_idx));
-                std::filesystem::create_directory(joint_action_path);
-                ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
-                size_t q = chance_node->stats.count;
-                for (auto kv : chance_node->stats.map)
-                {
-                    typename Types::Obs obs = kv.first;
-                    size_t p = kv.second.count;
-                    typename Types::Seed seed = kv.second.seed;
-
-                    typename Types::State state_copy = state;
-                    state_copy.randomize_transition(seed);
-                    state_copy.apply_actions(
-                        matrix_node->row_actions[row_idx],
-                        matrix_node->col_actions[col_idx]);
-
-                    auto chance_path = joint_action_path;
-                    chance_path /= std::format(
-                        "{}-{}, {}",
-                        p, q,
-                        arrayToString(state_copy.get_obs().get()));
-                    std::filesystem::create_directory(chance_path);
-                    MatrixNode *matrix_node_next = chance_node->access(obs);
-
-                    fill(
-                        state_copy, matrix_node_next, chance_path);
-                }
-            }
-        }
-    }
-
     static void run(
         const size_t depth,
         const size_t tries,
@@ -215,7 +165,7 @@ struct MappedState : Types::TypeList
             auto temp_tree = std::make_shared<MatrixNode>();
             node = temp_tree.get();
             run(depth, tries, device, state, temp_tree.get());
-            fill(state, temp_tree.get(), {"/home/user/Desktop/pkmn-pinyon-test/tree"});
+            // fill(state, temp_tree.get(), {"/home/user/Desktop/pkmn-pinyon-test/tree"});
             explored_tree = temp_tree;
             this->row_actions = node->row_actions;
             this->col_actions = node->col_actions;
