@@ -12,22 +12,30 @@ so that inference at the leafs is stronger than a normal model
 
 */
 
-enum SearchModes
-{
-    TIME,
-    PLAYOUTS
-};
-
-template <CONCEPT(IsSearchTypes, Types), bool HasPolicy = false>
+template <CONCEPT(IsSearchTypes, Types), bool use_iterations = true, bool use_policy = true>
 struct TreeBanditSearchModel : Types::TypeList
 {
     using State = typename Types::State; // DONT REMOVE
     // so State = is rebuilding the type list, in this case TreeBanditSearchModel isStateTypes.
-    struct ModelOutput
+
+    template <bool policy>
+    struct ModelOutputImpl;
+
+    template <>
+    struct ModelOutputImpl<false>
+    {
+        typename Types::Value value;
+    };
+
+    template <>
+    struct ModelOutputImpl<true>
     {
         typename Types::Value value;
         typename Types::VectorReal row_policy, col_policy;
     };
+
+    using ModelOutput = ModelOutputImpl<use_policy>;
+
     using ModelBatchInput = std::vector<typename Types::State>;
     using ModelBatchOutput = std::vector<typename Types::ModelOutput>;
 
@@ -38,7 +46,6 @@ struct TreeBanditSearchModel : Types::TypeList
         typename Types::PRNG device;
         typename Types::Model model;
         typename Types::Search search;
-        const bool use_ms = false;
 
         Model(
             const size_t iterations,
@@ -54,15 +61,19 @@ struct TreeBanditSearchModel : Types::TypeList
             ModelOutput &output)
         {
             typename Types::MatrixNode root;
-            if (use_ms == true)
+            if constexpr (use_iterations == false)
             {
+                // as ms
                 search.run(iterations, device, input, model, root);
             }
             else
             {
                 search.run_for_iterations(iterations, device, input, model, root);
             }
-            search.get_empirical_strategies(root.stats, output.row_policy, output.col_policy);
+            if constexpr (use_policy)
+            {
+                search.get_empirical_strategies(root.stats, output.row_policy, output.col_policy);
+            }
             search.get_empirical_value(root.stats, output.value);
         }
 
