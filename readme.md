@@ -1,32 +1,35 @@
 
 # Pinyon
+
 Pinyon is a high performance library for research and development of search and solving algorithms for perfect-info, simultaneous move, stochastic games. The code emphasizes:
 
-* Compile time
+* Compile-Time
+This library uses the template metaprogramming features of C++ to eliminate the cost of game/alorithm/etc agnosticism that other libraries like TODO cost. Pinyon is then fully capable of tasks like powering expensive reinforcement-learning projects or automated deep analysis.
 
-* Full Modularity
+* Fully Modular
+The game, evaluation function, and search algorithm are liberally interchangible, exploiting the compile-time optimization. The interface was designed from the beginning to incorporate all major SOTA methods. Serveral other basic utilities are provided as well.
 
-* Ease of benchmarking 
+* Simple to Start With
+Virtually any game can be augmented with a simple and fast monte-carlo search function, providing guarantees of convergence to Nash Equilibrium.
 
-* Minimal code/clarity of ideas
+* Highly Abstractable
+The interface uses a template convention that facilitates the layering of multiple utilities to trivialize the implementation of otherwise intricate scripts, exemplified TODO
 
-* Minimal dependencies, ease of use
+* Ease of Benchmarking 
+Various *implementations* of the same object can be quickly and automatically benchmarked, saving money and time on expensive projects.
 
-# Overview
+* Minimal Code
 
-### Library Utilities
+* Minimal Setup
+This is a header library that only depends on the GNU Multiplle Precision Library. Inclusion into projects is done via `add_directory(extern/pinyon)` and `#include <pinyon.hh>`. 
 
-* Powerful class of test games
-* GMP support for precise numbers
-* Fast NE solving
+# Documentation
+The library is extensively documented and the points above are expanded therein. The organization of the abstraction/modularity layers is reflected by the directory structure, at the most basic leval toured by `src/`.
 
-Most importantly, the sum total of all these optinos are contained as a type list.
-This is the most important part of Pinyon. 
-
+The interface is codified with the use of C++20 `Concepts` which serve as another for of documentation.
 
 # Installation
-This project makes heavy use of the `Concepts` feature of C++20. Furthermore, the tests occasionally use `std::cartiesian_product` from C++23. Support for the latter is spotty, but GCC-13 will work
-The [GNU Multiple Precision Arithmetic Library](https://gmplib.org/) is required for use in
+The tests and benchmarking tools can be built via
 ```
 sudo apt install libgmp3-dev
 git clone --recurse-submodules https://github.com/baskuit/pinyon
@@ -36,22 +39,3 @@ cd build
 cmake ..
 make
 ```
-Note: make sure that the correct version of gcc/clang is being used. I recommend using VSCode to build this library. See the /src level readme [here](src/readme.md#LanguageandDevelopmentEnvironment)
-
-# Documentation
-
-The many facets of the library are well documented
-
-Basic
-Types
-State
-Model
-Algorithm
-
-Additionally the library cites its sources. The research papers used are all in
-References
-
-
-# Status
-Done with perfect info stuff. Taking a break and looking for users. I made this library because I want to apply my expertise to model development in certain goalpost domains but I find training and tweaking to be very boring.
-Later this year I will start work on the imperfect info regime.
