@@ -1,12 +1,11 @@
+#pragma once
+
 #include <state/state.hh>
 
 #include <tree/tree-debug.hh>
 
 #include <memory>
 #include <unordered_map>
-#include <format>
-#include <sstream>
-#include <filesystem>
 /*
 
 Expands a shared tree around the input state by brute-forcing chance nodes.
@@ -19,34 +18,9 @@ and the model and search objects that were copied during initialization
 
 */
 
-std::string arrayToString(const std::array<uint8_t, 16> &arr)
-{
-    std::ostringstream oss;
-    for (size_t i = 0; i < arr.size(); ++i)
-    {
-        oss << static_cast<int>(arr[i]);
-        if (i < arr.size() - 1)
-        {
-            oss << ",";
-        }
-    }
-    return oss.str();
-}
-
-void createNestedDirectories(const std::string &basePath, const std::vector<std::string> &directoryNames)
-{
-    std::filesystem::path currentPath = basePath;
-
-    for (const auto &dirName : directoryNames)
-    {
-        currentPath /= dirName;                         // Append the next directory to the path
-        std::filesystem::create_directory(currentPath); // Create the directory
-    }
-}
-
 template <
-    typename Types,
-    bool empirical = true>
+    CONCEPT(IsModelTypes, Types),
+    bool empirical = true> // not used currently, alternative is to normalized the de facto probs
 struct MappedState : Types::TypeList
 {
 
@@ -84,7 +58,7 @@ struct MappedState : Types::TypeList
         const size_t depth,
         const size_t tries,
         Types::PRNG &device,
-        NodeTypes::State &state,
+        const Types::State &state,
         MatrixNode *matrix_node)
     {
 
@@ -145,27 +119,19 @@ struct MappedState : Types::TypeList
             explored_tree;
         const typename Types::Model
             model;
-        const typename Types::Search
-            search;
-        const size_t iterations;
 
         State(
             const size_t depth,
             const size_t tries,
-            const size_t iterations,
             Types::PRNG &device,
-            Types::State &state,
-            const Types::Model &model,
-            const Types::Search &search)
+            const Types::State &state,
+            const Types::Model &model)
             : Types::State{state},
-              iterations{iterations},
-              model{model},
-              search{search}
+              model{model}
         {
             auto temp_tree = std::make_shared<MatrixNode>();
             node = temp_tree.get();
             run(depth, tries, device, state, temp_tree.get());
-            // fill(state, temp_tree.get(), {"/home/user/Desktop/pkmn-pinyon-test/tree"});
             explored_tree = temp_tree;
             this->row_actions = node->row_actions;
             this->col_actions = node->col_actions;
@@ -204,7 +170,10 @@ struct MappedState : Types::TypeList
             Types::Action row_action,
             Types::Action col_action)
         {
-            std::exception("Mapped State must specify chance action");
+            // only appropriate for solves, which don't use this method
+            // risk is that you encounter and unseen transition
+            // make current node nullptr?. unconvincing
+            std::exception("Mapped State must specify chance action"); 
         }
 
         void apply_actions(
@@ -236,15 +205,9 @@ struct MappedState : Types::TypeList
         {
             typename Types::State state_{*this};
             typename Types::Model model_{model};
-            typename Types::Search search_{search};
-            typename Types::MatrixNode root{};
-            typename Types::PRNG device{};
-            state_.get_actions();
-            search_.run_for_iterations(iterations, device, state_, model_, root);
-            typename Types::Value value{};
-            search_.get_empirical_value(root.stats, value);
-            // std::cout << value << std::endl;
-            return value;
+            typename Types::ModelOutput output;
+            model_.inference(std::move(state_), output);
+            return output.value;
         }
     };
 };
