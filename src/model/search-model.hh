@@ -12,29 +12,35 @@ so that inference at the leafs is stronger than a normal model
 
 */
 
-template <CONCEPT(IsSearchTypes, Types), bool use_iterations = true, bool use_policy = true>
-struct TreeBanditSearchModel : Types::TypeList
+namespace SearchModelDetail
 {
-    using State = typename Types::State; // DONT REMOVE
-    // so State = is rebuilding the type list, in this case TreeBanditSearchModel isStateTypes.
 
-    template <bool policy>
+    template <typename Types, bool use_policy>
     struct ModelOutputImpl;
 
-    template <>
-    struct ModelOutputImpl<false>
-    {
-        typename Types::Value value;
-    };
-
-    template <>
-    struct ModelOutputImpl<true>
+    template <typename Types>
+    struct ModelOutputImpl<Types, true>
     {
         typename Types::Value value;
         typename Types::VectorReal row_policy, col_policy;
     };
 
-    using ModelOutput = ModelOutputImpl<use_policy>;
+    template <typename Types>
+    struct ModelOutputImpl<Types, false>
+    {
+        typename Types::Value value;
+        typename Types::VectorReal row_policy, col_policy;
+    };
+
+};
+
+template <CONCEPT(IsSearchTypes, Types), bool use_iterations = true, bool use_policy = true>
+struct SearchModel : Types::TypeList
+{
+    using State = typename Types::State; // DONT REMOVE
+    // so State = is rebuilding the type list, in this case SearchModel isStateTypes.
+
+    using ModelOutput = SearchModelDetail::ModelOutputImpl<Types, use_policy>;
 
     using ModelBatchInput = std::vector<typename Types::State>;
     using ModelBatchOutput = std::vector<typename Types::ModelOutput>;
@@ -42,7 +48,8 @@ struct TreeBanditSearchModel : Types::TypeList
     class Model
     {
     public:
-        const size_t iterations;
+        // time parameter (ms), number of iterations, or depth (in the case of solvers)
+        const size_t count;
         typename Types::PRNG device;
         typename Types::Model model;
         typename Types::Search search;
@@ -52,28 +59,32 @@ struct TreeBanditSearchModel : Types::TypeList
             const Types::PRNG &device,
             const Types::Model &model,
             const Types::Search &search)
-            : iterations{iterations}, device{device}, model{model}, search{search}
+            : count{iterations}, device{device}, model{model}, search{search}
         {
         }
 
         void inference(
-            Types::State &&input,
+            Types::State &&state,
             ModelOutput &output)
         {
             typename Types::MatrixNode root;
-            if constexpr (use_iterations == false)
+
+            if constexpr (use_iterations == true)
             {
-                // as ms
-                search.run(iterations, device, input, model, root);
+                search.run_for_iterations(count, device, state, model, root);
             }
             else
             {
-                search.run_for_iterations(iterations, device, input, model, root);
+                // as ms
+                search.run(count, device, state, model, root);
+
             }
+
             if constexpr (use_policy)
             {
                 search.get_empirical_strategies(root.stats, output.row_policy, output.col_policy);
             }
+            
             search.get_empirical_value(root.stats, output.value);
         }
 
