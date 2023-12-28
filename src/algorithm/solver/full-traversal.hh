@@ -43,34 +43,25 @@ struct FullTraversal : Types
     class Search
     {
     public:
-        const int max_depth = -1;
 
         Search() {}
-        Search(const int max_depth) : max_depth{max_depth} {}
 
         std::pair<typename Types::Real, typename Types::Real>
         run(
+            const size_t max_depth,
             Types::PRNG &,
             const Types::State &state,
             Types::Model &model,
             MatrixNode &matrix_node) const
         {
             auto state_ = state;
-            auto pair = run_(state_, model, &matrix_node);
+            auto pair = run_(max_depth, state_, model, &matrix_node);
             return pair;
-        }
-
-        void run(
-            const Types::State &state,
-            Types::Model &model,
-            MatrixNode &matrix_node) const
-        {
-            auto state_ = state;
-            run_(state_, model, &matrix_node);
         }
 
         std::pair<typename Types::Real, typename Types::Real>
         run_(
+            const size_t max_depth,
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node) const
@@ -89,7 +80,7 @@ struct FullTraversal : Types
                 matrix_node->set_terminal();
                 return {stats.payoff.get_row_value(), stats.payoff.get_row_value()};
             }
-            if (max_depth > 0 && stats.depth >= max_depth)
+            if (stats.depth >= max_depth)
             {
                 typename Types::ModelOutput output;
                 model.inference(std::move(state), output);
@@ -124,7 +115,7 @@ struct FullTraversal : Types
                         matrix_node_next->stats.prob = state_copy.prob;
                         chance_node->stats.chance_strategy.push_back(state_copy.prob);
 
-                        auto value_ = run_(state_copy, model, matrix_node_next);
+                        auto value_ = run_(max_depth, state_copy, model, matrix_node_next);
 
                         stats.nash_payoff_matrix.get(row_idx, col_idx) += 
                             matrix_node_next->stats.payoff * 

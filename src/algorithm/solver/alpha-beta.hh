@@ -21,7 +21,7 @@ struct AlphaBeta : Types
         std::vector<typename Types::Obs> chance_actions{};
         friend std::ostream &operator<<(std::ostream &os, const Data &data)
         {
-            os << '(' <<  data.alpha_explored << " " << data.beta_explored << " " << data.unexplored << ")";
+            os << '(' << data.alpha_explored << " " << data.beta_explored << " " << data.unexplored << ")";
             return os;
         }
     };
@@ -55,7 +55,6 @@ struct AlphaBeta : Types
         const Real min_val{0}; // don't need to use the Game values if you happen to know that State's
         const Real max_val{1};
         bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
-        int max_depth = -1;
 
         Search() {}
 
@@ -66,17 +65,19 @@ struct AlphaBeta : Types
             bool (*const terminate)(typename Types::PRNG &, const Data &)) : min_val(min_val), max_val(max_val), terminate{terminate} {}
 
         auto run(
+            const size_t max_depth, // let it overflow to super big number
             Types::PRNG &device,
             const typename Types::State &state,
             typename Types::Model &model,
             MatrixNode &root) const
         {
             auto state_copy = state;
-            return double_oracle(device, state_copy, model, &root, min_val, max_val);
+            return double_oracle(max_depth, device, state_copy, model, &root, min_val, max_val);
         }
 
         std::pair<Real, Real>
         double_oracle(
+            const size_t max_depth,
             Types::PRNG &device,
             Types::State &state,
             typename Types::Model &model,
@@ -102,7 +103,7 @@ struct AlphaBeta : Types
                 matrix_node->stats.solved_value = payoff;
                 return {payoff.get_row_value(), payoff.get_row_value()};
             }
-            if (max_depth > 0 && stats.depth >= max_depth)
+            if (stats.depth >= max_depth)
             {
                 matrix_node->set_terminal();
                 typename Types::ModelOutput model_output;
@@ -135,14 +136,14 @@ struct AlphaBeta : Types
                 {
                     Data &data = stats.data_matrix.get(row_idx, latest_col_idx);
                     ChanceNode *chance_node = matrix_node->access(row_idx, latest_col_idx);
-                    solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, row_idx, latest_col_idx);
+                    solved_exactly &= try_solve_chance_node(max_depth, device, state, model, matrix_node, row_idx, latest_col_idx);
                 }
 
                 for (const int col_idx : J)
                 {
                     Data &data = stats.data_matrix.get(latest_row_idx, col_idx);
                     ChanceNode *chance_node = matrix_node->access(latest_row_idx, col_idx);
-                    solved_exactly &= try_solve_chance_node(device, state, model, matrix_node, latest_row_idx, col_idx);
+                    solved_exactly &= try_solve_chance_node(max_depth, device, state, model, matrix_node, latest_row_idx, col_idx);
                 }
 
                 // solve newly expanded and explored game
@@ -183,6 +184,7 @@ struct AlphaBeta : Types
 
                 std::pair<int, Real>
                     iv = best_response_row(
+                        max_depth,
                         device,
                         state,
                         model,
@@ -192,6 +194,7 @@ struct AlphaBeta : Types
 
                 std::pair<int, Real>
                     jv = best_response_col(
+                        max_depth,
                         device,
                         state,
                         model,
@@ -238,11 +241,12 @@ struct AlphaBeta : Types
 
             // stats.row_solution = row_strategy;
             // stats.col_solution = col_strategy;
-            if (max_depth > 0)
-            {
-                stats.row_pricipal_idx = I[std::distance(row_strategy.begin(), std::max_element(row_strategy.begin(), row_strategy.end()))];
-                stats.col_pricipal_idx = J[std::distance(col_strategy.begin(), std::max_element(col_strategy.begin(), col_strategy.end()))];
-            }
+
+            // Used to be if max_depth != -1 here
+            // meaning only necessary for iterative deepening
+            stats.row_pricipal_idx = I[std::distance(row_strategy.begin(), std::max_element(row_strategy.begin(), row_strategy.end()))];
+            stats.col_pricipal_idx = J[std::distance(col_strategy.begin(), std::max_element(col_strategy.begin(), col_strategy.end()))];
+
             // I.clear();
             // J.clear();
             // row_strategy.clear();
@@ -260,6 +264,7 @@ struct AlphaBeta : Types
 
         std::pair<int, Real>
         best_response_row(
+            const size_t max_depth,
             Types::PRNG &device,
             const typename Types::State &state,
             typename Types::Model &model,
@@ -326,6 +331,7 @@ struct AlphaBeta : Types
                     const typename Types::Prob prob = state_copy.prob;
 
                     auto alpha_beta_pair = double_oracle(
+                        max_depth,
                         device,
                         state_copy,
                         model,
@@ -367,6 +373,7 @@ struct AlphaBeta : Types
         }
 
         std::pair<int, Real> best_response_col(
+            const size_t max_depth,
             Types::PRNG &device,
             const typename Types::State &state,
             typename Types::Model &model,
@@ -434,6 +441,7 @@ struct AlphaBeta : Types
                     const typename Types::Prob prob = state_copy.prob;
 
                     auto alpha_beta_pair = double_oracle(
+                        max_depth,
                         device,
                         state_copy,
                         model,
@@ -511,6 +519,7 @@ struct AlphaBeta : Types
         }
 
         inline bool try_solve_chance_node(
+            const size_t max_depth,
             Types::PRNG &device,
             const typename Types::State &state, // TODO const?
             Types::Model &model,
@@ -547,7 +556,7 @@ struct AlphaBeta : Types
                     matrix_node_next->stats.depth = stats.depth + 1;
                     const typename Types::Prob prob = state_copy.prob;
 
-                    auto alpha_beta = double_oracle(device, state_copy, model, matrix_node_next, min_val, max_val);
+                    auto alpha_beta = double_oracle(max_depth, device, state_copy, model, matrix_node_next, min_val, max_val);
 
                     data.alpha_explored += alpha_beta.first * prob;
                     data.beta_explored += alpha_beta.second * prob;
