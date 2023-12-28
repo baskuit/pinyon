@@ -55,11 +55,11 @@ struct SearchModel : Types::TypeList
         typename Types::Search search;
 
         Model(
-            const size_t iterations,
+            const size_t count,
             const Types::PRNG &device,
             const Types::Model &model,
             const Types::Search &search)
-            : count{iterations}, device{device}, model{model}, search{search}
+            : count{count}, device{device}, model{model}, search{search}
         {
         }
 

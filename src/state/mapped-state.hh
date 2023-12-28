@@ -204,6 +204,7 @@ struct MappedState : Types::TypeList
         Types::Value get_payoff() const
         {
             typename Types::State state_{*this};
+            state_.get_actions();
             typename Types::Model model_{model};
             typename Types::ModelOutput output;
             model_.inference(std::move(state_), output);
