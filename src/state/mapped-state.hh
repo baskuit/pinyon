@@ -203,6 +203,9 @@ struct MappedState : Types::TypeList
 
         Types::Value get_payoff() const
         {
+            if (Types::State::is_terminal()) {
+                return this->get_payoff();
+            }
             typename Types::State state_{*this};
             state_.get_actions();
             typename Types::Model model_{model};

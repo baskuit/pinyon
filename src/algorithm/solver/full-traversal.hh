@@ -76,7 +76,7 @@ struct FullTraversal : Types
 
             if (state.is_terminal())
             {
-                stats.payoff = state.payoff;
+                stats.payoff = state.get_payoff();
                 matrix_node->set_terminal();
                 return {stats.payoff.get_row_value(), stats.payoff.get_row_value()};
             }
@@ -98,6 +98,9 @@ struct FullTraversal : Types
             {
                 for (int col_idx = 0; col_idx < cols; ++col_idx)
                 {
+
+                    std::cout << "FULL TRAVERSAL: " << row_idx << ' ' << col_idx << std::endl;
+
                     const typename Types::Action &row_action{state.row_actions[row_idx]};
                     const typename Types::Action &col_action{state.col_actions[col_idx]};
                     
