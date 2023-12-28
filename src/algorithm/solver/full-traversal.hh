@@ -41,6 +41,7 @@ struct FullTraversal : Types
         std::vector<typename Types::Obs> chance_actions;
         std::vector<typename Types::Prob> chance_strategy;
         typename Types::Mutex mutex{};
+        bool is_solved = false;
     };
     using MatrixNode = typename NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
     using ChanceNode = typename NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
@@ -141,6 +142,11 @@ struct FullTraversal : Types
                         continue;
                     }
 
+                    if (chance_node->stats.is_solved)
+                    {
+                        continue;
+                    }
+
                     std::cout << "FULL TRAVERSAL: " << row_idx << ' ' << col_idx << std::endl;
 
                     auto &chance_actions = chance_node->stats.chance_actions;
@@ -164,6 +170,7 @@ struct FullTraversal : Types
                         stats.matrix_node_count += matrix_node_next->stats.matrix_node_count;
                     }
 
+                    chance_node->stats.is_solved = true;
                     chance_node->stats.mutex.unlock();
                 }
             }
