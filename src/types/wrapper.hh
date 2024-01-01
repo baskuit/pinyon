@@ -263,25 +263,45 @@ struct ObsHashType<std::array<uint8_t, 64>>
         return hash;
     }
 };
+size_t hash_pair(size_t a, size_t b) {
+    size_t seed = 0;  // Initial seed value
+    constexpr size_t m = (size_t)-58;  // Large prime number
 
+    // Mix the bits of the first value
+    seed ^= a + m + (seed << 6) + (seed >> 2);
+
+    // Mix the bits of the second value
+    seed ^= b + m + (seed << 6) + (seed >> 2);
+
+    // Final mixing to ensure good distribution
+    seed += (seed << 3);
+    seed ^= (seed >> 11);
+    seed += (seed << 15);
+
+    return seed;
+}
 template <>
 struct ObsHashType<std::array<uint8_t, 16>>
 {
+    size_t xs (size_t state) const
+    {
+        state ^= (state << 21);
+        state ^= (state >> 35);
+        state ^= (state << 4);
+        return state;
+    }
     size_t operator()(const ObsType<std::array<uint8_t, 16>> &obs) const
     {
         const uint64_t *a = reinterpret_cast<const uint64_t *>(obs.value.data());
-        size_t hash = 0;
-        for (int i = 0; i < 2; ++i)
-        {
-            hash ^= a[i];
-        }
-        return hash;
+        // return hash_pair(a[0], a[1]);
+        return ((a[0] << 32) >> 32) | (a[1] << 32);
     }
 };
 
 template <>
 struct ObsHashType<std::array<uint8_t, 376>>
 {
+
     size_t operator()(const ObsType<std::array<uint8_t, 376>> &obs) const
     {
         const uint64_t *a = reinterpret_cast<const uint64_t *>(obs.value.data());
