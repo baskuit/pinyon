@@ -267,13 +267,6 @@ struct ObsHashType<std::array<uint8_t, 64>>
 template <>
 struct ObsHashType<std::array<uint8_t, 16>>
 {
-    size_t xs (size_t state) const
-    {
-        state ^= (state << 21);
-        state ^= (state >> 35);
-        state ^= (state << 4);
-        return state;
-    }
     size_t operator()(const ObsType<std::array<uint8_t, 16>> &obs) const
     {
         static const uint64_t duration_mask = 0xFFFFFFFFFF0FFFFF;
