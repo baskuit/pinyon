@@ -4,7 +4,7 @@
 Pinyon is a library for research and development of search and solving algorithms for (perfect information) simultaneous move, stochastic games. The code emphasizes:
 
 ### Compile-Time Optimization
-This library uses the template metaprogramming features of C++ to eliminate the cost of game/alorithm/etc agnosticism that other libraries like (alpha-zero-general)[https://github.com/suragnair/alpha-zero-general] cost. Pinyon is then fully capable of tasks like powering expensive reinforcement-learning projects or server analysis.
+This library uses the template metaprogramming features of C++ to eliminate the cost of game/alorithm/etc agnosticism that other libraries like [alpha-zero-general](https://github.com/suragnair/alpha-zero-general) cost. Pinyon is then fully capable of tasks like powering expensive reinforcement-learning projects or server analysis.
 
 ### Fully Modular
 The game, evaluation function, and search algorithm are liberally interchangible. The interface was designed from the beginning to unify the major methods. Serveral other basic utilities are provided as well.
