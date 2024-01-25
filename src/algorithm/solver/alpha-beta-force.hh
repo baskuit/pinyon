@@ -53,17 +53,17 @@ struct AlphaBeta : Types
         int row_pricipal_idx = 0, col_pricipal_idx = 0;
         std::vector<int> I{}, J{};
 
-        typename Types::Value solved_value;
+        typename Types::Real alpha, beta;
     };
 
     class Search
     {
     public:
-        using Real = typename Types::Real; // many uses
-
         const Real min_val{0}; // don't need to use the Game values if you happen to know that State's
         const Real max_val{1};
         bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
+
+        const size_t max_tries = (1 << 12);
 
         Search() {}
 
@@ -76,11 +76,11 @@ struct AlphaBeta : Types
         auto run(
             const size_t max_depth, // let it overflow to super big number
             Types::PRNG &device,
-            const typename Types::State &state,
-            typename Types::Model &model,
+            const Types::State &state,
+            Types::Model &model,
             MatrixNode &root) const
         {
-            typename Types::State state_copy = state;
+            typename Types::State state_copy{state};
             return double_oracle(max_depth, device, state_copy, model, &root, min_val, max_val);
         }
 
@@ -89,7 +89,7 @@ struct AlphaBeta : Types
             const size_t max_depth,
             Types::PRNG &device,
             Types::State &state,
-            typename Types::Model &model,
+            Types::Model &model,
             MatrixNode *matrix_node,
             Real alpha,
             Real beta) const
@@ -97,14 +97,17 @@ struct AlphaBeta : Types
             if (state.is_terminal())
             {
                 const typename Types::Value payoff = state.get_payoff();
-                matrix_node->solved_value = payoff;
+                matrix_node->alpha = payoff.get_row_value();
+                matrix_node->beta = payoff.get_row_value();
                 return {payoff.get_row_value(), payoff.get_row_value()};
             }
-            // stats is given proper depth before recursive call - or initialized with 0
+
             if (matrix_node->depth >= max_depth)
             {
                 typename Types::ModelOutput model_output;
                 model.inference(std::move(state), model_output);
+                matrix_node->alpha = model_output.value.get_row_value();
+                matrix_node->beta = model_output.value.get_row_value();
                 return {model_output.value.get_row_value(), model_output.value.get_row_value()};
             }
 
@@ -112,11 +115,13 @@ struct AlphaBeta : Types
             const size_t rows = state.row_actions.size();
             const size_t cols = state.col_actions.size();
             // assumes double expand is ok (it is?)
-            matrix_node->expand(rows, cols);
+            // matrix_node->expand(rows, cols);
+            matrix_node->chance_data_matrix.fill(rows, cols);
 
             std::vector<int> &I = matrix_node->I;
             std::vector<int> &J = matrix_node->J;
             // current best strategy. used to calculate best response values
+            // entries correspond to I, J entires and order. It is a permuted submatrix of the full matrix, basically.
             typename Types::VectorReal &row_solution = matrix_node->row_solution;
             typename Types::VectorReal &col_solution = matrix_node->col_solution;
 
@@ -130,8 +135,7 @@ struct AlphaBeta : Types
             int latest_row_idx = matrix_node->row_pricipal_idx;
             int latest_col_idx = matrix_node->col_pricipal_idx;
             bool solved_exactly = true;
-            // when solving chance nodes for the official strategies,
-            // we don't always solve all of them
+
             while (!fuzzy_equals(alpha, beta) && (smaller_bounds || new_action))
             {
 
@@ -509,50 +513,39 @@ struct AlphaBeta : Types
         inline bool try_solve_chance_branches(
             const size_t max_depth,
             Types::PRNG &device,
-            const typename Types::State &state, // TODO const?
+            const typename Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
             int row_idx, int col_idx) const
         {
+            static typename Types::ObsHash hasher{};
             Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx);
 
-            if (data.unexplored > typename Types::Prob{0})
+            const auto row_action = state.row_actions[row_idx];
+            const auto col_action = state.col_actions[col_idx];
+
+            for (; data.tries < max_tries && data.unexplored > typename Types::Prob{0}; ++data.tries)
             {
-                auto row_action = state.row_actions[row_idx];
-                auto col_action = state.col_actions[col_idx];
+                typename Types::State state_copy{state};
+                const typename Types::Seed seed{device.uniform_64()};
+                state_copy.randomize_transition(seed);
+                state_copy.apply_actions(row_action, col_action);
+                const size_t obs_hash = hasher(state_copy.get_obs());
 
-
-
-                auto &chance_actions = data.chance_actions;
-                if (chance_actions.size() == 0)
+                if (data.branches.find(obs_hash) == data.branches.end())
                 {
-                    state.get_chance_actions(row_action, col_action, chance_actions); // TODO arg order
-                }
+                    Branch &new_branch = data.branches.emplace(obs_hash, state_copy, seed);
+                    new_branch.matrix_node->depth = matrix_node->depth + 1;
 
-                // go through all chance actions
-                for (; data.next_chance_idx < chance_actions.size() && !terminate(device, data); ++data.next_chance_idx)
-                {
-                    if (chance_actions.size() <= data.next_chance_idx)
-                    {
-                        break;
-                    }
+                    const auto alpha_beta = double_oracle(max_depth, device, state_copy, model, new_branch.matrix_node, min_val, max_val);
 
-                    const typename Types::Obs chance_action = chance_actions[data.next_chance_idx];
-                    typename Types::State state_copy = state;
-                    state_copy.apply_actions(row_action, col_action, chance_action);
-                    MatrixNode *matrix_node_next = chance_node->access(state_copy.get_obs());
-                    matrix_node_next->matrix_node->depth = matrix_node->depth + 1;
-                    const typename Types::Prob prob = state_copy.prob;
-
-                    auto alpha_beta = double_oracle(max_depth, device, state_copy, model, matrix_node_next, min_val, max_val);
-
-                    data.alpha_explored += alpha_beta.first * prob;
-                    data.beta_explored += alpha_beta.second * prob;
-                    data.unexplored -= prob;
+                    data.alpha_explored += alpha_beta.first * new_branch.prob;
+                    data.beta_explored += alpha_beta.second * new_branch.prob;
+                    data.unexplored -= new_branch.prob;
                 }
             }
 
-            bool solved_exactly = (data.alpha_explored == data.beta_explored) && (data.unexplored == Real{Rational<>{0}});
+            const bool solved_exactly = (data.alpha_explored == data.beta_explored) && (data.unexplored == Real{Rational<>{0}});
             return solved_exactly;
         };
 
