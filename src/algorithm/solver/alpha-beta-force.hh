@@ -64,6 +64,7 @@ struct AlphaBeta : Types
         bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
 
         const size_t max_tries = (1 << 12);
+        const typename Types::ObsHash hasher{};
 
         Search() {}
 
@@ -276,14 +277,18 @@ struct AlphaBeta : Types
                 // its clearly what we want to minimize rather than just the chance component
                 Real max_priority{0}, expected_value{0}, total_unexplored{0};
                 std::vector<Real> exploration_priorities{};
-                int col_idx, best_j;
+                int col_idx, next_j;
                 for (int j = 0; j < J.size(); ++j)
                 {
                     const int col_idx_temp = J[j];
                     Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx_temp);
                     // we still have to calculate expected score to return -1 if pruning is called for
                     expected_value += col_strategy[j] * data.beta_explored;
-                    const Real priority = skip_exploration ? {0} : col_strategy[i] * data.unexplored;
+
+                    const Real priority =
+                        (skip_exploration || (data.tries >= max_tries))
+                            ? {0}
+                            : col_strategy[i] * data.unexplored;
 
                     total_unexplored += priority;
                     exploration_priorities.push_back(priority);
@@ -291,7 +296,7 @@ struct AlphaBeta : Types
                     {
                         col_idx = col_idx_temp;
                         max_priority = priority;
-                        best_j = j;
+                        next_j = j;
                     }
                 }
 
@@ -303,41 +308,57 @@ struct AlphaBeta : Types
 
                     Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx);
 
+                    bool produced_new_branch = false;
+                    for (; data.tries < max_tries; ++data.tries)
+                    {
+                        typename Types::State state_copy{state};
+                        const typename Types::Seed seed{device.uniform_64()};
+                        state_copy.randomize_transition(seed);
+                        state_copy.apply_actions(row_action, col_action);
+                        const size_t obs_hash = hasher(state_copy.get_obs());
 
-                    // get chance actions if not already
+                        if (data.branches.find(obs_hash) == data.branches.end())
+                        {
+                            produced_new_branch = true;
+                            Branch &new_branch = data.branches.emplace(obs_hash, state_copy, seed);
 
-                    typename Types::State state_copy = state;
-                    state_copy.apply_actions(row_action, col_action, data.chance_actions[data.next_chance_idx++]);
-                    ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
-                    MatrixNode *matrix_node_next = chance_node->access(state_copy.get_obs());
-                    matrix_node_next->matrix_node->depth = matrix_node->depth + 1;
-                    const auto prob = state_copy.prob;
+                            new_branch.matrix_node->depth = matrix_node->depth + 1;
+                            const auto prob = new_branch.prob;
 
-                    auto alpha_beta_pair = double_oracle(
-                        max_depth,
-                        device,
-                        state_copy,
-                        model,
-                        matrix_node_next,
-                        min_val, max_val);
+                            auto alpha_beta_pair = double_oracle(
+                                max_depth,
+                                device,
+                                state_copy,
+                                model,
+                                matrix_node_next,
+                                min_val, max_val);
 
-                    data.alpha_explored += alpha_beta_pair.first * prob;
-                    data.beta_explored += alpha_beta_pair.second * prob;
-                    expected_value += alpha_beta_pair.second * prob * col_strategy[best_i];
+                            data.alpha_explored += alpha_beta_pair.first * prob;
+                            data.beta_explored += alpha_beta_pair.second * prob;
+                            expected_value += alpha_beta_pair.second * prob * col_strategy[next_j];
 
-                    data.unexplored -= prob;
-                    total_unexplored -= prob * col_strategy[best_i];
-                    exploration_priorities[best_i] -= prob * col_strategy[best_i];
+                            data.unexplored -= prob;
+                            total_unexplored -= prob * col_strategy[next_j];
+                            exploration_priorities[next_j] -= prob * col_strategy[next_j];
+
+                            break;
+                        }
+                    }
+
+                    if (!produced_new_branch)
+                    {
+                        exploration_priorities[next_j] = 0;
+                    }
 
                     max_priority = typename Types::Q{0};
-                    for (int i = 0; i < J.size(); ++i)
+                    for (int j = 0; j < J.size(); ++j)
                     {
-                        const Real priority = exploration_priorities[i];
+                        const Real priority = exploration_priorities[j];
                         if (priority > max_priority)
                         {
-                            col_idx = J[i];
+                            col_idx = J[j];
                             max_priority = priority;
-                            best_i = i;
+                            next_j = j;
                         }
                     }
                 }
@@ -396,7 +417,6 @@ struct AlphaBeta : Types
             MatrixNode *matrix_node,
             int row_idx, int col_idx) const
         {
-            static typename Types::ObsHash hasher{};
             Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx);
 
             const auto row_action = state.row_actions[row_idx];
