@@ -274,6 +274,8 @@ struct AlphaBeta : Types
                 const bool is_row_idx_in_I = (std::find(I.begin(), I.end(), row_idx) != I.end());
                 const typename Types::Action row_action = state.row_actions[row_idx];
 
+                // For each row, there are multiple chance nodes. Priority refers to how much prob is left to explore
+                // If row_idx \in I, that means a perfious iteration already ran `try_solve_chance_node`
                 Real max_priority{0}, expected_score{0}, total_unexplored{0};
                 std::vector<Real> priority_scores;
                 int col_idx, best_i;
