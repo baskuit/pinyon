@@ -288,7 +288,7 @@ struct AlphaBeta : Types
                     const Real priority =
                         (skip_exploration || (data.tries >= max_tries))
                             ? {0}
-                            : col_strategy[i] * data.unexplored;
+                            : col_strategy[j] * data.unexplored;
 
                     total_unexplored += priority;
                     exploration_priorities.push_back(priority);
@@ -373,7 +373,7 @@ struct AlphaBeta : Types
         }
 
         std::pair<int, Real>
-        best_response_row(
+        best_response_col(
             const size_t max_depth,
             Types::PRNG &device,
             const Types::State &state,
@@ -384,46 +384,46 @@ struct AlphaBeta : Types
         {
             std::vector<int> &I = matrix_node->I;
             std::vector<int> &J = matrix_node->J;
-            int best_row_idx = -1;
+            int best_col_idx = -1;
 
-            for (int row_idx = 0; row_idx < state.row_actions.size(); ++row_idx)
+            for (int col_idx = 0; col_idx < state.col_actions.size(); ++col_idx)
             {
-                const auto row_action = state.row_actions[row_idx];
+                const auto col_action = state.col_actions[col_idx];
 
-                const bool skip_exploration = (std::find(I.begin(), I.end(), row_idx) != I.end());
+                const bool skip_exploration = (std::find(J.begin(), J.end(), col_idx) != J.end());
 
                 // 'priority' is the product of the opposing and 'chance' players probability
                 // its clearly what we want to minimize rather than just the chance component
                 Real max_priority{0}, expected_value{0}, total_unexplored{0};
                 std::vector<Real> exploration_priorities{};
-                int col_idx, next_j;
-                for (int j = 0; j < J.size(); ++j)
+                int row_idx, next_i;
+                for (int i = 0; i < I.size(); ++i)
                 {
-                    const int col_idx_temp = J[j];
-                    Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx_temp);
+                    const int row_idx_temp = I[i];
+                    Data &data = matrix_node->chance_data_matrix.get(row_idx_temp, col_idx);
                     // we still have to calculate expected score to return -1 if pruning is called for
-                    expected_value += col_strategy[j] * data.beta_explored;
+                    expected_value += row_strategy[i] * data.alpha_explored;
 
                     const Real priority =
                         (skip_exploration || (data.tries >= max_tries))
                             ? {0}
-                            : col_strategy[i] * data.unexplored;
+                            : row_strategy[i] * data.unexplored;
 
                     total_unexplored += priority;
                     exploration_priorities.push_back(priority);
                     if (priority > max_priority)
                     {
-                        col_idx = col_idx_temp;
+                        row_idx = row_idx_temp;
                         max_priority = priority;
-                        next_j = j;
+                        next_i = i;
                     }
                 }
 
                 while (
                     (max_priority > Real{0}) &&
-                    (Real{expected_value + beta * total_unexplored} >= alpha))
+                    (Real{expected_value + alpha * total_unexplored} <= beta))
                 {
-                    const auto col_action = state.col_actions[col_idx];
+                    const auto row_action = state.row_actions[row_idx];
 
                     Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx);
 
@@ -450,15 +450,15 @@ struct AlphaBeta : Types
                                 state_copy,
                                 model,
                                 matrix_node_next,
-                                min_val, max_val);
+                                min_val, max_val); // TODO alpha/beta
 
                             data.alpha_explored += alpha_beta_pair.first * prob;
                             data.beta_explored += alpha_beta_pair.second * prob;
-                            expected_value += alpha_beta_pair.second * prob * col_strategy[next_j];
+                            expected_value += alpha_beta_pair.first * prob * row_strategy[next_i];
 
                             data.unexplored -= prob;
-                            total_unexplored -= prob * col_strategy[next_j];
-                            exploration_priorities[next_j] -= prob * col_strategy[next_j];
+                            total_unexplored -= prob * row_strategy[next_i];
+                            exploration_priorities[next_i] -= prob * row_strategy[next_i];
 
                             break;
                         }
@@ -466,29 +466,29 @@ struct AlphaBeta : Types
 
                     if (!produced_new_branch)
                     {
-                        exploration_priorities[next_j] = 0;
+                        exploration_priorities[next_i] = 0;
                     }
 
                     max_priority = typename Types::Q{0};
-                    for (int j = 0; j < J.size(); ++j)
+                    for (int i = 0; i < i.size(); ++i)
                     {
-                        const Real priority = exploration_priorities[j];
+                        const Real priority = exploration_priorities[i];
                         if (priority > max_priority)
                         {
-                            col_idx = J[j];
+                            row_idx = I[i];
                             max_priority = priority;
-                            next_j = j;
+                            next_i = i;
                         }
                     }
                 }
 
-                if (expected_value >= alpha || (best_row_idx == -1 && fuzzy_equals(expected_value, alpha)))
+                if (expected_value <= beta || (best_col_idx == -1 && fuzzy_equals(expected_value, beta)))
                 {
-                    best_row_idx = row_idx;
-                    alpha = expected_value;
+                    best_col_idx = col_idx;
+                    beta = expected_value;
                 }
             }
-            return {best_row_idx, alpha};
+            return {best_col_idx, beta};
         }
 
     private:
