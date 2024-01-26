@@ -47,6 +47,7 @@
 #include <algorithm/solver/full-traversal.hh>
 #include <algorithm/solver/alpha-beta.hh>
 #include <algorithm/solver/alpha-beta-old.hh>
+#include <algorithm/solver/alpha-beta-force.hh>
 
 // Tree
 

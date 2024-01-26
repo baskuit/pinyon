@@ -82,6 +82,11 @@ struct RandomTree : Types
             transition_seed = device.uniform_64();
         }
 
+        void randomize_transition(const Types::Seed seed)
+        {
+            transition_seed = seed;
+        }
+
         void get_actions()
         {
             this->init_range_actions(rows, cols);

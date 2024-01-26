@@ -11,7 +11,7 @@
 #include <assert.h>
 
 template <CONCEPT(IsSingleModelTypes, Types)>
-struct AlphaBeta : Types
+struct AlphaBetaForce : Types
 {
     struct MatrixNode;
     struct Branch
@@ -19,12 +19,15 @@ struct AlphaBeta : Types
         typename Types::Prob prob;
         typename Types::Obs obs;
         typename Types::Seed seed;
-        std::unique_ptr<typename Types::MatrixNode> matrix_node;
+        std::unique_ptr<MatrixNode> matrix_node;
+
+        Branch(const Branch &) = delete;
+        Branch &operator=(const Branch &) = delete;
 
         Branch(
             const Types::State &state,
             const Types::Seed seed)
-            : prob{state.prob}, obs{state.get_obs()}, seed{seed}, matrix_node{std::make_unique<typename Types::MatrixNode>()} {}
+            : prob{state.prob}, obs{state.get_obs()}, seed{seed}, matrix_node{std::make_unique<MatrixNode>()} {}
     };
 
     struct Data
@@ -59,6 +62,8 @@ struct AlphaBeta : Types
     class Search
     {
     public:
+        using Real = typename Types::Real; // many uses
+
         const Real min_val{0}; // don't need to use the Game values if you happen to know that State's
         const Real max_val{1};
         bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
@@ -287,9 +292,8 @@ struct AlphaBeta : Types
 
                     const Real priority =
                         (skip_exploration || (data.tries >= max_tries))
-                            ? {0}
-                            : col_strategy[j] * data.unexplored;
-
+                            ? Real{0}
+                            : Real{col_strategy[j] * data.unexplored};
                     total_unexplored += priority;
                     exploration_priorities.push_back(priority);
                     if (priority > max_priority)
@@ -320,7 +324,9 @@ struct AlphaBeta : Types
                         if (data.branches.find(obs_hash) == data.branches.end())
                         {
                             produced_new_branch = true;
-                            Branch &new_branch = data.branches.emplace(obs_hash, state_copy, seed);
+                            // Branch &new_branch = (*(data.branches.emplace(obs_hash, state_copy, seed).first)).second;
+
+                            Branch new_branch{state_copy, seed};
 
                             new_branch.matrix_node->depth = matrix_node->depth + 1;
                             const auto prob = new_branch.prob;
@@ -330,7 +336,7 @@ struct AlphaBeta : Types
                                 device,
                                 state_copy,
                                 model,
-                                matrix_node_next,
+                                new_branch.matrix_node.get(),
                                 min_val, max_val);
 
                             data.alpha_explored += alpha_beta_pair.first * prob;
@@ -347,7 +353,7 @@ struct AlphaBeta : Types
 
                     if (!produced_new_branch)
                     {
-                        exploration_priorities[next_j] = 0;
+                        exploration_priorities[next_j] = typename Types::Q{0};
                     }
 
                     max_priority = typename Types::Q{0};
@@ -380,7 +386,7 @@ struct AlphaBeta : Types
             Types::Model &model,
             MatrixNode *matrix_node,
             Real alpha, Real beta,
-            Types::VectorReal &col_strategy) const
+            Types::VectorReal &row_strategy) const
         {
             std::vector<int> &I = matrix_node->I;
             std::vector<int> &J = matrix_node->J;
@@ -406,8 +412,8 @@ struct AlphaBeta : Types
 
                     const Real priority =
                         (skip_exploration || (data.tries >= max_tries))
-                            ? {0}
-                            : row_strategy[i] * data.unexplored;
+                            ? Real{0}
+                            : Real{row_strategy[i] * data.unexplored};
 
                     total_unexplored += priority;
                     exploration_priorities.push_back(priority);
@@ -439,7 +445,8 @@ struct AlphaBeta : Types
                         if (data.branches.find(obs_hash) == data.branches.end())
                         {
                             produced_new_branch = true;
-                            Branch &new_branch = data.branches.emplace(obs_hash, state_copy, seed);
+                            // Branch &new_branch = (*(data.branches.emplace(obs_hash, state_copy, seed).first)).second;
+                            Branch new_branch{state_copy, seed};
 
                             new_branch.matrix_node->depth = matrix_node->depth + 1;
                             const auto prob = new_branch.prob;
@@ -449,7 +456,7 @@ struct AlphaBeta : Types
                                 device,
                                 state_copy,
                                 model,
-                                matrix_node_next,
+                                new_branch.matrix_node.get(),
                                 min_val, max_val); // TODO alpha/beta
 
                             data.alpha_explored += alpha_beta_pair.first * prob;
@@ -466,11 +473,11 @@ struct AlphaBeta : Types
 
                     if (!produced_new_branch)
                     {
-                        exploration_priorities[next_i] = 0;
+                        exploration_priorities[next_i] = typename Types::Q{0};
                     }
 
                     max_priority = typename Types::Q{0};
-                    for (int i = 0; i < i.size(); ++i)
+                    for (int i = 0; i < I.size(); ++i)
                     {
                         const Real priority = exploration_priorities[i];
                         if (priority > max_priority)
@@ -551,10 +558,19 @@ struct AlphaBeta : Types
 
                 if (data.branches.find(obs_hash) == data.branches.end())
                 {
-                    Branch &new_branch = data.branches.emplace(obs_hash, state_copy, seed);
+                    // Branch &new_branch = (*(data.branches.emplace(obs_hash, state_copy, seed).first)).second;
+                    Branch new_branch{state_copy, seed};
+
                     new_branch.matrix_node->depth = matrix_node->depth + 1;
 
-                    const auto alpha_beta = double_oracle(max_depth, device, state_copy, model, new_branch.matrix_node, min_val, max_val);
+                    const auto alpha_beta =
+                        double_oracle(
+                            max_depth,
+                            device,
+                            state_copy,
+                            model,
+                            new_branch.matrix_node.get(),
+                            min_val, max_val);
 
                     data.alpha_explored += alpha_beta.first * new_branch.prob;
                     data.beta_explored += alpha_beta.second * new_branch.prob;
