@@ -372,6 +372,125 @@ struct AlphaBeta : Types
             return {best_row_idx, alpha};
         }
 
+        std::pair<int, Real>
+        best_response_row(
+            const size_t max_depth,
+            Types::PRNG &device,
+            const Types::State &state,
+            Types::Model &model,
+            MatrixNode *matrix_node,
+            Real alpha, Real beta,
+            Types::VectorReal &col_strategy) const
+        {
+            std::vector<int> &I = matrix_node->I;
+            std::vector<int> &J = matrix_node->J;
+            int best_row_idx = -1;
+
+            for (int row_idx = 0; row_idx < state.row_actions.size(); ++row_idx)
+            {
+                const auto row_action = state.row_actions[row_idx];
+
+                const bool skip_exploration = (std::find(I.begin(), I.end(), row_idx) != I.end());
+
+                // 'priority' is the product of the opposing and 'chance' players probability
+                // its clearly what we want to minimize rather than just the chance component
+                Real max_priority{0}, expected_value{0}, total_unexplored{0};
+                std::vector<Real> exploration_priorities{};
+                int col_idx, next_j;
+                for (int j = 0; j < J.size(); ++j)
+                {
+                    const int col_idx_temp = J[j];
+                    Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx_temp);
+                    // we still have to calculate expected score to return -1 if pruning is called for
+                    expected_value += col_strategy[j] * data.beta_explored;
+
+                    const Real priority =
+                        (skip_exploration || (data.tries >= max_tries))
+                            ? {0}
+                            : col_strategy[i] * data.unexplored;
+
+                    total_unexplored += priority;
+                    exploration_priorities.push_back(priority);
+                    if (priority > max_priority)
+                    {
+                        col_idx = col_idx_temp;
+                        max_priority = priority;
+                        next_j = j;
+                    }
+                }
+
+                while (
+                    (max_priority > Real{0}) &&
+                    (Real{expected_value + beta * total_unexplored} >= alpha))
+                {
+                    const auto col_action = state.col_actions[col_idx];
+
+                    Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx);
+
+                    bool produced_new_branch = false;
+                    for (; data.tries < max_tries; ++data.tries)
+                    {
+                        typename Types::State state_copy{state};
+                        const typename Types::Seed seed{device.uniform_64()};
+                        state_copy.randomize_transition(seed);
+                        state_copy.apply_actions(row_action, col_action);
+                        const size_t obs_hash = hasher(state_copy.get_obs());
+
+                        if (data.branches.find(obs_hash) == data.branches.end())
+                        {
+                            produced_new_branch = true;
+                            Branch &new_branch = data.branches.emplace(obs_hash, state_copy, seed);
+
+                            new_branch.matrix_node->depth = matrix_node->depth + 1;
+                            const auto prob = new_branch.prob;
+
+                            auto alpha_beta_pair = double_oracle(
+                                max_depth,
+                                device,
+                                state_copy,
+                                model,
+                                matrix_node_next,
+                                min_val, max_val);
+
+                            data.alpha_explored += alpha_beta_pair.first * prob;
+                            data.beta_explored += alpha_beta_pair.second * prob;
+                            expected_value += alpha_beta_pair.second * prob * col_strategy[next_j];
+
+                            data.unexplored -= prob;
+                            total_unexplored -= prob * col_strategy[next_j];
+                            exploration_priorities[next_j] -= prob * col_strategy[next_j];
+
+                            break;
+                        }
+                    }
+
+                    if (!produced_new_branch)
+                    {
+                        exploration_priorities[next_j] = 0;
+                    }
+
+                    max_priority = typename Types::Q{0};
+                    for (int j = 0; j < J.size(); ++j)
+                    {
+                        const Real priority = exploration_priorities[j];
+                        if (priority > max_priority)
+                        {
+                            col_idx = J[j];
+                            max_priority = priority;
+                            next_j = j;
+                        }
+                    }
+                }
+
+                if (expected_value >= alpha || (best_row_idx == -1 && fuzzy_equals(expected_value, alpha)))
+                {
+                    best_row_idx = row_idx;
+                    alpha = expected_value;
+                }
+            }
+            return {best_row_idx, alpha};
+        }
+
     private:
         template <template <typename> typename Wrapper, typename T>
         inline bool fuzzy_equals(Wrapper<T> x, Wrapper<T> y) const
