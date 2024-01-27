@@ -38,7 +38,11 @@ struct AlphaBetaForce : Types
             size_t,
             Branch>
             branches{};
+
+        Data () {}
+        Data (Data &&) {}
     };
+    
     struct MatrixNode
     {
         DataMatrix<Data> chance_data_matrix{};
@@ -327,10 +331,12 @@ struct AlphaBetaForce : Types
                         {
                             produced_new_branch = true;
 
-                            data.branches.emplace(
-                                std::piecewise_construct,
-                                std::forward_as_tuple(obs_hash),
-                                std::forward_as_tuple(state_copy, seed));
+                            // data.branches.emplace(
+                            //     std::piecewise_construct,
+                            //     std::forward_as_tuple(obs_hash),
+                            //     std::forward_as_tuple(state_copy, seed));
+                            data.branches.try_emplace(
+                                obs_hash, state_copy, seed);
                             Branch &new_branch = data.branches.at(obs_hash);
 
                             new_branch.matrix_node->depth = matrix_node->depth + 1;
@@ -451,10 +457,12 @@ struct AlphaBetaForce : Types
                         {
                             produced_new_branch = true;
 
-                            data.branches.emplace(
-                                std::piecewise_construct,
-                                std::forward_as_tuple(obs_hash),
-                                std::forward_as_tuple(state_copy, seed));
+                            // data.branches.emplace(
+                            //     std::piecewise_construct,
+                            //     std::forward_as_tuple(obs_hash),
+                            //     std::forward_as_tuple(state_copy, seed));
+                            data.branches.try_emplace(
+                                obs_hash, state_copy, seed);
                             Branch &new_branch = data.branches.at(obs_hash);
 
                             new_branch.matrix_node->depth = matrix_node->depth + 1;
@@ -567,10 +575,12 @@ struct AlphaBetaForce : Types
 
                 if (data.branches.find(obs_hash) == data.branches.end())
                 {
-                    data.branches.emplace(
-                        std::piecewise_construct,
-                        std::forward_as_tuple(obs_hash),
-                        std::forward_as_tuple(state_copy, seed));
+                    // data.branches.emplace(
+                    //     std::piecewise_construct,
+                    //     std::forward_as_tuple(obs_hash),
+                    //     std::forward_as_tuple(state_copy, seed));
+                    data.branches.try_emplace(
+                        obs_hash, state_copy, seed);
                     Branch &new_branch = data.branches.at(obs_hash);
 
                     new_branch.matrix_node->depth = matrix_node->depth + 1;
