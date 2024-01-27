@@ -61,7 +61,7 @@ struct AlphaBetaForce : Types
         // bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
 
         const size_t max_tries = (1 << 12);
-        const typename Types::ObsHash hasher{};
+        // const typename Types::ObsHash hasher{};
 
         Search() {}
 
@@ -79,9 +79,6 @@ struct AlphaBetaForce : Types
             MatrixNode &root) const
         {
             typename Types::State state_copy{state};
-            root.chance_data_matrix.fill(1, 1);
-            Data &data = root.chance_data_matrix[0];
-            std::unordered_map<size_t, Branch> &branches = data.branches;
             return double_oracle(max_depth, device, state_copy, model, &root, min_val, max_val);
         }
 
@@ -324,7 +321,7 @@ struct AlphaBetaForce : Types
                         const typename Types::Seed seed{device.uniform_64()};
                         state_copy.randomize_transition(seed);
                         state_copy.apply_actions(row_action, col_action);
-                        const size_t obs_hash = hasher(state_copy.get_obs());
+                        const size_t obs_hash = state_copy.get_obs().get();
 
                         if (data.branches.find(obs_hash) == data.branches.end())
                         {
@@ -448,7 +445,7 @@ struct AlphaBetaForce : Types
                         const typename Types::Seed seed{device.uniform_64()};
                         state_copy.randomize_transition(seed);
                         state_copy.apply_actions(row_action, col_action);
-                        const size_t obs_hash = hasher(state_copy.get_obs());
+                        const size_t obs_hash = state_copy.get_obs().get();
 
                         if (data.branches.find(obs_hash) == data.branches.end())
                         {
@@ -566,7 +563,7 @@ struct AlphaBetaForce : Types
                 const typename Types::Seed seed{device.uniform_64()};
                 state_copy.randomize_transition(seed);
                 state_copy.apply_actions(row_action, col_action);
-                const size_t obs_hash = hasher(state_copy.get_obs());
+                const size_t obs_hash = state_copy.get_obs().get();
 
                 if (data.branches.find(obs_hash) == data.branches.end())
                 {
