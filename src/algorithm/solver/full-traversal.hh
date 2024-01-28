@@ -147,7 +147,7 @@ struct FullTraversal : Types
                         continue;
                     }
 
-                    std::cout << "FULL TRAVERSAL: " << row_idx << ' ' << col_idx << std::endl;
+                    // std::cout << "FULL TRAVERSAL: " << row_idx << ' ' << col_idx << std::endl;
 
                     auto &chance_actions = chance_node->stats.chance_actions;
                     state.get_chance_actions(row_action, col_action, chance_actions);

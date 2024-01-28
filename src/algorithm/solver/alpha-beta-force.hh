@@ -64,7 +64,7 @@ struct AlphaBetaForce : Types
         const Real max_val{1};
         // bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
 
-        const size_t max_tries = (1 << 12);
+        const size_t max_tries = (1 << 0);
         // const typename Types::ObsHash hasher{};
 
         Search() {}
@@ -179,6 +179,8 @@ struct AlphaBetaForce : Types
                         }
                     }
                     LRSNash::solve(matrix, row_solution, col_solution);
+                    std::cout << "solved exactly" << std::endl;
+                    matrix.print();
                 }
                 else
                 {
@@ -197,6 +199,10 @@ struct AlphaBetaForce : Types
                     LRSNash::solve(alpha_matrix, row_solution, temp);
                     temp.clear();
                     LRSNash::solve(beta_matrix, temp, col_solution);
+                    std::cout << "solved exactly: alpha" << std::endl;
+                    alpha_matrix.print();
+                    std::cout << "not solved exactly: beta" << std::endl;
+                    beta_matrix.print();
                 }
 
                 std::pair<int, Real>

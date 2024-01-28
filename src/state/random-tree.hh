@@ -228,12 +228,12 @@ struct RandomTree : Types
                         }
                         chance_strategies_[start_idx + chance_idx] = x;
                         prob_sum += x;
+                        prob_sum.canonicalize();
 
                         // decay = decay * decay;
                         // decay.canonicalize();
                     }
 
-                    prob_sum.canonicalize();
 
                     if (prob_sum == typename Types::Q{0})
                     {
