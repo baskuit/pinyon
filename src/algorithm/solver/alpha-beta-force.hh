@@ -64,12 +64,12 @@ struct AlphaBetaForce : Types
         const Real max_val{1};
         // bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
 
-        const size_t max_tries = (1 << 0);
+        const size_t max_tries = (1 << 6);
         // const typename Types::ObsHash hasher{};
 
         Search() {}
 
-        Search(Real min_val, Real max_val) : min_val(min_val), max_val(max_val) {}
+        Search(Real min_val, Real max_val, size_t max_tries) : min_val(min_val), max_val(max_val), max_tries{max_tries} {}
 
         // Search(
         //     Real min_val, Real max_val,
@@ -199,10 +199,6 @@ struct AlphaBetaForce : Types
                     LRSNash::solve(alpha_matrix, row_solution, temp);
                     temp.clear();
                     LRSNash::solve(beta_matrix, temp, col_solution);
-                    std::cout << "solved exactly: alpha" << std::endl;
-                    alpha_matrix.print();
-                    std::cout << "not solved exactly: beta" << std::endl;
-                    beta_matrix.print();
                 }
 
                 std::pair<int, Real>
@@ -306,7 +302,7 @@ struct AlphaBetaForce : Types
                         (skip_exploration || (data.tries >= max_tries))
                             ? Real{0}
                             : Real{col_strategy[j] * data.unexplored};
-                    total_unexplored += priority;
+                    total_unexplored += col_strategy[j] * data.unexplored;
                     exploration_priorities.push_back(priority);
                     if (priority > max_priority)
                     {
@@ -386,6 +382,8 @@ struct AlphaBetaForce : Types
                     }
                 }
 
+                expected_value += total_unexplored * beta;
+
                 if (expected_value >= alpha || (best_row_idx == -1 && fuzzy_equals(expected_value, alpha)))
                 {
                     best_row_idx = row_idx;
@@ -432,7 +430,7 @@ struct AlphaBetaForce : Types
                             ? Real{0}
                             : Real{row_strategy[i] * data.unexplored};
 
-                    total_unexplored += priority;
+                    total_unexplored += row_strategy[i] * data.unexplored;
                     exploration_priorities.push_back(priority);
                     if (priority > max_priority)
                     {
@@ -511,6 +509,8 @@ struct AlphaBetaForce : Types
                         }
                     }
                 }
+
+                expected_value += total_unexplored * alpha;
 
                 if (expected_value <= beta || (best_col_idx == -1 && fuzzy_equals(expected_value, beta)))
                 {
