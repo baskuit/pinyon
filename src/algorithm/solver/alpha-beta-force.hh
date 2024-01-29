@@ -69,7 +69,9 @@ struct AlphaBetaForce : Types
 
         Search() {}
 
-        Search(Real min_val, Real max_val, size_t max_tries) : min_val(min_val), max_val(max_val), max_tries{max_tries} {}
+        Search (size_t max_tries) : max_tries{max_tries} {}
+
+        Search(Real min_val, Real max_val, size_t max_tries = (1 << 6)) : min_val(min_val), max_val(max_val), max_tries{max_tries} {}
 
         // Search(
         //     Real min_val, Real max_val,
