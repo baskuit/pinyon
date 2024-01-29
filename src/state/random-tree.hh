@@ -6,6 +6,7 @@
 #include <types/random.hh>
 #include <state/state.hh>
 
+#include <assert.h>
 #include <vector>
 #include <ranges>
 
@@ -22,9 +23,9 @@ struct RandomTree : Types
         size_t cols = 0;
         size_t transitions = 1;
         int payoff_bias = 0;
-        typename Types::Q chance_threshold{1, static_cast<int>(transitions + 1)};
+        typename Types::Q chance_threshold{0};
         std::vector<typename Types::Prob> chance_strategies;
-        int chance_denominator = 10;
+        const int chance_denominator = 10;
 
         int (*depth_bound_func)(State *, int) = &(State::depth_bound_default);
         int (*actions_func)(State *, int) = &(State::actions_default);
@@ -41,13 +42,15 @@ struct RandomTree : Types
             size_t rows,
             size_t cols,
             size_t transitions,
-            const Types::Q &chance_threshold = typename Types::Q{0})
+            const Types::Q &chance_threshold = typename Types::Q{0},
+            const int chance_denominator = 8)
             : device{device},
               depth_bound{depth_bound},
               rows{rows},
               cols{cols},
               transitions{transitions},
-              chance_threshold{chance_threshold}
+              chance_threshold{chance_threshold},
+              chance_denominator{chance_denominator}
         {
             this->init_range_actions(rows, cols);
             get_chance_strategies();
@@ -213,15 +216,23 @@ struct RandomTree : Types
 
                     // get unnormalized distro
                     typename Types::Q prob_sum{0};
-                    // typename Types::Q decay{chance_denominator - 1, chance_denominator};
+                    const double decay{(chance_denominator - 1) / (double)chance_denominator};
+                    double decay_current{decay};
 
                     for (int chance_idx = 0; chance_idx < transitions; ++chance_idx)
                     {
-                        const int num = device.random_int(chance_denominator) + 1;
+                        double w = 1;//device.uniform();
+                        w *= decay_current;
+                        decay_current *= decay;
+                        int num = -1;
+                        while (w > 0)
+                        {
+                            w -= 1 / (double)chance_denominator;
+                            ++num;
+                        }
 
                         typename Types::Q x{num, chance_denominator};
-                        // x = x * decay;
-                        // x.canonicalize();
+
                         if (x < chance_threshold)
                         {
                             x = 0;
@@ -230,10 +241,8 @@ struct RandomTree : Types
                         prob_sum += x;
                         prob_sum.canonicalize();
 
-                        // decay = decay * decay;
-                        // decay.canonicalize();
+                        assert(prob_sum >= typename Types::Q{0});
                     }
-
 
                     if (prob_sum == typename Types::Q{0})
                     {

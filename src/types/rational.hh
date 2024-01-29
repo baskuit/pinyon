@@ -86,6 +86,14 @@ struct Rational
         return *this;
     }
 
+    constexpr Rational &operator*=(Rational y)
+    {
+        p *= y.p;
+        q *= y.q;
+        return *this;
+    }
+
+
     friend std::ostream &operator<<(std::ostream &os, const Rational &x)
     {
         os << x.p << '/' << x.q;

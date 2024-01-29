@@ -23,10 +23,10 @@ struct ArithmeticType : Wrapper<T>
 
     void canonicalize()
     {
-        // if constexpr (requires std::is_same_v<decltype(std::declval<T>().myMethod()), void>) {
-        // this->value.canonicalize();
-
-        // }
+        if constexpr (std::is_same_v<mpq_class, T>)
+        {
+            this->value.canonicalize();
+        }
     }
 
     template <typename Integral>
@@ -279,7 +279,6 @@ struct ObsHashType<std::array<uint8_t, 376>>
         return hash;
     }
 };
-
 
 template <typename T>
 struct ActionType : Wrapper<T>

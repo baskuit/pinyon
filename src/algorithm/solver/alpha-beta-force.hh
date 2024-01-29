@@ -181,8 +181,6 @@ struct AlphaBetaForce : Types
                         }
                     }
                     LRSNash::solve(matrix, row_solution, col_solution);
-                    std::cout << "solved exactly" << std::endl;
-                    matrix.print();
                 }
                 else
                 {
@@ -264,6 +262,9 @@ struct AlphaBetaForce : Types
 
             matrix_node->row_pricipal_idx = I[std::distance(row_solution.begin(), std::max_element(row_solution.begin(), row_solution.end()))];
             matrix_node->col_pricipal_idx = J[std::distance(col_solution.begin(), std::max_element(col_solution.begin(), col_solution.end()))];
+
+            alpha.canonicalize();
+            beta.canonicalize();
 
             return {alpha, beta};
         }
@@ -385,6 +386,8 @@ struct AlphaBetaForce : Types
                 }
 
                 expected_value += total_unexplored * beta;
+
+                expected_value.canonicalize();
 
                 if (expected_value >= alpha || (best_row_idx == -1 && fuzzy_equals(expected_value, alpha)))
                 {
@@ -513,6 +516,8 @@ struct AlphaBetaForce : Types
                 }
 
                 expected_value += total_unexplored * alpha;
+
+                expected_value.canonicalize();
 
                 if (expected_value <= beta || (best_col_idx == -1 && fuzzy_equals(expected_value, beta)))
                 {
