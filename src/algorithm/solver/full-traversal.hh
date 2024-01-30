@@ -94,7 +94,6 @@ struct FullTraversal : Types
             {
                 stats.payoff = state.get_payoff();
                 matrix_node->set_terminal();
-                // return {stats.payoff.get_row_value(), stats.payoff.get_row_value()};            *output_real = stats.payoff.get_row_value();
                 return;
             }
             if (stats.depth >= max_depth)
@@ -103,7 +102,6 @@ struct FullTraversal : Types
                 model.inference(std::move(state), output);
                 stats.payoff = output.value;
                 matrix_node->set_terminal();
-                // return {stats.payoff.get_row_value(), stats.payoff.get_row_value()};
                 return;
             }
 
@@ -147,8 +145,6 @@ struct FullTraversal : Types
                         continue;
                     }
 
-                    // std::cout << "FULL TRAVERSAL: " << row_idx << ' ' << col_idx << std::endl;
-
                     auto &chance_actions = chance_node->stats.chance_actions;
                     state.get_chance_actions(row_action, col_action, chance_actions);
 
@@ -176,8 +172,6 @@ struct FullTraversal : Types
             }
 
             stats.payoff = LRSNash::solve(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
-            // return {stats.payoff.get_row_value(), stats.payoff.get_row_value()};
-            return;
         }
     };
 };

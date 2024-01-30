@@ -265,6 +265,20 @@ struct ObsHashType<std::array<uint8_t, 64>>
 };
 
 template <>
+struct ObsHashType<std::array<uint8_t, 16>>
+{
+    size_t operator()(const ObsType<std::array<uint8_t, 16>> &obs) const
+    {
+        static const uint64_t duration_mask = 0xFFFFFFFFFF0FFFFF;
+        const uint64_t *a = reinterpret_cast<const uint64_t *>(obs.value.data());
+        const uint64_t side_1 = a[0] & duration_mask;
+        const uint64_t side_2 = a[1] & duration_mask;
+        return ((side_1 << 32) >> 32) | (side_2 << 32);
+    }
+};
+
+
+template <>
 struct ObsHashType<std::array<uint8_t, 376>>
 {
 

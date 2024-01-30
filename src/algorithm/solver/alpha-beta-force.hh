@@ -39,10 +39,10 @@ struct AlphaBetaForce : Types
             Branch>
             branches{};
 
-        Data () {}
-        Data (Data &&) {}
+        Data() {}
+        Data(Data &&) {}
     };
-    
+
     struct MatrixNode
     {
         DataMatrix<Data> chance_data_matrix{};
@@ -65,11 +65,11 @@ struct AlphaBetaForce : Types
         // bool (*const terminate)(typename Types::PRNG &, const Data &) = &dont_terminate;
 
         const size_t max_tries = (1 << 6);
-        // const typename Types::ObsHash hasher{};
+        const typename Types::ObsHash hasher{};
 
         Search() {}
 
-        Search (size_t max_tries) : max_tries{max_tries} {}
+        Search(size_t max_tries) : max_tries{max_tries} {}
 
         Search(Real min_val, Real max_val, size_t max_tries = (1 << 6)) : min_val(min_val), max_val(max_val), max_tries{max_tries} {}
 
@@ -106,6 +106,8 @@ struct AlphaBetaForce : Types
                 return {payoff.get_row_value(), payoff.get_row_value()};
             }
 
+            state.get_actions(); // here for monte carlo model
+
             if (matrix_node->depth >= max_depth)
             {
                 typename Types::ModelOutput model_output;
@@ -115,7 +117,6 @@ struct AlphaBetaForce : Types
                 return {model_output.value.get_row_value(), model_output.value.get_row_value()};
             }
 
-            state.get_actions();
             const size_t rows = state.row_actions.size();
             const size_t cols = state.col_actions.size();
 
@@ -266,6 +267,22 @@ struct AlphaBetaForce : Types
             alpha.canonicalize();
             beta.canonicalize();
 
+            // Now we correct row/col solution data in matrix node. Reorder, account for 'unsolved' i/j's, pad with zeros.
+            typename Types::VectorReal temp_strategy{};
+            temp_strategy.resize(rows);
+            for (int i = 0; i < row_solution.size(); ++i)
+            {
+                temp_strategy[I[i]] = row_solution[i];
+            }
+            row_solution = temp_strategy;
+            temp_strategy.clear();
+            temp_strategy.resize(cols);
+            for (int j = 0; j < col_solution.size(); ++j)
+            {
+                temp_strategy[J[j]] = col_solution[j];
+            }
+            col_solution = temp_strategy;
+
             return {alpha, beta};
         }
 
@@ -276,9 +293,10 @@ struct AlphaBetaForce : Types
             const Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Real alpha, Real beta,
+            const Real alpha, const Real beta,
             Types::VectorReal &col_strategy) const
         {
+            Real best_response{alpha};
             std::vector<int> &I = matrix_node->I;
             std::vector<int> &J = matrix_node->J;
             int best_row_idx = -1;
@@ -317,7 +335,7 @@ struct AlphaBetaForce : Types
 
                 while (
                     (max_priority > Real{0}) &&
-                    (Real{expected_value + beta * total_unexplored} >= alpha))
+                    (Real{expected_value + beta * total_unexplored} >= best_response))
                 {
                     const auto col_action = state.col_actions[col_idx];
 
@@ -330,16 +348,14 @@ struct AlphaBetaForce : Types
                         const typename Types::Seed seed{device.uniform_64()};
                         state_copy.randomize_transition(seed);
                         state_copy.apply_actions(row_action, col_action);
-                        const size_t obs_hash = state_copy.get_obs().get();
+                        //state_copy.get_actions();
+                        // const size_t obs_hash = state_copy.get_obs().get();
+                        const size_t obs_hash = hasher(state_copy.get_obs());
 
                         if (data.branches.find(obs_hash) == data.branches.end())
                         {
                             produced_new_branch = true;
 
-                            // data.branches.emplace(
-                            //     std::piecewise_construct,
-                            //     std::forward_as_tuple(obs_hash),
-                            //     std::forward_as_tuple(state_copy, seed));
                             data.branches.try_emplace(
                                 obs_hash, state_copy, seed);
                             Branch &new_branch = data.branches.at(obs_hash);
@@ -389,13 +405,13 @@ struct AlphaBetaForce : Types
 
                 expected_value.canonicalize();
 
-                if (expected_value >= alpha || (best_row_idx == -1 && fuzzy_equals(expected_value, alpha)))
+                if (expected_value >= best_response || (best_row_idx == -1 && fuzzy_equals(expected_value, best_response)))
                 {
                     best_row_idx = row_idx;
-                    alpha = expected_value;
+                    best_response = expected_value;
                 }
             }
-            return {best_row_idx, alpha};
+            return {best_row_idx, best_response};
         }
 
         std::pair<int, Real>
@@ -405,9 +421,10 @@ struct AlphaBetaForce : Types
             const Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Real alpha, Real beta,
+            const Real alpha, const Real beta,
             Types::VectorReal &row_strategy) const
         {
+            Real best_response{beta};
             std::vector<int> &I = matrix_node->I;
             std::vector<int> &J = matrix_node->J;
             int best_col_idx = -1;
@@ -460,7 +477,8 @@ struct AlphaBetaForce : Types
                         const typename Types::Seed seed{device.uniform_64()};
                         state_copy.randomize_transition(seed);
                         state_copy.apply_actions(row_action, col_action);
-                        const size_t obs_hash = state_copy.get_obs().get();
+                        // const size_t obs_hash = state_copy.get_obs().get();
+                        const size_t obs_hash = hasher(state_copy.get_obs());
 
                         if (data.branches.find(obs_hash) == data.branches.end())
                         {
@@ -519,13 +537,13 @@ struct AlphaBetaForce : Types
 
                 expected_value.canonicalize();
 
-                if (expected_value <= beta || (best_col_idx == -1 && fuzzy_equals(expected_value, beta)))
+                if (expected_value <= best_response || (best_col_idx == -1 && fuzzy_equals(expected_value, best_response)))
                 {
                     best_col_idx = col_idx;
-                    beta = expected_value;
+                    best_response = expected_value;
                 }
             }
-            return {best_col_idx, beta};
+            return {best_col_idx, best_response};
         }
 
     private:
@@ -584,7 +602,8 @@ struct AlphaBetaForce : Types
                 const typename Types::Seed seed{device.uniform_64()};
                 state_copy.randomize_transition(seed);
                 state_copy.apply_actions(row_action, col_action);
-                const size_t obs_hash = state_copy.get_obs().get();
+                // const size_t obs_hash = state_copy.get_obs().get();
+                const size_t obs_hash = hasher(state_copy.get_obs());
 
                 if (data.branches.find(obs_hash) == data.branches.end())
                 {
