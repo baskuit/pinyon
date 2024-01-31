@@ -30,7 +30,7 @@ int main()
 
     using MCTypes = TreeBandit<Exp3<MonteCarloModel<FinalStateTypes>>>;
     // Exp3 search types on a solved random tree
-    using MCMTypes = TreeBanditSearchModel<MCTypes>;
+    using MCMTypes = SearchModel<MCTypes, true, true>;
     // Model type that treats search output as its inference
     using ArenaTypes = TreeBanditThreaded<Exp3Fat<MonteCarloModel<Arena>>>;
     // Type list for multithreaded exp3 over Arena state
