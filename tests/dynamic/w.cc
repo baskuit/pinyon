@@ -2,6 +2,9 @@
 
 /*
 
+TODO: The whole thing. W::Types was a bit of an exericise and after-thought.
+It's not as tested or supported as other Pinyon utilities.
+
 Basic check of consistency - getting the same results whether we use W::Types wrapper or the raw class
 
 */

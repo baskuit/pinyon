@@ -12,6 +12,16 @@ An implementation of Simultaneous Move Alpha Beta
 See "Using Double-Oracle Method and Serialized Alpha-Beta Search
 for Pruning in Simultaneous Move Games>
 
+Note: This utility is deprecated in favor of `alpha-beta.hh`, which allows for
+
+    alpha < beta
+
+However, if that is not a possibility then this implementation should be faster.
+
+Note: also is modified for stochastic SM games (it requires get_chance_actions().)
+
+and it also has an improvement on the bounds for skipping and action while checking the best response.
+
 */
 
 template <
@@ -19,25 +29,28 @@ template <
     template <typename...> typename NodePair = DefaultNodes>
 struct AlphaBetaOld : Types
 {
+    // for appearances
+    using Real = typename Types::Real;
+
     struct MatrixStats
     {
-        typename Types::Real row_value;
+        Real row_value;
         // value for the maximizing/row player.
-        typename Types::MatrixReal p;
-        typename Types::MatrixReal o;
+        Types::MatrixReal p;
+        Types::MatrixReal o;
 
         // matrices of pessimistic/optimisitic values. always over full actions
         std::vector<int> I{}, J{};
         // vector of row_idx, col_idx in the substage
-        typename Types::VectorReal row_solution, col_solution;
+        Types::VectorReal row_solution, col_solution;
         int row_br_idx, col_br_idx;
-        typename Types::MatrixInt chance_actions_solved;
+        Types::MatrixInt chance_actions_solved;
 
         size_t matrix_node_count = 1;
         size_t matrix_node_count_last = 0;
 
         unsigned int depth = 0;
-        typename Types::Prob prob;
+        Types::Prob prob;
     };
     struct ChanceStats
     {
@@ -50,14 +63,14 @@ struct AlphaBetaOld : Types
     class Search
     {
     public:
-        const typename Types::Real min_val{0};
-        const typename Types::Real max_val{1};
+        const Real min_val{0};
+        const Real max_val{1};
 
         int max_depth = -1;
-        typename Types::Real epsilon{Rational{1, 1 << 24}};
+        Real epsilon{Rational{1, 1 << 24}};
 
         Search() {}
-        Search(typename Types::Real min_val, typename Types::Real max_val) : min_val(min_val), max_val(max_val) {}
+        Search(Real min_val, Real max_val) : min_val(min_val), max_val(max_val) {}
 
         void run(
             Types::State &state,
@@ -67,12 +80,12 @@ struct AlphaBetaOld : Types
             double_oracle(state, model, root, min_val, max_val);
         }
 
-        typename Types::Real double_oracle(
+        Real double_oracle(
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Types::Real alpha,
-            Types::Real beta)
+            Real alpha,
+            Real beta)
         {
             auto &stats = matrix_node->stats;
             state.get_actions();
@@ -119,13 +132,13 @@ struct AlphaBetaOld : Types
                     for (int col_idx : stats.J)
                     {
 
-                        typename Types::Real &p_ij = p.get(row_idx, col_idx);
-                        typename Types::Real &o_ij = o.get(row_idx, col_idx);
+                        Real &p_ij = p.get(row_idx, col_idx);
+                        Real &o_ij = o.get(row_idx, col_idx);
                         // 11: if pi, j < oi, j then
                         if (p_ij < o_ij)
                         {
                             // 12: u(si, j ) ← double-oracle(si, j , pi, j, oi, j )
-                            typename Types::Real u_ij = typename Types::Q{0};
+                            Real u_ij = typename Types::Q{0};
                             ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
                             const typename Types::Action row_action = state.row_actions[row_idx];
@@ -208,11 +221,12 @@ struct AlphaBetaOld : Types
             return stats.row_value;
         }
 
-        std::pair<int, typename Types::Real> best_response_row(
+        std::pair<int, Real> 
+        best_response_row(
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Types::Real alpha,
+            Real alpha,
             Types::VectorReal &col_strategy)
         {
             typename Types::MatrixReal &p = matrix_node->stats.p;
@@ -228,7 +242,7 @@ struct AlphaBetaOld : Types
             //     return col_strategy[col_idx_1] < col_strategy[col_idx_2]; });
 
             // 1: BRvalue ← α
-            typename Types::Real best_response_row = alpha;
+            Real best_response_row = alpha;
             // 2: i BR ← null
             int new_action_idx = -1;
 
@@ -241,7 +255,7 @@ struct AlphaBetaOld : Types
                 // We don't perform serialized alpha-beta
                 // Furthermore, I'm not sure what this step does that lines 7, 8 in double_oracle don't
 
-                typename Types::Real expected_o_payoff = typename Types::Q{0};
+                Real expected_o_payoff = typename Types::Q{0};
                 for (int j = 0; j < J.size(); ++j)
                 {
                     expected_o_payoff += col_strategy[j] * o.get(row_idx, J[j]);
@@ -251,18 +265,18 @@ struct AlphaBetaOld : Types
                 for (int j = 0; j < J.size(); ++j)
                 {
                     const int col_idx = J[j];
-                    typename Types::Real y = col_strategy[j];
+                    Real y = col_strategy[j];
 
-                    typename Types::Real &p_ij = p.get(row_idx, col_idx);
-                    typename Types::Real &o_ij = o.get(row_idx, col_idx);
-                    if (y > typename Types::Real{0} && p_ij < o_ij)
+                    Real &p_ij = p.get(row_idx, col_idx);
+                    Real &o_ij = o.get(row_idx, col_idx);
+                    if (y > Real{0} && p_ij < o_ij)
                     {
 
                         // we are iterating over joint actions/entries here that remain unsolved
 
                         // 7: p0 i, j ← max pi, j , BRvalue − P j0 ∈Jr{ j} y j0 · oi, j0
-                        const typename Types::Real p__ij = std::max(p_ij.value, ((best_response_row - expected_o_payoff + y * o_ij)).value);
-                        const typename Types::Real p__ij_ = std::max(p_ij.value, ((best_response_row - expected_o_payoff + y * o_ij) / y).value);
+                        const Real p__ij = std::max(p_ij.value, ((best_response_row - expected_o_payoff + y * o_ij)).value);
+                        const Real p__ij_ = std::max(p_ij.value, ((best_response_row - expected_o_payoff + y * o_ij) / y).value);
 
                         bool skip = p__ij > o_ij;
                         bool skip_ = p__ij_ > o_ij;
@@ -275,7 +289,7 @@ struct AlphaBetaOld : Types
                         else
                         {
                             // 11: u(s_ij) = double_oracle (s_ij, p_ij, o_ij)
-                            typename Types::Real u_ij = typename Types::Q{0};
+                            Real u_ij = typename Types::Q{0};
                             ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
                             const typename Types::Action row_action = state.row_actions[row_idx];
@@ -294,8 +308,8 @@ struct AlphaBetaOld : Types
                                 chance_node->stats.matrix_node_count += matrix_node_next->stats.matrix_node_count - matrix_node_next->stats.matrix_node_count_last;
                                 matrix_node_next->stats.matrix_node_count_last = matrix_node_next->stats.matrix_node_count;
 
-                                // auto best_possible = (chance_node->stats.explored * typename Types::Real{-1} + typename Types::Real{1}) + u_ij;
-                                // if (best_possible < p__ij && chance_node->stats.explored < typename Types::Real{1})
+                                // auto best_possible = (chance_node->stats.explored * Real{-1} + Real{1}) + u_ij;
+                                // if (best_possible < p__ij && chance_node->stats.explored < Real{1})
                                 // {
                                 //     skip_row_idx = true;
                                 //     // break;
@@ -305,7 +319,8 @@ struct AlphaBetaOld : Types
                             // 12: pi, j ← u(si, j ); oi, j ← u(si, j)
                             p_ij = u_ij;
                             o_ij = u_ij;
-                            // const typename Types::Prob unexplored {chance_node->stats.explored * typename Types::Real{-1} + typename Types::Real{1}};
+
+                            // idk what this does, but not removing TODO
                             // if (!skip_row_idx)
                             // {
                             //     p_ij = u_ij;
@@ -314,7 +329,7 @@ struct AlphaBetaOld : Types
                             // else
                             // {
                             //     p_ij = u_ij;
-                            //     o_ij = (chance_node->stats.explored * typename Types::Real{-1} + typename Types::Real{1}) + u_ij;
+                            //     o_ij = (chance_node->stats.explored * Real{-1} + Real{1}) + u_ij;
                             // }
                         }
                     }
@@ -327,7 +342,7 @@ struct AlphaBetaOld : Types
                 }
 
                 // 13 - 14
-                typename Types::Real expected_row_payoff = typename Types::Q{0};
+                Real expected_row_payoff = typename Types::Q{0};
                 for (int j = 0; j < J.size(); ++j)
                 {
                     const int col_idx = J[j];
@@ -340,15 +355,16 @@ struct AlphaBetaOld : Types
                 }
             } // end row action loop
 
-            std::pair<int, typename Types::Real> pair{new_action_idx, best_response_row};
+            std::pair<int, Real> pair{new_action_idx, best_response_row};
             return pair;
         }
 
-        std::pair<int, typename Types::Real> best_response_col(
+        std::pair<int, Real> 
+        best_response_col(
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Types::Real beta,
+            Real beta,
             Types::VectorReal &row_strategy)
         {
             typename Types::MatrixReal &p = matrix_node->stats.p;
@@ -356,14 +372,14 @@ struct AlphaBetaOld : Types
             std::vector<int> &I = matrix_node->stats.I;
             std::vector<int> &J = matrix_node->stats.J;
 
-            typename Types::Real best_response_col = beta;
+            Real best_response_col = beta;
             int new_action_idx = -1;
 
             for (int col_idx = 0; col_idx < state.col_actions.size(); ++col_idx)
             {
                 bool cont = false;
 
-                typename Types::Real expected_p_payoff = typename Types::Q{0};
+                Real expected_p_payoff = typename Types::Q{0};
                 for (int i = 0; i < I.size(); ++i)
                 {
                     expected_p_payoff += row_strategy[i] * p.get(I[i], col_idx);
@@ -372,16 +388,16 @@ struct AlphaBetaOld : Types
                 for (int i = 0; i < I.size(); ++i)
                 {
                     const int row_idx = I[i];
-                    typename Types::Real x = row_strategy[i];
+                    Real x = row_strategy[i];
 
-                    typename Types::Real &p_ij = p.get(row_idx, col_idx);
-                    typename Types::Real &o_ij = o.get(row_idx, col_idx);
+                    Real &p_ij = p.get(row_idx, col_idx);
+                    Real &o_ij = o.get(row_idx, col_idx);
 
                     const bool ok = p_ij < o_ij;
-                    if (x > typename Types::Real{0} && ok)
+                    if (x > Real{0} && ok)
                     {
-                        const typename Types::Real o__ij = std::min((o_ij).value, ((best_response_col - expected_p_payoff + x * p_ij)).value);
-                        const typename Types::Real o__ij_ = std::min((o_ij).value, ((best_response_col - expected_p_payoff + x * p_ij) / x).value);
+                        const Real o__ij = std::min((o_ij).value, ((best_response_col - expected_p_payoff + x * p_ij)).value);
+                        const Real o__ij_ = std::min((o_ij).value, ((best_response_col - expected_p_payoff + x * p_ij) / x).value);
                         bool skip = o__ij < p_ij;
                         bool skip_ = o__ij_ < p_ij;
 
@@ -392,7 +408,7 @@ struct AlphaBetaOld : Types
                         }
                         else
                         {
-                            typename Types::Real u_ij = typename Types::Q{0};
+                            Real u_ij = typename Types::Q{0};
                             ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
                             const typename Types::Action row_action = state.row_actions[row_idx];
@@ -415,16 +431,6 @@ struct AlphaBetaOld : Types
                             // 12: pi, j ← u(si, j ); oi, j ← u(si, j)
                             p_ij = u_ij;
                             o_ij = u_ij;
-                            // if (!cont)
-                            // {
-                            //     p_ij = u_ij;
-                            //     o_ij = u_ij;
-                            // }
-                            // else
-                            // {
-                            //     p_ij = u_ij;
-                            //     o_ij = (chance_node->stats.explored * typename Types::Real{-1} + typename Types::Real{1}) + u_ij;
-                            // }
                         }
                     }
                 }
@@ -434,7 +440,7 @@ struct AlphaBetaOld : Types
                     continue;
                 }
 
-                typename Types::Real expected_col_payoff = typename Types::Q{0};
+                Real expected_col_payoff = typename Types::Q{0};
                 for (int i = 0; i < I.size(); ++i)
                 {
                     expected_col_payoff += row_strategy[i] * p.get(I[i], col_idx);
@@ -446,7 +452,7 @@ struct AlphaBetaOld : Types
                 }
             }
 
-            std::pair<int, typename Types::Real> pair{new_action_idx, best_response_col};
+            std::pair<int, Real> pair{new_action_idx, best_response_col};
             return pair;
         }
 
@@ -465,14 +471,14 @@ struct AlphaBetaOld : Types
             }
             else
             {
-                static const typename Types::Real epsilon{Rational{1, 1 << 24}};
-                static const typename Types::Real neg_epsilon{Rational{-1, 1 << 24}};
+                static const Real epsilon{Rational{1, 1 << 24}};
+                static const Real neg_epsilon{Rational{-1, 1 << 24}};
                 Wrapper<T> z{x - y};
                 return neg_epsilon < z && z < epsilon;
             }
         }
 
-        typename Types::Real solve_submatrix(
+        Real solve_submatrix(
             Types::MatrixValue &submatrix,
             MatrixNode *matrix_node,
             Types::VectorReal &row_strategy,
@@ -495,7 +501,7 @@ struct AlphaBetaOld : Types
 
             LRSNash::solve(submatrix, row_strategy, col_strategy);
 
-            typename Types::Real value = typename Types::Q{0};
+            Real value = typename Types::Q{0};
             for (int row_idx = 0; row_idx < submatrix.rows; ++row_idx)
             {
                 for (int col_idx = 0; col_idx < submatrix.cols; ++col_idx)
@@ -506,22 +512,22 @@ struct AlphaBetaOld : Types
             return value;
         }
 
-        typename Types::Real row_alpha_beta(
+        Real row_alpha_beta(
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Types::Real alpha,
-            Types::Real beta)
+            Real alpha,
+            Real beta)
         {
             return max_val;
         }
 
-        typename Types::Real col_alpha_beta(
+        Real col_alpha_beta(
             Types::State &state,
             Types::Model &model,
             MatrixNode *matrix_node,
-            Types::Real alpha,
-            Types::Real beta)
+            Real alpha,
+            Real beta)
         {
             return min_val;
         }

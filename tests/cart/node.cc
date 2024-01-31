@@ -1,24 +1,36 @@
 #include <pinyon.hh>
 
+/*
+
+This test runs single-threaded and the 2 main multi-threaded implementations 
+of a simple Exp3 search on MoldState.
+
+The purpose is to check that thread contention does not result in a wildly different tree topology
+
+TODO: Currently no failure condition besides looking wrong (lol)
+Also a bit primitive by my current standards
+
+*/
+
 int main()
 {
 
     using BaseTypes = MonteCarloModel<MoldState<>>;
 
-    using SessionTypes0 = TreeBandit<Exp3<BaseTypes>>;
-    using SessionTypes1 = TreeBanditThreaded<Exp3<BaseTypes>>;
-    using SessionTypes2 = TreeBanditThreadPool<Exp3<BaseTypes>>;
+    using SearchTypes0 = TreeBandit<Exp3<BaseTypes>>;
+    using SearchTypes1 = TreeBanditThreaded<Exp3<BaseTypes>>;
+    using SearchTypes2 = TreeBanditThreadPool<Exp3<BaseTypes>>;
 
     std::tuple<
-        SessionTypes0,
-        SessionTypes1,
-        SessionTypes2>
+        SearchTypes0,
+        SearchTypes1,
+        SearchTypes2>
         search_type_tuple{{}, {}, {}};
 
     std::tuple<
-        SessionTypes0::Search,
-        SessionTypes1::Search,
-        SessionTypes2::Search>
+        SearchTypes0::Search,
+        SearchTypes1::Search,
+        SearchTypes2::Search>
         search_tuple{{}, {{}, 2}, {{}, 2, 64}};
 
     auto type_search_zipped = zip(search_type_tuple, search_tuple);

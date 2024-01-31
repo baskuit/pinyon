@@ -68,9 +68,9 @@ struct Solve
             time_t start, end;
             auto seed = (*state).device.get_seed();
             start = std::chrono::high_resolution_clock::now();
-            auto state_ = *state;
+            const auto state_ = *state;
             prng device{0};
-            auto data = search->run(device, state_, *model, *root);
+            auto data = search->run(state_.depth_bound, device, state_, *model, *root);
             *value = data;
             end = std::chrono::high_resolution_clock::now();
             *result = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
@@ -97,8 +97,8 @@ struct Solve
 
         root_full.stats.nash_payoff_matrix.print();
         root_full_f.stats.nash_payoff_matrix.print();
-        root_ab.stats.data_matrix.print();
-        root_ab_f.stats.data_matrix.print();
+        root_ab.stats.chance_data_matrix.print();
+        root_ab_f.stats.chance_data_matrix.print();
         std::cout << alpha << " <= " << value << " <= " << beta << std::endl;
         std::cout << alpha_f << " <= " << value_f << " <= " << beta_f << std::endl;
         std::cout << std::endl;
@@ -130,10 +130,10 @@ int main()
 {
     Rational<> threshold{0};
     RandomTreeGenerator<RandomTreeRationalTypes> generator{
-        prng{0},
-        {3},
-        {5},
-        {1},
+        prng{1},
+        {1, 2, 3},
+        {2, 3, 4, 5},
+        {1, 2},
         {threshold},
         std::vector<size_t>(100, 0)};
 
