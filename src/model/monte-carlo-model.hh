@@ -34,7 +34,7 @@ struct MonteCarloModel : Types
     class Model
     {
     public:
-        typename Types::PRNG device;
+        Types::PRNG device;
 
         Model(const Types::PRNG &device) : device{device} {}
 
