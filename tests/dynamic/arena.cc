@@ -1,7 +1,5 @@
 #include <pinyon.hh>
 
-#include <algorithm/tree-bandit/bandit/exp3-fat.hh>
-
 // using UnsolvedStateTypes = OneSumMatrixGame;
 using UnsolvedStateTypes = RandomTree<>;
 using SolvedStateTypes = TraversedState<EmptyModel<UnsolvedStateTypes>>;
