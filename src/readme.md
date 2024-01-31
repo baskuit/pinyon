@@ -77,16 +77,16 @@ This provides a form of documentation that should help users become familiar wit
 #### Disabling Concepts
 Concepts can be disabled by uncommenting `#define ENABLE_CONCEPTS` in the file `libpinyon/enable-concepts.hh`. All uses of concepts for Intellisense are invoked using a macro, e.g.
 ```cpp
-template <CONCEPT(IsPerfectInfoStateTypes, Types), bool HasPolicy = false>
+template <CONCEPT(IsPerfectInfoStateTypes, Types), bool has_policy = false>
 struct MonteCarloModel : Types { // ...
 ```
 The template parameter definition will expand to
 ```cpp
-template <IsPerfectInfoStateTypes Types, bool HasPolicy = false>
+template <IsPerfectInfoStateTypes Types, bool has_policy = false>
 ```
 if `ENABLE_CONCEPTS` is defined. Otherwise it will expand to a normal unconstrained template parameter:
 ```cpp
-template <typename Types, bool HasPolicy = false>
+template <typename Types, bool has_policy = false>
 ```
 This library has little for use concepts outside of Intellisense. In fact, concepts generally produce worse compiler messages. Thus this macro was included to easily disable them across an entire project.
 

@@ -3,16 +3,31 @@
 #include <state/state.hh>
 #include <model/model.hh>
 
-template <CONCEPT(IsPerfectInfoStateTypes, Types), bool HasPolicy = false>
+namespace MonteCarloModelDetail
+{
+    template <typename Types, bool has_policy>
+    struct ModelOutputImpl;
+
+    template <typename Types>
+    struct ModelOutputImpl<Types, false>
+    {
+        Types::Value value;
+    };
+
+    template <typename Types>
+    struct ModelOutputImpl<Types, true>
+    {
+        Types::Value value;
+        Types::VectorReal row_policy, col_policy;
+    };
+};
+
+template <CONCEPT(IsPerfectInfoStateTypes, Types), bool has_policy = false>
 struct MonteCarloModel : Types
 {
 
-    struct ModelOutput
-    {
-        typename Types::Value value;
-        typename Types::VectorReal row_policy, col_policy;
-    };
-    
+    using ModelOutput = MonteCarloModelDetail::ModelOutputImpl<Types, has_policy>;
+
     using ModelBatchInput = std::vector<typename Types::State>;
     using ModelBatchOutput = std::vector<ModelOutput>;
 
@@ -27,7 +42,7 @@ struct MonteCarloModel : Types
             Types::State &&state,
             ModelOutput &output)
         {
-            if constexpr (HasPolicy)
+            if constexpr (has_policy)
             {
                 const size_t rows = state.row_actions.size();
                 const size_t cols = state.col_actions.size();
