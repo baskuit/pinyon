@@ -109,7 +109,7 @@ struct TreeBanditFlat : Types
 
             if (state.is_terminal())
             {
-                leaf_output.value = state.payoff;
+                leaf_output.value = state.get_payoff();
             }
             else
             {

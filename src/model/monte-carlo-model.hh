@@ -37,7 +37,7 @@ struct MonteCarloModel : Types
                 output.col_policy.resize(cols, col_uniform);
             }
             rollout(state);
-            output.value = state.payoff;
+            output.value = state.get_payoff();
         }
 
         void inference(

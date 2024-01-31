@@ -94,7 +94,7 @@ struct AlphaBetaOld : Types
             if (state.is_terminal())
             {
                 matrix_node->set_terminal();
-                stats.row_value = state.payoff.get_row_value();
+                stats.row_value = state.get_payoff().get_row_value();
                 return stats.row_value;
             }
             if (max_depth > 0 && stats.depth >= max_depth)

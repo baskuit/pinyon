@@ -205,7 +205,7 @@ struct OffPolicy : Types
 
             if (state.is_terminal())
             {
-                frame.outcome.value = state.payoff;
+                frame.outcome.value = state.get_payoff();
                 matrix_node->set_terminal();
             }
             else

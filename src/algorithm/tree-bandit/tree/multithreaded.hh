@@ -160,7 +160,7 @@ struct TreeBanditThreaded : Types
             if (state.is_terminal())
             {
                 matrix_node->set_terminal();
-                model_output.value = state.payoff;
+                model_output.value = state.get_payoff();
                 return matrix_node;
             }
             else
@@ -416,7 +416,7 @@ struct TreeBanditThreadPool : Types
             if (state.is_terminal())
             {
                 matrix_node->set_terminal();
-                model_output.value = state.payoff;
+                model_output.value = state.get_payoff();
                 return matrix_node;
             }
             else

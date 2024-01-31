@@ -3,16 +3,21 @@
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
+/*
+
+Exp3 but with additional statistics. Behaves the same.
+
+*/
+
 template <CONCEPT(IsValueModelTypes, Types)>
 struct Exp3Fat : Types
 {
 
     using Real = typename Types::Real;
-    // alias decl kill intellisense currently but you only lose canonicalize()
 
     struct Data
     {
-        typename Types::Real cum_row_value;
+        Real cum_row_value;
         double count;
         friend std::ostream &operator<<(std::ostream &os, const Data &data)
         {
@@ -23,10 +28,10 @@ struct Exp3Fat : Types
 
     struct MatrixStats
     {
-        typename Types::VectorReal row_gains;
-        typename Types::VectorReal col_gains;
-        typename Types::VectorInt row_visits;
-        typename Types::VectorInt col_visits;
+        Types::VectorReal row_gains;
+        Types::VectorReal col_gains;
+        Types::VectorInt row_visits;
+        Types::VectorInt col_visits;
 
         int visits = 0;
         PairReal<Real> value_total{0, 0};
