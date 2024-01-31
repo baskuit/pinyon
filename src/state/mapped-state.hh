@@ -102,7 +102,7 @@ struct MappedState : Types::TypeList
             {
                 ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
-                for (int t = 0; t < tries && total_prob < typename Types::Prob{1}; ++t)
+                for (int t = 0; t < tries && chance_node->stats.prob < typename Types::Prob{1}; ++t)
                 {
 
                     typename Types::State state_copy = state;
@@ -142,9 +142,9 @@ struct MappedState : Types::TypeList
                                 device,
                                 state_copy,
                                 matrix_node_next);
-                            chance_node->stats.prob += state_copy.prob;
                         }
                     }
+                    chance_node->stats.prob += state_copy.prob;
                 }
             }
         }

@@ -19,6 +19,7 @@
 #include <state/test-states.hh>
 #include <state/random-tree.hh>
 #include <state/traversed.hh>
+#include <state/mapped-state.hh>
 #include <state/arena.hh>
 
 // Model
@@ -28,11 +29,6 @@
 #include <model/search-model.hh>
 #include <model/solved-model.hh>
 
-#ifdef ENABLE_TORCH
-    #include <libpinyon/mlp.hh>
-    #include <model/libtorch-model.hh>
-#endif
-
 // Algorithm
 
 #include <algorithm/tree-bandit/tree/tree-bandit.hh>
@@ -41,9 +37,11 @@
 #include <algorithm/tree-bandit/tree/off-policy.hh>
 
 #include <algorithm/tree-bandit/bandit/exp3.hh>
+#include <algorithm/tree-bandit/bandit/exp3-fat.hh>
 #include <algorithm/tree-bandit/bandit/rand.hh>
 
 #include <algorithm/solver/full-traversal.hh>
+#include <algorithm/solver/alpha-beta-force.hh>
 #include <algorithm/solver/alpha-beta.hh>
 #include <algorithm/solver/alpha-beta-old.hh>
 

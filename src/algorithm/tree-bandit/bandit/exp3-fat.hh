@@ -1,3 +1,5 @@
+#pragma once
+
 #include <libpinyon/math.hh>
 #include <types/matrix.hh>
 #include <algorithm/algorithm.hh>
