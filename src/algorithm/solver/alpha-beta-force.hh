@@ -290,6 +290,8 @@ struct AlphaBetaForce : Types
 
             canonicalize(alpha);
             canonicalize(beta);
+            matrix_node->alpha = alpha;
+            matrix_node->beta = beta;
             return {alpha, beta};
         }
 
