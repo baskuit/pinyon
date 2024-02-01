@@ -43,6 +43,19 @@ struct AlphaBetaForce : Types
 
         Data() {}
         Data(Data &&) {}
+
+        friend std::ostream &operator<<(std::ostream &os, const Data &data)
+        {
+            if constexpr (std::is_same_v<typename Types::Real, mpq_class>)
+            {
+                os << '(' << data.alpha_explored.get_d() << " " << data.beta_explored.get_d() << " " << data.unexplored.get_d() << " " << data.tries << ")";
+            }
+            else
+            {
+                os << '(' << data.alpha_explored << " " << data.beta_explored << " " << data.unexplored << " " << data.tries << ")";
+            }
+            return os;
+        }
     };
 
     struct MatrixNode

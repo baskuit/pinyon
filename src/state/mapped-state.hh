@@ -160,18 +160,20 @@ struct MappedState : Types::TypeList
         const Types::Model
             model;
 
+        template <typename... T>
         State(
             const size_t depth,
             const size_t tries,
-            Types::PRNG &device,
-            const Types::State &state,
-            const Types::Model &model)
-            : Types::State{state},
+            const Types::PRNG &device,
+            const Types::Model &model,
+            const T &...args)
+            : Types::State{args...},
               model{model}
         {
+            typename Types::PRNG device_{device};
             auto temp_tree = std::make_shared<MatrixNode>();
             node = temp_tree.get();
-            run(depth, tries, device, state, temp_tree.get());
+            run(depth, tries, device_, *this, temp_tree.get());
             explored_tree = temp_tree;
             this->row_actions = node->row_actions;
             this->col_actions = node->col_actions;
@@ -237,7 +239,7 @@ struct MappedState : Types::TypeList
             }
             else
             {
-                this->prob = typename Types::Prob{branch_data.prob / chance_node->stats.count};
+                this->prob = typename Types::Prob{branch_data.prob / chance_node->stats.prob};
             }
             this->row_actions = node->row_actions;
             this->col_actions = node->col_actions;
