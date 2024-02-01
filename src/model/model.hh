@@ -81,7 +81,7 @@ concept IsBatchModelTypes =
 // Empty Model
 
 template <CONCEPT(IsStateTypes, Types)>
-struct EmptyModel : Types
+struct NullModel : Types
 {
 
     struct ModelOutput

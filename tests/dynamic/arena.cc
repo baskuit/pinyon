@@ -2,7 +2,7 @@
 
 // using UnsolvedStateTypes = OneSumMatrixGame;
 using UnsolvedStateTypes = RandomTree<>;
-using SolvedStateTypes = TraversedState<EmptyModel<UnsolvedStateTypes>>;
+using SolvedStateTypes = TraversedState<NullModel<UnsolvedStateTypes>>;
 using FinalStateTypes = UnsolvedStateTypes;
 
 W::Types::State generator_function(const W::Types::Seed seed)
@@ -17,7 +17,7 @@ W::Types::State generator_function(const W::Types::Seed seed)
     // UnsolvedStateTypes::State state{a_device.uniform_64(), actions, actions};
     // state.payoff_matrix.print();
     // UnsolvedStateTypes::State state{2, 2};
-    // EmptyModel<UnsolvedStateTypes>::Model model{};
+    // NullModel<UnsolvedStateTypes>::Model model{};
     // SolvedStateTypes::State solved_state{state, model};
 
     return W::make_state<FinalStateTypes>(state);
@@ -34,7 +34,7 @@ int main()
     // Type list for multithreaded exp3 over Arena state
 
     std::vector<W::Types::Model> models{};
-    models.emplace_back(W::make_model<EmptyModel<FinalStateTypes>>());
+    models.emplace_back(W::make_model<NullModel<FinalStateTypes>>());
     const size_t monte_carlo_iterations = 1 << 10;
     models.emplace_back(W::make_model<MCMTypes>(MCMTypes::Model{monte_carlo_iterations, {0}, {0}, {.7}}));
     models.emplace_back(W::make_model<MCMTypes>(MCMTypes::Model{monte_carlo_iterations, {0}, {0}, {.1}}));

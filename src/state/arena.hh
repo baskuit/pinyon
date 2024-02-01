@@ -115,7 +115,7 @@ struct Arena : SimpleTypes
             size_t vs_rounds = 1,
             size_t threads = 4)
         {
-            // using T = TreeBanditThreaded<Exp3<EmptyModel<Arena>>>;
+            // using T = TreeBanditThreaded<Exp3<NullModel<Arena>>>;
             // T::PRNG device{};
             // State arena_state{state_generator, models, vs_rounds};
             // T::Model arena_model{0};

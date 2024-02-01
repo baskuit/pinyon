@@ -125,14 +125,14 @@ int main () {
 
 ### Multiple Type Lists
 
-Now let's say we want to conduct a slightly different search. Now we want to use the `EmptyModel` instead of the Monte-Carlo model.  
+Now let's say we want to conduct a slightly different search. Now we want to use the `NullModel` instead of the Monte-Carlo model.  
 This requires the use of a new type list. Obviously the `Model` type will be different in the new type list, but so will the `Search` type since its `run` method expects a different type of model. 
 ```cpp
 // Code that uses different type list
 using NewTypes = //...
 
 ```
-If we were to run both of these examples, we would find that the latter type list's search runs faster. This is not surprising since the `EmptyModel` is basically a no-op. However it does hint at the many possibilities multiple type lists can offer.
+If we were to run both of these examples, we would find that the latter type list's search runs faster. This is not surprising since the `NullModel` is basically a no-op. However it does hint at the many possibilities multiple type lists can offer.
 One example is given by `eee.cc` TODO
 ```cpp
 #include <pinyon.hh>

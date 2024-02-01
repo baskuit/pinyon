@@ -89,5 +89,5 @@ The bandit algorithms are expected to have methods `get_empirical_strategies`, `
 One immediate application of this is for the FullTraversal and AlphaBeta solvers, where we can use this 'wrapped search' as the model. If these solvers are run with a finite max_depth, then this model will perform a normal bandit search at the leaf nodes of the sub-tree. 
 This creates a 'hybrid' search algorithm that could reap the rewards of both solving and tree bandit search styles. 
 
-### EmptyModel
+### NullModel
 This model gives $\frac{1}{2}, \frac{1}{2}$ as the value estimate and the uniform distribution over the actions as the policy estimate. It is used for benchmarking   
