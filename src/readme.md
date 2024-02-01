@@ -285,8 +285,6 @@ basic rational number
 cache friendly type for storing policy information
 * `value.hh`
 data structure for storing payoffs for constant-sum and general games
-* `wrapper.hh`
-strong type wrappers for primitive types
 
 ### `/state`
 * `random-tree.hh`

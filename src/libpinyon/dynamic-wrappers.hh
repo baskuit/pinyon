@@ -32,7 +32,6 @@ namespace TypeListNormalizer
     W::Types is a specific type list that is should allow every other type list to be 'converted' to it via wrapping
     this is assumed a few things about type lists
     e.g. Reals are assumed to have a conversion to double, get_actions() output has fixed ordering (see below), etc
-    Also note: this is the reason for the conversion to double operator for RealType<>, ProbType<>
     mpq_class can't convert, it uses get_d(), so we handle this at the level of the wrapper by adding conversion operator
     this unfortunatley means the library won't immediately compile if the RealType etc. wrappers are removed
     although its very close
@@ -51,27 +50,32 @@ namespace TypeListNormalizer
 
     // State
     template <
+        typename _Real,
         typename _PRNG,
         typename _State>
     struct MinimalStateTypes
     {
+        using Real = _Real;
         using PRNG = _PRNG;
         using State = _State;
     };
 
     template <typename Types>
     using MStateTypes = MinimalStateTypes<
+        typename Types::Real,
         typename Types::PRNG,
         typename Types::State>;
 
     // Model
     template <
+        typename _Real,
         typename _PRNG,
         typename _State,
         typename _Model,
         typename _ModelOutput>
     struct MinimalModelTypes
     {
+        using Real = _Real;
         using PRNG = _PRNG;
         using State = _State;
         using Model = _Model;
@@ -80,6 +84,7 @@ namespace TypeListNormalizer
 
     template <typename Types>
     using MModelTypes = MinimalModelTypes<
+        typename Types::Real,
         typename Types::PRNG,
         typename Types::State,
         typename Types::Model,
@@ -87,6 +92,7 @@ namespace TypeListNormalizer
 
     // Search
     template <
+        typename _Real,
         typename _PRNG,
         typename _VectorReal,
         typename _State,
@@ -96,6 +102,7 @@ namespace TypeListNormalizer
         typename _Search>
     struct MinimalSearchTypes
     {
+        using Real = _Real;
         using PRNG = _PRNG;
         using VectorReal = _VectorReal;
         using State = _State;
@@ -107,6 +114,7 @@ namespace TypeListNormalizer
 
     template <typename Types>
     using MSearchTypes = MinimalSearchTypes<
+        typename Types::Real,
         typename Types::PRNG,
         typename Types::VectorReal,
         typename Types::State,
@@ -183,9 +191,19 @@ namespace W
             };
             Types::Value _get_payoff() const
             {
-                return Types::Value{
-                    static_cast<double>(data.payoff.get_row_value()),
-                    static_cast<double>(data.payoff.get_col_value())};
+                if constexpr (std::is_same_v<mpq_class, typename T::Real>)
+                {
+                    return Types::Value{
+                        static_cast<double>(data.payoff.get_row_value().get_d()),
+                        static_cast<double>(data.payoff.get_col_value().get_d())};
+                }
+                else
+                {
+
+                    return Types::Value{
+                        static_cast<double>(data.payoff.get_row_value()),
+                        static_cast<double>(data.payoff.get_col_value())};
+                }
             }
             void _randomize_transition(Types::PRNG &device)
             {

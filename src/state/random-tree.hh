@@ -246,7 +246,7 @@ struct RandomTree : Types
                         auto &x = chance_strategies_[start_idx + chance_idx];
                         x = x / prob_sum;
                         x.canonicalize();
-                        this->chance_strategies[start_idx + chance_idx] = x;
+                        this->chance_strategies[start_idx + chance_idx] = typename Types::Prob{x};
                     }
                 }
             }

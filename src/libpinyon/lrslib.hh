@@ -10,13 +10,12 @@ namespace LRSNash
     template <
         template <typename...> typename Vector,
         template <typename...> typename Matrix,
-        template <typename> typename Value,
-        template <typename> typename Wrapper>
-    Value<Wrapper<mpq_class>>
+        template <typename> typename Value>
+    Value<mpq_class>
     solve(
-        Matrix<Value<Wrapper<mpq_class>>> &payoff_matrix,
-        Vector<Wrapper<mpq_class>> &row_strategy,
-        Vector<Wrapper<mpq_class>> &col_strategy)
+        Matrix<Value<mpq_class>> &payoff_matrix,
+        Vector<mpq_class> &row_strategy,
+        Vector<mpq_class> &col_strategy)
     {
         const size_t rows = payoff_matrix.rows;
         const size_t cols = payoff_matrix.cols;
@@ -37,11 +36,11 @@ namespace LRSNash
         mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            row_strategy[row_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
+            row_strategy[row_idx] = mpq_class{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            col_strategy[col_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
+            col_strategy[col_idx] = mpq_class{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
         }
 
         mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
@@ -50,21 +49,20 @@ namespace LRSNash
         dealloc(row_solution_data, rows + 2);
         dealloc(col_solution_data, cols + 2);
 
-        return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
+        return {mpq_class{row_payoff}, mpq_class{col_payoff}};
     }
 
     // Solve constant-sum (ConstantSum<1, 1>) matrix of mpq_class
     template <
         template <typename...> typename Vector,
         template <typename...> typename Matrix,
-        template <typename> typename Value,
-        template <typename> typename Wrapper>
-        requires(Value<Wrapper<mpq_class>>::IS_CONSTANT_SUM == true)
-    Value<Wrapper<mpq_class>>
+        template <typename> typename Value>
+        requires(Value<mpq_class>::IS_CONSTANT_SUM == true)
+    Value<mpq_class>
     solve(
-        Matrix<Value<Wrapper<mpq_class>>> &payoff_matrix,
-        Vector<Wrapper<mpq_class>> &row_strategy,
-        Vector<Wrapper<mpq_class>> &col_strategy)
+        Matrix<Value<mpq_class>> &payoff_matrix,
+        Vector<mpq_class> &row_strategy,
+        Vector<mpq_class> &col_strategy)
     {
         const size_t rows = payoff_matrix.rows;
         const size_t cols = payoff_matrix.cols;
@@ -86,11 +84,11 @@ namespace LRSNash
         col_strategy.resize(cols);
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            row_strategy[row_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
+            row_strategy[row_idx] = mpq_class{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            col_strategy[col_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
+            col_strategy[col_idx] = mpq_class{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
         }
 
         mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
@@ -99,7 +97,7 @@ namespace LRSNash
         dealloc(row_solution_data, rows + 2);
         dealloc(col_solution_data, cols + 2);
 
-        return {Wrapper<mpq_class>{row_payoff}};
+        return {mpq_class{row_payoff}};
     }
 
     // Solve for everything else, mostly for doubles
@@ -108,7 +106,7 @@ namespace LRSNash
         template <typename...> typename Matrix,
         template <typename> typename Value,
         typename Real>
-        requires(std::is_same_v<typename Real::type, mpq_class> == false)
+        requires(std::is_same_v<Real, mpq_class> == false)
     Value<Real>
     solve(
         Matrix<Value<Real>> &payoff_matrix,

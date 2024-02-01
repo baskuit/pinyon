@@ -275,8 +275,8 @@ struct AlphaBetaForce : Types
             }
             col_solution = temp_strategy;
 
-            alpha.canonicalize();
-            beta.canonicalize();
+            canonicalize(alpha);
+            canonicalize(beta);
             return {alpha, beta};
         }
 
@@ -377,10 +377,10 @@ struct AlphaBetaForce : Types
 
                     if (!produced_new_branch)
                     {
-                        exploration_priorities[next_j] = typename Types::Q{0};
+                        exploration_priorities[next_j] = typename Types::Prob{typename Types::Q{0}};
                     }
 
-                    max_priority = typename Types::Q{0};
+                    max_priority = typename Types::Prob{typename Types::Q{0}};
                     for (int j = 0; j < J.size(); ++j)
                     {
                         const Real priority = exploration_priorities[j];
@@ -394,7 +394,7 @@ struct AlphaBetaForce : Types
                 }
 
                 expected_value += total_unexplored * beta;
-                expected_value.canonicalize();
+                canonicalize(expected_value);
 
                 if (expected_value >= best_response || (best_row_idx == -1 && fuzzy_equals(expected_value, best_response)))
                 {
@@ -504,10 +504,10 @@ struct AlphaBetaForce : Types
 
                     if (!produced_new_branch)
                     {
-                        exploration_priorities[next_i] = typename Types::Q{0};
+                        exploration_priorities[next_i] = typename Types::Prob{typename Types::Q{0}};
                     }
 
-                    max_priority = typename Types::Q{0};
+                    max_priority = typename Types::Prob{typename Types::Q{0}};
                     for (int i = 0; i < I.size(); ++i)
                     {
                         const Real priority = exploration_priorities[i];
@@ -521,7 +521,7 @@ struct AlphaBetaForce : Types
                 }
 
                 expected_value += total_unexplored * alpha;
-                expected_value.canonicalize();
+                canonicalize(expected_value);
 
                 if (expected_value <= best_response || (best_col_idx == -1 && fuzzy_equals(expected_value, best_response)))
                 {
@@ -533,13 +533,13 @@ struct AlphaBetaForce : Types
         }
 
     private:
-        template <template <typename> typename Wrapper, typename T>
-        inline bool fuzzy_equals(Wrapper<T> x, Wrapper<T> y) const
+        template <typename T>
+        inline bool fuzzy_equals(T x, T y) const
         {
             if constexpr (std::is_same_v<T, mpq_class>)
             {
-                mpq_ptr a = x.value.get_mpq_t();
-                mpq_ptr b = y.value.get_mpq_t();
+                mpq_ptr a = x.get_mpq_t();
+                mpq_ptr b = y.get_mpq_t();
                 mpq_canonicalize(a);
                 mpq_canonicalize(b);
                 bool answer = mpq_equal(a, b);
@@ -549,7 +549,7 @@ struct AlphaBetaForce : Types
             {
                 static const Real epsilon{Rational{1, 1 << 24}};
                 static const Real neg_epsilon{Rational{-1, 1 << 24}};
-                Wrapper<T> z{x - y};
+                T z{x - y};
                 return neg_epsilon < z && z < epsilon;
             }
         }

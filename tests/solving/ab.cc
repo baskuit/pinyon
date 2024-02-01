@@ -88,11 +88,11 @@ struct Solve
             ++thread_count;
         }
 
-        double alpha{ab_value.first};
-        double beta{ab_value.second};
+        double alpha{ab_value.first.get_d()};
+        double beta{ab_value.second.get_d()};
         double alpha_f{ab_f_value.first};
         double beta_f{ab_f_value.second};
-        double value{root_full.stats.payoff.get_row_value()};
+        double value{root_full.stats.payoff.get_row_value().get_d()};
         double value_f{root_full_f.stats.payoff.get_row_value()};
 
         root_full.stats.nash_payoff_matrix.print();

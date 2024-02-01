@@ -1,5 +1,6 @@
 #pragma once
 
+#include <libpinyon/math.hh>
 #include <libpinyon/lrslib.hh>
 #include <types/matrix.hh>
 #include <algorithm/algorithm.hh>
@@ -23,7 +24,14 @@ struct AlphaBeta : Types
 
         friend std::ostream &operator<<(std::ostream &os, const Data &data)
         {
-            os << '(' << data.alpha_explored << " " << data.beta_explored << " " << data.unexplored << ")";
+            if constexpr (std::is_same_v<typename Types::Real, mpq_class>)
+            {
+                os << '(' << data.alpha_explored.get_d() << " " << data.beta_explored.get_d() << " " << data.unexplored.get_d() << ")";
+            }
+            else
+            {
+                os << '(' << data.alpha_explored << " " << data.beta_explored << " " << data.unexplored << ")";
+            }
             return os;
         }
     };
@@ -257,8 +265,8 @@ struct AlphaBeta : Types
             }
             col_solution = temp_strategy;
 
-            alpha.canonicalize();
-            beta.canonicalize();
+            canonicalize(alpha);
+            canonicalize(beta);
 
             return {alpha, beta};
         }
@@ -345,13 +353,13 @@ struct AlphaBeta : Types
                     total_unexplored -= prob * col_strategy[next_j];
                     exploration_priorities[next_j] -= prob * col_strategy[next_j];
 
-                    if constexpr (std::is_same_v<Real, RealType<mpq_class>>)
+                    if constexpr (std::is_same_v<Real, mpq_class>)
                     {
                         assert(data.unexplored >= Real{0});
                         assert(total_unexplored >= Real{0});
                     }
 
-                    max_priority = typename Types::Q{0};
+                    max_priority = typename Types::Prob{typename Types::Q{0}};
                     for (int j = 0; j < J.size(); ++j)
                     {
                         const Real priority = exploration_priorities[j];
@@ -365,7 +373,7 @@ struct AlphaBeta : Types
                 }
 
                 expected_value += total_unexplored * beta;
-                expected_value.canonicalize();
+                canonicalize(expected_value);
 
                 if (expected_value >= best_response || (best_row_idx == -1 && fuzzy_equals(expected_value, best_response)))
                 {
@@ -458,7 +466,7 @@ struct AlphaBeta : Types
                     total_unexplored -= prob * row_strategy[next_i];
                     exploration_priorities[next_i] -= prob * row_strategy[next_i];
 
-                    if constexpr (std::is_same_v<Real, RealType<mpq_class>>)
+                    if constexpr (std::is_same_v<Real, mpq_class>)
                     {
                         assert(data.unexplored >= Real{0});
                         assert(total_unexplored >= Real{0});
@@ -478,7 +486,7 @@ struct AlphaBeta : Types
                 }
 
                 expected_value += total_unexplored * alpha;
-                expected_value.canonicalize();
+                canonicalize(expected_value);
 
                 if (expected_value <= best_response || (best_col_idx == -1 && fuzzy_equals(expected_value, best_response)))
                 {
@@ -490,13 +498,13 @@ struct AlphaBeta : Types
         }
 
     private:
-        template <template <typename> typename Wrapper, typename T>
-        inline bool fuzzy_equals(Wrapper<T> x, Wrapper<T> y) const
+        template <typename T>
+        inline bool fuzzy_equals(T x, T y) const
         {
             if constexpr (std::is_same_v<T, mpq_class>)
             {
-                mpq_ptr a = x.value.get_mpq_t();
-                mpq_ptr b = y.value.get_mpq_t();
+                mpq_ptr a = x.get_mpq_t();
+                mpq_ptr b = y.get_mpq_t();
                 mpq_canonicalize(a);
                 mpq_canonicalize(b);
                 bool answer = mpq_equal(a, b);
@@ -506,13 +514,13 @@ struct AlphaBeta : Types
             {
                 static const Real epsilon{Rational{1, 1 << 24}};
                 static const Real neg_epsilon{Rational{-1, 1 << 24}};
-                Wrapper<T> z{x - y};
+                T z{x - y};
                 return neg_epsilon < z && z < epsilon;
             }
         }
 
-        template <template <typename> typename Wrapper, typename T>
-        inline bool fuzzy_greater(Wrapper<T> x, Wrapper<T> y) const
+        template <typename T>
+        inline bool fuzzy_greater(T x, T y) const
         {
             if constexpr (std::is_same_v<T, mpq_class>)
             {

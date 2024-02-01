@@ -164,7 +164,14 @@ public:
         {
             for (size_t col_idx = 0; col_idx < cols; ++col_idx)
             {
-                std::cout << (*this)[row_idx * cols + col_idx] << ' ';
+                if constexpr (std::is_same_v<T, mpq_class>)
+                {
+                    std::cout << (*this)[row_idx * cols + col_idx].get_str() << ' ';
+                }
+                else
+                {
+                    std::cout << (*this)[row_idx * cols + col_idx] << ' ';
+                }
             }
             std::cout << std::endl;
         }

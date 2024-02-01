@@ -6,8 +6,39 @@
 #include <cstdint>
 #include <math.h>
 
+template <typename T>
+void canonicalize(T &) {}
+
+void canonicalize(mpq_class &t)
+{
+    t.canonicalize();
+}
+
+template <typename T>
+void canonicalize(Rational<T> &t)
+{
+    t.canonicalize();
+}
+
 namespace math
 {
+
+    // template <typename T>
+    // void canonicalize(T &)
+    // {
+    // }
+
+    // template <>
+    // void canonicalize<mpq_class>(mpq_class &t)
+    // {
+    //     t.canonicalize();
+    // }
+
+    // template <typename T>
+    // void canonicalize(Rational<T> &t)
+    // {
+    //     t.canonicalize();
+    // }
 
     template <template <typename...> typename VectorIn, typename InT, template <typename...> typename VectorOut, typename OutT>
     void power_norm(const VectorIn<InT> &input, int length, float power, VectorOut<OutT> &output)
