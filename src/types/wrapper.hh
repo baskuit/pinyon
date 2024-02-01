@@ -250,6 +250,15 @@ struct ObsHashType
 };
 
 template <>
+struct ObsHashType<std::array<uint8_t, 16>>
+{
+    size_t operator()(const ObsType<std::array<uint8_t, 16>> &obs) const
+    {
+        return {};
+    }
+};
+
+template <>
 struct ObsHashType<std::array<uint8_t, 64>>
 {
     size_t operator()(const ObsType<std::array<uint8_t, 64>> &obs) const

@@ -54,9 +54,9 @@ namespace math
 
     template <typename Real, typename Value, template <typename...> typename Vector, template <typename> typename Matrix>
     Real exploitability(
-        Matrix<Value> &value_matrix,
-        Vector<Real> &row_strategy,
-        Vector<Real> &col_strategy)
+        const Matrix<Value> &value_matrix,
+        const Vector<Real> &row_strategy,
+        const Vector<Real> &col_strategy)
     {
         const size_t rows = value_matrix.rows;
         const size_t cols = value_matrix.cols;
