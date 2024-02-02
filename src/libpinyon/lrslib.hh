@@ -127,8 +127,8 @@ namespace LRSNash
         for (size_t i = 0; i < entries; ++i)
         {
             Value<Real> &value = payoff_matrix[i];
-            double a{(value.get_row_value() - min) / range * Real{static_cast<double>(den)}};
-            double b{(value.get_col_value() - min) / range * Real{static_cast<double>(den)}};
+            double a{(value.get_row_value() - min) / range * static_cast<Real>(den)};
+            double b{(value.get_col_value() - min) / range * static_cast<Real>(den)};
             payoff_data[2 * i] = ceil(a);
             payoff_data[2 * i + 1] = ceil(b);
         }
@@ -145,15 +145,15 @@ namespace LRSNash
         col_strategy.resize(cols);
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            row_strategy[row_idx] = Real{mpq_class{mpz_class{const_row_solution_data[row_idx + 1]}, row_den}.get_d()};
+            row_strategy[row_idx] = Real{static_cast<Real>(mpq_class{mpz_class{const_row_solution_data[row_idx + 1]}, row_den}.get_d())};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            col_strategy[col_idx] = Real{mpq_class{mpz_class{const_col_solution_data[col_idx + 1]}, col_den}.get_d()};
+            col_strategy[col_idx] = Real{static_cast<Real>(mpq_class{mpz_class{const_col_solution_data[col_idx + 1]}, col_den}.get_d())};
         }
 
-        Real row_payoff{mpq_class{mpz_class{const_col_solution_data[cols + 1]}, col_den}.get_d()};
-        Real col_payoff{mpq_class{mpz_class{const_row_solution_data[rows + 1]}, row_den}.get_d()};
+        Real row_payoff{static_cast<Real>(mpq_class{mpz_class{const_col_solution_data[cols + 1]}, col_den}.get_d())};
+        Real col_payoff{static_cast<Real>(mpq_class{mpz_class{const_row_solution_data[rows + 1]}, row_den}.get_d())};
         row_payoff = row_payoff * range + min;
         col_payoff = col_payoff * range + min;
         dealloc(row_solution_data, rows + 2);

@@ -102,9 +102,8 @@ struct MappedState : Types::TypeList
             {
                 ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
-                for (int t = 0; t < tries && chance_node->stats.prob < typename Types::Prob{1}; ++t)
+                for (int t = 0; t < tries; ++t)
                 {
-
                     typename Types::State state_copy = state;
                     const typename Types::Seed seed{device.uniform_64()};
                     state_copy.randomize_transition(seed);
@@ -143,8 +142,8 @@ struct MappedState : Types::TypeList
                                 state_copy,
                                 matrix_node_next);
                         }
+                        chance_node->stats.prob += state_copy.prob;
                     }
-                    chance_node->stats.prob += state_copy.prob;
                 }
             }
         }
@@ -173,6 +172,7 @@ struct MappedState : Types::TypeList
             typename Types::PRNG device_{device};
             auto temp_tree = std::make_shared<MatrixNode>();
             node = temp_tree.get();
+            std::cout << "mapped_state init - clamped: " << this->clamp << std::endl;
             run(depth, tries, device_, *this, temp_tree.get());
             explored_tree = temp_tree;
             this->row_actions = node->row_actions;

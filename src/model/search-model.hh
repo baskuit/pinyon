@@ -34,7 +34,8 @@ namespace SearchModelDetail
 template <
     CONCEPT(IsSearchTypes, Types),
     bool use_iterations = true,
-    bool use_policy = true>
+    bool use_policy = true,
+    bool use_tree_bandit = true>
 struct SearchModel : Types::TypeList
 {
     using State = typename Types::State; // DONT REMOVE
@@ -67,6 +68,8 @@ struct SearchModel : Types::TypeList
             Types::State &&state,
             ModelOutput &output)
         {
+            state.clamp = true;
+
             typename Types::MatrixNode root;
 
             if constexpr (use_iterations)
@@ -83,8 +86,14 @@ struct SearchModel : Types::TypeList
             {
                 search.get_empirical_strategies(root.stats, output.row_policy, output.col_policy);
             }
-
-            search.get_empirical_value(root.stats, output.value);
+            if constexpr (use_tree_bandit)
+            {
+                search.get_empirical_value(root.stats, output.value);
+            }
+            else
+            {
+                output.value = (root.alpha + root.beta) / 2;
+            }
         }
 
         void inference(
