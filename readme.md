@@ -40,3 +40,10 @@ cd build
 cmake ..
 make
 ```
+
+# Testing
+The library comes with several tests to check the correctness of the algorothm implementations, among other things. To run, simply uncomment the `#tests` portion of the CMakeLists; It is a script that builds everything in `/tests` and marks it as such. Then simply run
+```
+cd build
+ctest tests
+```
