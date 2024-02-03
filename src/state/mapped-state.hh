@@ -215,7 +215,7 @@ struct MappedState : Types::TypeList
             // only appropriate for solves, which don't use this method
             // risk is that you encounter and unseen transition
             // make current node nullptr?. unconvincing
-            std::exception("Mapped State must specify chance action");
+            std::exception();
         }
 
         void apply_actions(
