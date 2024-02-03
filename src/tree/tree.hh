@@ -138,7 +138,7 @@ struct DefaultNodes : Types
             return child;
         };
 
-        size_t count_matrix_nodes()
+        size_t count_matrix_nodes() const
         {
             size_t c = 1;
             ChanceNode *current = this->child;
@@ -264,7 +264,7 @@ struct DefaultNodes : Types
             return child;
         };
 
-        size_t count_matrix_nodes()
+        size_t count_matrix_nodes() const
         {
             size_t c = 0;
             MatrixNode *current = this->child;

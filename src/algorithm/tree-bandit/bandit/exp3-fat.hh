@@ -23,7 +23,7 @@ struct Exp3Fat : Types
         double count;
         friend std::ostream &operator<<(std::ostream &os, const Data &data)
         {
-            os << '(' << (data.cum_row_value / typename Types::Real{data.count}).value << ", " << data.count << ')';
+            os << '(' << (data.cum_row_value / typename Types::Real{data.count}) << ", " << data.count << ')';
             return os;
         }
     };

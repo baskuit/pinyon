@@ -1,7 +1,6 @@
 #pragma once
 
 #include <libpinyon/math.hh>
-#include <types/wrapper.hh>
 #include <types/random.hh>
 #include <types/array.hh>
 #include <types/matrix.hh>
@@ -16,22 +15,37 @@ TypeList
 
 */
 
-template <typename _Real>
-struct FloatingPointType
+template <typename T>
+struct ObsHashType
 {
-    using T = double;
+    size_t operator()(const T &obs) const
+    {
+        return static_cast<T>(obs); // TODO
+    }
 };
 
 template <>
-struct FloatingPointType<float>
+struct ObsHashType<std::array<uint8_t, 16>>
 {
-    using T = float;
+    size_t operator()(const std::array<uint8_t, 16> &obs) const
+    {
+        return {};
+    }
 };
 
 template <>
-struct FloatingPointType<RealType<float>>
+struct ObsHashType<std::array<uint8_t, 64>>
 {
-    using T = float;
+    size_t operator()(const std::array<uint8_t, 64> &obs) const
+    {
+        const uint64_t *a = reinterpret_cast<const uint64_t *>(obs.data());
+        size_t hash = 0;
+        for (int i = 0; i < 8; ++i)
+        {
+            hash ^= a[i];
+        }
+        return hash;
+    }
 };
 
 template <
@@ -57,13 +71,12 @@ struct DefaultTypes
     // by providing just `Types::TypeList`
 
     using Q = _Rational;
-    using Real = RealType<_Real>;
-    using Float = FloatingPointType<_Real>::T;
+    using Real = _Real;
 
-    using Action = ActionType<_Action>;
-    using Obs = ObsType<_Obs>;
+    using Action = _Action;
+    using Obs = _Obs;
     using ObsHash = ObsHashType<_Obs>;
-    using Prob = ProbType<_Prob>;
+    using Prob = _Prob;
     // These are the wrappers for strong typing
 
     using Value = _Value<Real>;
@@ -92,11 +105,6 @@ concept IsArithmetic = requires(T x) {
     static_cast<T>(x - x);
     static_cast<T>(x * x);
     static_cast<T>(x / x);
-    // RealType<T>{} + ProbType<T>{} will be of type ArthmeticType<T>
-    // the static_cast expressions test that there is a way to cast the result back to RealType<T>, ProbType<T>
-    {
-        x.canonicalize()
-    } -> std::same_as<void>;
 };
 
 template <typename Obs>

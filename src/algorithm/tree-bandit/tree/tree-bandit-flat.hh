@@ -57,7 +57,7 @@ struct TreeBanditFlat : Types
         typename Types::ModelOutput leaf_output;
         int rows, cols;
 
-        const std::hash<typename Types::Obs::type> hash_function{};
+        const Types::ObsHash hash_function{};
 
         std::array<typename Types::Outcome, Options::max_depth> outcomes{};
 
@@ -135,7 +135,7 @@ struct TreeBanditFlat : Types
                 }
 
                 ++depth;
-                uint64_t hash_ = hash(index, outcome.row_idx, outcome.col_idx, hash_function(state.get_obs().get()));
+                uint64_t hash_ = hash(index, outcome.row_idx, outcome.col_idx, hash_function(state.get_obs()));
 
                 if (transition[hash_] == 0)
                 {

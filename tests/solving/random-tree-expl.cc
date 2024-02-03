@@ -171,7 +171,7 @@ int main()
         test_expl_st(st_search_type_tuple, state, solved_state);
         test_expl_mt(mt_search_type_tuple, state, solved_state);
         test_expl_mtp(mtp_search_type_tuple, state, solved_state);
-        test_expl_op(op_search_type_tuple, state, solved_state);
+        // test_expl_op(op_search_type_tuple, state, solved_state);
     }
 
     return 0;

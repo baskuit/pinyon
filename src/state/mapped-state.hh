@@ -102,9 +102,8 @@ struct MappedState : Types::TypeList
             {
                 ChanceNode *chance_node = matrix_node->access(row_idx, col_idx);
 
-                for (int t = 0; t < tries && chance_node->stats.prob < typename Types::Prob{1}; ++t)
+                for (int t = 0; t < tries; ++t)
                 {
-
                     typename Types::State state_copy = state;
                     const typename Types::Seed seed{device.uniform_64()};
                     state_copy.randomize_transition(seed);
@@ -143,8 +142,8 @@ struct MappedState : Types::TypeList
                                 state_copy,
                                 matrix_node_next);
                         }
+                        chance_node->stats.prob += state_copy.prob;
                     }
-                    chance_node->stats.prob += state_copy.prob;
                 }
             }
         }
@@ -160,18 +159,21 @@ struct MappedState : Types::TypeList
         const Types::Model
             model;
 
+        template <typename... T>
         State(
             const size_t depth,
             const size_t tries,
-            Types::PRNG &device,
-            const Types::State &state,
-            const Types::Model &model)
-            : Types::State{state},
+            const Types::PRNG &device,
+            const Types::Model &model,
+            const T &...args)
+            : Types::State{args...},
               model{model}
         {
+            typename Types::PRNG device_{device};
             auto temp_tree = std::make_shared<MatrixNode>();
             node = temp_tree.get();
-            run(depth, tries, device, state, temp_tree.get());
+            std::cout << "mapped_state init - clamped: " << this->clamp << std::endl;
+            run(depth, tries, device_, *this, temp_tree.get());
             explored_tree = temp_tree;
             this->row_actions = node->row_actions;
             this->col_actions = node->col_actions;
@@ -213,7 +215,7 @@ struct MappedState : Types::TypeList
             // only appropriate for solves, which don't use this method
             // risk is that you encounter and unseen transition
             // make current node nullptr?. unconvincing
-            std::exception("Mapped State must specify chance action");
+            std::exception();
         }
 
         void apply_actions(
@@ -237,7 +239,7 @@ struct MappedState : Types::TypeList
             }
             else
             {
-                this->prob = typename Types::Prob{branch_data.prob / chance_node->stats.count};
+                this->prob = typename Types::Prob{branch_data.prob / chance_node->stats.prob};
             }
             this->row_actions = node->row_actions;
             this->col_actions = node->col_actions;

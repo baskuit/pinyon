@@ -6,18 +6,18 @@ void random_matrix(prng device, const size_t rows, const size_t cols, const int 
 
     std::vector<double> rpd, cpd;
 
-    Matrix<PairReal<RealType<double>>> matrix{rows, cols};
+    Matrix<PairReal<double>> matrix{rows, cols};
 
     for (int i = 0; i < entries; ++i)
     {
         rpd.emplace_back(device.uniform());
         cpd.emplace_back(device.uniform());
 
-        matrix[i].row_value = RealType<double>{rpd[i]};
-        matrix[i].col_value = RealType<double>{cpd[i]};
+        matrix[i].row_value = rpd[i];
+        matrix[i].col_value = cpd[i];
     }
 
-    std::vector<RealType<double>> row_strategy, col_strategy;
+    std::vector<double> row_strategy, col_strategy;
     LRSNash::solve(matrix, row_strategy, col_strategy, discrete);
 
     auto expl = math::exploitability(matrix, row_strategy, col_strategy);

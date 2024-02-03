@@ -346,7 +346,7 @@ struct Exp3 : Types
             Real sum = 0;
             for (size_t i = 0; i < k; ++i)
             {
-                const Real y{std::exp(static_cast<typename Types::Float>(gains[i] * eta))};
+                const Real y{std::exp(static_cast<float>(gains[i] * eta))}; // TODO maybe but T::Float back
                 forecast[i] = y;
                 sum += y;
             }

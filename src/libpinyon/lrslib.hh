@@ -10,13 +10,12 @@ namespace LRSNash
     template <
         template <typename...> typename Vector,
         template <typename...> typename Matrix,
-        template <typename> typename Value,
-        template <typename> typename Wrapper>
-    Value<Wrapper<mpq_class>>
+        template <typename> typename Value>
+    Value<mpq_class>
     solve(
-        Matrix<Value<Wrapper<mpq_class>>> &payoff_matrix,
-        Vector<Wrapper<mpq_class>> &row_strategy,
-        Vector<Wrapper<mpq_class>> &col_strategy)
+        Matrix<Value<mpq_class>> &payoff_matrix,
+        Vector<mpq_class> &row_strategy,
+        Vector<mpq_class> &col_strategy)
     {
         const size_t rows = payoff_matrix.rows;
         const size_t cols = payoff_matrix.cols;
@@ -37,11 +36,11 @@ namespace LRSNash
         mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            row_strategy[row_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
+            row_strategy[row_idx] = mpq_class{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            col_strategy[col_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
+            col_strategy[col_idx] = mpq_class{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
         }
 
         mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
@@ -50,21 +49,20 @@ namespace LRSNash
         dealloc(row_solution_data, rows + 2);
         dealloc(col_solution_data, cols + 2);
 
-        return {Wrapper<mpq_class>{row_payoff}, Wrapper<mpq_class>{col_payoff}};
+        return {mpq_class{row_payoff}, mpq_class{col_payoff}};
     }
 
     // Solve constant-sum (ConstantSum<1, 1>) matrix of mpq_class
     template <
         template <typename...> typename Vector,
         template <typename...> typename Matrix,
-        template <typename> typename Value,
-        template <typename> typename Wrapper>
-        requires(Value<Wrapper<mpq_class>>::IS_CONSTANT_SUM == true)
-    Value<Wrapper<mpq_class>>
+        template <typename> typename Value>
+        requires(Value<mpq_class>::IS_CONSTANT_SUM == true)
+    Value<mpq_class>
     solve(
-        Matrix<Value<Wrapper<mpq_class>>> &payoff_matrix,
-        Vector<Wrapper<mpq_class>> &row_strategy,
-        Vector<Wrapper<mpq_class>> &col_strategy)
+        Matrix<Value<mpq_class>> &payoff_matrix,
+        Vector<mpq_class> &row_strategy,
+        Vector<mpq_class> &col_strategy)
     {
         const size_t rows = payoff_matrix.rows;
         const size_t cols = payoff_matrix.cols;
@@ -86,11 +84,11 @@ namespace LRSNash
         col_strategy.resize(cols);
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            row_strategy[row_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
+            row_strategy[row_idx] = mpq_class{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            col_strategy[col_idx] = Wrapper<mpq_class>{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
+            col_strategy[col_idx] = mpq_class{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
         }
 
         mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
@@ -99,7 +97,7 @@ namespace LRSNash
         dealloc(row_solution_data, rows + 2);
         dealloc(col_solution_data, cols + 2);
 
-        return {Wrapper<mpq_class>{row_payoff}};
+        return {mpq_class{row_payoff}};
     }
 
     // Solve for everything else, mostly for doubles
@@ -108,7 +106,7 @@ namespace LRSNash
         template <typename...> typename Matrix,
         template <typename> typename Value,
         typename Real>
-        requires(std::is_same_v<typename Real::type, mpq_class> == false)
+        requires(std::is_same_v<Real, mpq_class> == false)
     Value<Real>
     solve(
         Matrix<Value<Real>> &payoff_matrix,
@@ -129,8 +127,8 @@ namespace LRSNash
         for (size_t i = 0; i < entries; ++i)
         {
             Value<Real> &value = payoff_matrix[i];
-            double a{(value.get_row_value() - min) / range * Real{static_cast<double>(den)}};
-            double b{(value.get_col_value() - min) / range * Real{static_cast<double>(den)}};
+            double a{(value.get_row_value() - min) / range * static_cast<Real>(den)};
+            double b{(value.get_col_value() - min) / range * static_cast<Real>(den)};
             payoff_data[2 * i] = ceil(a);
             payoff_data[2 * i + 1] = ceil(b);
         }
@@ -147,15 +145,15 @@ namespace LRSNash
         col_strategy.resize(cols);
         for (int row_idx = 0; row_idx < rows; ++row_idx)
         {
-            row_strategy[row_idx] = Real{mpq_class{mpz_class{const_row_solution_data[row_idx + 1]}, row_den}.get_d()};
+            row_strategy[row_idx] = Real{static_cast<Real>(mpq_class{mpz_class{const_row_solution_data[row_idx + 1]}, row_den}.get_d())};
         }
         for (int col_idx = 0; col_idx < cols; ++col_idx)
         {
-            col_strategy[col_idx] = Real{mpq_class{mpz_class{const_col_solution_data[col_idx + 1]}, col_den}.get_d()};
+            col_strategy[col_idx] = Real{static_cast<Real>(mpq_class{mpz_class{const_col_solution_data[col_idx + 1]}, col_den}.get_d())};
         }
 
-        Real row_payoff{mpq_class{mpz_class{const_col_solution_data[cols + 1]}, col_den}.get_d()};
-        Real col_payoff{mpq_class{mpz_class{const_row_solution_data[rows + 1]}, row_den}.get_d()};
+        Real row_payoff{static_cast<Real>(mpq_class{mpz_class{const_col_solution_data[cols + 1]}, col_den}.get_d())};
+        Real col_payoff{static_cast<Real>(mpq_class{mpz_class{const_row_solution_data[rows + 1]}, row_den}.get_d())};
         row_payoff = row_payoff * range + min;
         col_payoff = col_payoff * range + min;
         dealloc(row_solution_data, rows + 2);

@@ -42,8 +42,8 @@ public:
         return uniform_64_(engine);
     }
 
-    template <template <typename...> typename Vector, template <typename> typename Wrapper, typename T>
-    int sample_pdf(const Vector<Wrapper<T>> &input, int k)
+    template <template <typename...> typename Vector, typename T>
+    int sample_pdf(const Vector<T> &input, int k)
     {
         double p = uniform();
         for (int i = 0; i < k; ++i)
@@ -109,8 +109,8 @@ public:
         return xorshift();
     }
 
-    template <template <typename...> typename Vector, template <typename> typename Wrapper, typename T>
-    int sample_pdf(const Vector<Wrapper<T>> &input, int k)
+    template <template <typename...> typename Vector, typename T>
+    int sample_pdf(const Vector<T> &input, int k)
     {
         double p = uniform();
         for (int i = 0; i < k; ++i)

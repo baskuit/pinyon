@@ -1,5 +1,7 @@
 #pragma once
 
+#include <types/rational.hh>
+
 #include <gmpxx.h>
 
 template <typename Real>
@@ -49,50 +51,52 @@ struct PairReal
     }
 };
 
-template <template <typename> typename Wrapper>
-struct PairReal<Wrapper<mpq_class>>
+template <>
+struct PairReal<mpq_class>
 {
     static constexpr bool IS_CONSTANT_SUM{false};
 
     mpq_class x{};
-    Wrapper<int> y;
-    Wrapper<mpq_class> row_value{Rational<>{0}};
-    Wrapper<mpq_class> col_value{Rational<>{0}};
+    int y;
+    mpq_class row_value{Rational<>{0}};
+    mpq_class col_value{Rational<>{0}};
 
     PairReal() {}
     PairReal(mpq_class row_value, mpq_class col_value) : row_value{row_value}, col_value{col_value} {}
     template <typename ValueType>
     PairReal(const ValueType &other) : row_value{other.get_row_value()}, col_value{other.get_col_value()} {}
 
-    inline constexpr Wrapper<mpq_class> get_row_value() const
+    inline mpq_class get_row_value() const
     {
         return row_value;
     }
-    inline constexpr Wrapper<mpq_class> get_col_value() const
+    inline mpq_class get_col_value() const
     {
         return col_value;
     }
 
-    PairReal<Wrapper<mpq_class>> &operator+=(const PairReal<Wrapper<mpq_class>> &other)
+    PairReal<mpq_class> &operator+=(const PairReal<mpq_class> &other)
     {
         row_value += other.row_value;
         col_value += other.col_value;
+        row_value.canonicalize(); // TODO TODO add to other functions?
+        col_value.canonicalize();
         return *this;
     }
 
-    PairReal<Wrapper<mpq_class>> operator+(const PairReal<Wrapper<mpq_class>> other) const
+    PairReal<mpq_class> operator+(const PairReal<mpq_class> other) const
     {
-        return PairReal<Wrapper<mpq_class>>{row_value + other.row_value, col_value + other.col_value};
+        return PairReal<mpq_class>{row_value + other.row_value, col_value + other.col_value};
     }
 
-    PairReal<Wrapper<mpq_class>> operator*(const Wrapper<mpq_class> val) const
+    PairReal<mpq_class> operator*(const mpq_class val) const
     {
-        return PairReal<Wrapper<mpq_class>>{static_cast<mpq_class>(row_value * val), static_cast<mpq_class>(col_value * val)};
+        return PairReal<mpq_class>{static_cast<mpq_class>(row_value * val), static_cast<mpq_class>(col_value * val)};
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const PairReal<Wrapper<mpq_class>> &value)
+    friend std::ostream &operator<<(std::ostream &os, const PairReal<mpq_class> &value)
     {
-        os << value.row_value.value.get_d() << ',' << value.col_value.value.get_d();
+        os << value.row_value.get_str() << ',' << value.col_value.get_str();
         return os;
     }
 };
@@ -141,7 +145,14 @@ struct ConstantSum
 
         friend std::ostream &operator<<(std::ostream &os, const Value &x)
         {
-            os << x.row_value;
+            if constexpr (std::is_same_v<Real, mpq_class>)
+            {
+                os << x.row_value.get_str();
+            }
+            else
+            {
+                os << x.row_value;
+            }
             return os;
         }
     };

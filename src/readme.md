@@ -1,17 +1,17 @@
 
-# Search in the Abstract
-This library was developed as a platform for research and incremental progress in the development of computer-play in Pokemon. This means code should be reusable for multiple gens and simulators, with tools to compare evaluation functions and search algorithms. The library has been applied to `pmkn/engine` but I was not aware of any extant simulators besides Pokemon Showdown when I started development. With no compatible simulators to cater development towards, the library had to comply with any new simulators that could appear later.
+# Motivation
+This library was developed as a platform for research and incremental progress in the development of computer play in Pokemon. This means code should be reusable for multiple gens and simulators, with tools to compare evaluation functions and search algorithms. The library has been applied to `pmkn/engine` but I was not aware of any extant simulators besides Pokemon Showdown when I started development. With no compatible simulators to cater development towards, the library had to comply with any new simulators that could appear later.
  
 This context lead me to abstract the machinery for search and reinforcement learning into distinct categories. These are orthogonal by design, so that different types within one category can be swapped with minimal restrictions.
 These categories are:
 
 * `TypeList`
 	
-	This encompasses the union of all primitive types and types which are essential for the implementation of the other categories. The short explanation is that these are the types you tweak to optimize performance. Support for `mpq_class` rationals as the `Real` or `Prob` type is the main exception to this rule, since arbitrary precision arithmetic is generally limited to more theoretical contexts.
+	This encompasses the union of all primitive types and types which are essential for the implementation of the other categories. The short explanation is that these are the types you tweak to optimize performance. There is even support for `mpq_class` rationals as the `Real` type, which is used mostly for theoretical correctness.
 
 * `State`
 
-	Any simulator, game, or environment with a C/C++ interface can be wrapped as a state and subjected to Pinyon's utilities.
+	Almost any simulator, game, or environment with a C/C++ interface can be wrapped as a `State` and used with Pinyon's utilities.
 
 * `Model`
 
@@ -23,18 +23,18 @@ These categories are:
 	Pinyon was designed to facilitate the development of all of these kinds of models. 
 
 * `Search`
-	Stockfish and Leela Chess exemplify the most promising methods for search: AlphaBeta solving and MCTS. The former is a depth first approach that uses game theoretic reasoning to prune as much of the game tree to produce its answer. Pinyon has an *improved* implementation of Simultaneous Move AlphaBeta for stochastic games, which means it is likely the SOTA in this field. The latter approach is more commonly known but fatally misunderstood in the simultaneous move context. Pinyon provides theoretically sound variants in a way that makes writing and bench-marking new algorithms easy.
+	Stockfish and Leela Chess exemplify the most promising methods for search: AlphaBeta solving and MCTS. The former is a depth first approach that uses game theoretic reasoning to prune as much of the game tree to produce its answer. Pinyon has an *improved* implementation of Simultaneous Move AlphaBeta for stochastic games, which means it is likely the SOTA in this field. The latter approach is more commonly known but fatally misunderstood in the simultaneous move context. Pinyon provides theoretically sound bandit algorithms `Exp3` and `MatrixUCB`.
 
 * `Node`
 
-	The performance of tree operations and consequently search is highly sensitive to cache use. The various tree structure implementations vary considerably in this aspect. 
+	The performance of tree operations and consequently search is highly sensitive to cache use. There are several provided tree structure implementations differ considerably in this aspect. 
 
 # Language and Development Environment
 C++ was the natural choice for this library for several reasons. 
 * The bitter truth of machine learning and computer search is that performance is king, and C++ is as fast as any other language. 
 * The 'interchangeability' of the type list, state, model etc. categories promised earlier is an example of *polymorphism*, and the template meta-programming system of C++ is a powerful way to approach this. This is because the template system is compile-time, so there is is no run-time performance cost to general code.
 * It is among the most popular languages which means there is a wealth of references and support for new developers.
-* C++ has excellent support for CUDA and large neural networks via Libtorch, the back-end for Pytorch. The latter is the most popular library for machine learning and shares an API with Libtorch.
+* C++ has support for CUDA and large neural networks via Libtorch, the back-end for Pytorch. The latter is the most popular library for machine learning and shares an API with Libtorch.
 
 ## Building
 
@@ -44,22 +44,21 @@ This section is a walk-though of an installation using vscode on Linux.
 VSCode is a free IDE that provides many useful features with minimal setup and it is highly recommended. A basic installation with the C/C++ and CMake extensions will make it easy to build, run and debug this library.
 
 ### CMake
-CMake is the blessed build system for Pinyon, lrslib, and Libtorch. The  vanilla Pinyon `CMakeLists.txt` is setup so that configuring and enabling the Libtorch library only needs changes to a few lines.
+CMake is the blessed build system for Pinyon, lrslib, and Libtorch.
 
 ```c
-option(ENABLE_TORCH "Enable Libtorch"  OFF)
 option(ENABLE_CONCEPTS "Enable Concepts"  ON)
 ```
 
 The `CMakeLists.txt` includes a rudimentary script that scans the tests and benchmark directories for any source files. These executables can be built, testing and debugged via hotkeys with the CMake extension for VSCode.
 
 ### Compiler
-Without excising any features or tests, this library requires a compiler that supports C++23. This is because of the use of `std::cartesian_product`, and use of concepts (detailed below) requires C++20, The core of the library is probably complicit with C++17, however.
+This library requires a compiler that supports C++23. This is because of the use of `std::cartesian_product`, and use of concepts (detailed below) requires C++20, The core of the library is probably complicit with C++17, however.
 * GCC
 You will need at least `gcc-13`. As of Ubuntu 23.04, this can be installed by using `apt`. Older versions of Ubuntu and other distributions will probably require building the compiler from source.
 * clang
 As of this writing, there is a [bug](https://gcc.gnu.org/bugzilla//show_bug.cgi?id=109647) with clang-16 regarding libstdc++ version of the ranges library.
-The library will compile with clang-17 (:warning: not true for all tests, there is a clang bug that appears with `algorithm-generator.hh`. TODO try clang-18)
+The library will partially compile with clang-17; There is a clang bug that appears with `algorithm-generator.hh`. TODO try clang-18
 
 ### Concepts & Intellisense
 
@@ -133,7 +132,10 @@ using NewTypes = //...
 
 ```
 If we were to run both of these examples, we would find that the latter type list's search runs faster. This is not surprising since the `NullModel` is basically a no-op. However it does hint at the many possibilities multiple type lists can offer.
-One example is given by `eee.cc` TODO
+One example is given by `tests/ab.cc`- in this test there are two type lists in use, `Types` and `TypesF`. They are both essentially implementations of AlphaBeta over random trees. The difference is that in the former, values and strategies are represented with perfect precision rationals while the later uses floats. Besides the loss in precision (which the test checks is reasonable), the two search functions produce the exact same results.
+
+Pinyon also has utilities for aggregating multiple type lists and, most usefully, taking the 'cartesian product' of different implementations:
+
 ```cpp
 #include <pinyon.hh>
 
@@ -264,9 +266,9 @@ For the latter we use template metaprogramming techniques and some helper functi
 
 #### `W::Types`
 
+TODO Dynamic Wrapper
 
-
-# Tour of Features
+# Features
 
 The structure of the `/src` directory mirrors the classification of search utilities into the five categories. 
 
@@ -285,8 +287,6 @@ basic rational number
 cache friendly type for storing policy information
 * `value.hh`
 data structure for storing payoffs for constant-sum and general games
-* `wrapper.hh`
-strong type wrappers for primitive types
 
 ### `/state`
 * `random-tree.hh`
@@ -321,10 +321,12 @@ trivial bandit algorithm for bench-marking
 	implementation of the Matrix-UCB algorithm (see `/docs` for paper), modified slightly for tree context
 * `tree-bandit.hh`
 	vanilla MCTS
+* `tree-bandit-flat.hh`
+	identical behaviour to above but implemented without dynamic allocation of tree data, so it tends to be faster in most practical contexts
 * `multithreaded.hh`
 	two multi-threaded MCTS implementations, balancing cache use vs lock contention
 * `off-policy.hh`
-	batched inference MCTS
+	experimental batched inference MCTS
 
 ### `/tree`
 * `tree.hh`
@@ -339,4 +341,13 @@ same as default, but `Obs` data is not stored in the matrix nodes directly
 There is also a directory for miscellaneous utilities.
 
 ### `/libpinyon`
-
+* `dynamic-wrappers.hh`
+duck typing wrappers for states, models, and searches
+* `enable-concepts.hh`
+* `generator.hh`
+general purpose 'map from catesian product' utility
+* `grow-lib.hh`
+functions for creating different kinds of random trees. TODO
+* `lrslib.hh`
+high level bimatrix solver using Enumeration of Extreme Equilibria algorithm
+* misc template utilities

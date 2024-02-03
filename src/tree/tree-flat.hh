@@ -127,7 +127,11 @@ struct FlatNodes : Types
     class ChanceNode
     {
     public:
-        std::unordered_map<typename Types::Obs, MatrixNode *, typename Types::ObsHash> edges{};
+        std::unordered_map<
+            typename Types::Obs,
+            MatrixNode *,
+            typename Types::ObsHash>
+            edges{};
         ChanceStats stats{};
 
         ChanceNode() {}
