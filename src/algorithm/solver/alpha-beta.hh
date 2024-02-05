@@ -13,7 +13,7 @@
 template <CONCEPT(IsSingleModelTypes, Types), template <typename...> typename NodePair = DefaultNodes>
 struct AlphaBeta : Types
 {
-    using Real = typename Types::Real;
+    using Real = Types::Real;
 
     struct Data
     {

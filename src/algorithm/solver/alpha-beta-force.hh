@@ -12,7 +12,7 @@
 template <CONCEPT(IsSingleModelTypes, Types)>
 struct AlphaBetaForce : Types
 {
-    using Real = typename Types::Real;
+    using Real = Types::Real;
 
     struct MatrixNode;
     struct Branch
@@ -34,7 +34,7 @@ struct AlphaBetaForce : Types
     {
         Types::Prob unexplored{1};
         Real alpha_explored{0}, beta_explored{0};
-        size_t tries = 0;
+        size_t tries{0};
 
         std::unordered_map<
             size_t,
@@ -77,7 +77,7 @@ struct AlphaBetaForce : Types
         const Real max_val{1};
 
         const size_t max_tries = (1 << 6);
-        const Types::ObsHash hasher{};
+        const Types::ObsHash hash_function{};
 
         Search() {}
 
@@ -137,10 +137,16 @@ struct AlphaBetaForce : Types
                 {
                     data_matrix.emplace_back();
                 }
+            } else {
+
             }
 
             std::vector<int> &I = matrix_node->I;
             std::vector<int> &J = matrix_node->J;
+            I.clear();
+            J.clear();
+            // alpha = min_val;
+            // beta = max_val;alpha
             // current best strategy. used to calculate best response values
             // entries correspond to I, J entires and order. It is a permuted submatrix of the full matrix, basically.
             typename Types::VectorReal &row_solution = matrix_node->row_solution;
@@ -211,26 +217,24 @@ struct AlphaBetaForce : Types
                 }
 
                 std::pair<int, Real>
-                    iv =
-                        best_response_row(
-                            max_depth,
-                            device,
-                            state,
-                            model,
-                            matrix_node,
-                            alpha, max_val,
-                            col_solution);
+                    iv = best_response_row(
+                        max_depth,
+                        device,
+                        state,
+                        model,
+                        matrix_node,
+                        alpha, max_val,
+                        col_solution);
 
                 std::pair<int, Real>
-                    jv =
-                        best_response_col(
-                            max_depth,
-                            device,
-                            state,
-                            model,
-                            matrix_node,
-                            min_val, beta,
-                            row_solution);
+                    jv = best_response_col(
+                        max_depth,
+                        device,
+                        state,
+                        model,
+                        matrix_node,
+                        min_val, beta,
+                        row_solution);
 
                 // prune this node if no best response is as good as alpha/beta
                 if (iv.first == -1)
@@ -303,7 +307,7 @@ struct AlphaBetaForce : Types
             Types::Model &model,
             MatrixNode *matrix_node,
             const Real alpha, const Real beta,
-            Types::VectorReal &col_strategy) const
+            const Types::VectorReal &col_strategy) const
         {
             Real best_response{alpha};
             std::vector<int> &I = matrix_node->I;
@@ -357,7 +361,7 @@ struct AlphaBetaForce : Types
                         const typename Types::Seed seed{device.uniform_64()};
                         state_copy.randomize_transition(seed);
                         state_copy.apply_actions(row_action, col_action);
-                        const size_t obs_hash = hasher(state_copy.get_obs());
+                        const size_t obs_hash = hash_function(state_copy.get_obs());
 
                         if (data.branches.find(obs_hash) == data.branches.end())
                         {
@@ -428,7 +432,7 @@ struct AlphaBetaForce : Types
             Types::Model &model,
             MatrixNode *matrix_node,
             const Real alpha, const Real beta,
-            Types::VectorReal &row_strategy) const
+            const Types::VectorReal &row_strategy) const
         {
             Real best_response{beta};
             std::vector<int> &I = matrix_node->I;
@@ -484,7 +488,7 @@ struct AlphaBetaForce : Types
                         state_copy.randomize_transition(seed);
                         state_copy.apply_actions(row_action, col_action);
                         // const size_t obs_hash = state_copy.get_obs().get();
-                        const size_t obs_hash = hasher(state_copy.get_obs());
+                        const size_t obs_hash = hash_function(state_copy.get_obs());
 
                         if (data.branches.find(obs_hash) == data.branches.end())
                         {
@@ -604,7 +608,7 @@ struct AlphaBetaForce : Types
                 state_copy.randomize_transition(seed);
                 state_copy.apply_actions(row_action, col_action);
                 // const size_t obs_hash = state_copy.get_obs().get();
-                const size_t obs_hash = hasher(state_copy.get_obs());
+                const size_t obs_hash = hash_function(state_copy.get_obs());
 
                 if (data.branches.find(obs_hash) == data.branches.end())
                 {
