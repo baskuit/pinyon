@@ -16,7 +16,7 @@ When we  call `apply_actions` and transition to the of the shared tree, we mark 
 
 */
 
-namespace MappedStateDetal
+namespace MappedStateDetail
 {
 
     template <typename Types, bool empirical>
@@ -61,7 +61,7 @@ namespace MappedStateDetal
 
 template <
     CONCEPT(IsModelTypes, Types),
-    bool empirical = true> // not used currently, alternative is to normalized the de facto probs
+    bool empirical = true> // TODO fix
 struct MappedState : Types::TypeList
 {
 
@@ -69,7 +69,7 @@ struct MappedState : Types::TypeList
     {
     };
 
-    using ChanceStats = MappedStateDetal::ChanceStatsImpl<Types, empirical>;
+    using ChanceStats = MappedStateDetail::ChanceStatsImpl<Types, empirical>;
 
     using NodeTypes = DefaultNodes<
         Types,
@@ -172,7 +172,6 @@ struct MappedState : Types::TypeList
             typename Types::PRNG device_{device};
             auto temp_tree = std::make_shared<MatrixNode>();
             node = temp_tree.get();
-            std::cout << "mapped_state init - clamped: " << this->clamp << std::endl;
             run(depth, tries, device_, *this, temp_tree.get());
             explored_tree = temp_tree;
             this->row_actions = node->row_actions;
@@ -239,7 +238,7 @@ struct MappedState : Types::TypeList
             }
             else
             {
-                this->prob = typename Types::Prob{branch_data.prob / chance_node->stats.prob};
+                this->prob = branch_data.prob / chance_node->stats.prob;
             }
             this->row_actions = node->row_actions;
             this->col_actions = node->col_actions;

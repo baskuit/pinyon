@@ -160,6 +160,7 @@ struct RandomTree : Types
             Types::Action row_action,
             Types::Action col_action)
         {
+            // TODO TODO Fix!!! 
             std::vector<typename Types::Obs> chance_actions{};
             get_chance_actions(row_action, col_action, chance_actions);
             typename Types::Obs chance_action = chance_actions[this->transition_seed % chance_actions.size()];
