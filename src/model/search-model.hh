@@ -68,6 +68,8 @@ struct SearchModel : Types::TypeList
             Types::State &&state,
             ModelOutput &output)
         {
+            state.clamp = true;
+
             typename Types::MatrixNode root;
 
             if constexpr (use_iterations)
@@ -82,7 +84,15 @@ struct SearchModel : Types::TypeList
 
             if constexpr (use_policy)
             {
-                search.get_empirical_strategies(root.stats, output.row_policy, output.col_policy);
+                if constexpr (use_tree_bandit)
+                {
+                    search.get_empirical_strategies(root.stats, output.row_policy, output.col_policy);
+                }
+                else
+                {
+                    output.row_policy = root.row_solution;
+                    output.col_policy = root.col_solution;
+                }
             }
             if constexpr (use_tree_bandit)
             {
