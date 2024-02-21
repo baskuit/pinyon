@@ -254,7 +254,7 @@ Sometimes it is possible to just define all the required type lists at the top o
 
 There are two utilities in Pinyon that exemplify both the approaches that the library uses to handle this problem
 
-* `arena.hh`
+* `model-bandit.hh`
 
 * `node.cc`
 
@@ -295,7 +295,7 @@ highly extensible and well-defined random games
 creates a solved state from an unsolved state using the `FullTraversal` algorithm
 * `test-states.hh`
 toy states for testing
-* `arena.hh`
+* `model-bandit.hh`
 creates a abstract state that is essentially a symmetric matrix game; the 'actions' for this game are models, and when `apply_actions(row_model, col_model)` is called the models will play games vs each other. Leverages search functions to evaluate the strength of different models and algorithms
 
 ### `/model`

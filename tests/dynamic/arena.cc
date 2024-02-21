@@ -30,8 +30,8 @@ int main()
     // Exp3 search types on a solved random tree
     using MCMTypes = SearchModel<MCTypes, true, true>;
     // Model type that treats search output as its inference
-    using ArenaTypes = TreeBanditThreaded<Exp3Fat<MonteCarloModel<Arena>>>;
-    // Type list for multithreaded exp3 over Arena state
+    using ModelBanditTypes = TreeBanditThreaded<Exp3Fat<MonteCarloModel<ModelBandit>>>;
+    // Type list for multithreaded exp3 over ModelBandit state
 
     std::vector<W::Types::Model> models{};
     models.emplace_back(W::make_model<NullModel<FinalStateTypes>>());
@@ -48,11 +48,11 @@ int main()
 
     const size_t threads = 4;
     const size_t vs_rounds = 1;
-    ArenaTypes::PRNG device{0};
-    ArenaTypes::State arena_state{&generator_function, models, vs_rounds};
-    ArenaTypes::Model arena_model{1337};
-    ArenaTypes::Search search{ArenaTypes::BanditAlgorithm{.10}, threads};
-    ArenaTypes::MatrixNode node;
+    ModelBanditTypes::PRNG device{0};
+    ModelBanditTypes::State arena_state{&generator_function, models, vs_rounds};
+    ModelBanditTypes::Model arena_model{1337};
+    ModelBanditTypes::Search search{ModelBanditTypes::BanditAlgorithm{.10}, threads};
+    ModelBanditTypes::MatrixNode node;
 
     const size_t arena_search_iterations = 1 << 16;
     search.run_for_iterations(arena_search_iterations, device, arena_state, arena_model, node);

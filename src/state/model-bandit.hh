@@ -4,7 +4,7 @@
 
 #include <utility>
 
-struct Arena : SimpleTypes
+struct ModelBandit : SimpleTypes
 {
     class State : public PerfectInfoState<SimpleTypes>
     {
@@ -99,30 +99,6 @@ struct Arena : SimpleTypes
                 // std::cout << '!' << std::endl;
             }
             return state.get_payoff();
-        }
-    };
-
-    class Util
-    {
-    public:
-        W::Types::State (*state_generator)(SimpleTypes::Seed){nullptr};
-
-        Util(
-            W::Types::State (*state_generator)(SimpleTypes::Seed)) : state_generator{state_generator} {}
-
-        void foo(
-            const std::vector<W::Types::Model> &models,
-            size_t vs_rounds = 1,
-            size_t threads = 4)
-        {
-            // using T = TreeBanditThreaded<Exp3<NullModel<Arena>>>;
-            // T::PRNG device{};
-            // State arena_state{state_generator, models, vs_rounds};
-            // T::Model arena_model{0};
-            // T::Search arena_search{{.01}, threads};
-            // T::MatrixNode arena_root{};
-
-            // arena_search.run_for_iterations(100, device, arena_state, arena_model, arena_root);
         }
     };
 };

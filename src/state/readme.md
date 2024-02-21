@@ -143,7 +143,7 @@ A basic one shot matrix game where the payoff sum is 1. It is non-stochastic, me
 ### RandomTree
 
 This class is a powerful and expressive way to create a random games for testing.
-The game is well-defined, in the sense that providing the same hyper-parameters, helper functions, and PRNG device to the constructor will produce the exact same state. One advantage of this property is that arbitrarily large games can be used to test models via the `Arena` utility. Previously, random trees had to be solved and the node tree was used as the state.
+The game is well-defined, in the sense that providing the same hyper-parameters, helper functions, and PRNG device to the constructor will produce the exact same state. One advantage of this property is that arbitrarily large games can be used to test models via the `ModelBandit` utility. Previously, random trees had to be solved and the node tree was used as the state.
 
 ```cpp
 State
@@ -188,7 +188,7 @@ The `grow-lib` header contains some alternatives to these functions that change 
 Any game which satisfies the `IsChanceStateTypes` concept can have it entire game tree solved using the `FullTraversal` algorithm. As the name implies, this will traverse the entire game tree and thus produces a sub-game perfect solution.
 The `FullTraversal` algorithm will represent the game tree on heap using nodes.
 
-### Arena
+### ModelBandit
 
 This is a state that leverages the generality of Pinyon to evaluate the performance of models and search algorithms using preexisting algorithms.
 

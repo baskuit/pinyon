@@ -68,8 +68,6 @@ struct SearchModel : Types::TypeList
             Types::State &&state,
             ModelOutput &output)
         {
-            state.clamp = true;
-
             typename Types::MatrixNode root;
 
             if constexpr (use_iterations)

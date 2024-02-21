@@ -20,11 +20,10 @@ The interface for models is designed with the most important examples in mind: M
 The off-policy algorithm for batched inference requires a type that corresponds to the tensor input and tensor output of a GPU based model. There's no reason that this search algorithm should not work for non-GPU based models, so we define `ModelBatchInput` and `ModelBatchOutput`.
 For non-tensor based models, then these types are usually just `std::vector<typename Types::State>` and `std::vector<typename Types::ModelOutput>`. The batched `inference(&ModelBatchInput, &ModelBatchOutput)` method will just call the normal `inference(State&&, ModelOutput &)` on the pairs of vector elements. 
 
-### `Arena` and `SearchModel`
-There is a utility called Arena that evaluates the strength of a fixed pool of 'agents' by having two agents play out games from the beginning and returning the average payoff for each agent.
+### `ModelBandit` and `SearchModel`
+There is a utility called ModelBandit that evaluates the strength of a fixed pool of 'agents' by having two agents play out games from the beginning and returning the average payoff for each agent.
 These 'agents' are intended to be bandit algorithms that a run for some amount of iterations/time, as a way to evaluate the strength of different algorithms. attached models, and hyper parameters.
 However, we might also want to treat the unrefined policy output of a model as an agent too. Examples include the empty model, with uniform policy output, and the solved model.
-Thus the arena 
 
 # Concepts/Interface
 

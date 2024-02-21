@@ -9,14 +9,15 @@
 #include <concepts>
 #include <assert.h>
 
-template <CONCEPT(IsSingleModelTypes, Types)>
-struct AlphaBetaForce : Types
+template <CONCEPT(IsSingleModelTypes, Types), bool debug = false>
+struct AlphaBetaIter : Types
 {
     using Real = Types::Real;
 
     struct MatrixNode;
     struct Branch
     {
+        bool solved;
         Types::Prob prob;
         Types::Obs obs;
         Types::Seed seed;
@@ -28,9 +29,8 @@ struct AlphaBetaForce : Types
             : prob{state.prob},
               obs{state.get_obs()},
               seed{seed},
-              matrix_node{std::make_unique<MatrixNode>()}
-        {
-        }
+              matrix_node{std::make_unique<MatrixNode>()},
+              solved{false} {}
     };
 
     struct Data
@@ -119,8 +119,10 @@ struct AlphaBetaForce : Types
             MatrixNode &root) const
         {
             auto start = std::chrono::high_resolution_clock::now();
-            typename Types::State state_copy{state};
-            double_oracle(max_depth, device, state_copy, model, &root, min_val, max_val);
+            for (size_t d{1}; d <= max_depth; ++d) {
+                typename Types::State state_copy{state};
+                double_oracle(max_depth, device, state_copy, model, &root, min_val, max_val);
+            }
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             return duration;
@@ -167,14 +169,27 @@ struct AlphaBetaForce : Types
                 {
                     data_matrix.emplace_back();
                 }
-            } // No else here, not intended to iterate
+            }
+            else
+            {
+                for (auto &data : data_matrix)
+                {
+                    data.alpha_explored = Real{0};
+                    data.beta_explored = Real{0};
+                    data.unexplored = typename Types::Prob{1};
+                    for (auto &pair : data.branches)
+                    {
+                        pair.second.solved = false;
+                    }
+                }
+            }
 
             std::vector<int> &I = matrix_node->I;
             std::vector<int> &J = matrix_node->J;
             I.clear();
             J.clear();
             // alpha = min_val;
-            // beta = max_val;alpha
+            // beta = max_val;
             // current best strategy. used to calculate best response values
             // entries correspond to I, J entires and order. It is a permuted submatrix of the full matrix, basically.
             typename Types::VectorReal &row_solution = matrix_node->row_solution;
@@ -224,6 +239,8 @@ struct AlphaBetaForce : Types
                         }
                     }
                     LRSNash::solve(matrix, row_solution, col_solution);
+
+                    // matrix.print();
                 }
                 else
                 {
@@ -242,6 +259,9 @@ struct AlphaBetaForce : Types
                     LRSNash::solve(alpha_matrix, row_solution, temp);
                     temp.clear();
                     LRSNash::solve(beta_matrix, temp, col_solution);
+
+                    // alpha_matrix.print();
+                    // beta_matrix.print();
                 }
 
                 std::pair<int, Real>
@@ -301,19 +321,26 @@ struct AlphaBetaForce : Types
                 }
             }
 
+            if constexpr (debug)
+            {
+                std::cout << "AB ITER; depth: " << max_depth << std::endl;
+                matrix_node->chance_data_matrix.print();
+                std::cout << std::endl;
+            }
+
             matrix_node->row_pricipal_idx = I[std::distance(row_solution.begin(), std::max_element(row_solution.begin(), row_solution.end()))];
             matrix_node->col_pricipal_idx = J[std::distance(col_solution.begin(), std::max_element(col_solution.begin(), col_solution.end()))];
 
             // Now we correct row/col solution data in matrix node. Reorder, account for 'unsolved' i/j's, pad with zeros.
             typename Types::VectorReal temp_strategy{};
-            temp_strategy.resize(rows);
+            temp_strategy.resize(rows, Real{0});
             for (int i = 0; i < row_solution.size(); ++i)
             {
                 temp_strategy[I[i]] = row_solution[i];
             }
             row_solution = temp_strategy;
             temp_strategy.clear();
-            temp_strategy.resize(cols);
+            temp_strategy.resize(cols, Real{0});
             for (int j = 0; j < col_solution.size(); ++j)
             {
                 temp_strategy[J[j]] = col_solution[j];
@@ -383,8 +410,47 @@ struct AlphaBetaForce : Types
                     Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx);
 
                     bool produced_new_branch = false;
-                    for (; (data.tries < max_tries) &&
-                           ((data.tries < min_tries) || (data.unexplored > max_unexplored));
+
+                    // iterative deepening
+                    for (auto &pair : data.branches)
+                    {
+                        auto &branch = pair.second;
+                        if (branch.solved)
+                        {
+                            continue;
+                        }
+                        branch.solved = true;
+                        produced_new_branch = true;
+
+                        typename Types::State state_copy{state};
+                        state_copy.randomize_transition(branch.seed);
+                        state_copy.apply_actions(row_action, col_action);
+                        assert(state_copy.get_obs() == branch.obs);
+
+                        const auto alpha_beta_pair = double_oracle(
+                            max_depth,
+                            device,
+                            state_copy,
+                            model,
+                            branch.matrix_node.get(),
+                            min_val, max_val);
+
+                        const auto prob = branch.prob;
+
+                        data.alpha_explored += alpha_beta_pair.first * prob;
+                        data.beta_explored += alpha_beta_pair.second * prob;
+                        expected_value += alpha_beta_pair.second * prob * col_strategy[next_j];
+
+                        data.unexplored -= prob;
+                        total_unexplored -= prob * col_strategy[next_j];
+                        exploration_priorities[next_j] -= prob * col_strategy[next_j];
+
+                        break;
+                    }
+
+                    for (; (data.tries < max_tries) && (data.unexplored > typename Types::Prob{0}) &&
+                           ((data.tries < min_tries) || (data.unexplored > max_unexplored)) &&
+                           !produced_new_branch;
                          ++data.tries)
                     {
                         typename Types::State state_copy{state};
@@ -402,9 +468,10 @@ struct AlphaBetaForce : Types
                             Branch &new_branch = data.branches.at(obs_hash);
 
                             new_branch.matrix_node->depth = matrix_node->depth + 1;
+                            new_branch.solved = true;
                             const auto prob = new_branch.prob;
 
-                            auto alpha_beta_pair = double_oracle(
+                            const auto alpha_beta_pair = double_oracle(
                                 max_depth,
                                 device,
                                 state_copy,
@@ -511,8 +578,47 @@ struct AlphaBetaForce : Types
                     Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx);
 
                     bool produced_new_branch = false;
-                    for (; (data.tries < max_tries) &&
-                           ((data.tries < min_tries) || (data.unexplored > max_unexplored));
+
+                    // iterative deepening
+                    for (auto &pair : data.branches)
+                    {
+                        auto &branch = pair.second;
+                        if (branch.solved)
+                        {
+                            continue;
+                        }
+                        branch.solved = true;
+                        produced_new_branch = true;
+
+                        typename Types::State state_copy{state};
+                        state_copy.randomize_transition(branch.seed);
+                        state_copy.apply_actions(row_action, col_action);
+                        assert(state_copy.get_obs() == branch.obs);
+
+                        const auto alpha_beta_pair = double_oracle(
+                            max_depth,
+                            device,
+                            state_copy,
+                            model,
+                            branch.matrix_node.get(),
+                            min_val, max_val);
+
+                        const auto prob = branch.prob;
+
+                        data.alpha_explored += alpha_beta_pair.first * prob;
+                        data.beta_explored += alpha_beta_pair.second * prob;
+                        expected_value += alpha_beta_pair.first * prob * row_strategy[next_i];
+
+                        data.unexplored -= prob;
+                        total_unexplored -= prob * row_strategy[next_i];
+                        exploration_priorities[next_i] -= prob * row_strategy[next_i];
+
+                        break;
+                    }
+
+                    for (; (data.tries < max_tries) && (data.unexplored > typename Types::Prob{0}) &&
+                           ((data.tries < min_tries) || (data.unexplored > max_unexplored)) &&
+                           !produced_new_branch;
                          ++data.tries)
                     {
                         typename Types::State state_copy{state};
@@ -531,9 +637,10 @@ struct AlphaBetaForce : Types
                             Branch &new_branch = data.branches.at(obs_hash);
 
                             new_branch.matrix_node->depth = matrix_node->depth + 1;
+                            new_branch.solved = true;
                             const auto prob = new_branch.prob;
 
-                            auto alpha_beta_pair = double_oracle(
+                            const auto alpha_beta_pair = double_oracle(
                                 max_depth,
                                 device,
                                 state_copy,
@@ -633,6 +740,38 @@ struct AlphaBetaForce : Types
             const auto row_action = state.row_actions[row_idx];
             const auto col_action = state.col_actions[col_idx];
 
+            // iterative deepening
+            {
+                for (auto &pair : data.branches)
+                {
+                    auto &branch = pair.second;
+                    if (branch.solved)
+                    {
+                        continue;
+                    }
+
+                    typename Types::State state_copy{state};
+                    state_copy.randomize_transition(branch.seed);
+                    state_copy.apply_actions(row_action, col_action);
+
+                    assert(state_copy.get_obs() == branch.obs);
+
+                    const auto alpha_beta =
+                        double_oracle(
+                            max_depth,
+                            device,
+                            state_copy,
+                            model,
+                            branch.matrix_node.get(),
+                            min_val, max_val);
+
+                    data.alpha_explored += alpha_beta.first;
+                    data.beta_explored += alpha_beta.second;
+                    data.unexplored -= branch.prob;
+                    branch.solved = true;
+                }
+            }
+
             for (; (data.tries < max_tries) && (data.unexplored > typename Types::Prob{0}) &&
                    ((data.tries < min_tries) || (data.unexplored > max_unexplored));
                  ++data.tries)
@@ -641,7 +780,6 @@ struct AlphaBetaForce : Types
                 const typename Types::Seed seed{device.uniform_64()};
                 state_copy.randomize_transition(seed);
                 state_copy.apply_actions(row_action, col_action);
-                // const size_t obs_hash = state_copy.get_obs().get();
                 const size_t obs_hash = hash_function(state_copy.get_obs());
 
                 if (data.branches.find(obs_hash) == data.branches.end())
@@ -664,6 +802,7 @@ struct AlphaBetaForce : Types
                     data.alpha_explored += alpha_beta.first * new_branch.prob;
                     data.beta_explored += alpha_beta.second * new_branch.prob;
                     data.unexplored -= new_branch.prob;
+                    new_branch.solved = true;
                 }
             }
 
@@ -671,6 +810,7 @@ struct AlphaBetaForce : Types
             return solved_exactly;
         };
 
+        // Serialized AlphaBeta, TODO
         Real row_alpha_beta(
             Types::State &state,
             Types::Model &model,
@@ -690,6 +830,5 @@ struct AlphaBetaForce : Types
         {
             return min_val;
         }
-        // Serialized AlphaBeta, TODO
     };
 };

@@ -20,7 +20,7 @@
 #include <state/random-tree.hh>
 #include <state/traversed.hh>
 #include <state/mapped-state.hh>
-#include <state/arena.hh>
+#include <state/model-bandit.hh>
 
 // Model
 
@@ -44,6 +44,7 @@
 #include <algorithm/solver/alpha-beta-force.hh>
 #include <algorithm/solver/alpha-beta.hh>
 #include <algorithm/solver/alpha-beta-old.hh>
+#include <algorithm/solver/alpha-beta-iter.hh>
 
 // Tree
 
