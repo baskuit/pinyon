@@ -41,20 +41,11 @@ concept IsPerfectInfoStateTypes =
         typename Types::State &state,
         const typename Types::State &const_state) {
         {
-            state.terminal
-        } -> std::same_as<bool &>;
-        {
             state.row_actions
         } -> std::same_as<typename Types::VectorAction &>;
         {
             state.col_actions
         } -> std::same_as<typename Types::VectorAction &>;
-        {
-            state.payoff
-        } -> std::same_as<typename Types::Value &>;
-        {
-            state.obs
-        } -> std::same_as<typename Types::Obs &>;
         {
             state.prob
         } -> std::same_as<typename Types::Prob &>;
