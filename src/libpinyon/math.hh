@@ -40,6 +40,17 @@ namespace math
     //     t.canonicalize();
     // }
 
+    float to_float (mpq_class x) 
+    {
+        return static_cast<float>(x.get_d());
+    }
+
+    template <typename Real>
+    float to_float(Real x)
+    {
+        return static_cast<float>(x);
+    }
+
     template <template <typename...> typename VectorIn, typename InT, template <typename...> typename VectorOut, typename OutT>
     void power_norm(const VectorIn<InT> &input, int length, float power, VectorOut<OutT> &output)
     {

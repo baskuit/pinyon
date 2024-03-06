@@ -34,14 +34,16 @@ struct AlphaBetaOld : Types
 
     struct MatrixStats
     {
-        Real row_value;
         // value for the maximizing/row player.
+        Real row_value;
+
+        // matrices of pessimistic/optimisitic values. always over full actions
         Types::MatrixReal p;
         Types::MatrixReal o;
 
-        // matrices of pessimistic/optimisitic values. always over full actions
-        std::vector<int> I{}, J{};
         // vector of row_idx, col_idx in the substage
+        std::vector<int> I{}, J{};
+
         Types::VectorReal row_solution, col_solution;
         int row_br_idx, col_br_idx;
         Types::MatrixInt chance_actions_solved;
@@ -54,11 +56,11 @@ struct AlphaBetaOld : Types
     };
     struct ChanceStats
     {
-        typename Types::Prob explored{Rational{0}};
+        typename Types::Prob explored{0};
         size_t matrix_node_count = 0;
     };
-    using MatrixNode = NodePair<Types>::MatrixNode;
-    using ChanceNode = NodePair<Types>::ChanceNode;
+    using MatrixNode = NodePair<Types, MatrixStats, ChanceStats>::MatrixNode;
+    using ChanceNode = NodePair<Types, MatrixStats, ChanceStats>::ChanceNode;
 
     class Search
     {

@@ -68,7 +68,7 @@ struct SearchModel : Types::TypeList
             Types::State &&state,
             ModelOutput &output)
         {
-            typename Types::MatrixNode root;
+            typename Types::MatrixNode root{};
 
             if constexpr (use_iterations)
             {
