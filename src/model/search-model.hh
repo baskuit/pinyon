@@ -98,7 +98,9 @@ struct SearchModel : Types::TypeList
             }
             else
             {
-                output.value = (root.alpha + root.beta) / 2;
+                typename Types::Real x = (root.alpha + root.beta) / 2;
+                canonicalize(x); 
+                output.value = {x};
             }
         }
 

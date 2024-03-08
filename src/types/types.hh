@@ -33,21 +33,6 @@ struct ObsHashType<std::array<uint8_t, 16>>
     }
 };
 
-template <>
-struct ObsHashType<std::array<uint8_t, 64>>
-{
-    size_t operator()(const std::array<uint8_t, 64> &obs) const
-    {
-        const uint64_t *a = reinterpret_cast<const uint64_t *>(obs.data());
-        size_t hash = 0;
-        for (int i = 0; i < 8; ++i)
-        {
-            hash ^= a[i];
-        }
-        return hash;
-    }
-};
-
 template <
     typename _Real,
     typename _Action,
