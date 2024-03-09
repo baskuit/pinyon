@@ -306,14 +306,14 @@ struct AlphaBetaForce : Types
 
             // Now we correct row/col solution data in matrix node. Reorder, account for 'unsolved' i/j's, pad with zeros.
             typename Types::VectorReal temp_strategy{};
-            temp_strategy.resize(rows);
+            temp_strategy.resize(rows, Real{0});
             for (int i = 0; i < row_solution.size(); ++i)
             {
                 temp_strategy[I[i]] = row_solution[i];
             }
             row_solution = temp_strategy;
             temp_strategy.clear();
-            temp_strategy.resize(cols);
+            temp_strategy.resize(cols, Real{0});
             for (int j = 0; j < col_solution.size(); ++j)
             {
                 temp_strategy[J[j]] = col_solution[j];
