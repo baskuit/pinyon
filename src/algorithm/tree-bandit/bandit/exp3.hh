@@ -11,10 +11,10 @@ struct Exp3 : Types
 
     struct MatrixStats
     {
-        typename Types::VectorReal row_gains;
-        typename Types::VectorReal col_gains;
-        typename Types::VectorInt row_visits;
-        typename Types::VectorInt col_visits;
+        Types::VectorReal row_gains;
+        Types::VectorReal col_gains;
+        Types::VectorInt row_visits;
+        Types::VectorInt col_visits;
 
         int visits = 0;
         PairReal<Real> value_total{0, 0};
@@ -37,7 +37,7 @@ struct Exp3 : Types
     struct Outcome
     {
         int row_idx, col_idx;
-        typename Types::Value value;
+        Types::Value value;
         Real row_mu, col_mu;
     };
 
@@ -75,7 +75,7 @@ struct Exp3 : Types
             const Real den = typename Types::Q{1, (stats.visits + (stats.visits == 0))};
             if constexpr (Types::Value::IS_CONSTANT_SUM)
             {
-                value = typename Types::Value{typename Types::Real{stats.value_total.get_row_value() * den}};
+                value = typename Types::Value{Real{stats.value_total.get_row_value() * den}};
             }
             else
             {
