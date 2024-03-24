@@ -139,7 +139,8 @@ int main()
 
     auto bandit_type_pack =
         TypePack<
-            Exp3<BaseTypes>>{};
+            Exp3<BaseTypes>,
+            MatrixUCB<BaseTypes>>{};
     auto node_template_pack =
         NodeTemplatePack<
             DefaultNodes,
@@ -169,8 +170,8 @@ int main()
         auto solved_state = TraversedState<BaseTypes>::State{state, model};
         std::cout << "state size: " << solved_state.node->stats.matrix_node_count << std::endl;
         test_expl_st(st_search_type_tuple, state, solved_state);
-        test_expl_mt(mt_search_type_tuple, state, solved_state);
-        test_expl_mtp(mtp_search_type_tuple, state, solved_state);
+        // test_expl_mt(mt_search_type_tuple, state, solved_state);
+        // test_expl_mtp(mtp_search_type_tuple, state, solved_state);
         // test_expl_op(op_search_type_tuple, state, solved_state);
     }
 
