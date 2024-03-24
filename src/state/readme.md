@@ -2,7 +2,7 @@
 # State
 ### Markov Decision Process
 A state is a two player Markov game when we are referring to a type. An instance of that type is also called a state and it corresponds to a 'state' of the Markov game. Usually we mean an instance when using this term.
-A state is transitioned when joint actions are committed by the players. This is handled by the member function `apply_actions(Action, Action)`, which mutates the state into it's successor. The 'Markov' descriptor means that these transitions are stochastic, but this behavior requires calling the member function `randomize_transition(PRNG &)`. Unless this function is called before `apply_actions`, a given state will always transition in the same way.
+A state is transitioned when joint actions are committed by the players. This is handled by the member function `apply_actions(Action, Action)`, which mutates the state into its successor. The 'Markov' descriptor means that these transitions are stochastic, but this behavior requires calling the member function `randomize_transition(PRNG &)`. Unless this function is called before `apply_actions`, a given state will always transition in the same way.
 The MDP and perfect info conditions need the following types:
 * `Action`
 * `Obs`
@@ -190,7 +190,14 @@ The `FullTraversal` algorithm will represent the game tree on heap using nodes.
 
 ### ModelBandit
 
-This is a state that leverages the generality of Pinyon to evaluate the performance of models and search algorithms using preexisting algorithms.
+This state uses the type erasure wrappers `W::Types`
+to wrap each of the models uniformly and treat them each like an action.
+
+The model bandit state only transitions once before it is terminal, which means it is essentially a bandit problem. The actions in this problem are W::Types::Models, and the payoff that is recieved is determined by the payoff of the underlying state.
+
+The models' inference is used to perform a 'heavy rollout' on a copy of the *underlying* state.
+
+When a `ModelBandit` state is randomized, the new seed is what will be provided to the initial state generating function.
 
 
 # Wrapping a State

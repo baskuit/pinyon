@@ -1,29 +1,11 @@
 
+# TODO
+remove all strong typing non-sense. god, that was a mistake.
+
 # Types Struct
 
 As alluded earlier, a type list object is just a struct with some type declarations for a certain set of names (`Real`, `Mutex`, `VectorReal`) etc. The `DefaultTypes` struct in the next section essentially lists the minimal collection of declaration that are used in the library. There are also some additional constraints on the individual types that defines an expected interface.
 The use of concepts will mean this interface is auto-suggested when dealing with constrained template parameters.
-
-### Strong Typing
-In the case of some aliases, the final type that is accessible via the type list (e.g. `Types::Real`) is **not** simply `float` or `mpq_class` as the user intended.
-Instead, some classes are actually wrapper classes around the underlying type that mainly provide strong typing and regularize the Pinyon interface.
-
-To the first point, let's consider a motivating example: If the underlying primitive type for an `Action` is `int`, then the following erroneous code would compile without warning
-```cpp
-	int row_idx = device.sample_pdf(row_strategy);
-	int col_idx = device.sample_pdf(col_strategy);
-	typename Types::Action row_action, col_action;
-	row_action = row_actions[row_idx];
-	col_action = col_actions[col_idx];
-	state.apply_actions(row_idx, col_idx); // error
-```
-
-Regarding the second point, most of the interface trouble comes from `mpq_class`. For example, conversion from a `mpq_class` member to a double is done via its `get_d()` method, rather than a conversion operator `static_cast<double>()`. We cannot add conversion operators, constructors, etc to an external library class but we can add that functionality to the wrapper.
-
-### ...Is Nearly Optional
-When strong typing was introduced I had planned to design the library so that they could be eschewed for the raw types if the user preferred. However, the support for `mpq_class` means that's not going to happen until I disentangle the GNU multiple precision library from Pinyon.
-
-This should not be an issue because of C++'s *zero cost abstractions*. If a program is compiled with `-O1` or higher (e.g. release mode in VSCode/Cmake) then these abstractions will be optimized away.
 
 # `DefaultTypes`
 
@@ -49,11 +31,12 @@ struct DefaultTypes
 {
     using TypeList = DefaultTypes;
     using Q = _Rational;
-    using Real = RealType<_Real>;
+    using Real = _Real;
 
-    using Action = ActionType<_Action>;
-    using Obs = ObsType<_Obs>;
-    using Prob = ProbType<_Prob>;
+    using Action = _Action;
+    using Obs = _Obs;
+    using ObsHash = ObsHashType<_Obs>;
+    using Prob = _Prob;
 
     using Value = _Value<Real>;
     using VectorReal = _Vector<Real>;

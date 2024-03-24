@@ -15,11 +15,6 @@ Once consequence of this is that chance nodes are virtually never constructed by
 The top-level interface tends to pass references to (matrix) nodes while implementation functions use pointers. This is related to the point regarding ownership. The root node for a search is usually created in block scope instead of a heap allocated, and the ownership scheme means that the tree will be cleaned up when the root is destroyed at the end of scope. 
 This means it is natural to pass a reference at the top level interface. Implementation functions tend to use pointers since nodes store pointers to their children and siblings.
 
-### Identification
-Each node type has data so it can be correctly identified in search operations.
-Chance nodes will use `int` members `row_idx` and `col_idx`. These are the indices of the row and column player actions (recall action order is unique by assumption) that lead to that node.
-Matrix nodes will use the `Obs` data that was received from the transition.  
-
 # Concepts/Interface
 
 ## MatrixNode

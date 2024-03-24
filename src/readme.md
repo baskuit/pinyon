@@ -1,6 +1,6 @@
 
 # Motivation
-This library was developed as a platform for research and incremental progress in the development of computer play in Pokemon. This means code should be reusable for multiple gens and simulators, with tools to compare evaluation functions and search algorithms. The library has been applied to `pmkn/engine` but I was not aware of any extant simulators besides Pokemon Showdown when I started development. With no compatible simulators to cater development towards, the library had to comply with any new simulators that could appear later.
+Development on tihs library began as a platform for research and incremental progress in the development of computer play in Pokemon. This means code should be reusable for multiple gens and simulators, with tools to compare evaluation functions and search algorithms. The library has been applied to `pmkn/engine` but I was not aware of any extant simulators besides Pokemon Showdown when I started development. With no compatible simulators to cater development towards, the library had to comply with any new simulators that could appear later.
  
 This context lead me to abstract the machinery for search and reinforcement learning into distinct categories. These are orthogonal by design, so that different types within one category can be swapped with minimal restrictions.
 These categories are:
