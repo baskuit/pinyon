@@ -130,4 +130,41 @@ namespace math
         return Real{row_best_response - row_payoff + col_best_response - col_payoff};
     }
 
+    template <typename Real, template <typename...> typename Vector, template <typename> typename Matrix>
+    Real exploitability(
+        const Matrix<Real> &row_matrix,
+        const Matrix<Real> &col_matrix,
+        const Vector<Real> &row_strategy,
+        const Vector<Real> &col_strategy)
+    {
+        const size_t rows = row_matrix.rows;
+        const size_t cols = row_matrix.cols;
+
+        Real row_payoff{Rational<>{0}}, col_payoff{Rational<>{0}};
+        Vector<Real> row_response, col_response;
+        row_response.resize(rows); // TODO use pinyon interface
+        col_response.resize(cols);
+
+        size_t data_idx = 0;
+        for (int row_idx = 0; row_idx < rows; ++row_idx)
+        {
+            for (int col_idx = 0; col_idx < cols; ++col_idx)
+            {
+                // const Value &value = value_matrix[data_idx];
+                const Real u{col_strategy[col_idx] * row_matrix[data_idx]};
+                const Real v{row_strategy[row_idx] * col_matrix[data_idx]};
+                row_payoff += u * row_strategy[row_idx];
+                col_payoff += v * col_strategy[col_idx];
+                row_response[row_idx] += u;
+                col_response[col_idx] += v;
+                ++data_idx;
+            }
+        }
+
+        Real row_best_response{*std::max_element(row_response.begin(), row_response.end())};
+        Real col_best_response{*std::max_element(col_response.begin(), col_response.end())};
+
+        return Real{row_best_response - row_payoff + col_best_response - col_payoff};
+    }
+
 } // end 'math'
