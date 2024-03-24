@@ -6,41 +6,43 @@ template <CONCEPT(IsSolvedStateTypes, Types)>
 struct SolvedStateModel : Types
 {
 
-    using ModelInput = typename Types::State;
     struct ModelOutput
     {
-        typename Types::Value value;
-        typename Types::VectorReal row_policy, col_policy;
+        Types::Value value;
+        Types::VectorReal row_policy, col_policy;
     };
-    using ModelBatchInput = std::vector<ModelInput>;
+    using ModelBatchInput = std::vector<typename Types::State>;
     using ModelBatchOutput = std::vector<ModelOutput>;
 
     class Model
     {
     public:
         void inference(
-            ModelInput &input,
-            ModelOutput &output)
+            Types::State &&input,
+            ModelOutput &output) const
         {
             output.value = input.get_payoff();
             input.get_strategies(output.row_policy, output.col_policy);
         }
 
-        void inference(
-            ModelBatchInput &batch_input,
-            ModelBatchOutput &batch_output)
-        {
-            for (auto &output : batch_output)
-            {
-                output.value = typename Types::Value{.5, .5};
-            }
-        }
+        // TODO maybe faze out the use of Off Policy
+        // Its useless and mostly confusing 
+        
+        // void inference(
+        //     ModelBatchInput &batch_input,
+        //     ModelBatchOutput &batch_output)
+        // {
+        //     for (auto &output : batch_output)
+        //     {
+        //         output.value = typename Types::Value{.5, .5};
+        //     }
+        // }
 
-        void add_to_batch_input(
-            Types::State &&state,
-            ModelBatchInput &batch_input) const
-        {
-            batch_input.push_back(state);
-        }
+        // void add_to_batch_input(
+        //     Types::State &&state,
+        //     ModelBatchInput &batch_input) const
+        // {
+        //     batch_input.push_back(state);
+        // }
     };
 };
