@@ -24,15 +24,6 @@ struct ObsHashType
     }
 };
 
-template <>
-struct ObsHashType<std::array<uint8_t, 16>>
-{
-    size_t operator()(const std::array<uint8_t, 16> &obs) const
-    {
-        return {};
-    }
-};
-
 template <
     typename _Real,
     typename _Action,
