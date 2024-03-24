@@ -4,6 +4,19 @@
 #include <state/state.hh>
 #include <tree/node.hh>
 
+/*
+
+Identification of a recently transitioned state with the search tree
+is done with a linear scan and equality check
+
+This has two advantages (although there are also downsides)
+First, the most relevent matrix nodes are usually the earliest in the chance node's children
+(and policy guided search will put the most relevent joint actions first, as well)
+Second, it's totally general in that we don't need to implement a hash function
+(and we also don't have to deal with hash collisions)
+
+*/
+
 template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
           typename NodeActions = void, typename NodeValue = void>
 struct DefaultNodes : Types
@@ -31,7 +44,7 @@ struct DefaultNodes : Types
         bool terminal = false;
         bool expanded = false;
 
-        typename Types::Obs obs;
+        Types::Obs obs;
         MatrixStats stats;
 
         MatrixNode(){};
@@ -149,29 +162,6 @@ struct DefaultNodes : Types
             }
             return c;
         }
-
-        ChanceNode &get_child(int row_idx, int col_idx)
-        {
-            if (this->child == nullptr)
-            {
-                this->child = new ChanceNode(row_idx, col_idx);
-                return *this->child;
-            }
-            ChanceNode *current = this->child;
-            ChanceNode *previous = this->child;
-            while (current != nullptr)
-            {
-                previous = current;
-                if (current->row_idx == row_idx && current->col_idx == col_idx)
-                {
-                    return *current;
-                }
-                current = current->next;
-            }
-            ChanceNode *child = new ChanceNode(row_idx, col_idx);
-            previous->next = child;
-            return *child;
-        }
     };
 
     class ChanceNode
@@ -275,30 +265,6 @@ struct DefaultNodes : Types
             }
             return c;
         }
-
-        MatrixNode &get_child(const Types::Obs &obs)
-        {
-            if (this->child == nullptr)
-            {
-                MatrixNode *child = new MatrixNode(obs);
-                this->child = child;
-                return *child;
-            }
-            MatrixNode *current = this->child;
-            MatrixNode *previous = this->child;
-            while (current != nullptr)
-            {
-                previous = current;
-                if (current->obs == obs)
-                {
-                    return *current;
-                }
-                current = current->next;
-            }
-            MatrixNode *child = new MatrixNode(obs);
-            previous->next = child;
-            return *child;
-        };
     };
 };
 
