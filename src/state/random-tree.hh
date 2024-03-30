@@ -29,9 +29,6 @@ struct RandomTree : Types {
 
         // everything above determines the abstract game tree exactly
 
-        std::vector<typename Types::Prob> chance_strategy;
-        // just a helper for the sample_pdf function in apply_actions
-
         State(const Types::PRNG &device, size_t depth_bound, size_t rows, size_t cols, size_t transitions,
               const Types::Q &chance_threshold = typename Types::Q{0})
             : device{device},
@@ -115,9 +112,23 @@ struct RandomTree : Types {
         void apply_actions(Types::Action row_action, Types::Action col_action) {
             // get_chance_actions has always 'just been called' since its in the ctor and apply_actions()
             // Therefore we should just be able to sample it
-            typename Types::PRNG temp_device{this->device};
-            const int chance_action = device.sample_pdf(this->chance_strategies);
-            this->apply_actions(row_action, col_action, chance_action);
+            typename Types::PRNG temp_device{this->transition_seed};
+
+            const int start = this->get_transition_idx(row_action, col_action, 0);
+            double p = temp_device.uniform();
+            for (int c{}; c < this->transitions; ++c) {
+                const double q = math::to_double(this->chance_strategies[start + c]);
+                p -= q;
+                // if (row_action == 1 && col_action == 1) {
+                //     std::cout << '!' << c << ' ' << p << ' ' << q << std::endl;
+                // }
+
+                if (p <= 0) {
+                    this->apply_actions(row_action, col_action, c);
+                    return;
+                }
+            }
+            this->apply_actions(row_action, col_action, 0);
         }
 
         /*
