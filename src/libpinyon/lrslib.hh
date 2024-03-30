@@ -13,7 +13,7 @@ namespace LRSNash
         template <typename> typename Value>
     Value<mpq_class>
     solve(
-        Matrix<Value<mpq_class>> &payoff_matrix,
+        const Matrix<Value<mpq_class>> &payoff_matrix,
         Vector<mpq_class> &row_strategy,
         Vector<mpq_class> &col_strategy)
     {
@@ -60,7 +60,7 @@ namespace LRSNash
         requires(Value<mpq_class>::IS_CONSTANT_SUM == true)
     Value<mpq_class>
     solve(
-        Matrix<Value<mpq_class>> &payoff_matrix,
+        const Matrix<Value<mpq_class>> &payoff_matrix,
         Vector<mpq_class> &row_strategy,
         Vector<mpq_class> &col_strategy)
     {
@@ -109,7 +109,7 @@ namespace LRSNash
         requires(std::is_same_v<Real, mpq_class> == false)
     Value<Real>
     solve(
-        Matrix<Value<Real>> &payoff_matrix,
+        const Matrix<Value<Real>> &payoff_matrix,
         Vector<Real> &row_strategy,
         Vector<Real> &col_strategy,
         int den = 100)
@@ -126,7 +126,7 @@ namespace LRSNash
 
         for (size_t i = 0; i < entries; ++i)
         {
-            Value<Real> &value = payoff_matrix[i];
+            const Value<Real> &value = payoff_matrix[i];
             double a{(value.get_row_value() - min) / range * static_cast<Real>(den)};
             double b{(value.get_col_value() - min) / range * static_cast<Real>(den)};
             payoff_data[2 * i] = ceil(a);
