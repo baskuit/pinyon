@@ -30,6 +30,7 @@ struct Rand : Types
             return os;
         }
 
+        // TODO fill these out with something
         void get_empirical_strategies(
             const MatrixStats &stats,
             Types::VectorReal &row_strategy,
@@ -80,10 +81,8 @@ struct Rand : Types
             const MatrixStats &stats,
             Outcome &outcome) const
         {
-            const int row_idx = device.random_int(stats.rows);
-            const int col_idx = device.random_int(stats.cols);
-            outcome.row_idx = row_idx;
-            outcome.col_idx = col_idx;
+            outcome.row_idx = device.random_int(stats.rows);
+            outcome.col_idx = device.random_int(stats.cols);
         }
 
         void update_matrix_stats(
@@ -104,10 +103,8 @@ struct Rand : Types
             Outcome &outcome,
             Types::Mutex &mutex) const
         {
-            const int row_idx = device.random_int(stats.rows);
-            const int col_idx = device.random_int(stats.cols);
-            outcome.row_idx = row_idx;
-            outcome.col_idx = col_idx;
+            outcome.row_idx = device.random_int(stats.rows);
+            outcome.col_idx = device.random_int(stats.cols);
         }
 
         void update_matrix_stats(
