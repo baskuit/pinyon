@@ -28,6 +28,7 @@ class prng {
     uint64_t uniform_64() { return uniform_64_(engine); }
 
     template <template <typename...> typename Vector, typename T>
+        requires(!std::is_same_v<T, mpq_class>)
     int sample_pdf(const Vector<T> &input) {
         double p = uniform();
         for (int i = 0; i < input.size(); ++i) {
@@ -39,11 +40,11 @@ class prng {
         return 0;
     }
 
-    template <typename Vector>
-    int sample_pdf(const Vector &input) {
+    template <template <typename...> typename Vector>
+    int sample_pdf(const Vector<mpq_class> &input) {
         double p = uniform();
         for (int i = 0; i < input.size(); ++i) {
-            p -= static_cast<double>(input[i]);
+            p -= input[i].get_d();
             if (p <= 0) {
                 return i;
             }
