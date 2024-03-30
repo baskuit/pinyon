@@ -169,8 +169,8 @@ struct Exp3Fat : Types
                     [eta, one_minus_gamma](Real value)
                     { return one_minus_gamma * value + eta; });
             }
-            const int row_idx = device.sample_pdf(row_forecast, rows);
-            const int col_idx = device.sample_pdf(col_forecast, cols);
+            const int row_idx = device.sample_pdf(row_forecast);
+            const int col_idx = device.sample_pdf(col_forecast);
             outcome.row_idx = row_idx;
             outcome.col_idx = col_idx;
             outcome.row_mu = static_cast<Real>(row_forecast[row_idx]);
