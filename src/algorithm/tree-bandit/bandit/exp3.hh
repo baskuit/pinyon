@@ -5,9 +5,7 @@
 template <CONCEPT(IsValueModelTypes, Types)>
 struct Exp3 : Types
 {
-
     using Real = typename Types::Real;
-    // alias decl kill intellisense currently but you only lose canonicalize()
 
     struct MatrixStats
     {

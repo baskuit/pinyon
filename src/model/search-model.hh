@@ -99,7 +99,7 @@ struct SearchModel : Types::TypeList
             else
             {
                 typename Types::Real x = (root.alpha + root.beta) / 2;
-                canonicalize(x); 
+                math::canonicalize(x); 
                 output.value = {x};
             }
         }

@@ -464,12 +464,9 @@ struct AlphaBetaOld : Types
         {
             if constexpr (std::is_same_v<T, mpq_class>)
             {
-                mpq_ptr a = x.value.get_mpq_t();
-                mpq_ptr b = y.value.get_mpq_t();
-                // mpq_canonicalize(a);
-                // mpq_canonicalize(b);
-                bool answer = mpq_equal(a, b);
-                return answer;
+                math::canonicalize(x);
+                math::canonicalize(y);
+                return x == y;
             }
             else
             {

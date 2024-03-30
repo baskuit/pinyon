@@ -265,8 +265,8 @@ struct AlphaBeta : Types
             }
             col_solution = temp_strategy;
 
-            canonicalize(alpha);
-            canonicalize(beta);
+            math::canonicalize(alpha);
+            math::canonicalize(beta);
 
             return {alpha, beta};
         }
@@ -373,7 +373,7 @@ struct AlphaBeta : Types
                 }
 
                 expected_value += total_unexplored * beta;
-                canonicalize(expected_value);
+                math::canonicalize(expected_value);
 
                 if (expected_value >= best_response || (best_row_idx == -1 && fuzzy_equals(expected_value, best_response)))
                 {
@@ -486,7 +486,7 @@ struct AlphaBeta : Types
                 }
 
                 expected_value += total_unexplored * alpha;
-                canonicalize(expected_value);
+                math::canonicalize(expected_value);
 
                 if (expected_value <= best_response || (best_col_idx == -1 && fuzzy_equals(expected_value, best_response)))
                 {
@@ -503,12 +503,9 @@ struct AlphaBeta : Types
         {
             if constexpr (std::is_same_v<T, mpq_class>)
             {
-                mpq_ptr a = x.get_mpq_t();
-                mpq_ptr b = y.get_mpq_t();
-                mpq_canonicalize(a);
-                mpq_canonicalize(b);
-                bool answer = mpq_equal(a, b);
-                return answer;
+                math::canonicalize(x);
+                math::canonicalize(y);
+                return x == y;
             }
             else
             {
