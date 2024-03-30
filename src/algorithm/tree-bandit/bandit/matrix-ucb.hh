@@ -14,19 +14,6 @@
 MatrixUCB (Uses usual UCB formula, no time estimates)
 */
 
-namespace MatrixUCBTODO {
-
-template <typename Types>
-struct MatrixStats {
-    struct Data {
-        Types::Value value;
-        int vists;
-    };
-    DataMatrix<Data> data_matrix;
-};
-
-};  // namespace MatrixUCBTODO
-
 template <IsValueModelTypes Types>
 struct MatrixUCB : Types {
     using Real = typename Types::Real;
