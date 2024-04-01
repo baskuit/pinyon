@@ -194,15 +194,14 @@ namespace W
                 if constexpr (std::is_same_v<mpq_class, typename T::Real>)
                 {
                     return Types::Value{
-                        static_cast<double>(data.payoff.get_row_value().get_d()),
-                        static_cast<double>(data.payoff.get_col_value().get_d())};
+                        static_cast<double>(data.get_payoff().get_row_value().get_d()),
+                        static_cast<double>(data.get_payoff().get_col_value().get_d())};
                 }
                 else
                 {
-
                     return Types::Value{
-                        static_cast<double>(data.payoff.get_row_value()),
-                        static_cast<double>(data.payoff.get_col_value())};
+                        static_cast<double>(data.get_payoff().get_row_value()),
+                        static_cast<double>(data.get_payoff().get_col_value())};
                 }
             }
             void _randomize_transition(Types::PRNG &device)

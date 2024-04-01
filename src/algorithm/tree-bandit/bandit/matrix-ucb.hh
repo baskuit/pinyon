@@ -81,6 +81,11 @@ struct MatrixUCB : Types {
             LRSNash::solve(value_matrix, row_strategy, col_strategy);
         }
 
+        void get_empirical_value(const MatrixStats &stats, Types::Value value) const
+        {
+            // TODO - added temp flag to search model to ignore this
+        };
+
         void expand(MatrixStats &stats, const size_t &rows, const size_t &cols,
                     const Types::ModelOutput &output) const {  // matrix_node->is_expanded = true;
             stats.data_matrix.fill(rows, cols, {});

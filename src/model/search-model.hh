@@ -35,7 +35,8 @@ template <
     CONCEPT(IsSearchTypes, Types),
     bool use_iterations = true,
     bool use_policy = true,
-    bool use_tree_bandit = true>
+    bool use_tree_bandit = true,
+    bool use_value = true>
 struct SearchModel : Types::TypeList
 {
     using State = typename Types::State; // DONT REMOVE
@@ -92,15 +93,17 @@ struct SearchModel : Types::TypeList
                     output.col_policy = root.col_solution;
                 }
             }
-            if constexpr (use_tree_bandit)
-            {
-                search.get_empirical_value(root.stats, output.value);
-            }
-            else
-            {
-                typename Types::Real x = (root.alpha + root.beta) / 2;
-                math::canonicalize(x); 
-                output.value = {x};
+            if constexpr (use_value) {
+                if constexpr (use_tree_bandit)
+                {
+                    search.get_empirical_value(root.stats, output.value);
+                }
+                else
+                {
+                    typename Types::Real x = (root.alpha + root.beta) / 2;
+                    math::canonicalize(x); 
+                    output.value = {x};
+                }
             }
         }
 
