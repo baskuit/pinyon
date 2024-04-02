@@ -36,7 +36,8 @@ template <
     bool use_iterations = true,
     bool use_policy = true,
     bool use_tree_bandit = true,
-    bool use_value = true>
+    bool use_value = true,
+    bool use_empirical = true>
 struct SearchModel : Types::TypeList
 {
     using State = typename Types::State; // DONT REMOVE
@@ -85,13 +86,21 @@ struct SearchModel : Types::TypeList
             {
                 if constexpr (use_tree_bandit)
                 {
-                    search.get_empirical_strategies(root.stats, output.row_policy, output.col_policy);
+                    if constexpr (use_empirical) 
+                    {
+                        search.get_empirical_strategies(root.stats, output.row_policy, output.col_policy);
+                    }
+                    else
+                    {
+                        search.get_refined_strategies(root.stats, output.row_policy, output.col_policy);
+                    }
                 }
                 else
                 {
                     output.row_policy = root.row_solution;
                     output.col_policy = root.col_solution;
                 }
+                // std::cout << search << " : " << root.count_matrix_nodes() << std::endl;
             }
             if constexpr (use_value) {
                 if constexpr (use_tree_bandit)
