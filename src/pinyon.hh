@@ -40,6 +40,7 @@
 #include <algorithm/tree-bandit/bandit/exp3-fat.hh>
 #include <algorithm/tree-bandit/bandit/rand.hh>
 #include <algorithm/tree-bandit/bandit/matrix-ucb.hh>
+#include <algorithm/tree-bandit/bandit/ucb.hh>
 
 #include <algorithm/solver/full-traversal.hh>
 #include <algorithm/solver/alpha-beta-force.hh>
