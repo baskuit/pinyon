@@ -70,7 +70,6 @@ struct ModelBandit : SimpleTypes
                 SimpleTypes::Real{total_payoff.get_col_value() / double(2 * vs_rounds)}};
             this->terminal = true;
             this->obs = SimpleTypes::Obs{static_cast<int>(device.get_seed())};
-            // std::cout << '@' << std::endl;
         }
 
     private:
@@ -96,7 +95,6 @@ struct ModelBandit : SimpleTypes
                 state.apply_actions(row_idx, col_idx);
                 state.get_actions();
                 ++turn;
-                // std::cout << '!' << std::endl;
             }
             return state.get_payoff();
         }
