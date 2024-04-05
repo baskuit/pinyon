@@ -65,17 +65,17 @@ struct UCB : Types {
             row_strategy.resize(stats.row_ucb_vector.size(), Real{0});
             col_strategy.resize(stats.col_ucb_vector.size(), Real{0});
             int row_idx, col_idx;
-            Real max_val{0};
+            int max_visits{0};
             for (int i{}; i < stats.row_ucb_vector.size(); ++i) {
-                if (stats.row_ucb_vector[i].q) {
-                    max_val = stats.row_ucb_vector[i].q;
+                if (stats.row_ucb_vector[i].n > max_visits) {
+                    max_visits = stats.row_ucb_vector[i].n;
                     row_idx = i;
                 }
             }
-            max_val = Real{0};
+            max_visits = 0;
             for (int i{}; i < stats.col_ucb_vector.size(); ++i) {
-                if (stats.col_ucb_vector[i].q > max_val) {
-                    max_val = stats.col_ucb_vector[i].q;
+                if (stats.col_ucb_vector[i].n > max_visits) {
+                    max_visits = stats.col_ucb_vector[i].n;
                     col_idx = i;
                 }
             }
