@@ -8,9 +8,9 @@ struct UCB : Types {
 
     struct MatrixStats {
         struct Data {
-            int n{0};
+            int n{1};
             Types::Real v{0};
-            Types::Real log_n{0};
+            Types::Real log_n{1};
             Types::Real q{0};
         };
         Types::template Vector<Data> row_ucb_vector;
@@ -40,16 +40,15 @@ struct UCB : Types {
 
         void get_empirical_strategies(const MatrixStats &stats, Types::VectorReal &row_strategy,
                                       Types::VectorReal &col_strategy) const {
-            row_strategy.resize(stats.row_visits.size());
-            col_strategy.resize(stats.col_visits.size());
-            Real N{stats.visits};
+            row_strategy.resize(stats.row_ucb_vector.size());
+            col_strategy.resize(stats.col_ucb_vector.size());
+            Real N{static_cast<Real>(stats.visits)};
             for (int row_idx{}; row_idx < stats.row_ucb_vector.size(); ++row_idx) {
                 row_strategy[row_idx] = static_cast<Real>(stats.row_ucb_vector[row_idx].n) / N;
             }
             for (int col_idx{}; col_idx < stats.col_ucb_vector.size(); ++col_idx) {
                 col_strategy[col_idx] = static_cast<Real>(stats.col_ucb_vector[col_idx].n) / N;
             }
-            math::print(row_strategy);
         }
 
         void get_empirical_value(const MatrixStats &stats, Types::Value &value) const {
@@ -99,17 +98,17 @@ struct UCB : Types {
         }
 
         void select(Types::PRNG &device, const MatrixStats &stats, Outcome &outcome) const {
-            Real max_val{0};
+            Real max_val{-1};
             for (int i{}; i < stats.row_ucb_vector.size(); ++i) {
                 if (stats.row_ucb_vector[i].q > max_val) {
                     max_val = stats.row_ucb_vector[i].q;
                     outcome.row_idx = i;
                 }
             }
-            max_val = Real{0};
+            max_val = Real{-1};
             for (int i{}; i < stats.col_ucb_vector.size(); ++i) {
-                if (stats.row_ucb_vector[i].q > max_val) {
-                    max_val = stats.row_ucb_vector[i].q;
+                if (stats.col_ucb_vector[i].q > max_val) {
+                    max_val = stats.col_ucb_vector[i].q;
                     outcome.col_idx = i;
                 }
             }
@@ -126,16 +125,16 @@ struct UCB : Types {
 
             row_data.v *= row_n;
             row_data.v += outcome.value.get_row_value();
-            row_data.v /= (++row_n);
+            row_data.v /= (row_n += 1);
 
             col_data.v *= col_n;
             col_data.v += outcome.value.get_col_value();
-            col_data.v /= (++col_n);
+            col_data.v /= (col_n += 1);
 
             row_data.log_n = std::log(row_n);
             col_data.log_n = std::log(col_n);
 
-            typename Types::Real big_log{std::log(stats.visits)};
+            Real big_log{std::log(static_cast<Real>(stats.visits))};
             if (stats.visits == 1) {
                 big_log = 1;
             }
@@ -144,13 +143,13 @@ struct UCB : Types {
             col_data.n = col_n;
 
             for (auto &data : stats.row_ucb_vector) {
-                data.q = data.v + data.log_n / big_log;
-            }
-            for (auto &data : stats.col_ucb_vector) {
-                data.q = data.v + data.log_n / big_log;
+                data.q = data.v + big_log / data.log_n;
+
+                for (auto &data : stats.col_ucb_vector) {
+                    data.q = data.v + big_log / data.log_n;
+                }
             }
         }
-
         void update_chance_stats(ChanceStats &stats, const Outcome &outcome) const {}
     };
 };
