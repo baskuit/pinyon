@@ -1,6 +1,5 @@
-#include <pinyon.hh>
-
 #include <chrono>
+#include <pinyon.hh>
 
 /*
 Takes model types (requires the model be 'state-invariant')
@@ -11,9 +10,34 @@ We would also like to assert that the search requires less nodes
 but that is simply not going to be the case all the time
 
 */
+using T = RandomTree<RandomTreeRationalTypes>;
 
-using SolvedTree = TraversedState<NullModel<RandomTree<RandomTreeRationalTypes>>>;
+struct BiasModel : T {
+    struct ModelOutput {
+        T::Value value;
+    };
 
+    class Model {
+       public:
+        const int n{};
+
+        Model() {}
+
+        Model(int n) : n{n} {}
+
+        void inference(T::State &&state, ModelOutput &output) const {
+            if (state.payoff_bias < n) {
+                output.value = T::Value{mpq_class{0}};
+                return;
+            }
+            if (state.payoff_bias > n) {
+                output.value = T::Value{mpq_class{1}};
+                return;
+            }
+            output.value = T::Value{mpq_class{1, 2}};
+        }
+    };
+};
 
 // struct ABIterTestData {
 //     size_t time_us;
@@ -28,134 +52,60 @@ using SolvedTree = TraversedState<NullModel<RandomTree<RandomTreeRationalTypes>>
 //     using Flat = AlphaBetaForce<Types>;
 //     using Iter = AlpbaBetaIter<Types>
 
-//     ABIterTestData test (const Types::State &) const {
+//     ABIterTestData test (const BiasModel::State &) const {
 //         size_t time_us, iter_time_us, count, count_iter;
-        
+
 //         return {time_us, iter_time_us, count, count_iter};
 //     }
 
 // };
 
-using Types = AlphaBetaForce<MonteCarloModel<RandomTree<RandomTreeRationalTypes>>>;
-using IterTypes = AlphaBetaIter<MonteCarloModel<RandomTree<RandomTreeRationalTypes>>>;
-using FullTypes = FullTraversal<MonteCarloModel<RandomTree<RandomTreeRationalTypes>>>;
+using AB = AlphaBeta<BiasModel>;
+using ABIter = AlphaBetaIter<BiasModel>;
 
-template <typename Types>
-size_t count_matrix_nodes(const typename Types::MatrixNode *matrix_node)
-{
-    size_t c = 1;
-    for (const auto &data : matrix_node->chance_data_matrix)
-    {
-        for (const auto &pair : data.branches)
-        {
-            const typename Types::MatrixNode *child = pair.second.matrix_node.get();
-            c += count_matrix_nodes<Types>(child);
-        }
-    }
-    return c;
-}
+void solve_check(const BiasModel::State &state) {
+    assert(state.transitions == 1);
 
-void solve_check(
-    const Types::State &state)
-{
     using time_t = decltype(std::chrono::high_resolution_clock::now());
     time_t start, end;
     size_t us;
 
-    const size_t depth = state.depth_bound;
+    const size_t max_depth = state.depth_bound;
 
-    Types::PRNG device{0};
-    Types::Model model{0};
+    BiasModel::PRNG device{0};
+    BiasModel::Model model{0};
 
-    Types::Search search{1 << 0};
-    IterTypes::Search search_iter{1 << 0};
-    FullTypes::Search search_full{};
+    AB::Search search{};
+    ABIter::Search search_iter{1, 1, 0.0};
 
-    Types::MatrixNode node{};
-    IterTypes::MatrixNode node_iter{};
-    FullTypes::MatrixNode node_full{};
+    AB::MatrixNode node{};
+    ABIter::MatrixNode node_iter{};
 
-    search_full.run(1000, device, state, model, node_full);
+    const auto pair = search.run(max_depth, device, state, model, node);
+    const auto idk = search_iter.run(max_depth, device, state, model, node_iter);
 
-    start = std::chrono::high_resolution_clock::now();
-    search.run(depth, device, state, model, node);
-    end = std::chrono::high_resolution_clock::now();
-    size_t ab_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-    std::cout << "AB; time: " << ab_us << std::endl;
+    // std::cout << "AB: " << pair.first.get_str() << ' ' << pair.second.get_str() << std::endl;
+    // std::cout << "AB Iter: " << node_iter.alpha.get_str() << ' ' << node_iter.beta.get_str() << std::endl;
+    std::cout << "AB: " << node.count_matrix_nodes() << std::endl;
+    std::cout << "AB Iter: " << node_iter.count_matrix_nodes() << std::endl;
 
-    size_t iter_us = 0;
-    for (size_t d = 1; d <= depth; ++d)
-    {
-        start = std::chrono::high_resolution_clock::now();
-        search_iter.run(d, device, state, model, node_iter);
-        end = std::chrono::high_resolution_clock::now();
-        us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-        std::cout << "AB ITER; depth: " << d << " time: " << us << std::endl;
-        iter_us += us;
-    }
-    std::cout << "AB ITER; total time: " << iter_us << std::endl;
-
-    const size_t count = count_matrix_nodes<Types>(&node);
-    const size_t count_iter = count_matrix_nodes<IterTypes>(&node_iter);
-
-
-    double time_ratio = iter_us / (double) ab_us;
-    double count_ratio = count_iter / (double) count;
-
-    assert(node.alpha == node_iter.alpha);
-    assert(node.beta == node_iter.beta);
-
-    std::cout << "count ratio: " << count_ratio << std::endl;
-    std::cout << "time ratio: " << time_ratio << std::endl;
-
-    // std::cout << "V : " << node_full.stats.payoff.get_row_value().get_d() << std::endl;
-    // std::cout << "AB: " << node.alpha.get_d() << ' ' << node.beta.get_d() << std::endl;
-    // std::cout << "IT: " << node_iter.alpha.get_d() << ' ' << node_iter.beta.get_d() << std::endl;
-    std::cout << "C : " << count << " >? " << count_iter << std::endl;
-    
-    // std::cout << "FT Matrix:" << std::endl;
-    // node_full.stats.nash_payoff_matrix.print();
-    // std::cout << "AB Matrix:" << std::endl;
-    // node.chance_data_matrix.print();
-    // std::cout << "IT Matrix:" << std::endl;
-    // node_iter.chance_data_matrix.print();
-    
-    std::cout << std::endl;
+    assert(pair.first == node_iter.alpha);
+    assert(pair.second == node_iter.beta);
 }
 
-SolvedTree::State generate_solved_tree (
-    prng &device,
-    const size_t depth,
-    const size_t actions,
-    const size_t transitions) {
-    NullModel<RandomTree<RandomTreeRationalTypes>>::Model model{};
-    return {{device, depth, actions, actions, transitions}, model};
-}
-
-int main()
-{
-
-    
-
-    Types::Q threshold{0};
-    RandomTreeGenerator<RandomTreeRationalTypes> generator{
-        prng{2},
-        {3, 4},
-        {3, 4, 5},
-        {1},
-        {threshold},
-        std::vector<size_t>(10, 0)};
+int main() {
+    BiasModel::Q threshold{0};
+    RandomTreeGenerator<RandomTreeRationalTypes> generator{prng{2}, {2},      {8, 9},
+                                                           {1},     {threshold}, std::vector<size_t>(10, 0)};
 
     double total_ratio = 0;
     int tries = 0;
 
     size_t counter = 0;
-    for (auto wrapped_state : generator)
-    {
-        auto state = wrapped_state.unwrap<RandomTree<RandomTreeRationalTypes>>();
-
+    for (auto wrapped_state : generator) {
+        const auto state = wrapped_state.unwrap<T>();
         solve_check(state);
     }
 
-    return counter;
+    return 0;
 }
