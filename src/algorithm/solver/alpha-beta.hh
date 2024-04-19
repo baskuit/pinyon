@@ -6,10 +6,6 @@
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
-#include <ranges>
-#include <concepts>
-#include <assert.h>
-
 template <CONCEPT(IsSingleModelTypes, Types), template <typename...> typename NodePair = DefaultNodes>
 struct AlphaBeta : Types
 {

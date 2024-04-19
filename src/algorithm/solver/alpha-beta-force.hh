@@ -5,10 +5,6 @@
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
-#include <ranges>
-#include <concepts>
-#include <assert.h>
-
 template <CONCEPT(IsSingleModelTypes, Types)>
 struct AlphaBetaForce : Types
 {

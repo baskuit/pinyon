@@ -6,7 +6,6 @@
 #include <concepts>
 #include <libpinyon/lrslib.hh>
 #include <libpinyon/math.hh>
-#include <ranges>
 #include <tree/tree.hh>
 #include <types/matrix.hh>
 
