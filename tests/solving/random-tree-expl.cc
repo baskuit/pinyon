@@ -102,12 +102,6 @@ void test_expl_mtp(const std::tuple<SearchTypes...> search_type_tuple, const Sta
     (test_mtp<SearchTypes>(state, solved_state), ...);
 }
 
-template <typename... SearchTypes, typename State, typename SolvedState>
-void test_expl_op(const std::tuple<SearchTypes...> search_type_tuple, const State &state,
-                  const SolvedState &solved_state) {
-    (test_op<SearchTypes>(state, solved_state), ...);
-}
-
 int main() {
     using BaseTypes = MonteCarloModel<RandomTree<>>;
 
@@ -122,7 +116,6 @@ int main() {
     auto st_search_type_tuple = search_type_generator<TreeBandit>(bandit_type_pack, node_template_pack);
     auto mt_search_type_tuple = search_type_generator<TreeBanditThreaded>(bandit_type_pack, node_template_pack);
     auto mtp_search_type_tuple = search_type_generator<TreeBanditThreadPool>(bandit_type_pack, node_template_pack);
-    auto op_search_type_tuple = search_type_generator<OffPolicy>(bandit_type_pack, node_template_pack);
 
     BaseTypes::Model model{0};
 

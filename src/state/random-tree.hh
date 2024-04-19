@@ -2,7 +2,6 @@
 
 #include <libpinyon/dynamic-wrappers.hh>
 #include <libpinyon/generator.hh>
-#include <ranges>
 #include <state/state.hh>
 #include <types/random.hh>
 #include <types/types.hh>
@@ -223,7 +222,7 @@ struct RandomTreeGenerator
                         const std::vector<Rational<>> &chance_threshold_vec, const std::vector<size_t> &trial_vec)
         : CartesianProductGenerator<W::Types::State, std::vector<size_t>, std::vector<size_t>, std::vector<size_t>,
                                     std::vector<Rational<>>, std::vector<size_t>>{
-              constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec} {
+              RandomTreeGenerator::constr, depth_bound_vec, actions_vec, chance_action_vec, chance_threshold_vec, trial_vec} {
         RandomTreeGenerator::device = prng{device};
     }
 };
