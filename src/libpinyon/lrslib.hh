@@ -13,7 +13,7 @@ Value<mpq_class> solve(const Matrix<Value<mpq_class>> &payoff_matrix, Vector<mpq
     const size_t rows = payoff_matrix.rows;
     const size_t cols = payoff_matrix.cols;
     const size_t entries = rows * cols;
-    std::vector<mpq_t *> rpd{entries}, cpd{entries};
+    std::vector<const mpq_t *> rpd{entries}, cpd{entries};
 
     for (size_t i = 0; i < entries; ++i) {
         rpd[i] = reinterpret_cast<mpq_t *>(&payoff_matrix[i].row_value);
