@@ -58,15 +58,10 @@ struct AlphaBeta : Types
 
         const Real min_val{0}; // don't need to use the Game values if you happen to know that State's
         const Real max_val{1};
-        bool (*const terminate)(Types::PRNG &, const Data &) = &dont_terminate;
 
         Search() {}
 
-        Search(Real min_val, Real max_val) : min_val(min_val), max_val(max_val) {}
-
-        Search(
-            Real min_val, Real max_val,
-            bool (*const terminate)(typename Types::PRNG &, const Data &)) : min_val(min_val), max_val(max_val), terminate{terminate} {}
+        Search(Real min_val, Real max_val) : min_val{min_val}, max_val{max_val} {}
 
         auto run(
             const size_t max_depth,
@@ -551,7 +546,7 @@ struct AlphaBeta : Types
                 }
 
                 // go through all chance actions
-                for (; data.next_chance_idx < chance_actions.size() && !terminate(device, data); ++data.next_chance_idx)
+                for (; data.next_chance_idx < chance_actions.size(); ++data.next_chance_idx)
                 {
                     if (chance_actions.size() <= data.next_chance_idx)
                     {
@@ -596,12 +591,6 @@ struct AlphaBeta : Types
         {
             return min_val;
         }
-        // Serialized AlphaBeta, TODO
-
-        static bool dont_terminate(Types::PRNG &, const Data &)
-        {
-            return false;
-            MatrixNode matrix_node;
-        };
+        // Serialized AlphaBeta - see paper
     };
 };

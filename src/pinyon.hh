@@ -43,10 +43,8 @@
 #include <algorithm/tree-bandit/bandit/ucb.hh>
 
 #include <algorithm/solver/full-traversal.hh>
-#include <algorithm/solver/alpha-beta-force.hh>
 #include <algorithm/solver/alpha-beta.hh>
-#include <algorithm/solver/alpha-beta-old.hh>
-#include <algorithm/solver/alpha-beta-iter.hh>
+#include <algorithm/solver/alpha-beta-dev.hh>
 
 // Tree
 

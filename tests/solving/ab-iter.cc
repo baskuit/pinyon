@@ -61,9 +61,9 @@ struct BiasModel : T {
 // };
 
 using AB = AlphaBeta<BiasModel>;
-using ABIter = AlphaBetaIter<BiasModel>;
+using ABIter = AlphaBetaDev<BiasModel>;
 
-void solve_check(const BiasModel::State &state) {
+std::pair<double, double> solve_check(const BiasModel::State &state) {
     assert(state.transitions == 1);
 
     using time_t = decltype(std::chrono::high_resolution_clock::now());
@@ -81,31 +81,52 @@ void solve_check(const BiasModel::State &state) {
     AB::MatrixNode node{};
     ABIter::MatrixNode node_iter{};
 
+    start = std::chrono::high_resolution_clock::now();
     const auto pair = search.run(max_depth, device, state, model, node);
-    const auto idk = search_iter.run(max_depth, device, state, model, node_iter);
+
+    end = std::chrono::high_resolution_clock::now();
+    const size_t time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    // const size_t time_iter = search_iter.run(max_depth, device, state, model, node_iter);
+    // below uses vector input for depths
+    const size_t time_iter = search_iter.run({max_depth/2, max_depth}, device, state, model, node_iter);
 
     // std::cout << "AB: " << pair.first.get_str() << ' ' << pair.second.get_str() << std::endl;
     // std::cout << "AB Iter: " << node_iter.alpha.get_str() << ' ' << node_iter.beta.get_str() << std::endl;
-    std::cout << "AB: " << node.count_matrix_nodes() << std::endl;
-    std::cout << "AB Iter: " << node_iter.count_matrix_nodes() << std::endl;
+    const size_t node_count = node.count_matrix_nodes();
+    const size_t node_iter_count = node_iter.count_matrix_nodes();
+    std::cout << "AB: " << node_count << std::endl;
+    std::cout << "AB Iter: " << node_iter_count << std::endl;
+    std::cout << "AB (time): " << time << std::endl;
+    std::cout << "AB Iter (time): " << time_iter << std::endl;
 
     assert(pair.first == node_iter.alpha);
     assert(pair.second == node_iter.beta);
+
+    return {node_iter_count / (double) node_count, time_iter / (double) time};
 }
 
 int main() {
     BiasModel::Q threshold{0};
-    RandomTreeGenerator<RandomTreeRationalTypes> generator{prng{2}, {2},      {8, 9},
-                                                           {1},     {threshold}, std::vector<size_t>(10, 0)};
+    RandomTreeGenerator<RandomTreeRationalTypes> generator{prng{2}, {5}, {4}, {1}, {threshold}, std::vector<size_t>(20, 0)};
 
-    double total_ratio = 0;
+    double total_count_ratio = 0;
+    double total_time_ratio = 0;
+
     int tries = 0;
 
     size_t counter = 0;
     for (auto wrapped_state : generator) {
         const auto state = wrapped_state.unwrap<T>();
-        solve_check(state);
+        const auto pair = solve_check(state);
+        total_count_ratio += pair.first;
+        total_time_ratio += pair.second;
+        ++counter;
     }
+    const double count_ratio = total_count_ratio / counter;
+    const double time_ratio = total_time_ratio / counter;
+
+    std::cout << "count ratio: " << count_ratio << std::endl;
+    std::cout << "time_ratio: " << time_ratio << std::endl;
 
     return 0;
 }
