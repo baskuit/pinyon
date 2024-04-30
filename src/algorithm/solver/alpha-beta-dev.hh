@@ -5,7 +5,7 @@
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
-template <CONCEPT(IsSingleModelTypes, Types), bool chance_pruning = false>
+template <CONCEPT(IsSingleModelTypes, Types), bool chance_pruning = false, bool cleanup_tree = false>
 struct AlphaBetaDev : Types
 {
     using Real = Types::Real;
@@ -59,6 +59,7 @@ struct AlphaBetaDev : Types
     struct MatrixNode
     {
         unsigned int depth = 0;
+        unsigned int depth_solved_to = 0;
         DataMatrix<Data> chance_data_matrix{};
         Types::VectorReal row_solution{}, col_solution{};
         std::vector<int> I{}, J{};
@@ -206,7 +207,7 @@ struct AlphaBetaDev : Types
                 }
             }
 
-            state.get_actions(); // here for monte carlo model
+            state.get_actions();
 
             if (matrix_node->depth >= max_depth)
             {
@@ -220,107 +221,123 @@ struct AlphaBetaDev : Types
             const size_t rows = state.row_actions.size();
             const size_t cols = state.col_actions.size();
 
-            // instantiate/reset data matrix
-            DataMatrix<Data> &data_matrix = matrix_node->chance_data_matrix;
-            if (data_matrix.size() == 0)
-            {
-                data_matrix.rows = rows;
-                data_matrix.cols = cols;
-                for (int i = 0; i < rows * cols; ++i)
-                {
-                    data_matrix.emplace_back();
-                }
-            }
-            else
-            {
-                for (auto &data : data_matrix)
-                {
-                    data.alpha_explored = Real{0};
-                    data.beta_explored = Real{0};
-                    data.unexplored = typename Types::Prob{1};
-                }
-            }
-
             std::vector<int> &I = matrix_node->I;
             std::vector<int> &J = matrix_node->J;
-            I.clear();
-            J.clear();
-            // current best strategy. used to calculate best response values
-            // entries correspond to I, J entires and order. It is a permuted submatrix of the full matrix, basically.
             typename Types::VectorReal &row_solution = matrix_node->row_solution;
             typename Types::VectorReal &col_solution = matrix_node->col_solution;
 
-            int latest_row_idx = 0;
-            int latest_col_idx = 0;
+            int latest_row_idx;
+            int latest_col_idx;
             bool smaller_bounds = false;
             bool new_action = true;
             bool solved_exactly = true;
 
-            // meaning has been seen before
-            if (row_solution.size() > 0)
+            // set up subgame
             {
-                for (int row_idx = 0; row_idx < rows; ++row_idx)
+                DataMatrix<Data> &data_matrix = matrix_node->chance_data_matrix;
+                if (data_matrix.size() == 0)
                 {
-                    if (row_solution[row_idx] > Real{0})
+                    data_matrix.rows = rows;
+                    data_matrix.cols = cols;
+                    for (int i = 0; i < rows * cols; ++i)
                     {
-                        I.push_back(row_idx);
+                        data_matrix.emplace_back();
                     }
                 }
-                for (int col_idx = 0; col_idx < cols; ++col_idx)
+                else
                 {
-                    if (col_solution[col_idx] > Real{0})
+                    if (matrix_node->depth_solved_to < max_depth)
                     {
-                        J.push_back(col_idx);
+                        for (auto &data : data_matrix)
+                        {
+                            data.alpha_explored = Real{0};
+                            data.beta_explored = Real{0};
+                            data.unexplored = typename Types::Prob{1};
+                        }
                     }
                 }
-            }
 
-            for (const int row_idx : I)
-            {
-                for (const int col_idx : J)
+                if (I.size() == 0)
                 {
-                    solved_exactly &= try_solve_chance_branches(max_depth, device, state, model, matrix_node, row_idx, col_idx);
+                    I.push_back(latest_row_idx = device.random_int(rows));
+                }
+                else
+                {
+                    std::vector<int> temp{};
+                    for (int row_idx = 0; row_idx < row_solution.size(); ++row_idx)
+                    {
+                        if (row_solution[row_idx] > 0)
+                        {
+                            temp.push_back(I[row_idx]);
+                        }
+                    }
+                    I = temp;
+                }
+                if (J.size() == 0)
+                {
+                    J.push_back(latest_col_idx = device.random_int(cols));
+                }
+                else
+                {
+                    std::vector<int> temp{};
+                    for (int col_idx = 0; col_idx < col_solution.size(); ++col_idx)
+                    {
+                        if (col_solution[col_idx] > 0)
+                        {
+                            temp.push_back(J[col_idx]);
+                        }
+                    }
+                    J = temp;
+                }
+
+                for (const int row_idx : I)
+                {
+                    for (const int col_idx : J)
+                    {
+                        solved_exactly &= try_solve_chance_branches(max_depth, device, state, model, matrix_node, row_idx, col_idx);
+                    }
                 }
             }
 
             while (!fuzzy_equals(alpha, beta))
             {
                 // solve newly expanded and explored game
-
-                int entry_idx = 0;
-                if (solved_exactly)
                 {
-                    typename Types::MatrixValue matrix{I.size(), J.size()};
-                    for (auto row_idx : I)
+                    int entry_idx = 0;
+                    if (solved_exactly)
                     {
-                        for (auto col_idx : J)
+                        typename Types::MatrixValue matrix{I.size(), J.size()};
+                        for (auto row_idx : I)
                         {
-                            const Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx);
-                            matrix[entry_idx] = data.alpha_explored;
-                            ++entry_idx;
+                            for (auto col_idx : J)
+                            {
+                                const Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx);
+                                matrix[entry_idx] = data.alpha_explored;
+                                ++entry_idx;
+                            }
                         }
-                    }
-                    LRSNash::solve(matrix, row_solution, col_solution);
+                        LRSNash::solve(matrix, row_solution, col_solution);
 
-                    // matrix.print();
-                }
-                else
-                {
-                    typename Types::MatrixValue alpha_matrix{I.size(), J.size()}, beta_matrix{I.size(), J.size()};
-                    for (auto row_idx : I)
-                    {
-                        for (auto col_idx : J)
-                        {
-                            const Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx);
-                            alpha_matrix[entry_idx] = static_cast<Real>(data.alpha_explored + data.unexplored * min_val);
-                            beta_matrix[entry_idx] = static_cast<Real>(data.beta_explored + data.unexplored * max_val);
-                            ++entry_idx;
-                        }
+                        // matrix.print();
                     }
-                    typename Types::VectorReal temp;
-                    LRSNash::solve(alpha_matrix, row_solution, temp);
-                    temp.clear();
-                    LRSNash::solve(beta_matrix, temp, col_solution);
+                    else
+                    {
+                        typename Types::MatrixValue alpha_matrix{I.size(), J.size()}, beta_matrix{I.size(), J.size()};
+                        for (auto row_idx : I)
+                        {
+                            for (auto col_idx : J)
+                            {
+                                const Data &data = matrix_node->chance_data_matrix.get(row_idx, col_idx);
+                                alpha_matrix[entry_idx] = static_cast<Real>(data.alpha_explored + data.unexplored * min_val);
+                                beta_matrix[entry_idx] = static_cast<Real>(data.beta_explored + data.unexplored * max_val);
+                                ++entry_idx;
+                            }
+                        }
+                        typename Types::VectorReal temp;
+                        LRSNash::solve(alpha_matrix, row_solution, temp);
+                        temp.clear();
+                        LRSNash::solve(beta_matrix, temp, col_solution);
+                    }
                 }
 
                 std::pair<int, Real>
@@ -346,10 +363,12 @@ struct AlphaBetaDev : Types
                 // prune this node if no best response is as good as alpha/beta
                 if (iv.first == -1)
                 {
+                    throw std::runtime_error("this should not happen");
                     return {min_val, min_val};
                 }
                 if (jv.first == -1)
                 {
+                    throw std::runtime_error("this should not happen");
                     return {max_val, max_val};
                 }
 
@@ -361,11 +380,21 @@ struct AlphaBetaDev : Types
                 if (std::find(I.begin(), I.end(), latest_row_idx) == I.end())
                 {
                     I.push_back(latest_row_idx);
+                    for (const int row_idx : I)
+                    {
+                        Data &data = matrix_node->chance_data_matrix.get(row_idx, latest_col_idx);
+                        solved_exactly &= try_solve_chance_branches(max_depth, device, state, model, matrix_node, row_idx, latest_col_idx);
+                    }
                     new_action = true;
                 }
                 if (std::find(J.begin(), J.end(), latest_col_idx) == J.end())
                 {
                     J.push_back(latest_col_idx);
+                    for (const int col_idx : J)
+                    {
+                        Data &data = matrix_node->chance_data_matrix.get(latest_row_idx, col_idx);
+                        solved_exactly &= try_solve_chance_branches(max_depth, device, state, model, matrix_node, latest_row_idx, col_idx);
+                    }
                     new_action = true;
                 }
                 if (jv.second > alpha)
@@ -382,19 +411,6 @@ struct AlphaBetaDev : Types
                 if (!smaller_bounds && !new_action)
                 {
                     break;
-                }
-
-                // move the sub game calculation stuff down here
-                for (const int row_idx : I)
-                {
-                    Data &data = matrix_node->chance_data_matrix.get(row_idx, latest_col_idx);
-                    solved_exactly &= try_solve_chance_branches(max_depth, device, state, model, matrix_node, row_idx, latest_col_idx);
-                }
-
-                for (const int col_idx : J)
-                {
-                    Data &data = matrix_node->chance_data_matrix.get(latest_row_idx, col_idx);
-                    solved_exactly &= try_solve_chance_branches(max_depth, device, state, model, matrix_node, latest_row_idx, col_idx);
                 }
             }
 
@@ -518,6 +534,7 @@ struct AlphaBetaDev : Types
                             Branch &new_branch = data.branches.at(obs_hash);
 
                             new_branch.matrix_node->depth = matrix_node->depth + 1;
+                            new_branch.matrix_node->depth_solved_to = max_depth;
                             if constexpr (chance_pruning)
                             {
                                 new_branch.matrix_node->chance_prob = matrix_node->chance_prob * new_branch.prob;
@@ -690,6 +707,7 @@ struct AlphaBetaDev : Types
                             Branch &new_branch = data.branches.at(obs_hash);
 
                             new_branch.matrix_node->depth = matrix_node->depth + 1;
+                            new_branch.matrix_node->depth_solved_to = max_depth;
                             if constexpr (chance_pruning)
                             {
                                 new_branch.matrix_node->chance_prob = matrix_node->chance_prob * new_branch.prob;
@@ -794,16 +812,11 @@ struct AlphaBetaDev : Types
             const auto row_action = state.row_actions[row_idx];
             const auto col_action = state.col_actions[col_idx];
 
-            // iterative deepening
+            if (matrix_node->depth_solved_to < max_depth)
             {
                 for (auto &pair : data.branches)
                 {
                     auto &branch = pair.second;
-                    if (branch.depth_solved_to >= max_depth)
-                    {
-                        continue;
-                    }
-
                     typename Types::State state_copy{state};
                     state_copy.randomize_transition(branch.seed);
                     state_copy.apply_actions(row_action, col_action);
@@ -821,7 +834,6 @@ struct AlphaBetaDev : Types
                     data.alpha_explored += alpha_beta.first;
                     data.beta_explored += alpha_beta.second;
                     data.unexplored -= branch.prob;
-                    branch.depth_solved_to = max_depth;
                 }
             }
 
@@ -842,6 +854,7 @@ struct AlphaBetaDev : Types
                     Branch &new_branch = data.branches.at(obs_hash);
 
                     new_branch.matrix_node->depth = matrix_node->depth + 1;
+                    new_branch.matrix_node->depth_solved_to = max_depth;
                     if constexpr (chance_pruning)
                     {
                         new_branch.matrix_node->chance_prob = matrix_node->chance_prob * new_branch.prob;
@@ -859,7 +872,6 @@ struct AlphaBetaDev : Types
                     data.alpha_explored += alpha_beta.first * new_branch.prob;
                     data.beta_explored += alpha_beta.second * new_branch.prob;
                     data.unexplored -= new_branch.prob;
-                    new_branch.depth_solved_to = max_depth;
                 }
             }
 
