@@ -11,19 +11,12 @@
 #include <vector>
 
 /*
-
 Data is stored in 3 places
 
-  - In the tree
-    we try to not put things here. only stuff needed between depth/chance iteration
-    namely: I, J (which define subgames and also store old strategies therein)
-
-  - In the Head
-    either constant for the search or can be inc/dec as the search traverses the tree
-    : device, base state, model, base tries/max_unexplored etc
-
-  - In the body
-    data thats local to each node being solved.
+- Tree (Persists between searches)
+- Root (i.e. initial search params)
+- Head (info that is allocated once and inc/dec as we explore)
+- Body (initialized when solving a matrix node)
 */
 
 struct State {
@@ -41,11 +34,61 @@ struct Device {
     }
 };
 
+struct Model {};
+
 struct MatrixNode;
-struct ChanceNode;
-struct RootData;
-struct HeadData;
-struct BodyData;
+
+struct RootData {
+    const uint32_t max_depth;
+    Device *device;
+    Model *model;
+    const State state;
+
+    const uint32_t min_tries;
+    const uint32_t max_tries;
+    const double max_unexplored;
+    const double min_chance_prob;
+};
+
+struct HeadData {
+    uint32_t min_tries;
+    uint32_t max_tries;
+    double max_unexplored;
+
+    uint32_t depth;
+
+    void step_forward() {
+        ++depth;
+    }
+
+    void step_back() {
+        --depth;
+    }
+};
+
+// Data used in the function body of the solve method
+struct BodyData {
+    MatrixNode *matrix_node;
+    State state;
+    mpq_class alpha{0};
+    mpq_class beta{1};
+
+    struct ChanceStats {
+        mpq_class alpha_explored{0};
+        mpq_class beta_explored{0};
+        mpq_class unexplored{1};
+    };
+
+    std::vector<ChanceStats> chance_stat_matrix{};
+
+    std::vector<mpq_class> alpha_matrix;
+    std::vector<mpq_class> beta_matrix;
+    std::vector<mpq_class> row_strategy;
+    std::vector<mpq_class> col_strategy;
+
+    bool smaller_bounds;
+    bool new_action;
+};
 
 struct Branch {
     std::unique_ptr<MatrixNode> matrix_node;
@@ -63,16 +106,19 @@ struct ChanceNode {
 
     Branch *try_get_new_branch(
         const RootData &root_data,
+        const HeadData &head_data,
         const BodyData &body_data,
         BodyData &new_body_data,
         const uint8_t row_idx, const uint8_t col_idx) {
         if (branch_index < sorted_branches.size()) {
             return sorted_branches[branch_index++];
         }
-        auto &chance_data = body_data.chance_stat_matrix[row_idx * matrix_] while (
+        auto &chance_data = body_data.chance_stat_matrix[row_idx * 4 + col_idx];
+        while (
             tries <= root_data.max_tries &&
-            (tries <= root_data.min_tries || root_data.unexplored >= root_data.max_unexplored) &&
-            > 0) {
+            (tries <= head_data.min_tries || chance_data.unexplored >= head_data.max_unexplored) &&
+            chance_data.unexplored > 0) {
+
             new_body_data.state = body_data.state;
             const uint64_t seed = root_data.device->uniform_64();
             new_body_data.state.randomize_transition(seed);
@@ -129,60 +175,6 @@ struct ChanceNodeMatrix {
             delete data;
         }
     }
-};
-
-struct Model {};
-
-struct RootData {
-    const uint32_t max_depth;
-    Device *device;
-    Model *model;
-    const State state;
-
-    const uint32_t min_tries;
-    const uint32_t max_tries;
-    const double max_unexplored;
-    const double min_chance_prob;
-};
-
-struct HeadData {
-    uint32_t min_tries;
-    uint32_t max_tries;
-    double max_unexplored;
-
-    uint32_t depth;
-
-    void step_forward() {
-        ++depth;
-    }
-
-    void step_back() {
-        --depth;
-    }
-};
-
-// Data used in the function body of the solve method
-struct BodyData {
-    MatrixNode *matrix_node;
-    State state;
-    mpq_class alpha{0};
-    mpq_class beta{1};
-
-    struct ChanceStats {
-        mpq_class alpha_explored{0};
-        mpq_class beta_explored{0};
-        mpq_class unexplored{1};
-    };
-
-    std::vector<ChanceStats> chance_stat_matrix{};
-
-    std::vector<mpq_class> alpha_matrix;
-    std::vector<mpq_class> beta_matrix;
-    std::vector<mpq_class> row_strategy;
-    std::vector<mpq_class> col_strategy;
-
-    bool smaller_bounds;
-    bool new_action;
 };
 
 struct MatrixNode {
@@ -243,11 +235,18 @@ struct MatrixNode {
 struct Search {
     BodyData initial_data;
 
-    void solve_chance_node(MatrixNode *matrix_node, const RootData &root_data, const HeadData &head_data, BodyData &body_data, BodyData &new_body_data, const uint8_t row_idx, const uint8_t col_idx) {
+    void solve_chance_node(
+        MatrixNode *matrix_node,
+        const RootData &root_data,
+        HeadData &head_data,
+        BodyData &body_data,
+        BodyData &new_body_data,
+        const uint8_t row_idx, const uint8_t col_idx) {
+
         ChanceNode &chance_node = matrix_node->chance_node_matrix(row_idx, col_idx);
         auto &chance_data = body_data.chance_stat_matrix[0];
         Branch *new_branch;
-        while (new_branch = chance_node.try_get_new_branch(root_data, body_data, new_body_data, row_idx, col_idx)) {
+        while (new_branch = chance_node.try_get_new_branch(root_data, head_data, body_data, new_body_data, row_idx, col_idx)) {
             if (new_body_data.state.is_terminal()) {
                 mpq_class prob;
                 // chance_data.alpha_explored -= state.get_payoff * prob;
@@ -261,28 +260,33 @@ struct Search {
                 // chance_data.beta_explored -= state.get_payoff * prob;
                 chance_data.unexplored -= prob;
             }
-            auto [a, b] = this->alpha_beta(body_data, head_data);
+            auto [a, b] = this->alpha_beta(matrix_node, root_data, head_data, body_data);
             chance_data.unexplored -= new_branch->prob;
             chance_data.unexplored.canonicalize();
         }
     }
 
     void initialize_submatrix(
-        MatrixNode *matrix_node) {
+        MatrixNode *matrix_node,
+        const RootData &root_data,
+        HeadData &head_data,
+        BodyData &body_data,
+        BodyData &new_body_data) {
+
         for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
             for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
-                // solve_chance_node(MatrixNode *matrix_node, const RootData &root_data, const HeadData &head_data, BodyData &body_data, BodyData &new_body_data, const uint8_t row_idx, const uint8_t col_idx) {
+                solve_chance_node(
+                    matrix_node, root_data, head_data, body_data, new_body_data, i, j);
             }
         }
     }
 
     // pass a reference to best score
-    void row_best_response(mpq_class &alpha, MatrixNode *matrix_node) {
+    void row_best_response(mpq_class &alpha, MatrixNode *matrix_node, BodyData &body_data) {
         struct BestResponse {
-            struct
-                std::vector<mpq_class>
-                    unexplored {};
-            std::vector<mpq_class> unexplored{};
+            struct Data {
+            };
+            std::vector<Data> data_vector{};
         };
 
         for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
@@ -292,7 +296,7 @@ struct Search {
         }
     }
 
-    void col_best_response(mpq_class &beta, MatrixNode *matrix_node) {
+    void col_best_response(mpq_class &beta, MatrixNode *matrix_node, BodyData &body_data) {
         struct BestResponse {
         };
     }
@@ -302,9 +306,9 @@ struct Search {
     std::pair<mpq_class, mpq_class>
     alpha_beta(
         MatrixNode *matrix_node,
-        RootData &root_data,
-        BodyData &body_data,
-        HeadData &head_data) {
+        const RootData &root_data,
+        HeadData &head_data,
+        BodyData &body_data) {
 
         head_data.step_forward();
 
@@ -314,15 +318,15 @@ struct Search {
         BodyData next_body_data;
         // copy over state or w/e
 
-        this->initialize_submatrix(matrix_node);
+        this->initialize_submatrix(matrix_node, root_data, head_data, body_data, next_body_data);
         // if new node, expand. otherwise populate the old NE sub matrix
 
         while (body_data.alpha < body_data.beta) {
 
             auto [a0, b0] = this->solve_subgame();
 
-            this->row_best_response(a0);
-            this->col_best_response(b0);
+            this->row_best_response(a0, matrix_node, body_data);
+            this->col_best_response(b0, matrix_node, body_data);
 
             body_data.alpha = std::min(b0, body_data.alpha);
             body_data.beta = std::min(a0, body_data.beta);
