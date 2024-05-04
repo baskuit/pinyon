@@ -19,13 +19,24 @@ Data is stored in 3 places
 - Body (initialized when solving a matrix node)
 */
 
+struct Obs {};
+
+uint64_t hash(Obs) {
+    return {};
+}
+
 struct State {
+    Obs obs{};
+
     void randomize_transition(uint64_t seed) {}
     std::vector<uint8_t> row_actions{}, col_actions{};
     template <typename T>
     void apply_actions(T, T) {}
     bool is_terminal() { return {}; }
     void get_actions() {}
+    mpq_class get_payoff () const {return {};}
+    mpq_class get_prob () const {return {};}
+    const Obs& get_obs () const {return obs;}
 };
 
 struct Device {
@@ -54,21 +65,21 @@ struct HeadData {
     uint32_t min_tries;
     uint32_t max_tries;
     double max_unexplored;
+    double min_chance_prob;
 
     uint32_t depth;
 
     void step_forward() {
         ++depth;
     }
-
     void step_back() {
         --depth;
     }
 };
 
-// Data used in the function body of the solve method
 struct BodyData {
-    MatrixNode *matrix_node;
+    uint8_t rows;
+    uint8_t cols;
     State state;
     mpq_class alpha{0};
     mpq_class beta{1};
@@ -78,7 +89,6 @@ struct BodyData {
         mpq_class beta_explored{0};
         mpq_class unexplored{1};
     };
-
     std::vector<ChanceStats> chance_stat_matrix{};
 
     std::vector<mpq_class> alpha_matrix;
@@ -110,7 +120,13 @@ struct ChanceNode {
         const BodyData &body_data,
         BodyData &new_body_data,
         const uint8_t row_idx, const uint8_t col_idx) {
+
         if (branch_index < sorted_branches.size()) {
+            new_body_data.state = body_data.state;
+            new_body_data.state.randomize_transition(sorted_branches[branch_index]->seed);
+            new_body_data.state.apply_actions(
+                new_body_data.state.row_actions[row_idx],
+                new_body_data.state.col_actions[col_idx]);
             return sorted_branches[branch_index++];
         }
         auto &chance_data = body_data.chance_stat_matrix[row_idx * 4 + col_idx];
@@ -125,10 +141,11 @@ struct ChanceNode {
             new_body_data.state.apply_actions(
                 new_body_data.state.row_actions[row_idx],
                 new_body_data.state.col_actions[col_idx]);
-            uint64_t obs{}; // TODO
-            double prob{};
-            if (branches.find(obs) == branches.end()) {
-                branches.try_emplace(obs, prob, seed);
+
+            Obs obs = new_body_data.state.get_obs();
+            uint64_t h = hash(obs);
+            if (branches.find(h) == branches.end()) {
+                branches.try_emplace(h, new_body_data.state.get_prob().get_d(), seed);
                 Branch *new_branch = &branches.at(seed);
                 return new_branch;
             }
@@ -190,13 +207,12 @@ struct MatrixNode {
         operator uint8_t() const {
             return index;
         }
-
         bool operator<(const ActionProb &a) const {
             return discrete_prob < a.discrete_prob;
         }
     };
 
-    template <typename ActionData = uint8_t>
+    template <typename ActionData = ActionProb>
     struct ActionSet {
         std::vector<ActionData> action_indices{};
         uint8_t boundary{0};
@@ -249,8 +265,8 @@ struct Search {
         while (new_branch = chance_node.try_get_new_branch(root_data, head_data, body_data, new_body_data, row_idx, col_idx)) {
             if (new_body_data.state.is_terminal()) {
                 mpq_class prob;
-                // chance_data.alpha_explored -= state.get_payoff * prob;
-                // chance_data.beta_explored -= state.get_payoff * prob;
+                chance_data.alpha_explored -= new_body_data.state.get_payoff() * prob;
+                chance_data.beta_explored -= new_body_data.state.get_payoff() * prob;
                 chance_data.unexplored -= prob;
             }
             if (head_data.depth + 1 == root_data.max_depth) {
@@ -274,9 +290,10 @@ struct Search {
         BodyData &new_body_data) {
 
         for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
+            const uint8_t row_idx = matrix_node->I.action_indices[i].index;
             for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
-                solve_chance_node(
-                    matrix_node, root_data, head_data, body_data, new_body_data, i, j);
+                const uint8_t col_idx = matrix_node->J.action_indices[j].index;
+                solve_chance_node(matrix_node, root_data, head_data, body_data, new_body_data, row_idx, col_idx);
             }
         }
     }
