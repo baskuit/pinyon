@@ -11,6 +11,17 @@
 #include <vector>
 
 /*
+TODO:
+- new solving. should also return the best response of the subgame actions (in the sense we might be able to modify lrsnash so that it provides this for us)
+The above should help the performance of
+- BEST RESPONSE ()
+    - Which to check first if cant modify lrsnash? Subgame or out-of-subgame actions?
+    - make sure we can use the payoff from solving as an improved bound (vs just using current alpha/beta)
+    - can we save work when one players strategy does not change? E.g. row_best_response using old info when col_strategy is the same.
+    - do we add solving of newly added chance nodes (via inclusion of new best response) in this function? (prolly)
+*/
+
+/*
 
 Overview and explanation of data structures
 
