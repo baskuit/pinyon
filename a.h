@@ -1,14 +1,12 @@
-#include <algorithm>
-#include <assert.h>
 #include <cstdint>
 #include <cstdlib>
 #include <gmpxx.h>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <set>
 #include <unordered_map>
 #include <vector>
+#include <memory>
+#include <algorithm>
+#include <iostream>
+#include <assert.h>
 
 /*
 TODO:
