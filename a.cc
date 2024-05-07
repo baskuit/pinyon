@@ -1,123 +1,4 @@
-#include <algorithm>
-#include <assert.h>
-#include <cstdint>
-#include <cstdlib>
-#include <gmpxx.h>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <set>
-#include <unordered_map>
-#include <vector>
-
-/*
-TODO:
-- new solving. should also return the best response of the subgame actions (in the sense we might be able to modify lrsnash so that it provides this for us)
-The above should help the performance of
-- BEST RESPONSE ()
-    - Which to check first if cant modify lrsnash? Subgame or out-of-subgame actions?
-    - make sure we can use the payoff from solving as an improved bound (vs just using current alpha/beta)
-    - can we save work when one players strategy does not change? E.g. row_best_response using old info when col_strategy is the same.
-    - do we add solving of newly added chance nodes (via inclusion of new best response) in this function? (prolly)
-*/
-
-/*
-
-Overview and explanation of data structures
-
-BaseData
-{
-    * 'what position to search'
-    * 'what depth to run to'
-    * 'what random device, what model to inference'
-}
-
-Matrix/Chance Node
-{
-    The priority here is reducing the size of all of this data as much as possible.
-    Anything that can be stored elsewhere will be
-
-    [] = Matrix Node
-    O = Chance Node
-
-    []
-    | |
-    | O ______
-    O _______
-    |  \  \  \ (seed, quantized prob)
-    |  \  \  \
-    [] [] [] []
-
-    MatrixNode
-    {
-        'c-style array to ChanceNodes'
-        'last searches action and strategy info for iterative deepning'
-    }
-
-    ChanceNode
-    {
-        'std::unordered_map taking hashed transition obs and storing Branches'
-        'vector of pointers to those same branches, ordered by transition probability (for faster value rediscovery)'
-        'iterator int for that vector'
-        'counter for the number of random transitions tried'
-    }
-
-    Branch
-    {
-        'std::unique_ptr to MatrixNode at the "end of the branch"'
-        'random seed to keep State in sync with the tree'
-        'quantized prob for branch ordering'
-    }
-}
-
-TempData
-{
-    All things related to the algorithms run time
-
-    |DEPTH: 0          |  -> |         | ->  |         |
-    |
-
-    'subgame optimistic/pessimistic value matrices'
-}
-
-*/
-
-struct Obs {};
-
-uint64_t hash(Obs) {
-    return {};
-}
-
-struct State {
-    Obs obs{};
-
-    void randomize_transition(uint64_t seed) {}
-    std::vector<uint8_t> row_actions{}, col_actions{};
-    template <typename T>
-    void apply_actions(T, T) {}
-    bool is_terminal() { return {}; }
-    void get_actions() {}
-    mpq_class get_payoff() const { return {}; }
-    mpq_class get_prob() const { return {}; }
-    const Obs &get_obs() const { return obs; }
-};
-
-struct Device {
-    uint64_t uniform_64() {
-        return rand();
-    }
-};
-
-struct ModelOutput {
-    mpq_class value{};
-    // std::vector<doulbe> policy{};
-};
-
-struct Model {
-    ModelOutput inference(State &&state) const {
-        return {};
-    }
-};
+#include "a.h"
 
 struct MatrixNode;
 
@@ -150,8 +31,7 @@ struct HeadData {
 };
 
 struct TempData {
-    uint16_t rows;
-    uint16_t cols;
+    uint16_t rows, cols;
     State state;
     mpq_class alpha{0};
     mpq_class beta{1};
@@ -170,14 +50,14 @@ struct TempData {
     std::vector<mpq_class> col_strategy{};
 
     bool must_break{false};
+    bool new_row_action{false};
+    bool new_col_action{false};
 
-    // void init (const uint16_t rows, const uint16_t cols) {
-    //     this->rows = rows;
-    //     this->cols = cols;
-    //     chance_stat_matrix.resize(rows * cols);
-    //     smaller_bounds = false;
-    //     new_action = false;s
-    // }
+    void reset_flags() {
+        must_break = true;
+        new_row_action = false;
+        new_col_action = false;
+    }
 };
 
 struct Branch {
@@ -234,11 +114,6 @@ struct ChanceNode {
         return nullptr;
     }
 
-    void reset_stats_for_reexploration() {
-        std::sort(sorted_branches.begin(), sorted_branches.end(), [](const Branch *x, const Branch *y) { return x->p > y->p; });
-        branch_index = 0;
-    }
-
     void total_reset() {
         branches.clear();
         sorted_branches.clear();
@@ -249,11 +124,10 @@ struct ChanceNode {
 
 // std::vector<ChanceNode> complains about copy contructor, presumably because of std::move
 struct ChanceNodeMatrix {
-    uint8_t rows;
-    uint8_t cols;
+    uint8_t rows, cols;
     ChanceNode *data;
 
-    void fill(const uint8_t rows, const uint8_t cols) {
+    void init(const uint8_t rows, const uint8_t cols) {
         this->rows = rows;
         this->cols = cols;
         data = new ChanceNode[rows * cols];
@@ -279,13 +153,13 @@ struct MatrixNode {
     ChanceNodeMatrix chance_node_matrix;
 
     struct ActionProb {
-        uint8_t index;
+        uint8_t idx;
         uint8_t discrete_prob{};
 
-        ActionProb(const uint8_t index) : index{index} {}
+        ActionProb(const uint8_t index) : idx{index} {}
 
         operator uint8_t() const {
-            return index;
+            return idx;
         }
         bool operator<(const ActionProb &a) const {
             return discrete_prob < a.discrete_prob;
@@ -331,11 +205,7 @@ struct Search {
 
     void update_chance_stats(
         TempData::ChanceStats &stats,
-        MatrixNode *next_matrix_node,
-        BaseData &base_data,
-        HeadData &head_data,
-        TempData &temp_data,
-        TempData &next_temp_data) {
+        MatrixNode *next_matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) {
 
         const mpq_class prob = next_temp_data.state.get_prob();
         stats.unexplored -= prob;
@@ -359,11 +229,7 @@ struct Search {
     }
 
     void solve_chance_node(
-        MatrixNode *matrix_node,
-        BaseData &base_data,
-        HeadData &head_data,
-        TempData &temp_data,
-        TempData &next_temp_data,
+        MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data,
         const uint8_t row_idx, const uint8_t col_idx) {
 
         auto &chance_data = temp_data.chance_stat_matrix[0];
@@ -376,57 +242,124 @@ struct Search {
 
     std::pair<mpq_class, mpq_class>
     solve_subgame(
-        MatrixNode *matrix_node,
-        BaseData &base_data,
-        HeadData &head_data,
-        TempData &temp_data,
-        TempData &next_temp_data) {
+        MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) {
 
         return {};
     }
 
     void initialize_submatrix(
-        MatrixNode *matrix_node,
-        BaseData &base_data,
-        HeadData &head_data,
-        TempData &temp_data,
-        TempData &next_temp_data) {
+        MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) {
 
         if (!matrix_node->chance_node_matrix.rows) {
-            matrix_node->chance_node_matrix.fill(temp_data.state.row_actions.size(), temp_data.state.col_actions.size());
+            matrix_node->chance_node_matrix.init(temp_data.state.row_actions.size(), temp_data.state.col_actions.size());
         }
 
         // prune here possibly
 
         for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
-            const uint8_t row_idx = matrix_node->I.action_indices[i].index;
+            const uint8_t row_idx = matrix_node->I.action_indices[i].idx;
             for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
-                const uint8_t col_idx = matrix_node->J.action_indices[j].index;
+                const uint8_t col_idx = matrix_node->J.action_indices[j].idx;
                 solve_chance_node(matrix_node, base_data, head_data, temp_data, next_temp_data, row_idx, col_idx);
             }
         }
     }
 
     // pass a reference to best score
-    void row_best_response(mpq_class &alpha, MatrixNode *matrix_node, TempData &temp_data) {
+    void row_best_response(
+        mpq_class &alpha,
+        MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) {
+
         struct BestResponse {
-            struct Data {
-            };
-            std::vector<Data> data_vector{};
+            uint8_t row_idx, col_idx;
+            mpq_class value{};
+            std::vector<mpq_class> priority_vector{};
         };
+
+        uint8_t new_action_index;
 
         for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
         }
 
+        // actions not in I
         for (uint8_t i = matrix_node->I.boundary; i < matrix_node->chance_node_matrix.rows; ++i) {
-        }
+            BestResponse data{};
+            data.row_idx = matrix_node->I.action_indices[i].idx;
+            data.priority_vector.resize(matrix_node->J.boundary);
 
-        temp_data.must_break = false;
+            // set up priority, score vector
+            {
+                for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                    if (matrix_node->J.action_indices[j].discrete_prob == 0) {
+                        continue;
+                    }
+                    data.col_idx = matrix_node->J.action_indices[j].idx;
+                    uint8_t chance_stat_index = data.row_idx * temp_data.cols + data.col_idx;
+
+                    data.priority_vector[j] =
+                        temp_data.chance_stat_matrix[chance_stat_index].unexplored *
+                        temp_data.col_strategy[j];
+                }
+            }
+
+            // returns 0x1111111 once the support chance nodes are full explored
+            const auto get_max_priority_index = [&]() {
+                uint8_t max_index = 0xFF;
+                mpq_class max_prio{-1};
+                for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                    if (data.priority_vector[j] > std::max(mpq_class{}, max_prio)) {
+                        max_index = j;
+                    }
+                }
+                return max_index;
+            };
+
+            // explore as much as possible
+            for (uint8_t j; (j = get_max_priority_index()) != 0xFF;) {
+                ChanceNode &chance_node = matrix_node->chance_node_matrix(data.row_idx, j);
+                Branch *branch = chance_node.try_get_new_branch(base_data, head_data, temp_data, next_temp_data, data.row_idx, data.col_idx);
+                if (branch == nullptr) {
+                    data.priority_vector[j] = 0;
+                } else [[likely]] {
+                    const mpq_class prob = next_temp_data.state.get_prob();
+                    const uint8_t entry_idx = data.row_idx * temp_data.cols + data.col_idx;
+                    update_chance_stats(temp_data.chance_stat_matrix[entry_idx], branch->matrix_node.get(), base_data, head_data, temp_data, next_temp_data);
+                    data.priority_vector[j] -= prob * temp_data.col_strategy[data.col_idx]; // TODO maybe add prob to temp_data
+                    data.value += next_temp_data.beta * prob * temp_data.col_strategy[data.col_idx];
+                }
+            }
+
+            for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                if (matrix_node->J.action_indices[j].discrete_prob == 0) {
+                    continue;
+                }
+                const uint8_t entry_idx = data.row_idx * temp_data.cols + data.col_idx;
+                data.value += temp_data.chance_stat_matrix[entry_idx].beta_explored * temp_data.col_strategy[matrix_node->J.action_indices[j].idx];
+            }
+        }
     }
 
-    void col_best_response(mpq_class &beta, MatrixNode *matrix_node, TempData &temp_data) {
+    void col_best_response(
+        mpq_class &alpha,
+        MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) {
+
         struct BestResponse {
         };
+    }
+
+    void sort_branches_and_reset(MatrixNode *matrix_node) const {
+        for (uint8_t i = 0; i < matrix_node->chance_node_matrix.rows * matrix_node->chance_node_matrix.cols; ++i) {
+            // chance_data.sort_branches_and_reset_index();
+            auto &chance_data = matrix_node->chance_node_matrix.data[i];
+            // because the branches are added by sampling, this array should be mostly sorted on its own
+            // idk if std::sort takes full advantage of this, and that only a tail of the array is unsorted;
+            // TODO
+            std::sort(
+                chance_data.sorted_branches.begin(),
+                chance_data.sorted_branches.end(),
+                [](const Branch *x, const Branch *y) { return x->p > y->p; });
+            chance_data.branch_index = 0;
+        }
     }
 
     std::pair<mpq_class, mpq_class>
@@ -440,9 +373,8 @@ struct Search {
 
         temp_data.state.get_actions();
 
-        // allocate for all next function calls
+        // only allocate for all next function calls, modify in other functions when necessary
         TempData next_temp_data;
-        // copy over state or w/e
 
         this->initialize_submatrix(matrix_node, base_data, head_data, temp_data, next_temp_data);
         // if new node, expand. otherwise populate the old NE sub matrix
@@ -451,16 +383,14 @@ struct Search {
 
             auto [a0, b0] = this->solve_subgame(matrix_node, base_data, head_data, temp_data, next_temp_data);
 
-            this->row_best_response(a0, matrix_node, temp_data);
-            this->col_best_response(b0, matrix_node, temp_data);
+            this->row_best_response(a0, matrix_node, base_data, head_data, temp_data, next_temp_data);
+            this->col_best_response(b0, matrix_node, base_data, head_data, temp_data, next_temp_data);
 
             temp_data.alpha = std::min(b0, temp_data.alpha);
             temp_data.beta = std::min(a0, temp_data.beta);
         }
 
-        for (uint8_t i = 0; i < matrix_node->chance_node_matrix.rows * matrix_node->chance_node_matrix.cols; ++i) {
-            matrix_node->chance_node_matrix.data[i].reset_stats_for_reexploration();
-        }
+        this->sort_branches_and_reset(matrix_node);
 
         head_data.step_back();
 
