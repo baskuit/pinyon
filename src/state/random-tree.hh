@@ -108,6 +108,10 @@ struct RandomTree : Types {
             }
         }
 
+        const Types::Prob & get_prob () const {
+            return this->prob;
+        }
+
         void apply_actions(Types::Action row_action, Types::Action col_action) {
             // get_chance_actions has always 'just been called' since its in the ctor and apply_actions()
             // Therefore we should just be able to sample it

@@ -15,6 +15,7 @@ struct AlphaBetaRefactor {
     using State = typename Types::State;
     using Obs = typename Types::Obs;
     using Model = typename Types::Model;
+    using ModelOutput = typename Types::ModelOutput;
 
     static uint64_t hash(const Obs&) {
         return {};
@@ -25,7 +26,7 @@ struct AlphaBetaRefactor {
     struct BaseData {
         uint32_t max_depth;
         PRNG *device;
-        const Model *model;
+        Model *model;
         const State state;
         uint32_t min_tries;
         uint32_t max_tries;
@@ -50,7 +51,7 @@ struct AlphaBetaRefactor {
 
     struct TempData {
         uint16_t rows, cols;
-        State state;
+        State state{prng{1}, 1, 2, 2, 1};
         mpq_class alpha{0};
         mpq_class beta{1};
         mpq_class min_branch_prob{};
@@ -224,13 +225,14 @@ struct AlphaBetaRefactor {
             mpq_class alpha;
             mpq_class beta;
             if (next_temp_data.state.is_terminal()) {
-                alpha = beta = next_temp_data.state.get_payoff();
+                alpha = beta = next_temp_data.state.get_payoff().get_row_value();
             } else if (head_data.min_chance_prob > prob) { // TODO init min_chance_prob
                 alpha = 0;
                 beta = 1;
             } else if (head_data.depth + 1 == base_data.max_depth) {
-                const ModelOutput output = base_data.model->inference(std::move(next_temp_data.state));
-                alpha = beta = output.value;
+                ModelOutput output{};
+                base_data.model->inference(std::move(next_temp_data.state), output);
+                alpha = beta = output.value.get_row_value();
             } else {
                 const auto [a, b] = this->alpha_beta(next_matrix_node, base_data, head_data, next_temp_data);
                 alpha = a;
@@ -455,10 +457,3 @@ struct AlphaBetaRefactor {
         }
     };
 };
-
-int main() {
-    srand(time(NULL));
-
-    // MatrixNode node{};
-    return 0;
-}
