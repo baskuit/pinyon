@@ -66,10 +66,10 @@ Value<mpq_class> solve(const Matrix<Value<mpq_class>> &payoff_matrix, Vector<mpq
     row_strategy.resize(rows);
     col_strategy.resize(cols);
     for (int row_idx = 0; row_idx < rows; ++row_idx) {
-        row_strategy[row_idx] = mpq_class{mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den}};
+        row_strategy[row_idx] = mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den};
     }
     for (int col_idx = 0; col_idx < cols; ++col_idx) {
-        col_strategy[col_idx] = mpq_class{mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den}};
+        col_strategy[col_idx] = mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den};
     }
 
     mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};

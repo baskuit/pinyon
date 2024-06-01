@@ -1,12 +1,15 @@
+#pragma once
+
+#include <algorithm>
+#include <assert.h>
 #include <cstdint>
 #include <cstdlib>
-#include <gmpxx.h>
+#include <iostream>
+#include <memory>
 #include <unordered_map>
 #include <vector>
-#include <memory>
-#include <algorithm>
-#include <iostream>
-#include <assert.h>
+
+#include <gmpxx.h>
 
 template <typename Types>
 struct AlphaBetaRefactor {
@@ -17,8 +20,8 @@ struct AlphaBetaRefactor {
     using Model = typename Types::Model;
     using ModelOutput = typename Types::ModelOutput;
 
-    static uint64_t hash(const Obs&) {
-        return {};
+    static uint64_t hash(const Obs &obs) {
+        return static_cast<uint64_t>(obs);
     }
 
     struct MatrixNode;
@@ -32,6 +35,17 @@ struct AlphaBetaRefactor {
         uint32_t max_tries;
         double max_unexplored;
         double min_chance_prob;
+
+        BaseData(
+            uint32_t max_depth,
+            PRNG *device,
+            Model *model,
+            const State state,
+            uint32_t min_tries,
+            uint32_t max_tries,
+            double max_unexplored,
+            double min_chance_prob)
+            : max_depth{max_depth}, device{device}, model{model}, state{state}, min_tries{min_tries}, max_tries{max_tries}, max_unexplored{max_unexplored}, min_chance_prob{min_chance_prob} {}
     };
 
     struct HeadData {
@@ -39,7 +53,13 @@ struct AlphaBetaRefactor {
         uint32_t max_tries;
         double max_unexplored;
         double min_chance_prob;
-        uint32_t depth;
+        uint32_t depth{};
+
+        HeadData(
+            uint32_t min_tries,
+            uint32_t max_tries,
+            double max_unexplored,
+            double min_chance_prob) : min_tries{min_tries}, max_tries{max_tries}, max_unexplored{max_unexplored}, min_chance_prob{min_chance_prob} {}
 
         void step_forward() {
             ++depth;
@@ -73,7 +93,7 @@ struct AlphaBetaRefactor {
         bool new_row_action{false};
         bool new_col_action{false};
 
-        void reset_flags() {
+        void reset_flags_for_alpha_beta_loop() {
             must_break = true;
             new_row_action = false;
             new_col_action = false;
@@ -81,10 +101,17 @@ struct AlphaBetaRefactor {
     };
 
     struct Branch {
+
         std::unique_ptr<MatrixNode> matrix_node;
         float p;
         uint64_t seed;
-        Branch(const double prob, const uint64_t seed) : matrix_node{std::make_unique<MatrixNode>()}, p{static_cast<float>(prob)}, seed{seed} {}
+
+        Branch(const double prob, const uint64_t seed, const bool is_terminal)
+            : matrix_node{}, p{static_cast<float>(prob)}, seed{seed} {
+            if (!is_terminal) {
+                matrix_node = std::make_unique<MatrixNode>();
+            }
+        }
     };
 
     struct ChanceNode {
@@ -122,7 +149,9 @@ struct AlphaBetaRefactor {
                 Obs obs = next_temp_data.state.get_obs();
                 const uint64_t h = hash(obs);
                 if (branches.find(h) == branches.end()) {
-                    branches.try_emplace(h, next_temp_data.state.get_prob().get_d(), seed);
+                    branches.try_emplace(
+                        h,
+                        next_temp_data.state.get_prob().get_d(), seed, next_temp_data.state.is_terminal());
                     Branch *new_branch = &branches.at(seed);
                     return new_branch;
                 }
@@ -216,7 +245,7 @@ struct AlphaBetaRefactor {
 
     struct Search {
 
-        void update_chance_stats(
+        void next_solve(
             TempData::ChanceStats &stats,
             MatrixNode *next_matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
 
@@ -234,12 +263,12 @@ struct AlphaBetaRefactor {
                 base_data.model->inference(std::move(next_temp_data.state), output);
                 alpha = beta = output.value.get_row_value();
             } else {
-                const auto [a, b] = this->alpha_beta(next_matrix_node, base_data, head_data, next_temp_data);
-                alpha = a;
-                beta = b;
+                this->alpha_beta(next_matrix_node, base_data, head_data, next_temp_data);
+                alpha = next_temp_data.alpha;
+                beta = next_temp_data.beta;
             }
-            stats.alpha_explored -= alpha * prob;
-            stats.beta_explored -= beta * prob;
+            stats.alpha_explored += alpha * prob;
+            stats.beta_explored += beta * prob;
             temp_data.is_solved_exactly &= (alpha == beta);
         }
 
@@ -251,12 +280,12 @@ struct AlphaBetaRefactor {
             Branch *new_branch;
             ChanceNode &chance_node = matrix_node->chance_node_matrix(row_idx, col_idx);
             while (new_branch = chance_node.try_get_new_branch(base_data, head_data, temp_data, next_temp_data, row_idx, col_idx)) {
-                update_chance_stats(chance_data, new_branch->matrix_node.get(), base_data, head_data, temp_data, next_temp_data);
+                next_solve(chance_data, new_branch->matrix_node.get(), base_data, head_data, temp_data, next_temp_data);
             }
         }
 
         std::pair<mpq_class, mpq_class>
-        solve_subgame(
+        tentatively_solve_subgame(
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
             if (temp_data.is_solved_exactly) {
 
@@ -284,7 +313,7 @@ struct AlphaBetaRefactor {
         }
 
         // pass a reference to best score
-        void row_best_response(
+        void row_modify_beta_and_add_action(
             mpq_class &best_response,
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
 
@@ -299,14 +328,17 @@ struct AlphaBetaRefactor {
                 std::vector<mpq_class> priority_vector{};
             };
 
-            const auto find_nonzero_priority = [&](uint8_t &max_index, BestResponse &data) {
+            const auto find_nonzero_priority = [&](uint8_t &max_index, const BestResponse &data) {
                 mpq_class max_prio{-1};
+                bool nonzero_piority_found{false};
                 for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
                     if (data.priority_vector[j] > std::max(mpq_class{}, max_prio)) {
                         max_index = j;
+                        max_prio = data.priority_vector[j];
+                        nonzero_piority_found = true;
                     }
                 }
-                return max_index != 0xFF;
+                return nonzero_piority_found;
             };
 
             const auto can_beat_best_response = [&](BestResponse &data) {
@@ -323,7 +355,7 @@ struct AlphaBetaRefactor {
                             continue;
                         }
                         data.col_idx = matrix_node->J.action_indices[j].idx;
-                        uint8_t chance_stat_index = data.row_idx * temp_data.cols + data.col_idx;
+                        const uint8_t chance_stat_index = data.row_idx * temp_data.cols + data.col_idx;
 
                         data.priority_vector[j] =
                             temp_data.chance_stat_matrix[chance_stat_index].unexplored *
@@ -341,7 +373,7 @@ struct AlphaBetaRefactor {
                     } else [[likely]] {
                         const mpq_class prob = next_temp_data.state.get_prob();
                         const uint8_t entry_idx = data.row_idx * temp_data.cols + data.col_idx;
-                        update_chance_stats(temp_data.chance_stat_matrix[entry_idx], branch->matrix_node.get(), base_data, head_data, temp_data, next_temp_data);
+                        next_solve(temp_data.chance_stat_matrix[entry_idx], branch->matrix_node.get(), base_data, head_data, temp_data, next_temp_data);
                         data.priority_vector[j] -= prob * temp_data.col_strategy[data.col_idx]; // TODO maybe add prob to temp_data
                         data.value += next_temp_data.beta * prob * temp_data.col_strategy[data.col_idx];
                     }
@@ -375,9 +407,11 @@ struct AlphaBetaRefactor {
                 }
                 temp_data.must_break = false;
             }
+
+            temp_data.new_row_action = added_new_action;
         }
 
-        void col_best_response(
+        void col_modify_beta_and_add_action(
             mpq_class &alpha,
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
 
@@ -399,12 +433,13 @@ struct AlphaBetaRefactor {
             }
         }
 
-        std::pair<mpq_class, mpq_class>
-        alpha_beta(MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data) const {
+        void alpha_beta(MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data) const {
 
             head_data.step_forward();
 
             temp_data.state.get_actions();
+            temp_data.rows = temp_data.state.row_actions.size();
+            temp_data.cols = temp_data.state.col_actions.size();
 
             // only allocate for all next function calls, modify in other functions when necessary
             TempData next_temp_data;
@@ -413,20 +448,24 @@ struct AlphaBetaRefactor {
 
             while (temp_data.alpha < temp_data.beta && !temp_data.must_break) {
 
-                auto [a0, b0] = this->solve_subgame(matrix_node, base_data, head_data, temp_data, next_temp_data);
+                auto [next_beta, next_alpha] = this->tentatively_solve_subgame(matrix_node, base_data, head_data, temp_data, next_temp_data);
 
-                this->row_best_response(a0, matrix_node, base_data, head_data, temp_data, next_temp_data);
-                this->col_best_response(b0, matrix_node, base_data, head_data, temp_data, next_temp_data);
+                this->row_modify_beta_and_add_action(next_beta, matrix_node, base_data, head_data, temp_data, next_temp_data);
+                this->col_modify_beta_and_add_action(next_alpha, matrix_node, base_data, head_data, temp_data, next_temp_data);
 
-                temp_data.alpha = std::min(b0, temp_data.alpha);
-                temp_data.beta = std::min(a0, temp_data.beta);
+                if (temp_data.new_row_action && temp_data.new_col_action) {
+                    this->solve_chance_node(matrix_node, base_data, head_data, temp_data, next_temp_data, 0, 0);
+                }
+
+                temp_data.alpha = std::min(next_alpha, temp_data.alpha);
+                temp_data.beta = std::min(next_beta, temp_data.beta);
+
+                temp_data.reset_flags_for_alpha_beta_loop();
             }
 
             this->sort_branches_and_reset(matrix_node);
 
             head_data.step_back();
-
-            return {temp_data.alpha, temp_data.beta};
         }
 
         struct Output {
@@ -436,24 +475,42 @@ struct AlphaBetaRefactor {
         };
 
         Output run(uint32_t depth, PRNG &device, const State &state, Model &model, MatrixNode &node) const {
+            Output output;
             for (uint32_t d = 1; d <= depth; ++d) {
                 BaseData base_data{depth, &device, &model, state, 0, 0, {}, {}};
-                HeadData head_data;
+                HeadData head_data{0, 0, 0, 0};
                 TempData temp_data;
+                const auto start = std::chrono::high_resolution_clock::now();
                 this->alpha_beta(&node, base_data, head_data, temp_data);
+                const auto end = std::chrono::high_resolution_clock::now();
+                const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                output.alpha = temp_data.alpha;
+                output.beta = temp_data.beta;
+                // output.counts.push_back(node.count_matrix_nodes());
+                output.counts.push_back(0);
+                output.times.push_back(duration.count());
             }
-            return {};
+            return output;
         }
 
         template <typename T>
         Output run(const std::vector<T> depths, PRNG &device, const State &state, Model &model, MatrixNode &node) const {
+            Output output;
             for (const auto depth : depths) {
                 BaseData base_data{depth, &device, &model, state, 0, 0, {}, {}};
-                HeadData head_data;
+                HeadData head_data{0, 0, 0, 0};
                 TempData temp_data;
+                const auto start = std::chrono::high_resolution_clock::now();
                 this->alpha_beta(&node, base_data, head_data, temp_data);
+                const auto end = std::chrono::high_resolution_clock::now();
+                const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                output.alpha = temp_data.alpha;
+                output.beta = temp_data.beta;
+                // output.counts.push_back(node.count_matrix_nodes());
+                output.counts.push_back(0);
+                output.times.push_back(duration.count());
             }
-            return {};
+            return output;
         }
     };
 };
