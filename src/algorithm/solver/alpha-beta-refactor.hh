@@ -192,8 +192,6 @@ struct AlphaBetaRefactor {
 
     struct MatrixNode {
 
-        ChanceNodeMatrix chance_node_matrix;
-
         struct ActionProb {
             uint8_t idx;
             uint8_t discrete_prob{};
@@ -230,6 +228,9 @@ struct AlphaBetaRefactor {
                 std::swap(action_indices[index], action_indices[--boundary]);
             }
         };
+
+        ChanceNodeMatrix chance_node_matrix;
+
         Solution I;
         Solution J;
 
@@ -296,13 +297,9 @@ struct AlphaBetaRefactor {
 
         void initialize_submatrix(
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
-
-            if (!matrix_node->chance_node_matrix.rows) {
-                matrix_node->chance_node_matrix.init(temp_data.state.row_actions.size(), temp_data.state.col_actions.size());
-            }
-
+            matrix_node->chance_node_matrix.init(temp_data.rows, temp_data.cols);
+            
             // prune here possibly
-
             for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
                 const uint8_t row_idx = matrix_node->I.action_indices[i].idx;
                 for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
@@ -317,7 +314,6 @@ struct AlphaBetaRefactor {
             mpq_class &best_response,
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
 
-            bool added_new_action = false;
             uint8_t new_row_idx;
 
             struct BestResponse {
@@ -384,7 +380,7 @@ struct AlphaBetaRefactor {
 
                 // TODO i think we need >= here because failing to add new, equally scoring best responses won't solve the game!
                 if (data.value >= best_response) {
-                    added_new_action = true;
+                    temp_data.new_row_action = true;
                     new_row_idx = data.row_idx;
                     best_response = std::move(data.value);
                 }
@@ -401,14 +397,12 @@ struct AlphaBetaRefactor {
             }
 
             // solve chance nodes for final, new action
-            if (added_new_action) {
+            if (temp_data.new_row_action) {
                 for (uint8_t col_idx = 0; col_idx < temp_data.cols; ++col_idx) {
                     this->solve_chance_node(matrix_node, base_data, head_data, temp_data, next_temp_data, new_row_idx, col_idx);
                 }
                 temp_data.must_break = false;
             }
-
-            temp_data.new_row_action = added_new_action;
         }
 
         void col_modify_beta_and_add_action(
@@ -469,29 +463,11 @@ struct AlphaBetaRefactor {
         }
 
         struct Output {
-            mpq_class alpha, beta;
+            mpq_class alpha;
+            mpq_class beta;
             std::vector<size_t> counts{};
             std::vector<size_t> times{};
         };
-
-        Output run(uint32_t depth, PRNG &device, const State &state, Model &model, MatrixNode &node) const {
-            Output output;
-            for (uint32_t d = 1; d <= depth; ++d) {
-                BaseData base_data{depth, &device, &model, state, 0, 0, {}, {}};
-                HeadData head_data{0, 0, 0, 0};
-                TempData temp_data;
-                const auto start = std::chrono::high_resolution_clock::now();
-                this->alpha_beta(&node, base_data, head_data, temp_data);
-                const auto end = std::chrono::high_resolution_clock::now();
-                const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-                output.alpha = temp_data.alpha;
-                output.beta = temp_data.beta;
-                // output.counts.push_back(node.count_matrix_nodes());
-                output.counts.push_back(0);
-                output.times.push_back(duration.count());
-            }
-            return output;
-        }
 
         template <typename T>
         Output run(const std::vector<T> depths, PRNG &device, const State &state, Model &model, MatrixNode &node) const {
@@ -511,6 +487,14 @@ struct AlphaBetaRefactor {
                 output.times.push_back(duration.count());
             }
             return output;
+        }
+
+        Output run(uint32_t depth, PRNG &device, const State &state, Model &model, MatrixNode &node) const {
+            std::vector<uint32_t> depths{};
+            for (uint32_t d = 1; d <= depth; ++d) {
+                depths.push_back(d);
+            }
+            return this->run(depths, device, state model, node);
         }
     };
 };
