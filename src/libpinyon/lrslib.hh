@@ -78,7 +78,42 @@ Value<mpq_class> solve(const Matrix<Value<mpq_class>> &payoff_matrix, Vector<mpq
     dealloc(row_solution_data, rows + 2);
     dealloc(col_solution_data, cols + 2);
 
-    return {mpq_class{row_payoff}};
+    return {row_payoff};
+}
+
+// Solve constant-sum (ConstantSum<1, 1>) matrix of mpq_class
+template <template <typename...> typename Vector>
+mpq_class solve(const size_t rows, const size_t cols, const Vector<mpq_class> &payoff_matrix, Vector<mpq_class> &row_strategy,
+                Vector<mpq_class> &col_strategy) {
+    const size_t entries = rows * cols;
+    std::vector<const mpq_t *> rpd{entries};
+
+    for (size_t i = 0; i < entries; ++i) {
+        rpd[i] = reinterpret_cast<const mpq_t *>(&payoff_matrix[i]);
+    }
+
+    mpz_t *row_solution_data = alloc(rows + 2);
+    mpz_t *col_solution_data = alloc(cols + 2);
+
+    solve_gmp_pointer_constant_sum(rows, cols, rpd.data(), row_solution_data, col_solution_data, 1, 1);
+
+    mpz_class row_den{row_solution_data[0]}, col_den{col_solution_data[0]};
+    row_strategy.resize(rows);
+    col_strategy.resize(cols);
+    for (int row_idx = 0; row_idx < rows; ++row_idx) {
+        row_strategy[row_idx] = mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den};
+    }
+    for (int col_idx = 0; col_idx < cols; ++col_idx) {
+        col_strategy[col_idx] = mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den};
+    }
+
+    mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
+    mpq_class col_payoff{mpz_class{row_solution_data[rows + 1]}, row_den};
+
+    dealloc(row_solution_data, rows + 2);
+    dealloc(col_solution_data, cols + 2);
+
+    return row_payoff;
 }
 
 // Solve for everything else, mostly for doubles
@@ -139,4 +174,4 @@ Value<Real> solve(const Matrix<Value<Real>> &payoff_matrix, Vector<Real> &row_st
     }
 }
 
-};  // End namespace LRSNash
+}; // End namespace LRSNash
