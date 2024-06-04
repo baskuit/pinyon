@@ -9,5 +9,6 @@ int main () {
     Types::Model model{prng{345357457}};
     Types::Search search{};
     Types::MatrixNode node{};
-    search.run(1, device, state, model, node);
+    auto output = search.run(1, device, state, model, node);
+    1 + 1;
 }

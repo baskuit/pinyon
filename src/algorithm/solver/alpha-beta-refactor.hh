@@ -98,6 +98,13 @@ struct AlphaBetaRefactor {
             new_row_idx = 0xFF;
             new_col_idx = 0xFF;
         }
+
+        void reset () {
+            alpha_matrix.clear();
+            beta_matrix.clear();
+            row_strategy.clear();
+            col_strategy.clear();
+        }
     };
 
     struct Branch {
@@ -132,11 +139,13 @@ struct AlphaBetaRefactor {
     struct ChanceNodeMatrix {
         uint8_t rows, cols;
         ChanceNode *data;
+        bool init_ = false;
 
         void init(const uint8_t rows, const uint8_t cols) {
             this->rows = rows;
             this->cols = cols;
             data = new ChanceNode[rows * cols];
+            init_ = true;
         }
 
         ChanceNode &operator()(uint8_t row_idx, uint8_t col_idx) {
@@ -295,8 +304,10 @@ struct AlphaBetaRefactor {
                     chance_node->branches.try_emplace(
                         h,
                         next_temp_data.state.get_prob().get_d(), seed, next_temp_data.state.is_terminal());
-                    return &chance_node->branches.at(seed);
+                    return &chance_node->branches.at(h);
                 }
+
+                ++chance_node->tries;
             }
 
             return nullptr;
@@ -358,27 +369,30 @@ struct AlphaBetaRefactor {
         void initialize_submatrix(
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
 
-            matrix_node->chance_node_matrix.init(temp_data.rows, temp_data.cols);
-            matrix_node->I.init(temp_data.rows);
-            matrix_node->J.init(temp_data.cols);
-
             // init temp data from matrix node solution
             if (matrix_node->I.boundary == 0) {
+                temp_data.chance_stat_matrix.resize(temp_data.rows * temp_data.cols);
+                matrix_node->chance_node_matrix.init(temp_data.rows, temp_data.cols);
+                matrix_node->I.init(temp_data.rows);
+                matrix_node->J.init(temp_data.cols);
                 matrix_node->I.add_index(0);
                 matrix_node->J.add_index(0);
-            }
-
-            for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
-                if (matrix_node->I.action_indices[i].discrete_prob == 0) {
-                    matrix_node->I.remove_index(i);
-                    --i;
+                matrix_node->I.action_indices[0].discrete_prob = 0xFF;
+                matrix_node->J.action_indices[0].discrete_prob = 0xFF;
+            } else {
+                for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
+                    if (matrix_node->I.action_indices[i].discrete_prob == 0) {
+                        matrix_node->I.remove_index(i);
+                        --i;
+                    }
                 }
-            }
-            for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
-                if (matrix_node->J.action_indices[j].discrete_prob == 0) {
-                    matrix_node->J.remove_index(j);
-                    --j;
+                for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                    if (matrix_node->J.action_indices[j].discrete_prob == 0) {
+                        matrix_node->J.remove_index(j);
+                        --j;
+                    }
                 }
+                assert(matrix_node->I.size() > 0 && matrix_node->J.size() > 0);
             }
 
             for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
@@ -597,6 +611,10 @@ struct AlphaBetaRefactor {
             this->initialize_submatrix(matrix_node, base_data, head_data, temp_data, next_temp_data);
 
             while (temp_data.alpha < temp_data.beta && !temp_data.must_break) {
+
+                std::cout << "alpha: " << temp_data.alpha.get_d() << std::endl;
+                std::cout << "beta: " << temp_data.beta.get_d() << std::endl;
+                std::cout << std::endl;
 
                 auto [next_beta, next_alpha] = this->tentatively_solve_subgame(matrix_node, base_data, head_data, temp_data, next_temp_data);
 
