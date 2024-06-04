@@ -1,5 +1,7 @@
 #pragma once
 
+#include <libpinyon/lrslib.hh>
+
 #include <algorithm>
 #include <assert.h>
 #include <cstdint>
@@ -8,8 +10,6 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-
-#include <gmpxx.h>
 
 template <typename Types>
 struct AlphaBetaRefactor {
@@ -40,7 +40,7 @@ struct AlphaBetaRefactor {
             uint32_t max_depth,
             PRNG *device,
             Model *model,
-            const State state,
+            const State &state,
             uint32_t min_tries,
             uint32_t max_tries,
             double max_unexplored,
@@ -103,8 +103,8 @@ struct AlphaBetaRefactor {
     struct Branch {
 
         std::unique_ptr<MatrixNode> matrix_node;
-        float p;
         uint64_t seed;
+        float p;
 
         Branch(const double prob, const uint64_t seed, const bool is_terminal)
             : matrix_node{}, p{static_cast<float>(prob)}, seed{seed} {
@@ -119,46 +119,6 @@ struct AlphaBetaRefactor {
         std::vector<Branch *> sorted_branches{};
         int branch_index{};
         uint32_t tries{};
-
-        Branch *
-        try_get_new_branch(const BaseData &base_data, const HeadData &head_data, const TempData &temp_data, TempData &next_temp_data,
-                           const uint8_t row_idx, const uint8_t col_idx) {
-
-            const auto go = [&](const uint64_t seed) {
-                next_temp_data.state = temp_data.state;
-                next_temp_data.state.randomize_transition(seed);
-                next_temp_data.state.apply_actions(
-                    next_temp_data.state.row_actions[row_idx],
-                    next_temp_data.state.col_actions[col_idx]);
-            };
-
-            if (branch_index < sorted_branches.size()) {
-                go(sorted_branches[branch_index]->seed);
-                return sorted_branches[branch_index++];
-            }
-
-            auto &chance_data = temp_data.chance_stat_matrix[row_idx * temp_data.cols + col_idx];
-            while (
-                !(tries > base_data.max_tries ||
-                  (tries > head_data.min_tries && chance_data.unexplored < head_data.max_unexplored) ||
-                  chance_data.unexplored <= 0)) {
-
-                const uint64_t seed = base_data.device->uniform_64();
-                go(seed);
-
-                Obs obs = next_temp_data.state.get_obs();
-                const uint64_t h = hash(obs);
-                if (branches.find(h) == branches.end()) {
-                    branches.try_emplace(
-                        h,
-                        next_temp_data.state.get_prob().get_d(), seed, next_temp_data.state.is_terminal());
-                    Branch *new_branch = &branches.at(seed);
-                    return new_branch;
-                }
-            }
-
-            return nullptr;
-        }
 
         void total_reset() {
             branches.clear();
@@ -218,16 +178,28 @@ struct AlphaBetaRefactor {
                 }
             }
 
-            void add_index(uint8_t index) {
-                assert(boundary >= 0 && boundary < action_indices.size() - 1);
-                std::swap(action_indices[index], action_indices[boundary++]);
+            void init(const uint8_t size) {
+                for (uint8_t i = 0; i < size; ++i) {
+                    action_indices.push_back(i);
+                }
             }
 
-            void remove_index(uint8_t index) {
-                assert(boundary >= 1 && boundary < action_indices.size());
-                std::swap(action_indices[index], action_indices[--boundary]);
+            void add_index(uint8_t i) {
+                assert(boundary >= 0 && boundary < action_indices.size() - 1);
+                std::swap(action_indices[i], action_indices[boundary++]);
             }
+
+            void remove_index(uint8_t i) {
+                assert(boundary >= 1 && boundary < action_indices.size());
+                std::swap(action_indices[i], action_indices[--boundary]);
+            }
+
+            uint8_t size() const { return boundary; }
         };
+
+        MatrixNode() {}
+        // dont use this prolly
+        MatrixNode(const uint8_t rows, const int8_t cols) : chance_node_matrix{rows, cols}, I{rows}, J{cols} {}
 
         ChanceNodeMatrix chance_node_matrix;
 
@@ -246,6 +218,8 @@ struct AlphaBetaRefactor {
 
     struct Search {
 
+        // calls alpha_beta (basically a wrapper for it) but first checks if not terminal, at max depth
+        // helps with boiler plate
         void next_solve(
             TempData::ChanceStats &stats,
             MatrixNode *next_matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
@@ -273,14 +247,56 @@ struct AlphaBetaRefactor {
             temp_data.is_solved_exactly &= (alpha == beta);
         }
 
+        // query a chance node given a joint action pair. first it returns the branches stored in the tree.
+        // then it tries with brute force until max_tries, max_unplored, etc
+        Branch *
+        try_get_new_branch(const BaseData &base_data, const HeadData &head_data, const TempData &temp_data, TempData &next_temp_data,
+                           ChanceNode *chance_node, const uint8_t row_idx, const uint8_t col_idx) const {
+
+            const auto go = [&](const uint64_t seed) {
+                next_temp_data.state = temp_data.state;
+                next_temp_data.state.randomize_transition(seed);
+                next_temp_data.state.apply_actions(
+                    next_temp_data.state.row_actions[row_idx],
+                    next_temp_data.state.col_actions[col_idx]);
+            };
+
+            if (chance_node->branch_index < chance_node->sorted_branches.size()) {
+                go(chance_node->sorted_branches[chance_node->branch_index]->seed);
+                return chance_node->sorted_branches[chance_node->branch_index++];
+            }
+
+            auto &chance_data = temp_data.chance_stat_matrix[row_idx * temp_data.cols + col_idx];
+            while (
+                !(chance_node->tries > base_data.max_tries ||
+                  (chance_node->tries > head_data.min_tries && chance_data.unexplored < head_data.max_unexplored) ||
+                  chance_data.unexplored <= 0)) {
+
+                const uint64_t seed = base_data.device->uniform_64();
+                go(seed);
+
+                Obs obs = next_temp_data.state.get_obs();
+                const uint64_t h = hash(obs);
+                if (chance_node->branches.find(h) == chance_node->branches.end()) {
+                    chance_node->branches.try_emplace(
+                        h,
+                        next_temp_data.state.get_prob().get_d(), seed, next_temp_data.state.is_terminal());
+                    return &chance_node->branches.at(seed);
+                }
+            }
+
+            return nullptr;
+        }
+
+        // query and solve all branches from a chance node
         void solve_chance_node(
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data,
             const uint8_t row_idx, const uint8_t col_idx) const {
 
             auto &chance_data = temp_data.chance_stat_matrix[0];
             Branch *new_branch;
-            ChanceNode &chance_node = matrix_node->chance_node_matrix(row_idx, col_idx);
-            while (new_branch = chance_node.try_get_new_branch(base_data, head_data, temp_data, next_temp_data, row_idx, col_idx)) {
+            ChanceNode *chance_node = &matrix_node->chance_node_matrix(row_idx, col_idx);
+            while (new_branch = try_get_new_branch(base_data, head_data, temp_data, next_temp_data, chance_node, row_idx, col_idx)) {
                 next_solve(chance_data, new_branch->matrix_node.get(), base_data, head_data, temp_data, next_temp_data);
             }
         }
@@ -288,18 +304,66 @@ struct AlphaBetaRefactor {
         std::pair<mpq_class, mpq_class>
         tentatively_solve_subgame(
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
+            int entry_idx = 0;
             if (temp_data.is_solved_exactly) {
-
+                temp_data.alpha_matrix.resize(temp_data.rows * temp_data.cols);
+                for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
+                    for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                        const auto &data = temp_data.chance_stat_matrix[matrix_node->I.action_indices[i] * matrix_node->J.action_indices[j]];
+                        temp_data.alpha_matrix[entry_idx] = data.alpha_explored;
+                        ++entry_idx;
+                    }
+                }
+                const auto a = LRSNash::solve(temp_data.rows, temp_data.cols, temp_data.alpha_matrix, temp_data.row_strategy, temp_data.col_strategy);
+                for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
+                    matrix_node->I.action_indices[i].discrete_prob = 256 * temp_data.row_strategy[i].get_d();
+                }
+                for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                    matrix_node->J.action_indices[j].discrete_prob = 256 * temp_data.col_strategy[j].get_d();
+                }
+                return {a, a};
             } else {
+                temp_data.alpha_matrix.resize(temp_data.rows * temp_data.cols);
+                temp_data.beta_matrix.resize(temp_data.rows * temp_data.cols);
+                for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
+                    for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                        const auto &data = temp_data.chance_stat_matrix[matrix_node->I.action_indices[i] * matrix_node->J.action_indices[j]];
+                        temp_data.alpha_matrix[entry_idx] = data.alpha_explored;
+                        temp_data.beta_matrix[entry_idx] = data.beta_explored + data.unexplored;
+                        ++entry_idx;
+                    }
+                }
+                std::vector<mpq_class> temp;
+                const auto a = LRSNash::solve(temp_data.rows, temp_data.cols, temp_data.alpha_matrix, temp_data.row_strategy, temp);
+                temp.clear();
+                const auto b = LRSNash::solve(temp_data.rows, temp_data.cols, temp_data.beta_matrix, temp, temp_data.col_strategy);
+                return {a, b};
             }
-            return {};
         }
 
         void initialize_submatrix(
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
             matrix_node->chance_node_matrix.init(temp_data.rows, temp_data.cols);
-            
-            // prune here possibly
+
+            // init temp data from matrix node solution
+            if (matrix_node->I.boundary == 0) {
+                matrix_node->I.add_index(0);
+                matrix_node->J.add_index(0);
+            }
+
+            for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
+                if (matrix_node->I.action_indices[i].discrete_prob == 0) {
+                    matrix_node->I.remove_index(i);
+                    --i;
+                }
+            }
+            for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                if (matrix_node->J.action_indices[j].discrete_prob == 0) {
+                    matrix_node->J.remove_index(j);
+                    --j;
+                }
+            }
+
             for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
                 const uint8_t row_idx = matrix_node->I.action_indices[i].idx;
                 for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
@@ -362,8 +426,8 @@ struct AlphaBetaRefactor {
 
                 // explore as much as possible
                 for (uint8_t j; can_beat_best_response(data) && find_nonzero_priority(j, data);) {
-                    ChanceNode &chance_node = matrix_node->chance_node_matrix(data.row_idx, j);
-                    Branch *branch = chance_node.try_get_new_branch(base_data, head_data, temp_data, next_temp_data, data.row_idx, data.col_idx);
+                    ChanceNode *chance_node = &matrix_node->chance_node_matrix(data.row_idx, j);
+                    Branch *branch = try_get_new_branch(base_data, head_data, temp_data, next_temp_data, chance_node, data.row_idx, data.col_idx);
                     if (branch == nullptr) {
                         data.priority_vector[j] = 0;
                     } else [[likely]] {
@@ -406,11 +470,98 @@ struct AlphaBetaRefactor {
         }
 
         void col_modify_beta_and_add_action(
-            mpq_class &alpha,
+            mpq_class &best_response,
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
+                
+            uint8_t new_row_idx;
 
             struct BestResponse {
+                const uint8_t row_idx;
+                uint8_t col_idx;
+                mpq_class value{};
+                mpq_class total_unexplored{};
+                std::vector<mpq_class> priority_vector{};
             };
+
+            const auto find_nonzero_priority = [&](uint8_t &max_index, const BestResponse &data) {
+                mpq_class max_prio{-1};
+                bool nonzero_piority_found{false};
+                for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                    if (data.priority_vector[j] > std::max(mpq_class{}, max_prio)) {
+                        max_index = j;
+                        max_prio = data.priority_vector[j];
+                        nonzero_piority_found = true;
+                    }
+                }
+                return nonzero_piority_found;
+            };
+
+            const auto can_beat_best_response = [&](BestResponse &data) {
+                return data.value + data.total_unexplored > best_response;
+            };
+
+            const auto compute_value = [&](const uint8_t i, BestResponse &data) {
+                data.priority_vector.resize(matrix_node->J.boundary);
+
+                // set up priority, score vector
+                {
+                    for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                        if (matrix_node->J.action_indices[j].discrete_prob == 0) {
+                            continue;
+                        }
+                        data.col_idx = matrix_node->J.action_indices[j].idx;
+                        const uint8_t chance_stat_index = data.row_idx * temp_data.cols + data.col_idx;
+
+                        data.priority_vector[j] =
+                            temp_data.chance_stat_matrix[chance_stat_index].unexplored *
+                            temp_data.col_strategy[j];
+                        data.total_unexplored += data.priority_vector[j];
+                    }
+                }
+
+                // explore as much as possible
+                for (uint8_t j; can_beat_best_response(data) && find_nonzero_priority(j, data);) {
+                    ChanceNode *chance_node = &matrix_node->chance_node_matrix(data.row_idx, j);
+                    Branch *branch = try_get_new_branch(base_data, head_data, temp_data, next_temp_data, chance_node, data.row_idx, data.col_idx);
+                    if (branch == nullptr) {
+                        data.priority_vector[j] = 0;
+                    } else [[likely]] {
+                        const mpq_class prob = next_temp_data.state.get_prob();
+                        const uint8_t entry_idx = data.row_idx * temp_data.cols + data.col_idx;
+                        next_solve(temp_data.chance_stat_matrix[entry_idx], branch->matrix_node.get(), base_data, head_data, temp_data, next_temp_data);
+                        data.priority_vector[j] -= prob * temp_data.col_strategy[data.col_idx]; // TODO maybe add prob to temp_data
+                        data.value += next_temp_data.beta * prob * temp_data.col_strategy[data.col_idx];
+                    }
+                }
+
+                data.value += data.total_unexplored;
+                data.value.canonicalize();
+
+                // TODO i think we need >= here because failing to add new, equally scoring best responses won't solve the game!
+                if (data.value >= best_response) {
+                    temp_data.new_row_action = true;
+                    new_row_idx = data.row_idx;
+                    best_response = std::move(data.value);
+                }
+            };
+
+            // actions in I
+            for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
+            }
+
+            // actions not in I
+            for (uint8_t i = matrix_node->I.boundary; i < matrix_node->chance_node_matrix.rows; ++i) {
+                BestResponse data{matrix_node->I.action_indices[i].idx};
+                compute_value(i, data);
+            }
+
+            // solve chance nodes for final, new action
+            if (temp_data.new_row_action) {
+                for (uint8_t col_idx = 0; col_idx < temp_data.cols; ++col_idx) {
+                    this->solve_chance_node(matrix_node, base_data, head_data, temp_data, next_temp_data, new_row_idx, col_idx);
+                }
+                temp_data.must_break = false;
+            }
         }
 
         void sort_branches_and_reset(MatrixNode *matrix_node) const {
@@ -494,7 +645,7 @@ struct AlphaBetaRefactor {
             for (uint32_t d = 1; d <= depth; ++d) {
                 depths.push_back(d);
             }
-            return this->run(depths, device, state model, node);
+            return this->run(depths, device, state, model, node);
         }
     };
 };
