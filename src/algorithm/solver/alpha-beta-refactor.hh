@@ -147,14 +147,14 @@ struct AlphaBetaRefactor {
             data = new ChanceNode[rows * cols];
             init_ = true;
         }
-
+    
         ChanceNode &operator()(uint8_t row_idx, uint8_t col_idx) {
             return data[row_idx * cols + col_idx];
         }
 
         ~ChanceNodeMatrix() {
             if (rows | cols) {
-                delete data;
+                delete[] data;
             }
         }
     };
@@ -617,6 +617,20 @@ struct AlphaBetaRefactor {
                 std::cout << std::endl;
 
                 auto [next_beta, next_alpha] = this->tentatively_solve_subgame(matrix_node, base_data, head_data, temp_data, next_temp_data);
+
+                std::cout << "I: ";
+                for (uint8_t i = 0; i < matrix_node->I.boundary; ++i){
+                    std::cout << (int)matrix_node->I.action_indices[i].idx << ", ";
+                }
+                std::cout << std::endl;
+
+                std::cout << "J: ";
+                for (uint8_t j = 0; j < matrix_node->J.boundary; ++j){
+                    std::cout << (int)matrix_node->J.action_indices[j].idx << ", ";
+                }
+                std::cout << std::endl;
+
+                std::cout << "a_: " << next_alpha.get_d() << " b_: " << next_beta.get_d() << std::endl;
 
                 this->row_modify_beta_and_add_action(next_beta, matrix_node, base_data, head_data, temp_data, next_temp_data);
                 this->col_modify_beta_and_add_action(next_alpha, matrix_node, base_data, head_data, temp_data, next_temp_data);
