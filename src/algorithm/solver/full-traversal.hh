@@ -185,6 +185,7 @@ struct FullTraversal : Types
             }
 
             stats.payoff = LRSNash::solve(stats.nash_payoff_matrix, stats.row_solution, stats.col_solution);
+            math::canonicalize(stats.payoff);
         }
     };
 };

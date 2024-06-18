@@ -78,10 +78,12 @@ Value<mpq_class> solve(const Matrix<Value<mpq_class>> &payoff_matrix, Vector<mpq
     dealloc(row_solution_data, rows + 2);
     dealloc(col_solution_data, cols + 2);
 
+    row_payoff.canonicalize();
+
     return {row_payoff};
 }
 
-// Solve constant-sum (ConstantSum<1, 1>) matrix of mpq_class
+// AB refactor temp method
 template <template <typename...> typename Vector>
 mpq_class solve(const size_t rows, const size_t cols, const Vector<mpq_class> &payoff_matrix, Vector<mpq_class> &row_strategy,
                 Vector<mpq_class> &col_strategy) {
@@ -102,9 +104,11 @@ mpq_class solve(const size_t rows, const size_t cols, const Vector<mpq_class> &p
     col_strategy.resize(cols);
     for (int row_idx = 0; row_idx < rows; ++row_idx) {
         row_strategy[row_idx] = mpq_class{mpz_class{row_solution_data[row_idx + 1]}, row_den};
+        row_strategy[row_idx].canonicalize();
     }
     for (int col_idx = 0; col_idx < cols; ++col_idx) {
         col_strategy[col_idx] = mpq_class{mpz_class{col_solution_data[col_idx + 1]}, col_den};
+        col_strategy[col_idx].canonicalize();
     }
 
     mpq_class row_payoff{mpz_class{col_solution_data[cols + 1]}, col_den};
@@ -112,6 +116,8 @@ mpq_class solve(const size_t rows, const size_t cols, const Vector<mpq_class> &p
 
     dealloc(row_solution_data, rows + 2);
     dealloc(col_solution_data, cols + 2);
+
+    row_payoff.canonicalize();
 
     return row_payoff;
 }
