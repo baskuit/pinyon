@@ -63,7 +63,7 @@ struct BiasModel : T {
 using AB = AlphaBeta<BiasModel>;
 using ABIter = AlphaBetaDev<BiasModel>;
 
-std::pair<double, double> solve_check(const BiasModel::State &state) {
+std::pair<double, double> solve_check(const BiasModel::State &state, const size_t transitions) {
     assert(state.transitions == 1);
 
     using time_t = decltype(std::chrono::high_resolution_clock::now());
@@ -90,8 +90,6 @@ std::pair<double, double> solve_check(const BiasModel::State &state) {
     // below uses vector input for depths
     const size_t time_iter = search_iter.run({max_depth/2, max_depth}, device, state, model, node_iter);
 
-    // std::cout << "AB: " << pair.first.get_str() << ' ' << pair.second.get_str() << std::endl;
-    // std::cout << "AB Iter: " << node_iter.alpha.get_str() << ' ' << node_iter.beta.get_str() << std::endl;
     const size_t node_count = node.count_matrix_nodes();
     const size_t node_iter_count = node_iter.count_matrix_nodes();
     std::cout << "AB: " << node_count << std::endl;
@@ -99,15 +97,23 @@ std::pair<double, double> solve_check(const BiasModel::State &state) {
     std::cout << "AB (time): " << time << std::endl;
     std::cout << "AB Iter (time): " << time_iter << std::endl;
 
-    assert(pair.first == node_iter.alpha);
-    assert(pair.second == node_iter.beta);
+    assert(pair.first >= node_iter.alpha);
+    assert(pair.second <= node_iter.beta);
+    assert(node_iter.alpha != 0);
+    assert(node_iter.beta != 1);
+
+    if (transitions == 1) {
+        assert(pair.first == node_iter.alpha);
+        assert(pair.second == node_iter.beta);
+    }
 
     return {node_iter_count / (double) node_count, time_iter / (double) time};
 }
 
 int main() {
     BiasModel::Q threshold{0};
-    RandomTreeGenerator<RandomTreeRationalTypes> generator{prng{2}, {5}, {4}, {1}, {threshold}, std::vector<size_t>(20, 0)};
+    const size_t transitions = 1;
+    RandomTreeGenerator<RandomTreeRationalTypes> generator{prng{2}, {5}, {4}, {transitions}, {threshold}, std::vector<size_t>(20, 0)};
 
     double total_count_ratio = 0;
     double total_time_ratio = 0;
@@ -117,7 +123,7 @@ int main() {
     size_t counter = 0;
     for (auto wrapped_state : generator) {
         const auto state = wrapped_state.unwrap<T>();
-        const auto pair = solve_check(state);
+        const auto pair = solve_check(state, transitions);
         total_count_ratio += pair.first;
         total_time_ratio += pair.second;
         ++counter;

@@ -11,6 +11,14 @@
 #include <unordered_map>
 #include <vector>
 
+/*
+
+TODO:
+use std::vector for chance_nodes - maybe just need noexcept?
+use array of temp_data that's allocated once in the run() call
+try using a/b from subgame solution to warm start best response 
+*/
+
 static int indent = 0;
 
 template <typename Types, bool debug = true>
@@ -59,7 +67,6 @@ struct AlphaBetaRefactor {
         uint32_t max_depth;
         PRNG *device;
         Model *model;
-        const State state;
         uint32_t min_tries;
         uint32_t max_tries;
         double max_unexplored;
@@ -70,12 +77,11 @@ struct AlphaBetaRefactor {
             uint32_t max_depth,
             PRNG *device,
             Model *model,
-            const State &state,
             uint32_t min_tries,
             uint32_t max_tries,
             double max_unexplored,
             double min_chance_prob)
-            : max_depth{max_depth}, device{device}, model{model}, state{state}, min_tries{min_tries}, max_tries{max_tries}, max_unexplored{max_unexplored}, min_chance_prob{min_chance_prob} {}
+            : max_depth{max_depth}, device{device}, model{model}, min_tries{min_tries}, max_tries{max_tries}, max_unexplored{max_unexplored}, min_chance_prob{min_chance_prob} {}
     };
 
     struct HeadData {
@@ -172,7 +178,6 @@ struct AlphaBetaRefactor {
         }
     };
 
-    // std::vector<ChanceNode> complains about copy contructor, presumably because of std::move
     struct ChanceNodeMatrix {
         uint8_t rows, cols;
         ChanceNode *data;
@@ -287,10 +292,7 @@ struct AlphaBetaRefactor {
             TempData::ChanceStats &stats,
             MatrixNode *next_matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
 
-            indent += 4;
             const mpq_class prob = next_temp_data.state.get_prob();
-            stats.unexplored -= prob;
-            ++base_data.matrix_node_count;
             if (next_temp_data.state.is_terminal()) {
                 debug_print("next_solve: terminal: ", next_temp_data.state.get_payoff().get_row_value().get_d(), '\n');
                 next_temp_data.alpha = next_temp_data.beta = next_temp_data.state.get_payoff().get_row_value();
@@ -302,19 +304,23 @@ struct AlphaBetaRefactor {
                 base_data.model->inference(std::move(next_temp_data.state), output);
                 next_temp_data.alpha = next_temp_data.beta = output.value.get_row_value();
             } else {
+                // TODO what else do we have to reset here?
                 next_temp_data.alpha = 0;
                 next_temp_data.beta = 1;
                 next_temp_data.chance_stat_matrix.clear();
                 next_temp_data.must_break = false;
                 debug_print("next_solve: alpha_beta\n");
+                indent += 4;
                 head_data.step_forward();
                 this->alpha_beta(next_matrix_node, base_data, head_data, next_temp_data);
                 head_data.step_back();
+                indent -= 4;
             }
 
+            stats.unexplored -= prob;
             stats.alpha_explored += next_temp_data.alpha * prob;
             stats.beta_explored += next_temp_data.beta * prob;
-            indent -= 4;
+            ++base_data.matrix_node_count;
         }
 
         // query a chance node given a joint action pair. first it returns the branches stored in the tree.
@@ -752,23 +758,22 @@ struct AlphaBetaRefactor {
 
                 temp_data.reset_flags_for_alpha_beta_loop();
 
-                {
-                    debug_print("________________", '\n');
-                    debug_print("alpha: ", temp_data.alpha.get_d(), '\n');
-                    debug_print("beta: ", temp_data.beta.get_d(), '\n');
+                debug_print("________________", '\n');
+                debug_print("alpha: ", temp_data.alpha.get_d(), '\n');
+                debug_print("beta: ", temp_data.beta.get_d(), '\n');
 
-                    debug_print("I: ");
-                    for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
-                        debug_print_no_indent((int)matrix_node->I.action_indices[i].idx, ", ");
-                    }
-                    debug_print('\n');
+                debug_print("I: ");
+                for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
+                    debug_print_no_indent((int)matrix_node->I.action_indices[i].idx, ", ");
+                }
+                debug_print('\n');
 
-                    debug_print("J: ");
-                    for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
-                        debug_print_no_indent((int)matrix_node->J.action_indices[j].idx, ", ");
-                    }
-                    debug_print('\n');
-                };
+                debug_print("J: ");
+                for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                    debug_print_no_indent((int)matrix_node->J.action_indices[j].idx, ", ");
+                }
+                debug_print('\n');
+
                 // TODO remove this return
                 auto [next_beta, next_alpha] = this->compute_subgame_equilibrium(matrix_node, base_data, head_data, temp_data, next_temp_data);
 
@@ -781,6 +786,7 @@ struct AlphaBetaRefactor {
                 indent -= 2;
 
                 // each of the two prior function calls solves most new chance nodes, but they both miss this corner case when two new actions are added
+                // TODO this looks too much like the old code lol
                 if (temp_data.new_i >= matrix_node->I.boundary 
                     && temp_data.new_j >= matrix_node->J.boundary) {
                     debug_print("double new actions: ", (int)temp_data.new_row_idx, ' ', (int)temp_data.new_col_idx, '\n');
@@ -792,22 +798,17 @@ struct AlphaBetaRefactor {
                 if (temp_data.new_j >= matrix_node->J.boundary) {
                     matrix_node->J.add_index(temp_data.new_j);
                 }
-
                 if (next_alpha > temp_data.alpha || next_beta < temp_data.beta) {
                     temp_data.must_break = false;
                 }
 
                 temp_data.alpha = std::max(next_alpha, temp_data.alpha);
                 temp_data.beta = std::min(next_beta, temp_data.beta);
-
-
-                {
-                    debug_print("next_a: ", next_alpha.get_d(), " next_b: ", next_beta.get_d(), '\n');
-                    debug_print("new row idx: ", (int)temp_data.new_row_idx, " new col idx: ", (int)temp_data.new_col_idx, " must_break:", temp_data.must_break, '\n');
-                    debug_print("________________", '\n');
-                    debug_print('\n');
-                };
-
+                
+                debug_print("next_a: ", next_alpha.get_d(), " next_b: ", next_beta.get_d(), '\n');
+                debug_print("new row idx: ", (int)temp_data.new_row_idx, " new col idx: ", (int)temp_data.new_col_idx, " must_break:", temp_data.must_break, '\n');
+                debug_print("________________", '\n');
+                debug_print('\n');
             }
 
             matrix_node->sort_branches_and_reset();
@@ -823,10 +824,10 @@ struct AlphaBetaRefactor {
 
         template <typename T>
         Output run(const std::vector<T> &depths, PRNG &device, const State &state, Model &model, MatrixNode &node) const {
-            Output output;
 
+            Output output;
             for (const auto depth : depths) {
-                BaseData base_data{depth, &device, &model, state, min_tries, max_tries, 0, 0};
+                BaseData base_data{depth, &device, &model, min_tries, max_tries, 0, 0};
 
                 HeadData head_data{min_tries, max_tries};
 
@@ -838,7 +839,6 @@ struct AlphaBetaRefactor {
                 const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
                 output.alpha = temp_data.alpha;
                 output.beta = temp_data.beta;
-                // output.counts.push_back(node.count_matrix_nodes());
                 output.counts.push_back(base_data.matrix_node_count);
                 output.times.push_back(duration.count());
             }

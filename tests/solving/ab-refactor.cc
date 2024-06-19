@@ -24,6 +24,7 @@ int main() {
             const uint64_t state_seed = device.uniform_64();
             const uint64_t model_seed = device.uniform_64();
             prng local_device{device.uniform_64()};
+
             const Types::State state{prng{state_seed}, tree_depth, actions, actions, transitions};
             Types::Model model{prng{model_seed}};
             Types::Search search{min_tries, max_tries};
