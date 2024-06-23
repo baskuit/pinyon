@@ -70,7 +70,7 @@ struct AlphaBetaRefactor : Types {
         PRNG *device;
         Model *model;
         uint32_t min_tries;
-        uint32_t max_tries;
+        std::vector<uint32_t> max_tries;
         double max_unexplored;
         double min_chance_prob;
         size_t matrix_node_count = 0;
@@ -83,7 +83,15 @@ struct AlphaBetaRefactor : Types {
             uint32_t max_tries,
             double max_unexplored,
             double min_chance_prob)
-            : max_depth{max_depth}, device{device}, model{model}, min_tries{min_tries}, max_tries{max_tries}, max_unexplored{max_unexplored}, min_chance_prob{min_chance_prob} {}
+            : max_depth{max_depth}, device{device}, model{model}, min_tries{min_tries}, max_tries{}, max_unexplored{max_unexplored}, min_chance_prob{min_chance_prob} 
+            {
+                uint32_t t = max_tries;
+                this->max_tries.resize(max_depth);
+                for (int i = 0; i < max_depth; ++i) {
+                    this->max_tries[i] = t;
+                    t *= 2;
+                }
+            }
     };
 
     struct HeadData {
@@ -148,6 +156,18 @@ struct AlphaBetaRefactor : Types {
             // col_strategy.clear();
             // alpha_matrix.clear();
             // beta_matrix.clear();
+        }
+
+        void real_reset () {
+            alpha = 0;
+            beta = 1;
+            chance_stat_matrix.clear();
+            is_subgame_singular = true;
+            must_break = false;
+            alpha_matrix.clear();
+            beta_matrix.clear();
+            row_strategy.clear();
+            col_strategy.clear();
         }
     };
 
@@ -283,6 +303,8 @@ struct AlphaBetaRefactor : Types {
         const uint32_t min_tries;
         const uint32_t max_tries;
 
+        std::vector<TempData> temp_data_vec{};
+
         Search (
         const uint32_t min_tries,
         const uint32_t max_tries
@@ -292,7 +314,7 @@ struct AlphaBetaRefactor : Types {
         // helps with boiler plate and reduces matrix node allocations
         void next_solve(
             TempData::ChanceStats &stats,
-            MatrixNode *next_matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
+            MatrixNode *next_matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) {
 
             head_data.step_forward();
             const mpq_class prob = next_temp_data.state.get_prob();
@@ -348,7 +370,7 @@ struct AlphaBetaRefactor : Types {
 
             auto &chance_data = temp_data.chance_stat_matrix[row_idx * temp_data.cols + col_idx];
             while (
-                !(chance_node->tries >= base_data.max_tries ||
+                !(chance_node->tries >= base_data.max_tries[head_data.depth] ||
                   (chance_node->tries > head_data.min_tries && chance_data.unexplored < head_data.max_unexplored) ||
                   chance_data.unexplored <= 0)) {
 
@@ -373,7 +395,7 @@ struct AlphaBetaRefactor : Types {
         // query and solve all branches from a chance node
         void solve_chance_node(
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data,
-            const uint8_t row_idx, const uint8_t col_idx) const {
+            const uint8_t row_idx, const uint8_t col_idx) {
 
             auto &chance_data = temp_data.chance_stat_matrix[row_idx * temp_data.cols + col_idx];
             Branch *new_branch;
@@ -387,7 +409,7 @@ struct AlphaBetaRefactor : Types {
 
         std::pair<mpq_class, mpq_class>
         compute_subgame_equilibrium(
-            MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
+            MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) {
 
             int entry_idx = 0;
             const uint8_t r = matrix_node->I.boundary;
@@ -494,7 +516,7 @@ struct AlphaBetaRefactor : Types {
         }
 
         void initialize_submatrix(
-            MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
+            MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) {
 
             // init temp data from matrix node solution
             temp_data.chance_stat_matrix.resize(temp_data.rows * temp_data.cols);
@@ -503,8 +525,8 @@ struct AlphaBetaRefactor : Types {
                 matrix_node->chance_node_matrix.init(temp_data.rows, temp_data.cols);
                 matrix_node->I.init(temp_data.rows);
                 matrix_node->J.init(temp_data.cols);
-                matrix_node->I.add_index(0);
-                matrix_node->J.add_index(0);
+                matrix_node->I.add_index(temp_data.rows - 1);
+                matrix_node->J.add_index(temp_data.cols - 1);
                 matrix_node->I.action_indices[0].discrete_prob = 255;
                 matrix_node->J.action_indices[0].discrete_prob = 255;
             } else {
@@ -538,7 +560,7 @@ struct AlphaBetaRefactor : Types {
 
         void find_row_best_response(
             mpq_class &best_response,
-            MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
+            MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) {
 
             struct BestResponse {
                 const uint8_t i;
@@ -653,7 +675,7 @@ struct AlphaBetaRefactor : Types {
 
         void find_col_best_response(
             mpq_class &best_response,
-            MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
+            MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) {
 
             struct BestResponse {
                 const uint8_t j;
@@ -746,13 +768,16 @@ struct AlphaBetaRefactor : Types {
             };
         }
 
-        void alpha_beta(MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data) const {
+        void alpha_beta(MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data) {
             temp_data.state.get_actions();
             temp_data.rows = temp_data.state.row_actions.size();
             temp_data.cols = temp_data.state.col_actions.size();
 
             // only allocate for all next function calls, modify in other functions when necessary
-            TempData next_temp_data;
+            // TempData next_temp_data;
+            TempData& next_temp_data = temp_data_vec[head_data.depth + 1];
+            next_temp_data.real_reset();
+            // next_temp_data.state = temp_data.state;
 
             debug_print("ALPHA BETA - depth: ", head_data.depth, '\n');
             debug_print("initializing submatrix");
@@ -817,6 +842,15 @@ struct AlphaBetaRefactor : Types {
 
             matrix_node->sort_branches_and_reset();
             debug_print("END ALPHA BETA\n");
+
+            // approx
+            // const double a = temp_data.alpha.get_d();
+            // const double b = temp_data.beta.get_d();
+            // const int den = 100;
+            // temp_data.alpha = mpq_class{static_cast<int>(a * den), den};
+            // temp_data.beta = mpq_class{static_cast<int>(b * den), den};
+            // temp_data.alpha.canonicalize();
+            // temp_data.beta.canonicalize();
         }
 
         struct Output {
@@ -827,15 +861,20 @@ struct AlphaBetaRefactor : Types {
         };
 
         template <typename T>
-        Output run(const std::vector<T> &depths, PRNG &device, const State &state, Model &model, MatrixNode &node) const {
+        Output run(const std::vector<T> &depths, PRNG &device, const State &state, Model &model, MatrixNode &node) {
+
+            temp_data_vec.resize(depths.back() + 1);
 
             Output output;
             for (const auto depth : depths) {
+                std::cout << "run: depth: " << depth << std::endl;
                 BaseData base_data{depth, &device, &model, min_tries, max_tries, 0, 0};
 
                 HeadData head_data{min_tries, max_tries};
 
-                TempData temp_data{state};
+                // TempData temp_data{state};
+                TempData &temp_data = temp_data_vec[0];
+                temp_data.state = state;
 
                 const auto start = std::chrono::high_resolution_clock::now();
                 this->alpha_beta(&node, base_data, head_data, temp_data);
@@ -849,7 +888,7 @@ struct AlphaBetaRefactor : Types {
             return output;
         }
 
-        Output run(const uint32_t depth, PRNG &device, const State &state, Model &model, MatrixNode &node) const {
+        Output run(const uint32_t depth, PRNG &device, const State &state, Model &model, MatrixNode &node) {
             std::vector<uint32_t> depths{};
             for (uint32_t d = 1; d <= depth; ++d) {
                 depths.push_back(d);
