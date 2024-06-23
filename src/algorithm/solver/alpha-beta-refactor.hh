@@ -21,8 +21,8 @@ try using a/b from subgame solution to warm start best response
 
 static int indent = 0;
 
-template <typename Types, bool debug = true>
-struct AlphaBetaRefactor {
+template <typename Types, bool debug = false>
+struct AlphaBetaRefactor : Types {
 
     static void mpq_vector_print(const std::vector<mpq_class> &input) {
         if constexpr (debug) {
@@ -58,7 +58,9 @@ struct AlphaBetaRefactor {
     using ModelOutput = typename Types::ModelOutput;
 
     static uint64_t hash(const Obs &obs) {
-        return static_cast<uint64_t>(obs);
+        const typename Types::ObsHash hasher{};
+        return hasher(obs);
+        // return static_cast<uint64_t>(obs);
     }
 
     struct MatrixNode;
@@ -110,7 +112,7 @@ struct AlphaBetaRefactor {
     };
 
     struct TempData {
-        State state{prng{0}, 1, 1, 1, 1};
+        State state{};
         uint16_t rows, cols;
         mpq_class alpha{0};
         mpq_class beta{1};
@@ -292,6 +294,7 @@ struct AlphaBetaRefactor {
             TempData::ChanceStats &stats,
             MatrixNode *next_matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
 
+            head_data.step_forward();
             const mpq_class prob = next_temp_data.state.get_prob();
             if (next_temp_data.state.is_terminal()) {
                 debug_print("next_solve: terminal: ", next_temp_data.state.get_payoff().get_row_value().get_d(), '\n');
@@ -301,6 +304,7 @@ struct AlphaBetaRefactor {
                 next_temp_data.beta = 1;
             } else if (head_data.depth == base_data.max_depth) {
                 ModelOutput output{};
+                next_temp_data.state.get_actions();
                 base_data.model->inference(std::move(next_temp_data.state), output);
                 next_temp_data.alpha = next_temp_data.beta = output.value.get_row_value();
             } else {
@@ -311,11 +315,11 @@ struct AlphaBetaRefactor {
                 next_temp_data.must_break = false;
                 debug_print("next_solve: alpha_beta\n");
                 indent += 4;
-                head_data.step_forward();
                 this->alpha_beta(next_matrix_node, base_data, head_data, next_temp_data);
-                head_data.step_back();
                 indent -= 4;
             }
+            head_data.step_back();
+
 
             stats.unexplored -= prob;
             stats.alpha_explored += next_temp_data.alpha * prob;
