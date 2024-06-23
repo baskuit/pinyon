@@ -11,7 +11,7 @@ Exp3 but with additional statistics. Behaves the same.
 
 */
 
-template <CONCEPT(IsValueModelTypes, Types)>
+template <IsValueModelTypes Types>
 struct Exp3Fat : Types
 {
 

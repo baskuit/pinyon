@@ -5,7 +5,7 @@
 #include <algorithm/algorithm.hh>
 
 template <
-    CONCEPT(IsBanditAlgorithmTypes, Types),
+    IsBanditAlgorithmTypes Types,
     template <typename...> typename NodePair = DefaultNodes,
     bool return_if_expand = true> // when would this be not true?
 

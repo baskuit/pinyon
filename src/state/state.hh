@@ -1,7 +1,6 @@
 #pragma once
 
 #include <types/types.hh>
-#include <libpinyon/enable-concepts.hh>
 
 #include <concepts>
 #include <vector>
@@ -55,7 +54,7 @@ concept IsPerfectInfoStateTypes =
     } &&
     IsStateTypes<Types>;
 
-template <CONCEPT(IsTypeList, Types)>
+template <IsTypeList Types>
 class PerfectInfoState
 {
 public:

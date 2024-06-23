@@ -20,11 +20,11 @@ We also add the get_stategies and get_matrix methods required by the IsSolvedSta
 */
 
 template <
-    CONCEPT(IsValueModelTypes, Types)>
+    IsValueModelTypes Types>
     requires IsChanceStateTypes<Types>
 struct TraversedState : Types::TypeList
 {
-    template <CONCEPT(IsNodeTypes, NodePair)>
+    template <IsNodeTypes NodePair>
     class StateWithNodes;
 
     using State =
@@ -35,7 +35,7 @@ struct TraversedState : Types::TypeList
                 typename FullTraversal<Types, DebugNodes>::ChanceStats>>;
 
     // This hidden template impl allows for type hints
-    template <CONCEPT(IsNodeTypes, NodePair)>
+    template <IsNodeTypes NodePair>
     class StateWithNodes : public Types::State
     {
     public:
@@ -103,16 +103,16 @@ Instead it simulates the state via the tree stats.
 It may be faster than using the TraversedState version
 */
 
-template <CONCEPT(IsValueModelTypes, Types)>
+template <IsValueModelTypes Types>
     requires IsChanceStateTypes<Types>
 struct TraversedSimState : Types::TypeList
 {
-    template <CONCEPT(IsNodeTypes, NodePair)>
+    template <IsNodeTypes NodePair>
     class State_;
 
     using State = State_<DefaultNodes<Types, typename FullTraversal<Types>::MatrixStats, typename FullTraversal<Types>::ChanceStats>>;
 
-    template <CONCEPT(IsNodeTypes, NodePair)>
+    template <IsNodeTypes NodePair>
     class State_ : public PerfectInfoState<typename Types::TypeList>
     {
     public:

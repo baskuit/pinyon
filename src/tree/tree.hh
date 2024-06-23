@@ -17,7 +17,7 @@ Second, it's totally general in that we don't need to implement a hash function
 
 */
 
-template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats, typename NodeActions = void,
+template <IsStateTypes Types, typename MStats, typename CStats, typename NodeActions = void,
           typename NodeValue = void>
 struct DefaultNodes : Types {
     friend std::ostream &operator<<(std::ostream &os, const DefaultNodes &) {
@@ -218,7 +218,7 @@ struct DefaultNodes : Types {
 };
 
 // We have to hold off on destructor definitions until here
-template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats, typename stores_actions,
+template <IsStateTypes Types, typename MStats, typename CStats, typename stores_actions,
           typename stores_value>
 DefaultNodes<Types, MStats, CStats, stores_actions, stores_value>::MatrixNode::~MatrixNode() {
     while (this->child != nullptr) {
@@ -227,7 +227,7 @@ DefaultNodes<Types, MStats, CStats, stores_actions, stores_value>::MatrixNode::~
         delete victim;
     }
 }
-template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats, typename stores_actions,
+template <IsStateTypes Types, typename MStats, typename CStats, typename stores_actions,
           typename stores_value>
 DefaultNodes<Types, MStats, CStats, stores_actions, stores_value>::ChanceNode::~ChanceNode() {
     while (this->child != nullptr) {

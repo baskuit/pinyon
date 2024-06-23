@@ -2,7 +2,7 @@
 #include <libpinyon/math.hh>
 #include <tree/tree.hh>
 
-template <CONCEPT(IsValueModelTypes, Types)>
+template <IsValueModelTypes Types>
 struct UCB : Types {
     using Real = typename Types::Real;
 

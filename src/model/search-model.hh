@@ -32,7 +32,7 @@ namespace SearchModelDetail
 };
 
 template <
-    CONCEPT(IsSearchTypes, Types),
+    IsSearchTypes Types,
     bool use_iterations = true,
     bool use_policy = true,
     bool use_tree_bandit = true,

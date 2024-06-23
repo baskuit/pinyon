@@ -80,7 +80,7 @@ concept IsBatchModelTypes =
 
 // Empty Model
 
-template <CONCEPT(IsStateTypes, Types)>
+template <IsStateTypes Types>
 struct NullModel : Types
 {
 

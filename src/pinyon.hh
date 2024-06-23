@@ -2,7 +2,6 @@
 
 // Util
 
-#include <libpinyon/enable-concepts.hh>
 #include <libpinyon/math.hh>
 #include <libpinyon/lrslib.hh>
 #include <libpinyon/generator.hh>

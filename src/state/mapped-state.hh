@@ -4,6 +4,7 @@
 
 #include <tree/tree-debug.hh>
 
+#include <model/model.hh>
 #include <memory>
 #include <unordered_map>
 /*
@@ -60,7 +61,7 @@ namespace MappedStateDetail
 };
 
 template <
-    CONCEPT(IsModelTypes, Types),
+    IsValueModelTypes Types,
     bool empirical = true> // TODO fix
 struct MappedState : Types::TypeList
 {

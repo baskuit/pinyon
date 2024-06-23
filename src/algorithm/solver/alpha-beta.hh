@@ -6,7 +6,7 @@
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
-template <CONCEPT(IsSingleModelTypes, Types), template <typename...> typename NodePair = DefaultNodes>
+template <IsSingleModelTypes Types, template <typename...> typename NodePair = DefaultNodes>
 struct AlphaBeta : Types
 {
     using Real = Types::Real;

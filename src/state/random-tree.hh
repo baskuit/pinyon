@@ -7,7 +7,7 @@
 #include <types/types.hh>
 #include <vector>
 
-template <CONCEPT(IsTypeList, Types) = RandomTreeFloatTypes>
+template <IsTypeList Types = RandomTreeFloatTypes>
 struct RandomTree : Types {
     class State : public PerfectInfoState<Types> {
        public:

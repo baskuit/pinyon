@@ -5,7 +5,7 @@
 #include <algorithm/algorithm.hh>
 #include <tree/tree.hh>
 
-template <CONCEPT(IsSingleModelTypes, Types), bool chance_pruning = false, bool cleanup_tree = false>
+template <IsSingleModelTypes Types, bool chance_pruning = false, bool cleanup_tree = false>
 struct AlphaBetaDev : Types
 {
     using Real = Types::Real;

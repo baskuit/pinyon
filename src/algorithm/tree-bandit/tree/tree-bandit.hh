@@ -8,7 +8,7 @@
 #include <chrono>
 
 template <
-    CONCEPT(IsBanditAlgorithmTypes, Types),
+    IsBanditAlgorithmTypes Types,
     template <typename...> typename NodePair = DefaultNodes,
     typename Options = SearchOptions<>>
     requires IsNodeTypes<NodePair<Types, typename Types::MatrixStats, typename Types::ChanceStats>>

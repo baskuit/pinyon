@@ -18,7 +18,7 @@
 */
 
 template <
-    CONCEPT(IsSingleModelTypes, Types),
+    IsSingleModelTypes Types,
     template <typename...> typename NodePair = DefaultNodes>
     requires IsChanceStateTypes<Types>
 struct FullTraversal : Types

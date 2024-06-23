@@ -23,7 +23,7 @@ and it also has an improvement on the bounds for skipping and action while check
 */
 
 template <
-    CONCEPT(IsSingleModelTypes, Types),
+    IsSingleModelTypes Types,
     template <typename...> typename NodePair = DefaultNodes>
 struct AlphaBetaOld : Types
 {

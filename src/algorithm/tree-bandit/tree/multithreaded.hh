@@ -10,7 +10,7 @@
 #include <chrono>
 
 template <
-    CONCEPT(IsMultithreadedBanditTypes, Types),
+    IsMultithreadedBanditTypes Types,
     template <typename...> typename NodePair = DefaultNodes,
     typename Options = SearchOptions<>>
 struct TreeBanditThreaded : Types
@@ -249,7 +249,7 @@ struct TreeBanditThreaded : Types
 };
 
 template <
-    CONCEPT(IsMultithreadedBanditTypes, Types),
+    IsMultithreadedBanditTypes Types,
     template <typename...> typename NodePair = DefaultNodes,
     typename Options = SearchOptions<>>
 struct TreeBanditThreadPool : Types

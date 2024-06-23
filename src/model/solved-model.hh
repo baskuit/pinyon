@@ -2,7 +2,7 @@
 
 #include <state/state.hh>
 
-template <CONCEPT(IsSolvedStateTypes, Types)>
+template <IsSolvedStateTypes Types>
 struct SolvedStateModel : Types
 {
 

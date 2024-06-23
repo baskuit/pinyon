@@ -22,7 +22,7 @@ namespace MonteCarloModelDetail
     };
 };
 
-template <CONCEPT(IsPerfectInfoStateTypes, Types), bool has_policy = false>
+template <IsPerfectInfoStateTypes Types, bool has_policy = false>
 struct MonteCarloModel : Types
 {
 

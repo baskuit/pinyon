@@ -46,10 +46,6 @@ VSCode is a free IDE that provides many useful features with minimal setup and i
 ### CMake
 CMake is the blessed build system for Pinyon, lrslib, and Libtorch.
 
-```c
-option(ENABLE_CONCEPTS "Enable Concepts"  ON)
-```
-
 The `CMakeLists.txt` includes a rudimentary script that scans the tests and benchmark directories for any source files. These executables can be built, testing and debugged via hotkeys with the CMake extension for VSCode.
 
 ### Compiler
@@ -71,23 +67,6 @@ void method_for_state_types(
 ``` 
 the IDE would suggest the methods `is_terminal()`, `apply_actions()` etc.
 This provides a form of documentation that should help users become familiar with the Pinyon interface.
-
-
-#### Disabling Concepts
-Concepts can be disabled by uncommenting `#define ENABLE_CONCEPTS` in the file `libpinyon/enable-concepts.hh`. All uses of concepts for Intellisense are invoked using a macro, e.g.
-```cpp
-template <CONCEPT(IsPerfectInfoStateTypes, Types), bool has_policy = false>
-struct MonteCarloModel : Types { // ...
-```
-The template parameter definition will expand to
-```cpp
-template <IsPerfectInfoStateTypes Types, bool has_policy = false>
-```
-if `ENABLE_CONCEPTS` is defined. Otherwise it will expand to a normal unconstrained template parameter:
-```cpp
-template <typename Types, bool has_policy = false>
-```
-This library has little for use concepts outside of Intellisense. In fact, concepts generally produce worse compiler messages. Thus this macro was included to easily disable them across an entire project.
 
 #### As Documentation
 

@@ -4,7 +4,7 @@
 #include <state/state.hh>
 #include <tree/node.hh>
 
-template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+template <IsStateTypes Types, typename MStats, typename CStats,
           typename NodeActions = void, typename NodeValue = void>
 struct DebugNodes : Types
 {
@@ -232,7 +232,7 @@ struct DebugNodes : Types
     };
 };
 
-template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+template <IsStateTypes Types, typename MStats, typename CStats,
           typename stores_actions, typename stores_value>
 DebugNodes<Types, MStats, CStats, stores_actions, stores_value>::MatrixNode::~MatrixNode()
 {
@@ -244,7 +244,7 @@ DebugNodes<Types, MStats, CStats, stores_actions, stores_value>::MatrixNode::~Ma
     }
 }
 
-template <CONCEPT(IsStateTypes, Types), typename MStats, typename CStats,
+template <IsStateTypes Types, typename MStats, typename CStats,
           typename stores_actions, typename stores_value>
 DebugNodes<Types, MStats, CStats, stores_actions, stores_value>::ChanceNode::~ChanceNode()
 {
