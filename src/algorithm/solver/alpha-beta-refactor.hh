@@ -70,10 +70,15 @@ struct AlphaBetaRefactor : Types {
         PRNG *device;
         Model *model;
         uint32_t min_tries;
-        uint32_t max_tries;
+        std::vector<uint32_t> max_tries;
         double max_unexplored;
         double min_chance_prob;
+        // output stats
         size_t matrix_node_count = 0;
+        size_t alpha_beta_count = 0;
+        size_t terminal_count = 0;
+        size_t inference_count = 0;
+
         size_t total_inference_time = 0;
         size_t total_solves[9][9]{};
         size_t total_solves_raw{};
@@ -83,7 +88,7 @@ struct AlphaBetaRefactor : Types {
             PRNG *device,
             Model *model,
             uint32_t min_tries,
-            uint32_t max_tries,
+            std::vector<uint32_t> max_tries,
             double max_unexplored,
             double min_chance_prob)
             : max_depth{max_depth}, device{device}, model{model}, min_tries{min_tries}, max_tries{max_tries}, max_unexplored{max_unexplored}, min_chance_prob{min_chance_prob} {}
@@ -147,10 +152,6 @@ struct AlphaBetaRefactor : Types {
             new_col_idx = 0;
             new_i = 0;
             new_j = 0;
-            // row_strategy.clear();
-            // col_strategy.clear();
-            // alpha_matrix.clear();
-            // beta_matrix.clear();
         }
     };
 
@@ -302,6 +303,7 @@ struct AlphaBetaRefactor : Types {
             if (next_temp_data.state.is_terminal()) {
                 debug_print("next_solve: terminal: ", next_temp_data.state.get_payoff().get_row_value().get_d(), '\n');
                 next_temp_data.alpha = next_temp_data.beta = next_temp_data.state.get_payoff().get_row_value();
+                ++base_data.terminal_count; 
             } else if (head_data.min_chance_prob > prob) { // TODO init min_chance_prob
                 next_temp_data.alpha = 0;
                 next_temp_data.beta = 1;
@@ -311,9 +313,11 @@ struct AlphaBetaRefactor : Types {
                 const auto start = std::chrono::high_resolution_clock::now();
                 base_data.model->inference(std::move(next_temp_data.state), output);
                 const auto end = std::chrono::high_resolution_clock::now();
-                const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
                 base_data.total_inference_time += duration.count();
                 next_temp_data.alpha = next_temp_data.beta = output.value.get_row_value();
+                ++base_data.inference_count; 
+
             } else {
                 // TODO what else do we have to reset here?
                 next_temp_data.alpha = 0;
@@ -321,9 +325,14 @@ struct AlphaBetaRefactor : Types {
                 next_temp_data.chance_stat_matrix.clear();
                 next_temp_data.must_break = false;
                 debug_print("next_solve: alpha_beta\n");
-                indent += 4;
+                if constexpr (debug) {
+                    indent += 4;
+                }
                 this->alpha_beta(next_matrix_node, base_data, head_data, next_temp_data);
-                indent -= 4;
+                if constexpr (debug) {
+                    indent -= 4;
+                }
+                ++base_data.alpha_beta_count; 
             }
             head_data.step_back();
 
@@ -355,7 +364,7 @@ struct AlphaBetaRefactor : Types {
 
             auto &chance_data = temp_data.chance_stat_matrix[row_idx * temp_data.cols + col_idx];
             while (
-                !(chance_node->tries >= base_data.max_tries ||
+                !(chance_node->tries >= base_data.max_tries[head_data.depth] ||
                   (chance_node->tries > head_data.min_tries && chance_data.unexplored < head_data.max_unexplored) ||
                   chance_data.unexplored <= 0)) {
 
@@ -393,11 +402,11 @@ struct AlphaBetaRefactor : Types {
         }
 
         void discretize_strategies(MatrixNode *matrix_node, const TempData &temp_data) const {
-            for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
+            for (uint8_t i = 0; i < temp_data.row_strategy.size(); ++i) {
                 const uint8_t x = 255 * temp_data.row_strategy[i].get_d();
                 matrix_node->I.action_indices[i].discrete_prob = x;
             }
-            for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+            for (uint8_t j = 0; j < temp_data.col_strategy.size(); ++j) {
                 const uint8_t x = 255 * temp_data.col_strategy[j].get_d();
                 matrix_node->J.action_indices[j].discrete_prob = x;
             }
@@ -474,7 +483,7 @@ struct AlphaBetaRefactor : Types {
                 };
 
                 const auto end = std::chrono::high_resolution_clock::now();
-                const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
                 // std::this_thread::sleep_for(duration);
 
@@ -522,7 +531,7 @@ struct AlphaBetaRefactor : Types {
                 };
 
                 const auto end = std::chrono::high_resolution_clock::now();
-                const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
                 // std::this_thread::sleep_for(duration);
 
@@ -821,11 +830,14 @@ struct AlphaBetaRefactor : Types {
                 next_beta = mpq_class{0};
                 next_alpha = mpq_class{1};
 
-                indent += 2;
+                if constexpr (debug) {
+                    indent += 2;
+                }
                 this->find_row_best_response(next_beta, matrix_node, base_data, head_data, temp_data, next_temp_data);
                 this->find_col_best_response(next_alpha, matrix_node, base_data, head_data, temp_data, next_temp_data);
-                indent -= 2;
-
+                if constexpr (debug) {
+                    indent -= 2;
+                }
                 // each of the two prior function calls solves most new chance nodes, but they both miss this corner case when two new actions are added
                 // TODO this looks too much like the old code lol
                 if (temp_data.new_i >= matrix_node->I.boundary 
@@ -862,11 +874,16 @@ struct AlphaBetaRefactor : Types {
             mpq_class beta;
             std::vector<mpq_class> row_strategy{};
             std::vector<mpq_class> col_strategy{};
-            std::vector<size_t> counts{};
             std::vector<size_t> times{};
             std::vector<int64_t> times_without_inference{};
             size_t total_solves[9][9];
             size_t total_solves_raw{};
+
+            std::vector<size_t> matrix_node_count{};
+            std::vector<size_t> alpha_beta_count{};
+            std::vector<size_t> terminal_count{};
+            std::vector<size_t> inference_count{};
+
         };
 
         template <typename T>
@@ -877,7 +894,14 @@ struct AlphaBetaRefactor : Types {
 
                 double max_unexplored = 0;
                 double min_chance_prob = 0;
-                BaseData base_data{depth, &device, &model, min_tries, max_tries, max_unexplored, min_chance_prob};
+                std::vector<uint32_t> max_tries_vec{};
+                max_tries_vec.resize(depth);
+                uint32_t t = max_tries;
+                for (int i = depth - 1; i >= 0; --i) {
+                    max_tries_vec[i] = (t);
+                    t *= 2;
+                }
+                BaseData base_data{depth, &device, &model, min_tries, max_tries_vec, max_unexplored, min_chance_prob};
 
                 HeadData head_data{min_tries, max_tries};
 
@@ -886,18 +910,23 @@ struct AlphaBetaRefactor : Types {
                 const auto start = std::chrono::high_resolution_clock::now();
                 this->alpha_beta(&node, base_data, head_data, temp_data);
                 const auto end = std::chrono::high_resolution_clock::now();
-                const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
                 output.alpha = temp_data.alpha;
                 output.beta = temp_data.beta;
                 output.row_strategy.resize(temp_data.rows);
-                for (uint8_t i = 0; i < node.I.boundary; ++i) {
+                for (uint8_t i = 0; i < temp_data.row_strategy.size(); ++i) {
                     output.row_strategy[node.I.action_indices[i].idx] = temp_data.row_strategy[i];
                 }
                 output.col_strategy.resize(temp_data.cols);
-                for (uint8_t j = 0; j < node.J.boundary; ++j) {
+                for (uint8_t j = 0; j < temp_data.col_strategy.size(); ++j) {
                     output.col_strategy[node.J.action_indices[j].idx] = temp_data.col_strategy[j];
                 }
-                output.counts.push_back(base_data.matrix_node_count);
+
+                output.matrix_node_count.push_back(base_data.matrix_node_count);
+                output.alpha_beta_count.push_back(base_data.alpha_beta_count);
+                output.terminal_count.push_back(base_data.terminal_count);
+                output.inference_count.push_back(base_data.inference_count);
+
                 output.times.push_back(duration.count());
 
                 const int64_t time_without_inference = 
