@@ -124,8 +124,8 @@ template <
     typename uua = void, 
     typename node_actions = void, 
     typename node_value = void,
-    size_t max_iter = 1 << 15,
-    size_t max_d = 1 << 5>
+    size_t max_iter = 1 << 10,
+    size_t max_d = 1 << 4>
 struct SearchOptions
 {
     // if false, iterations always rollout until terminal
