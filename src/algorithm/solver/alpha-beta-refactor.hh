@@ -16,7 +16,7 @@
 TODO:
 use std::vector for chance_nodes - maybe just need noexcept?
 use array of temp_data that's allocated once in the run() call
-try using a/b from subgame solution to warm start best response 
+try using a/b from subgame solution to warm start best response
 */
 
 template <typename T>
@@ -25,7 +25,7 @@ constexpr bool fuzzy_equals(const T a, const T b) {
     return a < (b + eps) && (a + eps) > b;
 }
 
-bool fuzzy_equals(mpq_class& a, mpq_class &b) {
+bool fuzzy_equals(mpq_class &a, mpq_class &b) {
     a.canonicalize();
     b.canonicalize();
     return a == b;
@@ -46,7 +46,7 @@ struct AlphaBetaRefactor : Types {
     }
 
     template <typename... T>
-    static void debug_print(T ...args) {
+    static void debug_print(T... args) {
         if constexpr (debug) {
             for (int i = 0; i < indent; ++i) {
                 std::cout << " ";
@@ -55,9 +55,8 @@ struct AlphaBetaRefactor : Types {
         }
     }
 
-
     template <typename... T>
-    static void debug_print_no_indent(T ...args) {
+    static void debug_print_no_indent(T... args) {
         if constexpr (debug) {
             ((std::cout << args), ...);
         }
@@ -83,14 +82,13 @@ struct AlphaBetaRefactor : Types {
         Model *model;
         uint32_t min_tries;
         std::vector<uint32_t> max_tries;
-        double max_unexplored;
-        double min_chance_prob;
+        float max_unexplored;
+        float min_reach_prob;
         // output stats
         size_t matrix_node_count = 0;
         size_t alpha_beta_count = 0;
         size_t terminal_count = 0;
         size_t inference_count = 0;
-
         size_t total_inference_time = 0;
         size_t total_solves[9][9]{};
         size_t total_solves_raw{};
@@ -101,27 +99,19 @@ struct AlphaBetaRefactor : Types {
             Model *model,
             uint32_t min_tries,
             std::vector<uint32_t> max_tries,
-            double max_unexplored,
-            double min_chance_prob)
-            : max_depth{max_depth}, device{device}, model{model}, min_tries{min_tries}, max_tries{max_tries}, max_unexplored{max_unexplored}, min_chance_prob{min_chance_prob} {}
+            float max_unexplored,
+            float min_reach_prob)
+            : max_depth{max_depth}, device{device}, model{model}, min_tries{min_tries}, max_tries{max_tries}, max_unexplored{max_unexplored}, min_reach_prob{min_reach_prob} {}
     };
 
     struct HeadData {
         uint32_t min_tries;
         uint32_t max_tries;
-        double max_unexplored;
-        double min_chance_prob;
         uint32_t depth{0};
 
         HeadData(
             uint32_t min_tries,
-            uint32_t max_tries) : min_tries{min_tries}, max_tries{max_tries}, max_unexplored{0}, min_chance_prob{0} {}
-
-        HeadData(
-            uint32_t min_tries,
-            uint32_t max_tries,
-            double max_unexplored,
-            double min_chance_prob) : min_tries{min_tries}, max_tries{max_tries}, max_unexplored{max_unexplored}, min_chance_prob{min_chance_prob} {}
+            uint32_t max_tries) : min_tries{min_tries}, max_tries{max_tries} {}
 
         void step_forward() {
             ++depth;
@@ -136,7 +126,7 @@ struct AlphaBetaRefactor : Types {
         uint16_t rows, cols;
         float alpha{0};
         float beta{1};
-        float min_branch_prob{};
+        float chance_reach_prob{1};
 
         struct ChanceStats {
             float alpha_explored{0};
@@ -173,7 +163,7 @@ struct AlphaBetaRefactor : Types {
         int cols{};
         std::array<std::array<std::array<float, 4>, 9>, 9> data{};
 
-        void init (const TempData &temp_data, const MatrixNode *matrix_node) {
+        void init(const TempData &temp_data, const MatrixNode *matrix_node) {
             size_t e{};
             rows = temp_data.rows;
             cols = temp_data.cols;
@@ -187,12 +177,10 @@ struct AlphaBetaRefactor : Types {
                     ++e;
                 }
             }
-        } 
-
+        }
     };
 
-
-    static void debug_print_chance_matrix (const TempData &temp_data) {
+    static void debug_print_chance_matrix(const TempData &temp_data) {
         int entry_idx = 0;
         for (uint8_t row_idx = 0; row_idx < temp_data.rows; ++row_idx) {
             debug_print();
@@ -211,11 +199,8 @@ struct AlphaBetaRefactor : Types {
         uint64_t seed;
         float p;
 
-        Branch(const double prob, const uint64_t seed, const bool is_terminal)
+        Branch(const float prob, const uint64_t seed, const bool is_terminal)
             : matrix_node{}, p{static_cast<float>(prob)}, seed{seed} {
-            if (!is_terminal) {
-                matrix_node = std::make_unique<MatrixNode>();
-            }
         }
     };
 
@@ -263,6 +248,8 @@ struct AlphaBetaRefactor : Types {
             uint8_t idx;
             uint8_t discrete_prob{};
 
+            ActionProb () {}
+
             ActionProb(const uint8_t index) : idx{index} {}
 
             bool operator<(const ActionProb &a) const {
@@ -271,20 +258,15 @@ struct AlphaBetaRefactor : Types {
         };
 
         struct Solution {
-            std::vector<ActionProb> action_indices{};
+            std::array<ActionProb, 9> action_indices;
             uint8_t boundary{0};
+            uint8_t __packing;
 
             Solution() {}
 
-            Solution(uint8_t size) {
-                for (uint8_t i = 0; i < size; ++i) {
-                    action_indices.push_back(i);
-                }
-            }
-
             void init(const uint8_t size) {
                 for (uint8_t i = 0; i < size; ++i) {
-                    action_indices.push_back(i);
+                    action_indices[i] = ActionProb{i};
                 }
             }
 
@@ -327,7 +309,6 @@ struct AlphaBetaRefactor : Types {
                     chance_node.sorted_branches.begin(),
                     chance_node.sorted_branches.end(),
                     [](const Branch *x, const Branch *y) { return x->p > y->p; });
-                
             }
         }
     };
@@ -337,37 +318,43 @@ struct AlphaBetaRefactor : Types {
         const uint32_t min_tries;
         const uint32_t max_tries;
 
-        double max_unexplored = 0;
-        double min_chance_prob = 0;
+        float max_unexplored = 0;
+        float min_reach_prob_initial = 1;
+        float min_reach_prob_base = .1;
 
-        Search (
-        const uint32_t min_tries,
-        const uint32_t max_tries
-        ) : min_tries{min_tries}, max_tries{max_tries} {}
+        Search(
+            const uint32_t min_tries,
+            const uint32_t max_tries) : min_tries{min_tries}, max_tries{max_tries} {}
 
-        Search (
-        const uint32_t min_tries,
-        const uint32_t max_tries,
-        const double max_unexplored,
-        const double min_chance_prob
-        ) : min_tries{min_tries}, max_tries{max_tries}, max_unexplored{max_unexplored}, min_chance_prob{min_chance_prob} {}
+        Search(
+            const uint32_t min_tries,
+            const uint32_t max_tries,
+            const float max_unexplored,
+            const float min_reach_prob_initial,
+            const float min_reach_prob_base) : min_tries{min_tries}, max_tries{max_tries}, max_unexplored{max_unexplored}, min_reach_prob_initial{min_reach_prob_initial}, min_reach_prob_base{min_reach_prob_base} {}
+
+        Search(
+
+        ) {}
 
         // calls alpha_beta (basically a wrapper for it) but first checks if not terminal/at max depth
         // helps with boiler plate and reduces matrix node allocations
         void next_solve(
             TempData::ChanceStats &stats,
-            MatrixNode *next_matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
+            Branch* branch, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
 
             head_data.step_forward();
             const float prob = next_temp_data.state.get_prob();
             if (next_temp_data.state.is_terminal()) {
                 debug_print("next_solve: terminal: ", next_temp_data.state.get_payoff().get_row_value(), '\n');
                 next_temp_data.alpha = next_temp_data.beta = next_temp_data.state.get_payoff().get_row_value();
-                ++base_data.terminal_count; 
-            } else if (head_data.min_chance_prob > prob) { // TODO init min_chance_prob
-                next_temp_data.alpha = 0;
-                next_temp_data.beta = 1;
-            } else if (head_data.depth == base_data.max_depth) {
+                ++base_data.terminal_count;
+            } else if (
+                (next_temp_data.chance_reach_prob = temp_data.chance_reach_prob * prob) < base_data.min_reach_prob ||
+                head_data.depth == base_data.max_depth) {
+                // if (next_temp_data.chance_reach_prob < base_data.min_reach_prob) {
+                //     std::cout << next_temp_data.chance_reach_prob << " " << base_data.min_reach_prob << std::endl;
+                // }
                 ModelOutput output{};
                 next_temp_data.state.get_actions();
                 const auto start = std::chrono::high_resolution_clock::now();
@@ -376,10 +363,11 @@ struct AlphaBetaRefactor : Types {
                 const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
                 base_data.total_inference_time += duration.count();
                 next_temp_data.alpha = next_temp_data.beta = output.value.get_row_value();
-                ++base_data.inference_count; 
-
+                ++base_data.inference_count;
             } else {
-                // TODO what else do we have to reset here?
+                if (!branch->matrix_node) {
+                    branch->matrix_node = std::make_unique<MatrixNode>();
+                }
                 next_temp_data.alpha = 0;
                 next_temp_data.beta = 1;
                 next_temp_data.chance_stat_matrix.clear();
@@ -388,14 +376,13 @@ struct AlphaBetaRefactor : Types {
                 if constexpr (debug) {
                     indent += 4;
                 }
-                this->alpha_beta(next_matrix_node, base_data, head_data, next_temp_data);
+                this->alpha_beta(branch->matrix_node.get(), base_data, head_data, next_temp_data);
                 if constexpr (debug) {
                     indent -= 4;
                 }
-                ++base_data.alpha_beta_count; 
+                ++base_data.alpha_beta_count;
             }
             head_data.step_back();
-
 
             stats.unexplored -= prob;
             stats.alpha_explored += next_temp_data.alpha * prob;
@@ -425,7 +412,7 @@ struct AlphaBetaRefactor : Types {
             auto &chance_data = temp_data.chance_stat_matrix[row_idx * temp_data.cols + col_idx];
             while (
                 !(chance_node->tries >= base_data.max_tries[head_data.depth] ||
-                  (chance_node->tries > head_data.min_tries && chance_data.unexplored < head_data.max_unexplored) ||
+                  (chance_node->tries > head_data.min_tries && chance_data.unexplored < base_data.max_unexplored) ||
                   chance_data.unexplored <= 0)) {
 
                 ++chance_node->tries;
@@ -455,7 +442,7 @@ struct AlphaBetaRefactor : Types {
             Branch *new_branch;
             ChanceNode *chance_node = &matrix_node->chance_node_matrix(row_idx, col_idx);
             while (new_branch = try_get_new_branch(base_data, head_data, temp_data, next_temp_data, chance_node, row_idx, col_idx)) {
-                next_solve(chance_data, new_branch->matrix_node.get(), base_data, head_data, temp_data, next_temp_data);
+                next_solve(chance_data, new_branch, base_data, head_data, temp_data, next_temp_data);
                 temp_data.is_subgame_singular &= (next_temp_data.alpha == next_temp_data.beta);
             }
             temp_data.is_subgame_singular &= (chance_data.unexplored == 0);
@@ -471,7 +458,7 @@ struct AlphaBetaRefactor : Types {
                 matrix_node->J.action_indices[j].discrete_prob = x;
             }
         }
-        
+
         std::pair<float, float>
         compute_subgame_equilibrium(
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
@@ -481,7 +468,7 @@ struct AlphaBetaRefactor : Types {
             int entry_idx = 0;
             const uint8_t r = matrix_node->I.boundary;
             const uint8_t c = matrix_node->J.boundary;
-            
+
             if (r <= c) {
                 base_data.total_solves[c - 1][r - 1] += 1;
             } else {
@@ -563,7 +550,6 @@ struct AlphaBetaRefactor : Types {
             return {a, b};
         }
 
-
         void initialize_submatrix(
             MatrixNode *matrix_node, BaseData &base_data, HeadData &head_data, TempData &temp_data, TempData &next_temp_data) const {
 
@@ -585,7 +571,6 @@ struct AlphaBetaRefactor : Types {
                     } else {
                         ++i;
                     }
-
                 }
                 for (uint8_t j = 0; j < matrix_node->J.boundary;) {
                     if (matrix_node->J.action_indices[j].discrete_prob <= 20 && (j > 0)) {
@@ -594,7 +579,7 @@ struct AlphaBetaRefactor : Types {
                         ++j;
                     }
                 }
-            
+
                 assert(matrix_node->I.size() > 0 && matrix_node->J.size() > 0);
             }
 
@@ -626,7 +611,7 @@ struct AlphaBetaRefactor : Types {
                 float max_prio{-1};
                 bool nonzero_priority_found{false};
                 for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
-                    if (data.priority_vector[j] > std::max(0, max_prio)) {
+                    if (data.priority_vector[j] > std::max(float{0}, max_prio)) {
                         max_index = j;
                         max_prio = data.priority_vector[j];
                         nonzero_priority_found = true;
@@ -640,7 +625,6 @@ struct AlphaBetaRefactor : Types {
             };
 
             const auto compute_value = [&](BestResponse &data, uint8_t curr_i) {
-
                 debug_print("row BR; row_idx: ", (int)data.row_idx, '\n');
                 // init priority vector
                 data.priority_vector.resize(matrix_node->J.boundary);
@@ -656,7 +640,7 @@ struct AlphaBetaRefactor : Types {
                             chance_stats.unexplored *
                             temp_data.col_strategy[j];
                         data.total_unexplored += data.priority_vector[j];
-                        data.value += chance_stats.beta_explored * temp_data.col_strategy[j]; 
+                        data.value += chance_stats.beta_explored * temp_data.col_strategy[j];
                     }
                 }
 
@@ -672,7 +656,7 @@ struct AlphaBetaRefactor : Types {
                     if (branch = try_get_new_branch(base_data, head_data, temp_data, next_temp_data, chance_node, data.row_idx, data.col_idx)) {
                         const float prob = next_temp_data.state.get_prob();
                         auto &chance_data = temp_data.chance_stat_matrix[data.row_idx * temp_data.cols + data.col_idx];
-                        next_solve(chance_data, branch->matrix_node.get(), base_data, head_data, temp_data, next_temp_data);
+                        next_solve(chance_data, branch, base_data, head_data, temp_data, next_temp_data);
                         const float p = prob * temp_data.col_strategy[j];
                         data.priority_vector[j] -= p;
                         data.value += next_temp_data.beta * prob * temp_data.col_strategy[j];
@@ -690,27 +674,27 @@ struct AlphaBetaRefactor : Types {
                     temp_data.new_row_idx = data.row_idx;
                     temp_data.new_i = curr_i;
                     best_response = std::move(data.value);
-                    debug_print("new best response - new_i: ", (int)temp_data.new_i, " new_row_idx: ", (int)temp_data.new_row_idx,'\n');
+                    debug_print("new best response - new_i: ", (int)temp_data.new_i, " new_row_idx: ", (int)temp_data.new_row_idx, '\n');
                 }
             };
 
             // best response, finally
-                for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
-                    BestResponse data{i, matrix_node->I.action_indices[i].idx};
-                    compute_value(data, i);
-                }
+            for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
+                BestResponse data{i, matrix_node->I.action_indices[i].idx};
+                compute_value(data, i);
+            }
 
-                for (uint8_t i = matrix_node->I.boundary; i < temp_data.rows; ++i) {
-                    BestResponse data{i, matrix_node->I.action_indices[i].idx};
-                    compute_value(data, i);
-                }
+            for (uint8_t i = matrix_node->I.boundary; i < temp_data.rows; ++i) {
+                BestResponse data{i, matrix_node->I.action_indices[i].idx};
+                compute_value(data, i);
+            }
 
-                if (temp_data.new_i >= matrix_node->I.boundary) {
-                    for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
-                        this->solve_chance_node(matrix_node, base_data, head_data, temp_data, next_temp_data,
-                                                temp_data.new_row_idx, matrix_node->J.action_indices[j].idx);
-                    }
-                    temp_data.must_break = false;
+            if (temp_data.new_i >= matrix_node->I.boundary) {
+                for (uint8_t j = 0; j < matrix_node->J.boundary; ++j) {
+                    this->solve_chance_node(matrix_node, base_data, head_data, temp_data, next_temp_data,
+                                            temp_data.new_row_idx, matrix_node->J.action_indices[j].idx);
+                }
+                temp_data.must_break = false;
             }
 
             debug_print("================", '\n');
@@ -734,7 +718,7 @@ struct AlphaBetaRefactor : Types {
                 float max_prio{-1};
                 bool nonzero_priority_found{false};
                 for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
-                    if (data.priority_vector[i] > std::max(0, max_prio)) {
+                    if (data.priority_vector[i] > std::max(float{0}, max_prio)) {
                         max_index = i;
                         max_prio = data.priority_vector[i];
                         nonzero_priority_found = true;
@@ -748,7 +732,6 @@ struct AlphaBetaRefactor : Types {
             };
 
             const auto compute_value = [&](BestResponse &data, uint8_t curr_j) {
-
                 data.priority_vector.resize(matrix_node->I.boundary);
                 {
                     for (uint8_t i = 0; i < matrix_node->I.boundary; ++i) {
@@ -773,7 +756,7 @@ struct AlphaBetaRefactor : Types {
                     if (branch = try_get_new_branch(base_data, head_data, temp_data, next_temp_data, chance_node, data.row_idx, data.col_idx)) {
                         const float prob = next_temp_data.state.get_prob();
                         auto &chance_data = temp_data.chance_stat_matrix[data.row_idx * temp_data.cols + data.col_idx];
-                        next_solve(chance_data, branch->matrix_node.get(), base_data, head_data, temp_data, next_temp_data);
+                        next_solve(chance_data, branch, base_data, head_data, temp_data, next_temp_data);
                         const float p = prob * temp_data.row_strategy[i];
                         data.priority_vector[i] -= p;
                         data.value += next_temp_data.alpha * p;
@@ -842,7 +825,7 @@ struct AlphaBetaRefactor : Types {
                 debug_print('\n');
 
                 auto [next_alpha, next_beta] = this->compute_subgame_equilibrium(matrix_node, base_data, head_data, temp_data, next_temp_data);
-                
+
                 if constexpr (debug) {
                     indent += 2;
                 }
@@ -853,9 +836,8 @@ struct AlphaBetaRefactor : Types {
                 }
                 // each of the two prior function calls solves most new chance nodes, but they both miss this corner case when two new actions are added
                 // TODO this looks too much like the old code lol
-                if (temp_data.new_i >= matrix_node->I.boundary 
-                    && temp_data.new_j >= matrix_node->J.boundary) {
-                    debug_print("double new actions: ", (int)temp_data.new_row_idx, ' ', (int)temp_data.new_col_idx, '\n');
+                if (temp_data.new_i >= matrix_node->I.boundary && temp_data.new_j >= matrix_node->J.boundary) {
+                    debug_print("float new actions: ", (int)temp_data.new_row_idx, ' ', (int)temp_data.new_col_idx, '\n');
                     this->solve_chance_node(matrix_node, base_data, head_data, temp_data, next_temp_data, temp_data.new_row_idx, temp_data.new_col_idx);
                 }
                 if (temp_data.new_i >= matrix_node->I.boundary) {
@@ -870,7 +852,7 @@ struct AlphaBetaRefactor : Types {
 
                 temp_data.alpha = std::max(next_alpha, temp_data.alpha);
                 temp_data.beta = std::min(next_beta, temp_data.beta);
-                
+
                 debug_print("next_a: ", next_alpha, " next_b: ", next_beta, '\n');
                 debug_print("new row idx: ", (int)temp_data.new_row_idx, " new col idx: ", (int)temp_data.new_col_idx, " must_break:", temp_data.must_break, '\n');
                 debug_print("________________", '\n');
@@ -888,7 +870,6 @@ struct AlphaBetaRefactor : Types {
                 std::swap(temp_data.alpha, temp_data.beta);
             }
             // temp_data.alpha = temp_data.beta = (temp_data.alpha + temp_data.beta )/2;
-
         }
 
         struct Output {
@@ -919,21 +900,23 @@ struct AlphaBetaRefactor : Types {
                 max_tries_vec.resize(depth);
                 const float factor = 1.414;
                 uint32_t t = max_tries;
+                float min_reach_prob = min_reach_prob_initial;
                 for (int i = depth - 1; i >= 0; --i) {
                     max_tries_vec[i] = (t);
                     const float w = t * factor;
                     t = static_cast<uint32_t>(w);
+                    min_reach_prob *= min_reach_prob_base;
                 }
-                BaseData base_data{depth, &device, &model, min_tries, max_tries_vec, max_unexplored, min_chance_prob};
 
+                BaseData base_data{depth, &device, &model, min_tries, max_tries_vec, max_unexplored, min_reach_prob};
                 HeadData head_data{min_tries, max_tries};
-
                 TempData temp_data{state};
 
                 const auto start = std::chrono::high_resolution_clock::now();
                 this->alpha_beta(&node, base_data, head_data, temp_data);
                 const auto end = std::chrono::high_resolution_clock::now();
                 const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
                 output.alpha = temp_data.alpha;
                 output.beta = temp_data.beta;
                 output.row_strategy.resize(temp_data.rows);
@@ -952,7 +935,7 @@ struct AlphaBetaRefactor : Types {
 
                 output.times.push_back(duration.count());
 
-                const int64_t time_without_inference = 
+                const int64_t time_without_inference =
                     static_cast<int64_t>(duration.count()) - static_cast<int64_t>(base_data.total_inference_time);
                 output.times_without_inference.push_back(time_without_inference);
 
